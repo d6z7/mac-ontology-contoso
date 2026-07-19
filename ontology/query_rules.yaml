@@ -1,0 +1,100 @@
+# CONTOSO (demo) > query rules + decision policy
+#
+# Two things live here, both read by the explorer's Decisions tab:
+#   1. scope:general behavioural rules — cross-cutting behaviours that apply to EVERY concept,
+#      stated once here instead of restated per file (never-invent, ask-when-underspecified, disclose-defaults, ...).
+#   2. the decision_policy routing index — for each decision SLOT a question can leave open, the policy tier
+#      (ASK / COMMIT / REFUSE) and the rule that governs it.
+#
+# Worst-wins ordering:  blocked (REFUSE)  >  mandatory_no_default (ASK)  >  assumable_default (COMMIT).
+# A blocked slot on a question overrides an assumable default on the same question.
+
+metadata:
+  layer: query_rules
+  source: CONTOSO
+  schema_version: '0.1.9'
+  status: draft
+  date: 2026-07-19
+
+rules:
+
+  - id: resolve.never_fabricate
+    subject: "Resolve only from the ontology; abstain and flag a gap, never invent"
+    kind: mac.rule_kind.resolution
+    confidence: C
+    scope: general
+    when: "resolving any identifier, code, column or value from a question"
+    then: "read it from the ontology's concepts and dataset descriptors; if it cannot be resolved, ABSTAIN and flag the gap"
+    never: "inventing a code, column or value, or answering from generic priors"
+
+  - id: ambiguity.ask_dont_guess
+    subject: "Ask with candidates when a required dimension is underspecified"
+    kind: mac.rule_kind.ambiguity
+    confidence: C
+    scope: general
+    when: "a REQUIRED dimension (period, reporting currency, market, grain) is underspecified AND has no defensible default"
+    then: "ABSTAIN and raise a clarifying question, offering the candidate resolutions"
+    never: "guessing, or silently defaulting on the user's behalf without disclosure"
+
+  - id: assumption.disclose_defaults
+    subject: "Disclose every assumed default in the answer"
+    kind: mac.rule_kind.default
+    confidence: C
+    scope: general
+    when: "a defensible default is assumed to answer an under-specified question (base currency, net-not-gross, full period, all channels)"
+    then: "COMMIT under the default AND state the assumption plainly in the answer"
+    never: "applying a default silently"
+
+  - id: measure.period_resolution
+    subject: "Resolve an unspecified period to the full available range, disclosed"
+    kind: mac.rule_kind.default
+    confidence: C
+    scope: general
+    when: "a measure question names no time window"
+    then: "COMMIT to the full available date range and disclose it (e.g. 'all orders 2016-2025'); ask instead if a specific window is clearly implied"
+    never: "silently picking an arbitrary sub-period"
+
+  - id: capability.refuse_missing_dimension
+    subject: "Refuse to slice by a dimension the data does not carry"
+    kind: mac.rule_kind.exclusion
+    confidence: C
+    scope: general
+    when: "a question slices by a dimension absent from the model (e.g. salesperson, supplier, promotion, discount reason)"
+    then: "REFUSE and name what the model DOES carry: brand, product, category, store/country, currency, date"
+    never: "fabricating the dimension or silently approximating it with a different column"
+
+decision_policy:
+  slots:
+    - slot: currency.basis
+      policy: assumable_default
+      governing_rule: "sales.single_currency_basis  (concepts/sales)"
+      on_missing: "no reporting currency named and rows span several -> convert each line to the disclosed base currency (Quantity x NetPrice x ExchangeRate) BEFORE summing; or ASK via sales.ask_currency_when_ambiguous."
+
+    - slot: measure.gross_vs_net
+      policy: assumable_default
+      governing_rule: "sales.net_of_discount  (concepts/sales)"
+      on_missing: "unqualified 'sales' -> NET (Quantity x NetPrice); report GROSS only when explicitly asked, disclosed."
+
+    - slot: period.window
+      policy: assumable_default
+      governing_rule: "measure.period_resolution  (this file)"
+      on_missing: "no time window -> the full available range, disclosed; ASK if a specific window is implied."
+
+    - slot: source.double_count
+      policy: blocked
+      governing_rule: "sales.no_double_count_header_detail  (concepts/sales)"
+      on_missing: "sum EITHER `sales` OR orders x orderrows, never both — a query that sums both is REFUSED (doubles revenue)."
+
+    - slot: market.online_channel
+      policy: blocked
+      governing_rule: "store.online_is_not_a_market  (concepts/geography)"
+      on_missing: "in a by-country breakdown, 'Online' is a CHANNEL not a market — segregate and disclose, or exclude with a note."
+
+    - slot: capability.missing_dimension
+      policy: blocked
+      governing_rule: "capability.refuse_missing_dimension  (this file)"
+      on_missing: "REFUSE dimensions the data does not carry (salesperson, supplier, promotion); name what it does carry."
+
+governance:
+  owner: demo-team
+  last_reviewed: 2026-07-19

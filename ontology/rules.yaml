@@ -1,0 +1,73 @@
+# CONTOSO (demo) — Rules layer: the derived forms of the Sales measure (the disclosed, correct totals).
+
+metadata:
+  layer: rules
+  source: CONTOSO
+  schema_version: '0.1.9'
+  status: draft
+  date: 2026-07-19
+
+rules:
+
+  - rule: net_sales_base_currency
+    derives: Sales                         # → concepts/sales/sales.yaml (derived_by_rule: net_sales_base_currency)
+    over: [Sales]
+    logic: >
+      NET sales in one comparable currency: each order line's post-discount value (Quantity x NetPrice)
+      converted to the reporting base currency via its own ExchangeRate, then summed. This is what
+      "total sales" means by default. Converting BEFORE summing is what makes the total meaningful across
+      the five currencies — a raw SUM(NetPrice) mixes incompatible units.
+    render_kind: sql_expression
+    template: |
+      SUM(Quantity * NetPrice * ExchangeRate)      -- net, converted to base currency, then summed
+    requires_join: |
+      sales
+      {% if period_start %}WHERE OrderDate BETWEEN ? AND ?{% endif %}   -- BOUND, never interpolated
+    conditions:
+      - "Convert each line to base currency BEFORE summing — never SUM(NetPrice) across mixed CurrencyCode."
+      - "Sum `sales` OR orders x orderrows, never both (same facts, two shapes)."
+    validated_against: [sales]
+    inspectable: true
+    confidence: C
+
+  - rule: gross_sales_base_currency
+    derives: Sales
+    over: [Sales]
+    logic: >
+      GROSS sales (list price before discount): Quantity x UnitPrice converted to base currency and
+      summed. Reported only when gross is explicitly asked for; otherwise "sales" means net (see
+      net_sales_base_currency). Stated here so the gross/net difference is inspectable, not guessed.
+    render_kind: sql_expression
+    template: |
+      SUM(Quantity * UnitPrice * ExchangeRate)     -- gross (pre-discount), converted, then summed
+    validated_against: [sales]
+    inspectable: true
+    confidence: C
+
+  - rule: gross_profit_base_currency
+    derives: Margin                        # → concepts/finance/margin.yaml (derived_by_rule: gross_profit_base_currency)
+    over: [Margin]
+    logic: >
+      GROSS PROFIT (a.k.a. gross margin in currency): each line's NET revenue minus its cost of goods —
+      Quantity x (NetPrice - UnitCost) — converted to the base currency via ExchangeRate, then summed.
+      This is the authored reading: revenue is taken NET of discount (consistent with Sales), cost is the
+      per-unit cost of goods (UnitCost, = COGS), and only cost of goods is subtracted — operating,
+      logistics and overhead costs are NOT modelled, so this is GROSS profit, not net profit. Stated here
+      so the margin basis is inspectable and disclosed, never guessed.
+    render_kind: sql_expression
+    template: |
+      SUM(Quantity * (NetPrice - UnitCost) * ExchangeRate)   -- gross profit: (net revenue - COGS), converted, then summed
+    conditions:
+      - "Revenue side is NET (NetPrice), consistent with Sales > net_sales_base_currency — do not mix gross revenue with cost."
+      - "Convert each line to base currency BEFORE summing — never SUM across mixed CurrencyCode."
+      - "Cost basis is UnitCost only (cost of goods). This is GROSS profit; operating/overhead costs are out of scope and undisclosed in the data."
+    validated_against: [sales]
+    inspectable: true
+    confidence: C
+
+governance:
+  owner: demo-team
+  last_reviewed: 2026-07-19
+  change_log:
+    - { date: 2026-07-19, change: "Created for the public MAC/Contoso demo.", change_type: CREATION, by: demo-team }
+    - { date: 2026-07-19, change: "Added gross_profit_base_currency (the Margin measure). The model refused 'which category is most profitable' because profit was undefined; this authors that meaning (the data already carried UnitCost).", change_type: ADDITION, by: demo-team }

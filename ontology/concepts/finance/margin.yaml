@@ -1,0 +1,85 @@
+# CONTOSO (demo) > finance > Margin
+# THE EXTENSION (article 4). The model used to REFUSE "which category is most profitable?" — profitability
+# was not a measure the ontology defined, and by resolve.never_fabricate it abstained rather than invent one.
+# The DATA already carried the cost (sales.UnitCost); what was missing was the MEANING. This concept authors
+# it — and the authoring is a genuine, contested judgement (gross vs net margin, which costs count), which
+# is exactly the human decision the series argues you must make and disclose, not leave to the machine.
+
+metadata:
+  concept: Margin
+  source: CONTOSO
+  version: '0.1'
+  schema_version: '0.1.9'
+  status: draft
+  owner: demo-team
+  confidence: C
+
+concept:
+  name: Margin
+  label: Gross profit (gross margin)
+  class: measure                  # a derived monetary quantity, like Sales
+  identity:
+    kind: code
+  definition: >
+    GROSS PROFIT: net revenue minus cost of goods, per order line, converted to the reporting base
+    currency and summed — Quantity x (NetPrice - UnitCost) x ExchangeRate. Revenue is taken NET of
+    discount (consistent with Sales); cost is the per-unit cost of goods (UnitCost = COGS). Only cost of
+    goods is subtracted, so this is GROSS profit / gross margin — operating, logistics and overhead costs
+    are NOT in the data and NOT modelled. "Margin %" is this value over net sales, but the headline
+    measure is the currency amount.
+  semantics:
+    purpose: >
+      Answers "how profitable is X?" — by product, brand, category, store/country and period — using the
+      one agreed cost basis, so profitability is comparable and never silently mixes gross revenue with cost.
+    unit: currency (reporting base currency)
+    measure_type: mac.MeasureType.Flow
+    additivity: { time: additive, store: additive, product: additive }
+    axis_kinds:
+      time: mac.axis_kind.time
+      store: mac.axis_kind.categorical
+      product: mac.axis_kind.categorical
+    null_semantics: "Every line has NetPrice, UnitCost and ExchangeRate — there is no missing-cost case."
+
+derived_by_rule: gross_profit_base_currency     # → rules.yaml (the disclosed, correct gross-profit total)
+
+contract:
+  default_reading: >
+    "Profit"/"margin" with no qualifier means GROSS profit in the disclosed base currency: net revenue
+    (Quantity x NetPrice) minus cost of goods (Quantity x UnitCost), converted per line then summed.
+  resolution: "The base-currency gross-profit total is produced by rules.yaml > gross_profit_base_currency — reference it; do not re-derive."
+  rules:
+    - id: margin.gross_basis_disclosed
+      kind: mac.rule_kind.aggregation
+      when: "computing profit or margin"
+      then: "compute GROSS profit = SUM(Quantity x (NetPrice - UnitCost) x ExchangeRate) and disclose that only cost of goods (UnitCost) is subtracted"
+      never: "presenting gross profit as NET profit — operating, logistics and overhead costs are not in this data"
+      why: "the warehouse carries only UnitCost (COGS); a net-profit figure would require costs the data does not hold"
+      binds: [NetPrice, UnitCost, Quantity]
+    - id: margin.net_revenue_side
+      kind: mac.rule_kind.aggregation
+      when: "taking the revenue side of profit"
+      then: "use NET revenue (NetPrice, post-discount), consistent with Sales > net_sales_base_currency"
+      never: "subtracting cost from GROSS (list-price) revenue — that overstates profit by the discount volume"
+      why: "profit must net the same discount that Sales does, or the two measures disagree"
+      binds: [NetPrice, UnitPrice]
+    - id: margin.single_currency_basis
+      kind: mac.rule_kind.aggregation
+      when: "aggregating profit across rows that may span more than one CurrencyCode"
+      then: "convert each line's profit to the base currency via ExchangeRate BEFORE summing, and disclose the base currency"
+      never: "summing (NetPrice - UnitCost) across mixed currencies as if they were one unit"
+      why: "the fact table holds five currencies; a raw cross-currency sum adds incompatible units"
+      binds: [NetPrice, UnitCost, ExchangeRate, CurrencyCode]
+
+grounding:
+  sources:
+    - relation: sales
+      key: [OrderKey, LineNumber]
+      columns: [Quantity, NetPrice, UnitCost, ExchangeRate, CurrencyCode]
+  grain: "one sales order line"
+  note: "Gross profit per line = Quantity x (NetPrice - UnitCost) x ExchangeRate. UnitCost is the per-unit cost of goods."
+
+governance:
+  owner: demo-team
+  last_reviewed: 2026-07-19
+  change_log:
+    - { date: 2026-07-19, change: "EXTENSION (article 4): authored the Margin measure so profitability questions resolve. Turns the honest REFUSE of 'most profitable category' into a disclosed COMMIT — meaning that grows. The cost was always in the data (UnitCost); only the meaning was missing.", change_type: CREATION, by: demo-team }
