@@ -1,7 +1,19 @@
 # mac-ontology-contoso
 
-Public, neutral **demo warehouse** for the ontology / semantic-layer article series.
-Everything here is safe to screenshot and publish — no internal data, MIT-licensed source.
+Public, neutral **demo of meaning-as-code**: a warehouse, an ontology that resolves a
+*contested* metric over it, and a live `/ask` interpreter that turns plain-language
+questions into disclosed, executed answers. Everything here is safe to screenshot and
+publish — no internal data, MIT-licensed source.
+
+**Two ways in:**
+
+- **Just look** — open [`mockup/index.html`](mockup/index.html): a zero-setup replay of
+  the real `/ask` experience (no Python, no DuckDB, no key). See [`mockup/`](mockup/).
+- **Run it for real** — clone this repo, build the warehouse, and ask anything live.
+  Start at **[Setup](#setup)** → **[Ask it](#ask-it)**.
+
+The write-up that explains the ideas (the article series) lives in its own repo:
+**https://github.com/d6z7/meaning-as-code-articles**.
 
 ## Why this exists
 
@@ -68,11 +80,28 @@ Six concepts (Sales · Product · Brand · Currency · Store · Order) and the c
 sort into decision lanes: **COMMIT** (net, convert-then-sum), **ASK** (which currency?), **REFUSE**
 (no cross-currency sum; no header/detail double-count; 'Online' is not a market).
 
+## Ask it
+
+The `/ask` interpreter turns a natural-language question into SQL *against the ontology*
+and executes it on the warehouse — parsing the measure and dimension, routing to
+COMMIT / ASK / REFUSE, disclosing every assumption. It never guesses a number.
+
+    python3 ask_server.py          # http://localhost:8000  — ask anything in free text
+
+Full operating guide (LLM path via the `claude` CLI, offline rule-parser fallback,
+routing, safety): **[`docs/ask-setup.md`](docs/ask-setup.md)**.
+
+No setup? [`mockup/index.html`](mockup/index.html) replays real recorded runs of the
+above with zero dependencies — see [`mockup/`](mockup/).
+
 ## Layout
 
 - `setup.sh` — one-command local warehouse build
 - `validate.sh` — run the three MAC framework gates
 - `ontology/` — concepts, edges, derived-measure rules
+- `ask_server.py` — the live `/ask` interpreter (ontology → SQL → DuckDB)
+- `mockup/` — zero-setup static `/ask` demo (real recorded runs)
+- `docs/ask-setup.md` — how to set up and run the `/ask` system
 - `data/datasets/` — the seam: physical table descriptors the ontology binds to
 - `data/` (rest) — downloaded + extracted data (gitignored)
 - `contoso.duckdb` — the built warehouse (gitignored)
