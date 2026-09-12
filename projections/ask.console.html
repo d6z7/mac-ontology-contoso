@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contoso · Ask — meaning as code</title>
+<style>
+  :root{
+    --bg:#0a0c10; --panel:#12151c; --panel-alt:#161a23; --panel-raise:#1b202b;
+    --border:#242a35; --border-soft:#1b2029;
+    --text:#e7eaf1; --dim:#9aa3b4; --faint:#616a7a;
+    --accent:#5b8cff; --accent-dim:#5b8cff33;
+    --commit:#39d98a; --commit-soft:#39d98a1f; --commit-line:#39d98a55;
+    --ask:#ffb545; --ask-soft:#ffb5451f; --ask-line:#ffb54555;
+    --refuse:#ff6b81; --refuse-soft:#ff6b811f; --refuse-line:#ff6b8155;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--text);font-family:var(--sans);font-size:14px;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(1200px 600px at 15% -10%, #17233a55, transparent 60%),
+               radial-gradient(1000px 700px at 100% 0%, #1a1030aa, transparent 55%), var(--bg);}
+  ::selection{background:var(--accent-dim)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2a3140;border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+  .app{height:100vh;display:flex;flex-direction:column}
+
+  header.top{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:12px 22px;
+    border-bottom:1px solid var(--border-soft);background:linear-gradient(180deg,#0d1017ee,#0d1017cc);backdrop-filter:blur(6px);z-index:30}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#5b8cff,#8a5bff);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;box-shadow:0 4px 14px #5b8cff40;letter-spacing:.5px}
+  .brand .name{font-weight:650;font-size:14.5px}
+  .brand .name b{color:var(--accent);font-weight:650}
+  .brand .sub{font-size:11.5px;color:var(--faint);margin-top:1px}
+  .brand .titles{display:flex;flex-direction:column}
+  .top-actions{display:flex;align-items:center;gap:10px}
+  .session-count{font-size:11.5px;color:var(--dim);background:var(--panel-alt);border:1px solid var(--border);padding:5px 11px;border-radius:20px}
+  .btn{appearance:none;border:1px solid var(--border);background:var(--panel-alt);color:var(--dim);font-size:12.5px;
+    padding:7px 12px;border-radius:9px;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;transition:.15s}
+  .btn:hover{border-color:#3a4353;color:var(--text);background:var(--panel-raise)}
+  .btn.primary{background:linear-gradient(135deg,#5b8cff,#7a6bff);color:#fff;border:none}
+  .btn.primary:hover{filter:brightness(1.08)}
+
+  .stage{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+  .pinned-tray{flex:0 0 auto;display:flex;gap:8px;align-items:center;overflow-x:auto;padding:9px 24px;border-bottom:1px solid var(--border-soft);background:#0d101788}
+  .pinned-tray.empty{display:none}
+  .pinned-tray .label{font-size:11px;color:var(--faint);flex:0 0 auto;display:flex;align-items:center;gap:5px}
+  .pinned-chip{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--panel-alt);border:1px solid var(--border);
+    color:var(--dim);font-size:11.5px;padding:5px 11px;border-radius:20px;cursor:pointer;white-space:nowrap;transition:.15s}
+  .pinned-chip:hover{border-color:var(--ask);color:var(--text)}
+  .pinned-chip .pin{color:var(--ask)}
+
+  .compare-strip{flex:0 0 auto;margin:10px 24px 0;padding:10px 16px;border-radius:12px;background:var(--panel-alt);
+    border:1px solid var(--accent);display:flex;align-items:center;gap:16px;font-size:12.5px}
+  .compare-strip.empty{display:none}
+  .compare-strip .ttl{color:var(--accent);font-weight:650;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  .compare-item .q{color:var(--dim);font-size:11.5px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .compare-item .v{color:var(--text);font-weight:650;font-size:14px}
+  .compare-strip .spacer{flex:1}
+  .compare-close{background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px}
+
+  .transcript{flex:1 1 auto;overflow-y:auto;padding:24px 0 8px;scroll-behavior:smooth}
+  .transcript-inner{max-width:880px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:22px}
+
+  .entry{animation:rise .34s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .q-row{display:flex;justify-content:flex-end;margin-bottom:10px}
+  .q-bubble{max-width:78%;background:linear-gradient(135deg,#243149,#1b2436);border:1px solid #2c3852;color:var(--text);
+    padding:10px 16px;border-radius:16px 16px 4px 16px;font-size:14.5px;line-height:1.45}
+
+  .a-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .a-card.route-commit{border-color:var(--commit-line)}
+  .a-card.route-ask{border-color:var(--ask-line)}
+  .a-card.route-refuse{border-color:var(--refuse-line)}
+  .a-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-soft);background:var(--panel-alt)}
+  .badge{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:4px 10px;border-radius:20px}
+  .badge .dot{width:6px;height:6px;border-radius:50%}
+  .badge.commit{background:var(--commit-soft);color:var(--commit)} .badge.commit .dot{background:var(--commit)}
+  .badge.ask{background:var(--ask-soft);color:var(--ask)} .badge.ask .dot{background:var(--ask)}
+  .badge.refuse{background:var(--refuse-soft);color:var(--refuse)} .badge.refuse .dot{background:var(--refuse)}
+  .a-meta{font-size:11px;color:var(--faint);display:flex;align-items:center;gap:8px}
+  .a-meta .cached{color:#6fdcae}
+  .a-head .spacer{flex:1}
+
+  .trace{border-bottom:1px solid var(--border-soft)}
+  .trace-toggle{width:100%;display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--dim);cursor:pointer;padding:10px 14px;font-size:12px;font-family:var(--sans)}
+  .trace-toggle:hover{color:var(--text)}
+  .trace-toggle .chev{color:var(--faint);transition:transform .2s;display:inline-block;font-size:10px}
+  .trace.collapsed .trace-toggle .chev{transform:rotate(-90deg)}
+  .trace-toggle .lbl{font-weight:600}
+  .trace-toggle .count{color:var(--faint);font-weight:400}
+  .trace-body{padding:2px 14px 12px 30px}
+  .trace.collapsed .trace-body{display:none}
+  .trace-line{font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--dim);padding:2px 0;display:flex;gap:8px}
+  .trace-line .idx{color:var(--faint);flex:0 0 16px}
+  .trace-line .file{color:#7aa2f7}
+  .trace-line .arrow{color:var(--faint)}
+  .trace-line .res{color:#8fe3b3}
+  .trace-final{margin-top:6px;font-family:var(--mono);font-size:11.5px;color:var(--faint);font-style:italic}
+
+  .a-body{padding:14px 16px 16px}
+  .a-value{font-size:34px;font-weight:720;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
+  .route-commit .a-value{color:#eafff4}
+  .a-value .unit{font-size:14px;font-weight:500;color:var(--dim);margin-left:8px;letter-spacing:0}
+  .a-caption{color:var(--dim);font-size:13px;line-height:1.5;margin:8px 0 0;max-width:70ch}
+
+  .assumption{margin-top:14px;display:flex;gap:10px;background:var(--ask-soft);border:1px solid var(--ask-line);border-radius:10px;padding:10px 13px;font-size:12.5px;line-height:1.5;color:#ffe4b8}
+  .assumption b{color:var(--ask)} .assumption code{font-family:var(--mono);font-size:11.5px;background:#0d101755;border:1px solid var(--ask-line);border-radius:5px;padding:1px 5px;color:#ffd59a}
+  .assumption .warn{color:var(--ask);flex:0 0 auto}
+
+  table.rt{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+  table.rt th{text-align:left;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 10px 7px 0;border-bottom:1px solid var(--border)}
+  table.rt td{padding:8px 10px 8px 0;border-bottom:1px solid var(--border-soft);font-variant-numeric:tabular-nums}
+  table.rt tr:last-child td{border-bottom:0}
+  table.rt td:nth-child(2){text-align:right;color:var(--text)}
+  table.rt td:nth-child(3){text-align:right;width:90px}
+  .delta-up{color:var(--commit);font-size:12px} .delta-down{color:var(--refuse);font-size:12px}
+
+  .chart{margin-top:14px;display:none;flex-direction:column;gap:8px}
+  .chart.open{display:flex}
+  .chart .ctitle{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+  .bar-row{display:grid;grid-template-columns:130px 1fr 74px;align-items:center;gap:10px;font-size:12.5px}
+  .bar-label{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-track{height:9px;background:var(--panel-raise);border-radius:6px;overflow:hidden}
+  .bar-fill{height:100%;background:linear-gradient(90deg,#5b8cff,#39d98a);border-radius:6px}
+  .bar-val{text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+
+  .sqlwrap{margin-top:14px}
+  .sql-toggle{background:none;border:none;color:var(--faint);cursor:pointer;font-size:11.5px;font-family:var(--sans);padding:0;display:flex;align-items:center;gap:6px}
+  .sql-toggle:hover{color:var(--text)}
+  .sql-toggle .chev{font-size:9px;transition:transform .2s;display:inline-block}
+  .sqlwrap.open .sql-toggle .chev{transform:rotate(90deg)}
+  .sql-body{display:none;margin-top:8px}
+  .sqlwrap.open .sql-body{display:block}
+  .sql-body pre{margin:0;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--dim);background:#0d1017;border:1px solid var(--border);border-radius:10px;padding:12px 14px;overflow-x:auto;white-space:pre}
+  .sql-body .kw{color:#7aa2f7} .sql-body .fn{color:#c39bff} .sql-body .str{color:#8fe3b3}
+
+  .clarify-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .cchip{border:1px solid var(--border);background:var(--panel-alt);color:var(--dim);font-size:12.5px;padding:6px 13px;border-radius:20px;cursor:pointer;transition:.15s;font-family:var(--sans)}
+  .cchip:hover{border-color:var(--ask);color:var(--text);background:var(--ask-soft)}
+
+  .refuse-body{display:flex;gap:11px;align-items:flex-start;font-size:14px;line-height:1.55}
+  .refuse-body .ico{color:var(--refuse);flex:0 0 auto;font-size:16px;margin-top:1px}
+  .refuse-body b{color:var(--text)}
+
+  .actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .act{appearance:none;border:1px solid var(--border);background:none;color:var(--dim);font-size:12px;padding:6px 12px;border-radius:9px;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:6px;transition:.15s}
+  .act:hover{border-color:#3a4353;color:var(--text);background:var(--panel-alt)}
+  .act.on{border-color:var(--ask);color:var(--ask)}
+  .act.on.cmp{border-color:var(--accent);color:var(--accent)}
+
+  .input-dock{flex:0 0 auto;display:flex;justify-content:center;padding:16px 24px 12px}
+  .input-wrap{width:100%;max-width:760px;display:flex;flex-direction:column;gap:10px}
+  .try-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11.5px;color:var(--faint)}
+  .try-row .tchip{border:1px solid var(--border);background:var(--panel-alt);color:var(--dim);font-size:12px;padding:6px 12px;border-radius:20px;cursor:pointer;transition:.15s;font-family:var(--sans)}
+  .try-row .tchip:hover{border-color:var(--accent);color:var(--text);background:#5b8cff14}
+  .input-shell{display:flex;align-items:flex-end;gap:8px;background:var(--panel-raise);border:1px solid var(--border);border-radius:18px;padding:10px 10px 10px 18px;box-shadow:0 8px 30px #00000055;transition:.2s}
+  .input-shell:focus-within{border-color:var(--accent);box-shadow:0 8px 30px #00000055,0 0 0 3px #5b8cff22}
+  .input-shell textarea{flex:1;resize:none;border:none;outline:none;background:transparent;color:var(--text);font-family:var(--sans);font-size:14.5px;line-height:1.5;max-height:130px;padding:6px 0}
+  .input-shell textarea::placeholder{color:var(--faint)}
+  .send-btn{flex:0 0 auto;width:38px;height:38px;border-radius:12px;border:none;background:linear-gradient(135deg,#5b8cff,#7a6bff);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+  .send-btn:hover{filter:brightness(1.1)} .send-btn:active{transform:scale(.94)}
+  .input-hint{text-align:center;font-size:11px;color:var(--faint);padding-bottom:8px}
+  .input-hint b{color:var(--dim);font-weight:500}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">C</div>
+      <div class="titles">
+        <div class="name">Contoso · <b>Ask</b></div>
+        <div class="sub">catalog-sales context workspace — meaning as code</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="session-count" id="sessionCount"></span>
+      <button class="btn" id="reloadBtn">↻ Reload demo</button>
+      <button class="btn primary" id="newBtn">+ New session</button>
+    </div>
+  </header>
+  <div class="stage" id="stage">
+    <div class="pinned-tray empty" id="pinnedTray"></div>
+    <div class="compare-strip empty" id="compareStrip"></div>
+    <div class="transcript" id="transcript">
+      <div class="transcript-inner" id="transcriptInner"></div>
+    </div>
+    <div class="input-dock">
+      <div class="input-wrap">
+        <div class="try-row" id="tryRow"></div>
+        <div class="input-shell">
+          <textarea id="input" rows="1" placeholder="Ask about sales, brands, currency, gross vs net…"></textarea>
+          <button class="send-btn" id="sendBtn" title="Ask (Enter)">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M2 10l16-7-7 16-2-6-7-3z"/></svg>
+          </button>
+        </div>
+        <div class="input-hint"><b>Enter</b> to send · <b>Shift+Enter</b> for a new line · every value is executed against contoso.duckdb — ontology v0.1.9 · reviewed 2026-07-19</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const SEED = [{"id": "total-sales", "q": "What were our total sales?", "route": "commit", "time": "2026-07-19 · 09:12", "cached": false, "trace": [{"file": "ontology/query_rules.yaml", "res": "general rules + decision_policy slot index"}, {"file": "ontology/concepts/sales/sales.yaml", "res": "Sales measure; derived_by_rule net_sales_base_currency; net/currency/double-count rules"}, {"file": "ontology/rules.yaml", "res": "net_sales_base_currency — the SQL template"}, {"file": "ontology/concepts/finance/currency.yaml", "res": "the 5-member set + ExchangeRate factor"}], "final": "route_rules → slots [default, held] · worst-wins → COMMIT", "answer": {"kind": "value", "value": "$223.6M", "unit": "net · USD", "caption": "Net sales, all channels, each line converted to USD before summing — full available period (2016–2025).", "table": {"cols": ["Year", "Net sales (M USD)", ""], "rows": [["2025", "30,8", "<span class=\"delta-down\">▼ 6,5%</span>"], ["2024", "32,9", ""], ["2023", "45,5", ""]]}, "chart": {"title": "Net sales by year (M USD)", "bars": [{"label": "2025", "value": 30.8}, {"label": "2024", "value": 32.9}, {"label": "2023", "value": 45.5}]}, "assumption": "Assumed <b>net</b> (not gross) and base currency <b>USD</b>; each line converted before summing — all disclosed. Licensed by <code>sales.net_of_discount</code> · <code>sales.single_currency_basis</code>.", "sql": "<span class=\"kw\">SELECT</span> <span class=\"fn\">SUM</span>(Quantity * NetPrice * ExchangeRate) <span class=\"kw\">AS</span> net_usd <span class=\"kw\">FROM</span> sales"}}, {"id": "single-currency", "q": "Total sales in a single currency", "route": "ask", "time": "2026-07-19 · 09:14", "cached": false, "trace": [{"file": "ontology/query_rules.yaml", "res": "ambiguity.ask_dont_guess + the currency.basis slot"}, {"file": "ontology/concepts/finance/currency.yaml", "res": "the 5-member closed currency set — why it's ambiguous"}, {"file": "ontology/concepts/sales/sales.yaml", "res": "sales.ask_currency_when_ambiguous"}], "final": "route_rules → slots [ask, default] · worst-wins → ASK", "answer": {"kind": "ask", "prompt": "Which reporting currency?", "hint": "The rows span five currencies (USD, EUR, GBP, CAD, AUD) and none was named. I won't pick one silently — name it, or accept the disclosed base currency (USD).", "chips": ["USD", "EUR", "GBP", "CAD", "AUD"]}}, {"id": "by-salesperson", "q": "Sales by salesperson", "route": "refuse", "time": "2026-07-19 · 09:15", "cached": false, "trace": [{"file": "ontology/query_rules.yaml", "res": "capability.refuse_missing_dimension + the decision_policy slot index"}, {"file": "ontology/concepts/sales/sales.yaml", "res": "the dimensions Sales DOES carry"}, {"file": "ontology/edges.yaml", "res": "the real join set: product, store, currency, date, brand — no salesperson"}], "final": "route_rules → slots [blocked] · worst-wins → REFUSE", "answer": {"kind": "refuse", "head": "No salesperson dimension in the model.", "why": "It can slice by <b>brand, product, category, store/country, currency, date</b>. It will not fabricate a dimension the data doesn't carry."}}, {"id": "gross-sales", "q": "Total gross sales", "route": "commit", "library": true, "time": "2026-07-19 · 09:18", "cached": true, "trace": [{"file": "ontology/query_rules.yaml", "res": "measure.gross_vs_net slot · 'gross' explicitly asked"}, {"file": "ontology/rules.yaml", "res": "gross_sales_base_currency · SUM(Quantity × UnitPrice × ExchangeRate)"}, {"file": "ontology/concepts/sales/sales.yaml", "res": "sales.net_of_discount — gross reported only when explicitly asked"}], "final": "route_rules → gross explicit, converted, disclosed → COMMIT", "answer": {"kind": "value", "value": "$237.7M", "unit": "gross · USD", "caption": "Gross sales (list price, before discount), converted to USD. Net is $223.6M — the difference is discount.", "table": {"cols": ["Basis", "M USD", ""], "rows": [["Gross (UnitPrice)", "237,7", ""], ["Net (NetPrice)", "223,6", "<span class=\"delta-down\">▼ 5,9%</span>"]]}, "chart": {"title": "Gross vs net (M USD)", "bars": [{"label": "Gross", "value": 237.7}, {"label": "Net", "value": 223.6}]}, "assumption": "Reported <b>gross</b> because the question asked for it; otherwise \"sales\" means net. Licensed by <code>sales.net_of_discount</code>.", "sql": "<span class=\"kw\">SELECT</span> <span class=\"fn\">SUM</span>(Quantity * UnitPrice * ExchangeRate) <span class=\"kw\">AS</span> gross_usd <span class=\"kw\">FROM</span> sales"}}, {"id": "by-brand", "q": "Sales by brand", "route": "commit", "library": true, "time": "2026-07-19 · 09:20", "cached": true, "trace": [{"file": "ontology/concepts/catalog/brand.yaml", "res": "Brand → closed set (grounded on product.Brand)"}, {"file": "ontology/edges.yaml", "res": "sales.ProductKey → product · brand carried"}, {"file": "ontology/rules.yaml", "res": "net_sales_base_currency · grouped by brand"}], "final": "route_rules → dimension carried, converted → COMMIT", "answer": {"kind": "value", "value": "$223.6M", "unit": "net · USD", "caption": "Net sales by brand, converted to USD, full period — top 6 of 11 shown (Adventure Works leads at $50.0M).", "table": {"cols": ["Brand", "Net sales (M USD)", ""], "rows": [["Adventure Works", "50,0", ""], ["Contoso", "39,4", ""], ["Wide World Importers", "36,0", ""], ["The Phone Company", "32,4", ""], ["Fabrikam", "20,0", ""], ["Proseware", "18,8", ""]]}, "chart": {"title": "Net sales by brand (M USD)", "bars": [{"label": "Adventure Works", "value": 50.0}, {"label": "Contoso", "value": 39.4}, {"label": "Wide World Importers", "value": 36.0}, {"label": "The Phone Company", "value": 32.4}, {"label": "Fabrikam", "value": 20.0}, {"label": "Proseware", "value": 18.8}]}, "assumption": "Net, USD, full period — same defaults as the grand total, disclosed. Brand is a closed set grounded on <code>product.Brand</code>.", "sql": "<span class=\"kw\">SELECT</span> p.Brand, <span class=\"fn\">SUM</span>(s.Quantity * s.NetPrice * s.ExchangeRate) <span class=\"kw\">AS</span> net_usd <span class=\"kw\">FROM</span> sales s <span class=\"kw\">JOIN</span> product p <span class=\"kw\">ON</span> s.ProductKey = p.ProductKey <span class=\"kw\">GROUP BY</span> p.Brand <span class=\"kw\">ORDER BY</span> net_usd <span class=\"kw\">DESC</span>"}}];
+function esc(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+let entries = [];
+let uid = 0;
+const LIB = {}; SEED.forEach(e=>{ LIB[e.id]=e; });
+
+// ---------- new-question matcher (matches against the executed library) ----------
+function match(text){
+  const q = text.toLowerCase().trim();
+  if(!q) return null;
+  if(/(salesperson|sales person|sales rep|supplier|promotion|discount reason)/.test(q)) return clone('by-salesperson', text);
+  if(/gross/.test(q)) return clone('gross-sales', text);
+  if(/(by|per)\s+brand|brand(s)?\b/.test(q)) return clone('by-brand', text);
+  if(/(single|one|a)\s+currenc/.test(q) && !/(usd|eur|gbp|cad|aud)\b/.test(q)) return clone('single-currency', text);
+  if(/(total|net)?\s*sales|revenue|turnover/.test(q)) return clone('total-sales', text);
+  return unknown(text);
+}
+function clone(id, text){
+  const base = LIB[id]; if(!base) return unknown(text);
+  const e = JSON.parse(JSON.stringify(base));
+  e.uid = ++uid; e.q = text || base.q; e.cached=false; e.time='just now';
+  e.collapsed = e.route==='commit'; // commit collapses the walk by default; ask/refuse keep it open
+  return e;
+}
+function unknown(text){
+  return { uid:++uid, q:text, route:'ask', cached:false, time:'just now', collapsed:false,
+    trace:[{file:'ontology/query_rules.yaml', res:'no concept in this demo matched the question'}],
+    final:'route_rules → out of the demo’s executed scope → ASK',
+    answer:{ kind:'ask', prompt:'I can only answer what this small demo has executed.',
+      hint:'This is the public Contoso demo — try one of these, each backed by a real query.',
+      chips:['What were our total sales?','Total gross sales','Sales by brand','Total sales in a single currency','Sales by salesperson'] } };
+}
+// currency-clarify resolution: USD is executed; other currencies are honestly abstained (data carries the USD base only)
+function resolveCurrency(cur){
+  if(cur==='USD'){ const e=clone('total-sales','Total sales in USD'); e.answer.caption='Net sales in the disclosed base currency, USD — '+e.answer.caption.replace(/^Net sales, /,''); push(e); return; }
+  const e = { uid:++uid, q:'Total sales in '+cur, route:'refuse', cached:false, time:'just now', collapsed:false,
+    trace:[{file:'ontology/concepts/finance/currency.yaml', res:'each line carries its rate to the USD base only'},
+           {file:'ontology/query_rules.yaml', res:'resolve.never_fabricate — a USD→'+cur+' rate is not in the model'}],
+    final:'route_rules → target currency ungrounded → ABSTAIN (flag gap, don’t invent)',
+    answer:{ kind:'refuse', head:'A '+cur+' total isn’t grounded in this data.',
+      why:'The warehouse carries each line’s rate to the <b>USD</b> base, so USD is executable. A <b>'+cur+'</b> total needs a USD→'+cur+' rate that isn’t in the model — so it’s flagged as a data gap, not guessed.' } };
+  push(e);
+}
+
+// ---------- render ----------
+function traceHTML(e){
+  const lines = e.trace.map((t,i)=>`<div class="trace-line"><span class="idx">${i+1}</span><span class="file">${esc(t.file)}</span><span class="arrow">→</span><span class="res">${esc(t.res)}</span></div>`).join('');
+  return `<div class="trace ${e.collapsed?'collapsed':''}" data-uid="${e.uid}">
+    <button class="trace-toggle" onclick="toggleTrace(${e.uid})"><span class="chev">▶</span><span class="lbl">Reasoning</span><span class="count">— ${e.trace.length} steps, ontology walk</span></button>
+    <div class="trace-body">${lines}<div class="trace-final">${esc(e.final)}</div></div></div>`;
+}
+function answerHTML(e){
+  const a = e.answer;
+  if(a.kind==='ask'){
+    return `<div class="a-body"><div class="a-value" style="font-size:19px;color:var(--ask)">${esc(a.prompt)}</div>
+      <p class="a-caption">${a.hint}</p>
+      <div class="clarify-chips">${(a.chips||[]).map(c=>`<button class="cchip" onclick="onChip('${esc(c)}')">${esc(c)}</button>`).join('')}</div></div>`;
+  }
+  if(a.kind==='refuse'){
+    return `<div class="a-body"><div class="refuse-body"><span class="ico">⊘</span><div><b>${esc(a.head)}</b><br>${a.why}</div></div></div>`;
+  }
+  // value
+  const table = a.table ? `<table class="rt"><thead><tr>${a.table.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${a.table.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '';
+  const chart = a.chart ? (()=>{ const mx=Math.max(...a.chart.bars.map(b=>b.value))||1;
+    return `<div class="chart" data-uid="${e.uid}"><div class="ctitle">${esc(a.chart.title)}</div>${a.chart.bars.map(b=>`
+      <div class="bar-row"><span class="bar-label">${esc(b.label)}</span><span class="bar-track"><span class="bar-fill" style="width:${Math.max(3,b.value/mx*100).toFixed(1)}%"></span></span><span class="bar-val">${(''+b.value).replace('.',',')}</span></div>`).join('')}</div>`; })() : '';
+  const assumption = a.assumption ? `<div class="assumption"><span class="warn">⚠</span><div>${a.assumption}</div></div>` : '';
+  const sql = a.sql ? `<div class="sqlwrap" data-uid="${e.uid}"><button class="sql-toggle" onclick="toggleSql(${e.uid})"><span class="chev">▶</span> View generated SQL</button><div class="sql-body"><pre>${a.sql}</pre></div></div>` : '';
+  const chartBtn = a.chart ? `<button class="act" onclick="toggleChart(${e.uid})">▤ Chart</button>` : '';
+  return `<div class="a-body">
+    <div class="a-value">${esc(a.value)}<span class="unit">${esc(a.unit||'')}</span></div>
+    ${a.caption?`<p class="a-caption">${esc(a.caption)}</p>`:''}
+    ${assumption}${table}${chart}${sql}
+    <div class="actions">
+      <button class="act ${e.pinned?'on':''}" onclick="togglePin(${e.uid})">📌 ${e.pinned?'Pinned':'Pin'}</button>
+      <button class="act ${e.comparing?'on cmp':''}" onclick="toggleCompare(${e.uid})">⇄ Compare</button>
+      ${chartBtn}
+    </div></div>`;
+}
+function renderEntry(e){
+  const rb = {commit:'COMMIT',ask:'ASK',refuse:'REFUSE'}[e.route];
+  return `<div class="entry" data-uid="${e.uid}">
+    <div class="q-row"><div class="q-bubble">${esc(e.q)}</div></div>
+    <div class="a-card route-${e.route}">
+      <div class="a-head"><span class="badge ${e.route}"><span class="dot"></span>${rb}</span>
+        <span class="a-meta">${esc(e.time)} ${e.cached?'· <span class="cached">✓ cached</span>':'· executed'}</span><span class="spacer"></span></div>
+      ${traceHTML(e)}${answerHTML(e)}
+    </div></div>`;
+}
+function render(){
+  document.getElementById('sessionCount').textContent = entries.length + (entries.length===1?' question':' questions') + ' this session';
+  document.getElementById('transcriptInner').innerHTML = entries.map(renderEntry).join('');
+  // pinned tray
+  const pins = entries.filter(e=>e.pinned);
+  const tray = document.getElementById('pinnedTray');
+  tray.className = 'pinned-tray' + (pins.length?'':' empty');
+  tray.innerHTML = '<span class="label">📌 Pinned</span>' + pins.map(e=>`<button class="pinned-chip" onclick="scrollTo(${e.uid})"><span class="pin">📌</span>${esc(e.q)}${e.answer.value?' · '+esc(e.answer.value):''}</button>`).join('');
+  // compare strip
+  const cmp = entries.filter(e=>e.comparing);
+  const strip = document.getElementById('compareStrip');
+  strip.className = 'compare-strip' + (cmp.length?'':' empty');
+  if(cmp.length) strip.innerHTML = '<span class="ttl">Compare</span>' + cmp.map(e=>`<div class="compare-item"><div class="q">${esc(e.q)}</div><div class="v">${esc(e.answer.value||e.answer.head||'—')}</div></div>`).join('') + '<span class="spacer"></span><button class="compare-close" onclick="clearCompare()">✕</button>';
+}
+function push(e){ entries.push(e); render(); requestAnimationFrame(()=>{ const t=document.getElementById('transcript'); t.scrollTop=t.scrollHeight; }); }
+
+// ---------- interactions ----------
+function byUid(u){ return entries.find(e=>e.uid===u); }
+function toggleTrace(u){ const e=byUid(u); e.collapsed=!e.collapsed; render(); }
+function toggleSql(u){ document.querySelector(`.sqlwrap[data-uid="${u}"]`).classList.toggle('open'); }
+function toggleChart(u){ document.querySelector(`.chart[data-uid="${u}"]`).classList.toggle('open'); }
+function togglePin(u){ const e=byUid(u); e.pinned=!e.pinned; render(); }
+function toggleCompare(u){ const e=byUid(u); e.comparing=!e.comparing; render(); }
+function clearCompare(){ entries.forEach(e=>e.comparing=false); render(); }
+function scrollTo(u){ const el=document.querySelector(`.entry[data-uid="${u}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }
+function onChip(text){ if(['USD','EUR','GBP','CAD','AUD'].includes(text)) resolveCurrency(text); else submit(text); }
+function submit(text){ const e=match(text); if(e) push(e); }
+function ask(){ const ta=document.getElementById('input'); const v=ta.value.trim(); if(!v) return; ta.value=''; ta.style.height='auto'; submit(v); }
+
+function reset(seed){
+  entries = seed ? SEED.map((e,i)=>{ const c=JSON.parse(JSON.stringify(e)); c.uid=++uid; c.collapsed=(c.route==='commit'&&i>0); return c; }) : [];
+  render();
+  if(!seed){ const t=document.getElementById('transcript'); }
+}
+
+// wire up
+document.getElementById('sendBtn').onclick = ask;
+const ta = document.getElementById('input');
+ta.addEventListener('keydown', ev=>{ if(ev.key==='Enter' && !ev.shiftKey){ ev.preventDefault(); ask(); } });
+ta.addEventListener('input', ()=>{ ta.style.height='auto'; ta.style.height=Math.min(130,ta.scrollHeight)+'px'; });
+document.getElementById('reloadBtn').onclick = ()=>reset(true);
+document.getElementById('newBtn').onclick = ()=>{ reset(false); ta.focus(); };
+document.getElementById('tryRow').innerHTML = '<span>Try:</span>' +
+  ['Total gross sales','Sales by brand','Sales by salesperson'].map(q=>`<button class="tchip" onclick="submit('${q}')">${q}</button>`).join('');
+
+reset(true);
+</script>
+</body>
+</html>

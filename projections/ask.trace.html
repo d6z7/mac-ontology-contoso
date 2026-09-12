@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The /ask trace — how the answer was reached</title>
+<style>
+  :root{
+    --page:#f4f5f7; --card:#ffffff;
+    --ink:#101828; --muted:#5b6472; --faint:#98a2b3; --line:#e7e9ee;
+    --mean:#0e9384; --mean-ink:#0b7268; --mean-bg:#e6f7f4;
+    --commit:#15803d; --commit-bg:#eaf7ee; --commit-bd:#b7e2c5;
+    --ask:#b45309;    --ask-bg:#fdf3e7;    --ask-bd:#efd3a6;
+    --refuse:#b42318; --refuse-bg:#fef3f2; --refuse-bd:#f5c9c4;
+    --held:#3538cd;   --held-bg:#eef0ff;   --held-bd:#c9cdf6;
+    --na:#98a2b3;     --na-bg:#f2f4f7;     --na-bd:#e4e7ec;
+    --con:#f7f8fa; --con-bd:#e7e9ee;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){ :root{ --page:#0d1017; } }
+  :root[data-theme="dark"]{ --page:#0d1017; }
+  :root[data-theme="light"]{ --page:#f4f5f7; }
+
+  *{box-sizing:border-box} body{margin:0}
+  .frame{background:var(--page);min-height:100vh;padding:44px 20px 64px}
+  .wrap{max-width:1040px;margin:0 auto;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 12px}
+  h1{font-size:clamp(24px,4vw,34px);line-height:1.07;letter-spacing:-.02em;margin:0 0 12px;text-wrap:balance;font-weight:680}
+  .dek{font-size:clamp(14px,1.6vw,16.5px);line-height:1.55;color:var(--muted);max-width:70ch;margin:0 0 8px}
+  .dek b{color:var(--mean-ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:18px 0 26px;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .legend .pill{transform:translateY(-1px)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+    overflow:hidden;margin:0 0 22px}
+  .card--commit{border-top:3px solid var(--commit)}
+  .card--ask{border-top:3px solid var(--ask)}
+  .card--refuse{border-top:3px solid var(--refuse)}
+
+  .qbar{display:flex;align-items:baseline;gap:9px;padding:15px 22px 0}
+  .qbar .prompt{font-family:var(--mono);color:var(--mean);user-select:none}
+  .qtext{font-family:var(--mono);font-size:15px;letter-spacing:-.01em}
+
+  .ans{display:flex;align-items:baseline;gap:13px;flex-wrap:wrap;padding:11px 22px 0}
+  .lane{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:6px;line-height:1}
+  .lane--commit{background:var(--commit-bg);border:1px solid var(--commit-bd);color:var(--commit)}
+  .lane--ask{background:var(--ask-bg);border:1px solid var(--ask-bd);color:var(--ask)}
+  .lane--refuse{background:var(--refuse-bg);border:1px solid var(--refuse-bd);color:var(--refuse)}
+  .head{font-weight:660;letter-spacing:-.01em;font-size:17px}
+  .head--big{font-size:29px;color:var(--commit);font-weight:730;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .why{margin:11px 22px 0;font-size:13.5px;line-height:1.55;color:var(--muted);max-width:88ch}
+
+  .body{padding:6px 22px 22px}
+  .sec{padding:18px 0 4px;border-top:1px solid var(--line);margin-top:16px}
+  .sec:first-child{border-top:0;margin-top:14px}
+  .sec-k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:0 0 12px}
+  .sec-k em{font-style:normal;color:var(--na);text-transform:none;letter-spacing:0}
+
+  .walk{width:100%;border-collapse:collapse;font-size:13px}
+  .walk th{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);
+    text-align:left;font-weight:600;padding:0 12px 8px 0;border-bottom:1px solid var(--line)}
+  .walk td{padding:9px 12px 9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  .walk tr:last-child td{border-bottom:0}
+  .slot--na{opacity:.5}
+  .s-name{font-weight:560;white-space:nowrap}
+  .s-note{color:var(--muted);line-height:1.5;max-width:46ch}
+  .s-rule code{font-family:var(--mono);font-size:11.5px;color:var(--mean-ink);word-break:break-word}
+  .s-stat{white-space:nowrap}
+
+  .pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 7px;border-radius:5px;line-height:1;display:inline-block}
+  .pill--bound,.pill--default{background:var(--commit-bg);border:1px solid var(--commit-bd);color:var(--commit)}
+  .pill--held{background:var(--held-bg);border:1px solid var(--held-bd);color:var(--held)}
+  .pill--ask{background:var(--ask-bg);border:1px solid var(--ask-bd);color:var(--ask)}
+  .pill--blocked{background:var(--refuse-bg);border:1px solid var(--refuse-bd);color:var(--refuse)}
+  .pill--na{background:var(--na-bg);border:1px solid var(--na-bd);color:var(--na)}
+
+  .verdict{display:flex;align-items:center;gap:12px;margin-top:14px;padding:11px 15px;border-radius:10px;
+    font-family:var(--mono)}
+  .verdict--commit{background:var(--commit-bg);border:1px solid var(--commit-bd)}
+  .verdict--ask{background:var(--ask-bg);border:1px solid var(--ask-bd)}
+  .verdict--refuse{background:var(--refuse-bg);border:1px solid var(--refuse-bd)}
+  .verdict .vk{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+  .verdict .vv{font-size:14px;font-weight:700;letter-spacing:.04em;margin-left:auto}
+  .verdict--commit .vv{color:var(--commit)} .verdict--ask .vv{color:var(--ask)} .verdict--refuse .vv{color:var(--refuse)}
+
+  .dl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .dl li{display:flex;align-items:baseline;gap:10px;font-size:13.5px;line-height:1.5;flex-wrap:wrap}
+  .as-mark{color:var(--mean);font-weight:700;flex:none}
+  .de-mark{color:var(--refuse);font-weight:700;flex:none;font-size:12px}
+  .li-txt{color:var(--ink)}
+  .dl--de .li-txt{color:var(--muted)}
+  .li-rule{font-family:var(--mono);font-size:11px;color:var(--mean-ink);background:var(--con);
+    border:1px solid var(--con-bd);border-radius:5px;padding:2px 7px;margin-left:auto}
+
+  .trail{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .trail li{display:flex;gap:12px;align-items:baseline;font-size:13px;flex-wrap:wrap}
+  .tr-file{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--con);
+    border:1px solid var(--con-bd);border-radius:6px;padding:2px 8px;flex:none}
+  .tr-note{color:var(--muted);line-height:1.5}
+
+  .sql{display:flex;flex-direction:column;gap:8px}
+  .sql code{font-family:var(--mono);font-size:12.5px;color:var(--ink);background:var(--con);
+    border:1px solid var(--con-bd);border-radius:8px;padding:11px 13px;overflow-x:auto;white-space:pre}
+
+  .foot{font-family:var(--mono);font-size:11.5px;color:var(--faint);text-align:center;margin-top:28px;line-height:1.6}
+  .foot .note{display:block;color:var(--na);margin-top:4px;max-width:70ch;margin-left:auto;margin-right:auto}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="wrap">
+    <p class="eyebrow">Meaning as code — the /ask trace</p>
+    <h1>Not just the answer — how it got there.</h1>
+    <p class="dek">The same three questions, each answered with its <b>whole trace disclosed</b>: which files it read, how every open decision resolved and the rule that governed it, the assumptions it made, and the paths the rules made it reject. <b>Worst-wins</b> across the slots decides commit, ask, or refuse.</p>
+    <div class="legend">
+      <span><span class="pill pill--default">DEFAULT</span> resolved by a disclosed default</span>
+      <span><span class="pill pill--held">HELD</span> invariant held</span>
+      <span><span class="pill pill--ask">ASK</span> must clarify</span>
+      <span><span class="pill pill--blocked">BLOCKED</span> rule refuses</span>
+      <span><span class="pill pill--na">—</span> not engaged</span>
+    </div>
+
+    <section class="card card--commit">  <div class="qbar"><span class="prompt">ask&gt;</span><span class="qtext">what were our total sales?</span></div>  <div class="ans"><span class="lane lane--commit">COMMIT</span><span class="head head--big">$223.6M</span></div>  <p class="why">net of discount · each line converted to one base currency (USD) before summing · all channels · full available period.  Assumed: net not gross; base currency USD.</p>  <div class="body"><div class="sec"><div class="sec-k">route · decision-policy slot walk</div><table class="walk"><thead><tr><th>decision slot</th><th>resolution</th><th></th><th>governing rule</th></tr></thead><tbody><tr class="slot slot--default"><td class="s-name">reporting currency</td><td class="s-stat"><span class="pill pill--default">DEFAULT</span></td><td class="s-note">no currency named -&gt; convert each line to the base currency (USD) via its ExchangeRate BEFORE summing.</td><td class="s-rule"><code>sales.single_currency_basis</code></td></tr><tr class="slot slot--default"><td class="s-name">gross vs net</td><td class="s-stat"><span class="pill pill--default">DEFAULT</span></td><td class="s-note">unqualified 'sales' -&gt; NET (Quantity x NetPrice), not gross.</td><td class="s-rule"><code>sales.net_of_discount</code></td></tr><tr class="slot slot--default"><td class="s-name">time window</td><td class="s-stat"><span class="pill pill--default">DEFAULT</span></td><td class="s-note">no window named -&gt; the full available range 2016-05-18 to 2025-12-31, disclosed.</td><td class="s-rule"><code>measure.period_resolution</code></td></tr><tr class="slot slot--held"><td class="s-name">header/detail double-count</td><td class="s-stat"><span class="pill pill--held">HELD</span></td><td class="s-note">the query sums `sales` only, never `sales` + orders x orderrows — invariant holds.</td><td class="s-rule"><code>sales.no_double_count_header_detail</code></td></tr><tr class="slot slot--na"><td class="s-name">'Online' as a market</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>store.online_is_not_a_market</code></td></tr><tr class="slot slot--na"><td class="s-name">requested dimension carried?</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>capability.refuse_missing_dimension</code></td></tr></tbody></table><div class="verdict verdict--commit"><span class="vk">worst-wins verdict</span><span class="vv">COMMIT</span></div></div><div class="sec"><div class="sec-k">assumptions <em>· each licensed by a rule</em></div><ul class="dl dl--as"><li><span class="as-mark">·</span><span class="li-txt">net, not gross (Quantity x NetPrice)</span><code class="li-rule">sales.net_of_discount</code></li><li><span class="as-mark">·</span><span class="li-txt">base currency USD; each line converted before summing</span><code class="li-rule">sales.single_currency_basis</code></li><li><span class="as-mark">·</span><span class="li-txt">full available period 2016-05-18 to 2025-12-31</span><code class="li-rule">measure.period_resolution</code></li><li><span class="as-mark">·</span><span class="li-txt">all defaults disclosed in the answer</span><code class="li-rule">assumption.disclose_defaults</code></li></ul></div><div class="sec"><div class="sec-k">dead-ends <em>· paths the rules rejected</em></div><ul class="dl dl--de"><li><span class="de-mark">✗</span><span class="li-txt">SUM(NetPrice) across mixed CurrencyCode (raw, unconverted)</span><code class="li-rule">sales.single_currency_basis</code></li><li><span class="de-mark">✗</span><span class="li-txt">SUM(Quantity x UnitPrice) — gross, before discount</span><code class="li-rule">sales.net_of_discount</code></li><li><span class="de-mark">✗</span><span class="li-txt">Sum `sales` AND orders x orderrows together (doubles revenue)</span><code class="li-rule">sales.no_double_count_header_detail</code></li></ul></div><div class="sec"><div class="sec-k">deduction trail <em>· what it read</em></div><ul class="trail"><li><code class="tr-file">ontology/query_rules.yaml</code><span class="tr-note">general rules + decision_policy slot index</span></li><li><code class="tr-file">ontology/concepts/sales/sales.yaml</code><span class="tr-note">Sales measure; derived_by_rule net_sales_base_currency; net/currency/double-count rules</span></li><li><code class="tr-file">ontology/rules.yaml</code><span class="tr-note">net_sales_base_currency — the SQL template</span></li><li><code class="tr-file">ontology/concepts/finance/currency.yaml</code><span class="tr-note">the 5-member set + ExchangeRate factor</span></li></ul></div><div class="sec"><div class="sql"><span class="sec-k">sql</span><code>SELECT SUM(Quantity * NetPrice * ExchangeRate) AS value FROM sales</code></div></div></div></section>
+<section class="card card--ask">  <div class="qbar"><span class="prompt">ask&gt;</span><span class="qtext">total sales in a single currency</span></div>  <div class="ans"><span class="lane lane--ask">ASK</span><span class="head">Which reporting currency?</span></div>  <p class="why">The rows span 5 currencies (USD, EUR, GBP, CAD, AUD) and none was named. Name one, or I commit to the disclosed base currency (USD) as the default.</p>  <div class="body"><div class="sec"><div class="sec-k">route · decision-policy slot walk</div><table class="walk"><thead><tr><th>decision slot</th><th>resolution</th><th></th><th>governing rule</th></tr></thead><tbody><tr class="slot slot--ask"><td class="s-name">reporting currency</td><td class="s-stat"><span class="pill pill--ask">ASK</span></td><td class="s-note">a single reporting currency is asked for but none of the 5 (USD/EUR/GBP/CAD/AUD) is named -&gt; clarify, don't guess.</td><td class="s-rule"><code>sales.ask_currency_when_ambiguous</code></td></tr><tr class="slot slot--default"><td class="s-name">gross vs net</td><td class="s-stat"><span class="pill pill--default">DEFAULT</span></td><td class="s-note">NET (Quantity x NetPrice) — 'sales' unqualified.</td><td class="s-rule"><code>sales.net_of_discount</code></td></tr><tr class="slot slot--default"><td class="s-name">time window</td><td class="s-stat"><span class="pill pill--default">DEFAULT</span></td><td class="s-note">full available range 2016-2025, disclosed.</td><td class="s-rule"><code>measure.period_resolution</code></td></tr><tr class="slot slot--na"><td class="s-name">header/detail double-count</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>sales.no_double_count_header_detail</code></td></tr><tr class="slot slot--na"><td class="s-name">'Online' as a market</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>store.online_is_not_a_market</code></td></tr><tr class="slot slot--na"><td class="s-name">requested dimension carried?</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>capability.refuse_missing_dimension</code></td></tr></tbody></table><div class="verdict verdict--ask"><span class="vk">worst-wins verdict</span><span class="vv">ASK</span></div></div><div class="sec"><div class="sec-k">dead-ends <em>· paths the rules rejected</em></div><ul class="dl dl--de"><li><span class="de-mark">✗</span><span class="li-txt">Silently default to USD without disclosing it</span><code class="li-rule">ambiguity.ask_dont_guess</code></li><li><span class="de-mark">✗</span><span class="li-txt">SUM(NetPrice) across the five currencies as if comparable</span><code class="li-rule">sales.single_currency_basis</code></li></ul></div><div class="sec"><div class="sec-k">deduction trail <em>· what it read</em></div><ul class="trail"><li><code class="tr-file">ontology/query_rules.yaml</code><span class="tr-note">ambiguity.ask_dont_guess + the currency.basis slot</span></li><li><code class="tr-file">ontology/concepts/finance/currency.yaml</code><span class="tr-note">the 5-member closed currency set — why it's ambiguous</span></li><li><code class="tr-file">ontology/concepts/sales/sales.yaml</code><span class="tr-note">sales.ask_currency_when_ambiguous</span></li></ul></div></div></section>
+<section class="card card--refuse">  <div class="qbar"><span class="prompt">ask&gt;</span><span class="qtext">sales by salesperson</span></div>  <div class="ans"><span class="lane lane--refuse">REFUSE</span><span class="head">No salesperson dimension in the model.</span></div>  <p class="why">It can slice by: brand, product, category, store/country, currency, date. It will not fabricate a dimension the data doesn't carry.</p>  <div class="body"><div class="sec"><div class="sec-k">route · decision-policy slot walk</div><table class="walk"><thead><tr><th>decision slot</th><th>resolution</th><th></th><th>governing rule</th></tr></thead><tbody><tr class="slot slot--na"><td class="s-name">reporting currency</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>sales.single_currency_basis</code></td></tr><tr class="slot slot--na"><td class="s-name">gross vs net</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>sales.net_of_discount</code></td></tr><tr class="slot slot--na"><td class="s-name">time window</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>measure.period_resolution</code></td></tr><tr class="slot slot--na"><td class="s-name">header/detail double-count</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>sales.no_double_count_header_detail</code></td></tr><tr class="slot slot--na"><td class="s-name">'Online' as a market</td><td class="s-stat"><span class="pill pill--na">—</span></td><td class="s-note">not engaged by this question.</td><td class="s-rule"><code>store.online_is_not_a_market</code></td></tr><tr class="slot slot--blocked"><td class="s-name">requested dimension carried?</td><td class="s-stat"><span class="pill pill--blocked">BLOCKED</span></td><td class="s-note">'salesperson' is not a dimension the model carries -&gt; REFUSE.</td><td class="s-rule"><code>capability.refuse_missing_dimension</code></td></tr></tbody></table><div class="verdict verdict--refuse"><span class="vk">worst-wins verdict</span><span class="vv">REFUSE</span></div></div><div class="sec"><div class="sec-k">dead-ends <em>· paths the rules rejected</em></div><ul class="dl dl--de"><li><span class="de-mark">✗</span><span class="li-txt">Approximate 'salesperson' with StoreKey or a nearby column</span><code class="li-rule">capability.refuse_missing_dimension</code></li><li><span class="de-mark">✗</span><span class="li-txt">Fabricate the dimension from generic priors</span><code class="li-rule">resolve.never_fabricate</code></li></ul></div><div class="sec"><div class="sec-k">deduction trail <em>· what it read</em></div><ul class="trail"><li><code class="tr-file">ontology/query_rules.yaml</code><span class="tr-note">capability.refuse_missing_dimension + the decision_policy slot index</span></li><li><code class="tr-file">ontology/concepts/sales/sales.yaml</code><span class="tr-note">the dimensions Sales DOES carry</span></li><li><code class="tr-file">ontology/edges.yaml</code><span class="tr-note">the real join set: product, store, currency, date, brand — no salesperson</span></li></ul></div></div></section>
+
+    <p class="foot">engine duckdb · interpreter offline (pattern) · ontology v0.1.9 · reviewed 2026-07-19 · 3 questions · 6 slots each
+      <span class="note">Public Contoso (SQLBI, MIT) on DuckDB. Every rule id above resolves to a file in this ontology; nothing here is hand-written prose — it is generated from the model.</span>
+    </p>
+  </div>
+</div>
+</body>
+</html>
