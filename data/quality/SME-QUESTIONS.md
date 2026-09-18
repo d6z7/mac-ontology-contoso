@@ -1,24 +1,26 @@
 ---
 type: Doc
 title: SME questions — data & data quality
-description: 4 sign-offs + 14 proposed changes awaiting SME
+description: 6 sign-offs + 14 proposed changes awaiting SME
 tags:
 - CONTOSO
 - sme-questions
 ---
 
-The open **SME sign-offs** the data + data-quality work surfaces — 4 from the quality register plus proposed transform changes awaiting ratification. Prioritised by severity; each links to the finding it unblocks. This list is projected from the register + transforms, so it stays in sync.
+The open **SME sign-offs** the data + data-quality work surfaces — 6 from the quality register plus proposed transform changes awaiting ratification. Prioritised by severity; each links to the finding it unblocks. This list is projected from the register + transforms, so it stays in sync.
 
-## Medium priority — 1 question(s)
+## Medium priority — 2 question(s)
 
 | ask | owner | on (finding) | status | table |
 |---|---|---|---|---|
+| NAMED 2026-09-18, and they have already ruled on WHAT is served (age, banded to 5 years). What is still theirs to ratify is narrow | operator | [`customer.Age` is a derived attribute frozen five years ](DQ-CUSTOMER-01.md) | ◐ partial | customer |
 | it is their warehouse file and their console mount; no modelling ruling is involved. | The operator of this c | [15 leftover views in the warehouse, measured, neither tr](NS-SERVING-01.md) | unreconciled | — |
 
-## Low priority — 3 question(s)
+## Low priority — 4 question(s)
 
 | ask | owner | on (finding) | status | table |
 |---|---|---|---|---|
+| NAMED 2026-09-18. What they must ratify is not the arithmetic, which is measured and reproducible from queries/p1_source_profiling | operator | [the served customer row is a quasi-identifier — ZipCode ](DQ-CUSTOMER-02.md) | ⚠ open gap | customer |
 | NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE rather than a personal name because this bundle i | operator | [`sales` measured, deliberately not served — it is the se](NS-ORDERS-01.md) | ✓ resolved | sales |
 | NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE rather than a personal name because this bundle i | operator | [the order header measured, deliberately not served as a ](NS-ORDERS-02.md) | unreconciled | orders |
 | NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE rather than a personal name because this bundle i | operator | [12 of the 24 customer columns measured, deliberately not](NS-CUSTOMER-01.md) | unreconciled | customer |

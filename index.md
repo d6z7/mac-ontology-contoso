@@ -3,9 +3,9 @@ type: Index
 title: CONTOSO data plane
 ---
 
-8 sources · 4 quality issues · 6 transforms · 6 clean datasets
+8 sources · 6 quality issues · 6 transforms · 6 clean datasets
 
-**Resolution scoreboard** — how the recorded impurities are dissolved by the gold transforms: **1 ✓ resolved · 0 ◐ partial · 0 ⚠ open gap**.
+**Resolution scoreboard** — how the recorded impurities are dissolved by the gold transforms: **1 ✓ resolved · 1 ◐ partial · 1 ⚠ open gap**.
 
 📋 **[Issues & inconsistencies — the full overview](quality/0-issues-overview.md)**
 
@@ -22,7 +22,9 @@ title: CONTOSO data plane
 - [store](sources/store.md)
 
 ## Data quality (by severity → resolution)
+- **medium** [`customer.Age` is a derived attribute frozen five years before the facts it would describe](quality/DQ-CUSTOMER-01.md) — ◐ partial
 - **medium** [15 leftover views in the warehouse, measured, neither treated as sources nor served](quality/NS-SERVING-01.md)
+- **low** [the served customer row is a quasi-identifier — ZipCode alone singles out 29 193 of 104 990 customers, and the age band nearly doubles that](quality/DQ-CUSTOMER-02.md) — ⚠ open gap
 - **low** [`sales` measured, deliberately not served — it is the served order line delivered a second time](quality/NS-ORDERS-01.md) — ✓ resolved
 - **low** [the order header measured, deliberately not served as a relation of its own](quality/NS-ORDERS-02.md)
 - **low** [12 of the 24 customer columns measured, deliberately not served](quality/NS-CUSTOMER-01.md)

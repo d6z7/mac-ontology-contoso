@@ -27,13 +27,13 @@ How many of each served view's columns descend from an upstream column. Computed
 | dataset | covered | of | coverage | |
 |---|---|---|---|---|
 | `dim_contoso_calendar_day` | 17 | 17 | 100% | 🟢 |
-| `dim_contoso_customer` | 12 | 12 | 100% | 🟢 |
+| `dim_contoso_customer` | 13 | 13 | 100% | 🟢 |
 | `dim_contoso_product` | 14 | 14 | 100% | 🟢 |
 | `dim_contoso_store` | 11 | 11 | 100% | 🟢 |
 | `v_contoso_fx_rate_day` | 4 | 4 | 100% | 🟢 |
 | `v_contoso_order_line` | 12 | 12 | 100% | 🟢 |
 
-**Overall — 70/70 columns (100%) trace to an upstream column.**
+**Overall — 71/71 columns (100%) trace to an upstream column.**
 
 ## Change protocol — autodiscovery vs manual
 

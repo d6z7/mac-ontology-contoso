@@ -13,7 +13,7 @@ tags:
 - resolution:resolved
 ---
 
-`NS-ORDERS-01` · severity **low** · confidence **I** · resolution **✓ resolved**
+`NS-ORDERS-01` · severity **low** · confidence **I** · resolution **✓ resolved** · disposition **accepted · ruled by operator**
 
 ## Finding
 Measured 2026-09-18. `main.sales` (223 974 rows, 13 columns) carries the same line population as `main.orderrows` at the same cell key: (OrderKey, LineNumber) EXCEPT (OrderKey, RowNumber) returns 0 rows in both directions (P2 G3, S4), so LineNumber and RowNumber are the same values. Joined line-for-line to `orderrows` x `orders`, it differs on NOTHING: 223 974 matched lines and 0 differences across ProductKey, Quantity, UnitPrice, NetPrice, UnitCost, CustomerKey, StoreKey, OrderDate, DeliveryDate and CurrencyCode (S5; P1 R1-R3 measured the same over the same denominator). It carries exactly one column the header/detail pair does not — ExchangeRate — and that column reproduces the currencyexchange USD->CurrencyCode quote for the row's day on 223 974/223 974 rows, 0 missing quotes, 0 differences (P1 R4).
@@ -33,6 +33,12 @@ REVERSED IF: a reload makes the agreement non-zero, i.e. sales and the pair stop
 ## Sign-off required
 operator — NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE rather than a personal name because this bundle is a public example; there is exactly one operator on this estate, so the role identifies them, and the vocabulary asks for "the named person or role — never 'the team', never a tool". The delivery contract's owner is the operator, and they have ruled on this entry — see decisions/0001.
 
+
+## Disposition
+
+**accepted** — ruled by **operator**.
+
+The delivery ships the order line twice and always will; this bundle serves one of them and describes the other. Ruled 2026-09-18 by the operator, who is this source's owner: the header/detail pair (orders x orderrows at OrderKey, RowNumber) is the order line's FACT OF RECORD and `main.sales` is measured, described and not served — settling run record Q8, which the promotion step correctly declined to settle on its own. Nothing is lost by the choice: `sales` is exactly reconstructible from orders x orderrows x currencyexchange, measured twice independently at 0 differences either way across all 13 columns. What is tolerated rather than fixed is the upstream redundancy itself. Evidence, reversal conditions and the two snapshot-dependencies this rests on: decisions/0001-order-line-fact-of-record.md.
 
 ## Resolution
 
