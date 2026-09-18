@@ -1,0 +1,82 @@
+metadata:
+  table: dim_contoso_store
+  source: Contoso Data Generator V2 (SQLBI, MIT) — parquet, loaded by setup.sh
+  schema_version: 0.1.14
+  status: draft
+  kind: served_dataset
+  served_kind: dimension
+  observed: '2026-09-18'
+  confidence: I
+  generated_by: p3_datasets.py (P3 · dataset-promotion)
+  notes: 'SERVED RELATION. The sentinel row (StoreKey 999999, StoreCode -1, GeoAreaKey -1, CountryCode
+    ''--'', CountryName/State ''Online'') IS served: 38 968/93 470 orders and 93 550/223 974 lines point
+    at it (S18), so dropping it would silently remove 41.8 % of the fact. It is a data-quality item (P10),
+    not a promotion filter.'
+table:
+  name: dim_contoso_store
+  schema: contoso_served
+  type: view
+  description: 'One row per store version (StoreKey; 74 rows / 74 distinct / 0 duplicates, P2). This is
+    an SCD-2 delivery: 67 store codes over 74 rows, 6 codes carrying more than one version and one carrying
+    three, with non-overlapping OpenDate/CloseDate windows (P2 G6/G6b). The fact carries StoreKey, so
+    a line joins the version it was placed against. WHAT ''A STORE'' IS — 74 versions or 67 codes — is
+    an open ruling (RUN.md Q9); this descriptor serves the finer grain and leaves the collapse to the
+    ontology. Geography stops at country here: the relation has no continent column (S10), so a store
+    -> continent roll-up is NOT servable from this relation.'
+  confidence: I
+columns:
+- name: StoreKey
+  type: integer
+  role: primary_key
+  confidence: I
+- name: StoreCode
+  type: integer
+  role: value
+  confidence: I
+  notes: the store's natural code; NOT unique (67 codes over 74 rows). (StoreCode, OpenDate) is measured
+    unique (74/74) — the natural temporal key of the SCD-2 (P2 G6).
+- name: GeoAreaKey
+  type: integer
+  role: value
+  confidence: I
+  notes: no geography relation exists in this delivery to join it to (P1 O9); it behaves as a state/region
+    key (1:1 with State, measured P2).
+- name: CountryCode
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: 9 measured values, one of which is the sentinel '--' on the 'Online' row.
+- name: CountryName
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: '9 measured values, one of which is ''Online'' — a channel sitting in a country column (RUN.md
+    Q7). Not corrected here: correcting it would invent a market for 41.8 % of the fact.'
+- name: State
+  type: varchar
+  role: discriminator
+  confidence: I
+- name: Description
+  type: varchar
+  role: value
+  confidence: I
+- name: OpenDate
+  type: timestamp
+  role: value
+  confidence: I
+- name: CloseDate
+  type: timestamp
+  role: value
+  confidence: I
+  notes: 'null on 58/74 rows (P1 #5).'
+- name: SquareMeters
+  type: integer
+  role: value
+  confidence: I
+  notes: null on 1/74 rows (the sentinel).
+- name: Status
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: 'CLEANSED: the landing spells missing two ways, '''' on 58 rows and NULL on 1 (P1 #5); the served
+    column uses NULL for both. Whether '''' meant ''operating'' is an open ruling (Q7).'

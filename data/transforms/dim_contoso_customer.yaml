@@ -1,0 +1,141 @@
+# data/transforms/dim_contoso_customer.yaml — the customer dimension's transform descriptor.
+#
+# The executable body is the sibling .sql. Every number was measured read-only over contoso.duckdb by
+# scratchpad/ingest/p4_transforms.py and is written out with its query and answer in
+# queries/p4_transformation_authoring.sql.
+#
+# ONE DEFECT HERE WAS MEASURED IN THIS STEP, not in P1: a padded region label. P1's 39-query anomaly
+# pass did not sweep for whitespace, and P4's sweep over all 33 served text columns found it in exactly
+# two (T9/T10) — which is why the sweep is in the query log with its denominator.
+
+metadata:
+  pipeline: dim_contoso_customer
+  source: contoso
+  layer: data-transformation
+  schema_version: '0.1.14'
+  status: draft
+  confidence: I
+  observed: '2026-09-18'
+  generated_by: scratchpad/ingest/p4_transforms.py wrote the .sql; this descriptor is hand-authored
+  notes: >
+    AUTHORED, NOT DEPLOYED (connection.yaml declares read_only: true): the SELECT body was executed
+    read-only — 12 columns in the order and types the dataset descriptor declares (T1d), 104 990 rows /
+    104 990 distinct CustomerKey / 0 duplicates (T2d). Both rules are status `authored`.
+    A COLUMN PROJECTION, not a filter: 12 of the landing's 24 columns are served (register
+    NS-CUSTOMER-01) and every one of the 104 990 rows survives.
+
+produces:
+  relation: contoso_served.dim_contoso_customer
+  sql_file: data/transforms/dim_contoso_customer.sql
+  grain: "one row per CustomerKey — one customer, with one validity window"
+
+inputs:
+  - relation: main.customer
+    kind: raw_source
+    role: customer_master
+    descriptor: data/sources/customer.yaml
+    note: >
+      10 of the 12 served columns are carried unchanged and the projector reads them as passthrough
+      edges from the descriptor: CustomerKey, GeoAreaKey, StartDT, EndDT, Continent, CountryFull,
+      Country, City, ZipCode, Gender. The 12 landing columns that are NOT served (Title, GivenName,
+      MiddleInitial, Surname, StreetAddress, Birthday, Age, Occupation, Company, Vehicle, Latitude,
+      Longitude) are registered as NS-CUSTOMER-01 and appear in no `consumes` map — a column that is
+      not projected must not be given an edge onto a served column that does not exist.
+    consumes:
+      StateFull: trim-padded-region-label
+      State: trim-padded-region-label
+
+transforms:
+  - id: trim-padded-region-label
+    impurity_class: padded_label
+    raw_defect: >
+      4 of 104 990 rows carry a trailing space in StateFull and the same 4 in State — 'Birmingham ' on 3
+      rows and 'Bradford ' on 1 — and the trimmed form of each already exists as its own value
+      ('Birmingham' 38 rows, 'Bradford' 35). The landing therefore spells two regions two ways: 565
+      State spellings fold to 563 and 610 StateFull spellings to 608 (T13a). It reaches the fact: 13
+      order lines belong to those customers (T13c), so the question scope's 'by region' axis would
+      report Birmingham twice.
+    rule: >
+      Trim both region label columns. The fold is safe to make here because it merges spellings of ONE
+      region rather than two regions: the padded rows carry the identical GeoAreaKey, Country and
+      Continent as their unpadded twins (Birmingham 93/GB/Europe, Bradford 102/GB/Europe — T13b).
+    sql: 'trim(c."StateFull") AS StateFull, trim(c."State") AS State'
+    establishes_guarantee: >
+      One spelling per region label: 608 StateFull and 563 State values served, 104 990 rows in and
+      104 990 out, and the functional dependence P2 measured (StateFull -> State, GeoAreaKey, Country,
+      Continent) still holds with 0 violations after the trim, exactly as it did before (T13c). A
+      GROUP BY on either column cannot split a region into a padded and an unpadded group.
+    status: authored
+
+  - id: exclude-stale-derived-age
+    impurity_class: stale_derived_attribute
+    raw_defect: >
+      Age is as-of 2020/2021, not as-of now: year(Birthday) + Age is 2020 or 2021 on every one of the
+      104 990 rows (2 distinct as-of years, min 2020, max 2021) while orders run to 2025 (T11e; P1 #8).
+      A consumer filtering on it would be answering a question about a year nobody asked about.
+    rule: >
+      The column is not projected. The fix is an ABSENCE — which is why this rule quotes no SQL
+      fragment and appears in no `consumes` map: there is no served column for it to resolve onto. It is
+      visible in the .sql as the 12-column projection list, and the refusal is registered with the other
+      11 unserved columns as NS-CUSTOMER-01.
+    establishes_guarantee: >
+      No age-based figure can be computed from the served plane at all, so none can be silently five
+      years stale. If age is needed, it must be derived from a birth date as-of a stated date — which
+      requires promoting Birthday deliberately (a promotion decision, not a transform's).
+    status: authored
+    note: >
+      Recorded as a rule rather than an open item because the defect IS handled — by refusal, which is
+      the transform's shape here. The 11 other unserved columns are a scope decision, not defects, and
+      are not restated as rules.
+
+open_transforms:
+  - id: zero-length-validity-window
+    impurity_class: degenerate_interval
+    raw_defect: >
+      1 of 104 990 customers has StartDT = EndDT — a validity window of zero length (T11e; P1 #8b).
+      Every other customer has exactly one row and no person repeats (P2 G7), so this is not a
+      restatement artifact.
+    proposed_rule: >
+      NONE. 'Never valid', 'valid for one instant' and 'a data entry error' imply different SQL (drop
+      the row, keep it, or correct a date), and nothing in the data distinguishes them. Dropping one
+      customer to make a window look sensible would be a silent deletion of a real key.
+    needs_ruling: "What does a zero-length validity window mean in this delivery? (RUN.md Q12)"
+    status: PROPOSED
+
+  - id: dimension-over-covers-the-fact
+    impurity_class: over_coverage
+    raw_defect: >
+      52 801 of the 104 990 served customers never appear on an order (T14; P1 O10) — the dimension
+      over-covers its fact by half.
+    proposed_rule: >
+      NONE — DO NOT FILTER. A dimension legitimately over-covers its fact; trimming it would make
+      'customers who never bought' unanswerable and would change the served row count on every reload.
+      Carried as a DISCLOSURE so the number is visible where the transform is read.
+    needs_ruling: "None required — disclosed, not a defect. Recorded so the non-action is deliberate."
+    status: PROPOSED
+
+  - id: geoareakey-resolves-to-nothing
+    impurity_class: orphan_key
+    raw_defect: >
+      GeoAreaKey is shaped like a foreign key and has no referent: 608 distinct values here, 67 in
+      store, 4 store values absent from this relation, and 0 relations in the warehouse whose name
+      contains 'geo' (T11d; P1 O9).
+    proposed_rule: >
+      NONE — there is nothing to resolve it against. The geography a question can actually use is the
+      Continent/Country/State/City columns served on this row; GeoAreaKey is served because it was
+      measured to determine them (P2), not because it can be joined.
+    needs_ruling: "Is a geography dimension expected in this delivery and absent? (RUN.md Q7)"
+    status: PROPOSED
+
+governance:
+  owner: >
+    UNNAMED — no owner is declared for any relation of this source (RUN.md Q5). Machine-authored and
+    unratified.
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >
+        Created the customer transform: the padded region label trim (a defect measured in this step),
+        the 12-column projection that excludes the stale Age, and two open items.
+      change_type: CREATION
+      by: P4 transformation-authoring (machine-authored, unratified)

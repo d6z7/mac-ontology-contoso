@@ -1,0 +1,36 @@
+-- data/transforms/dim_contoso_calendar_day.sql — realizes data/transforms/dim_contoso_calendar_day.yaml.
+-- The served relation contoso_served.dim_contoso_calendar_day: one statement, one served relation.
+-- AUTHORED, NOT DEPLOYED: connection.yaml declares read_only: true, so this view does
+-- not exist in the warehouse yet and every rule's status in the descriptor is
+-- `authored`. The SELECT body below was executed read-only and is recorded with its
+-- answers in queries/p4_transformation_authoring.sql (T1/T2).
+-- PRECONDITION: the schema contoso_served must exist and must not hold the 15 leftover views
+-- of the deleted run (RUN.md Q2/Q15, register NS-SERVING-01).
+-- INPUTS   main.date
+-- BAKES OUT  nothing. This is a declared PASSTHROUGH: 17 columns, 4 018 rows, no rule applied.
+--   The transform exists so that the next upstream schema change is visible instead of fatal.
+-- CARRIES UNFIXED: DateKey is a varchar YYYYMMDD, WorkingDay is an integer used as a boolean,
+--   every 'date' is a timestamp at midnight, and the calendar covers 359 days beyond the last
+--   fact. Retyping a served column would contradict the type the dataset descriptor declares
+--   (that is a promotion decision, not a transform's), and the calendar must not be trimmed to
+--   the fact's span — a calendar exists to carry days nothing happened on.
+-- GRAIN    one row per Date — 4 018 rows / 4 018 distinct / 0 duplicates (T2e).
+CREATE OR REPLACE VIEW contoso_served.dim_contoso_calendar_day AS
+SELECT d."Date",
+       d."DateKey",
+       d."Year",
+       d."YearQuarter",
+       d."YearQuarterNumber",
+       d."Quarter",
+       d."YearMonth",
+       d."YearMonthShort",
+       d."YearMonthNumber",
+       d."Month",
+       d."MonthShort",
+       d."MonthNumber",
+       d."DayofWeek",
+       d."DayofWeekShort",
+       d."DayofWeekNumber",
+       d."WorkingDay",
+       d."WorkingDayNumber"
+FROM main.date d;

@@ -1,0 +1,86 @@
+{
+  "stats": {
+    "total": 4,
+    "resolved": 1,
+    "partial": 0,
+    "gap": 0,
+    "unreconciled": 3,
+    "by_severity": {
+      "high": 0,
+      "medium": 1,
+      "low": 3
+    }
+  },
+  "findings": [
+    {
+      "id": "NS-SERVING-01",
+      "title": "15 leftover views in the warehouse, measured, neither treated as sources nor served",
+      "severity": "medium",
+      "confidence": "I",
+      "table": null,
+      "table_inferred": false,
+      "impurity_class": null,
+      "coverage": "unreconciled",
+      "resolving_transforms": [],
+      "guarantee": null,
+      "evidence": null,
+      "finding": "Measured 2026-09-18 from information_schema: the warehouse holds 8 BASE TABLEs in `main` (what setup.sh builds from data/*.parquet) plus 15 VIEWs left by a deleted run \u2014 8 in `contoso_raw` and 7 in `contoso_served` (S20). The 8 `contoso_raw` views were measured row-for-row and column-for-column identical to the `main` base tables before being set aside (P1). The 7 `contoso_served` views were deliberately NOT read: their names and renamed columns ARE the deleted run's modelling decisions, and reading them would smuggle a deleted result into this one. None of them carries a name this promotion coins (0 collisions over the 6 served names, S21).\n",
+      "current_handling": "NOT treated as sources (no raw descriptor, no profile) and NOT served. This bundle's own serving schema is declared in connection.yaml#view_schema as `contoso_served`, so the 6 relations promoted here will be created alongside those 7 leftovers unless they are dropped first.\n",
+      "residual_risk": "A reader of `contoso_served` would see 7 relations from a deleted run beside 6 from this one and could not tell which is a result. DROP cannot be done from here: the declared connection is read-only and dropping is destructive. REVERSED/CLOSED WHEN: the operator drops `contoso_raw` and `contoso_served` before the transform step materialises (run record Q2, Q15), or rules that a different serving schema should be declared instead.\n",
+      "sme_owner": "The operator of this checkout \u2014 it is their warehouse file and their console mount; no modelling ruling is involved.\n"
+    },
+    {
+      "id": "NS-ORDERS-01",
+      "title": "`sales` measured, deliberately not served \u2014 it is the served order line delivered a second time",
+      "severity": "low",
+      "confidence": "I",
+      "table": "sales",
+      "table_inferred": true,
+      "impurity_class": null,
+      "coverage": "resolved",
+      "resolving_transforms": [
+        "v_contoso_order_line"
+      ],
+      "guarantee": null,
+      "evidence": null,
+      "finding": "Measured 2026-09-18. `main.sales` (223 974 rows, 13 columns) carries the same line population as `main.orderrows` at the same cell key: (OrderKey, LineNumber) EXCEPT (OrderKey, RowNumber) returns 0 rows in both directions (P2 G3, S4), so LineNumber and RowNumber are the same values. Joined line-for-line to `orderrows` x `orders`, it differs on NOTHING: 223 974 matched lines and 0 differences across ProductKey, Quantity, UnitPrice, NetPrice, UnitCost, CustomerKey, StoreKey, OrderDate, DeliveryDate and CurrencyCode (S5; P1 R1-R3 measured the same over the same denominator). It carries exactly one column the header/detail pair does not \u2014 ExchangeRate \u2014 and that column reproduces the currencyexchange USD->CurrencyCode quote for the row's day on 223 974/223 974 rows, 0 missing quotes, 0 differences (P1 R4).\n",
+      "current_handling": "NOT PROMOTED. No dataset descriptor, and no transform consumes it; its raw descriptor (data/sources/sales.yaml) and its profile stay, so the measurement is not lost. The served line relation is v_contoso_order_line, built from orders x orderrows at (OrderKey, RowNumber). ExchangeRate is not served on the line either: the rate is served at its own grain in v_contoso_fx_rate_day, where every pair a question can ask is present (100 450 = 4 018 x 5 x 5, complete; all 5 quotes out on 14 106/14 106 order-day-currency combinations \u2014 S16, S17), which is strictly more than the one USD-based direction sales carries. Serving both relations would give every figure in this bundle two defensible answers and the engine would pick by accident.\n",
+      "residual_risk": "RULED 2026-09-18 (operator): `v_contoso_order_line`, built from orders x orderrows at (OrderKey, RowNumber), IS the order line's fact of record; `main.sales` is measured, described and not served. That settles run record Q8, which the promotion step correctly declined to settle on its own. Protocol: decisions/0001-order-line-fact-of-record.md.\nWHAT REMAINS OPEN, and it is not the modelling. The derivability this closure rests on is a fact about THIS SNAPSHOT and is enforced by nothing: an independent re-derivation on 2026-09-18 reconstructed all 13 sales columns from orders x orderrows x currencyexchange with 0 differences either way (multiset and full-outer-join formulations both), and in the same pass measured that this database declares ZERO constraints \u2014 no primary key, no foreign key, no unique \u2014 so nothing stops the next load from breaking the agreement. A one-time proof is not an invariant. FOLLOW-UP: an acceptance property that re-measures the agreement per load, so the reversal condition below is detected rather than assumed. Until that exists, this entry is closed on evidence that is true and unpoliced.\nA SECOND SNAPSHOT-DEPENDENCY, in the FX join: the rate is matched on exact date equality, which works only because the quote grid is gapless and runs a year past the newest order (4 018 dates, 0 orders outside it today). An order dated off the grid yields a silent NULL. An as-of join (latest quote on or before the order date) would be robust where equality is not.\nREVERSED IF: a reload makes the agreement non-zero, i.e. sales and the pair stop agreeing; or upstream retires `orderrows`/`orders`, making sales the only source of the line; or a human re-rules that `sales` is the fact of record (then the transform swaps its inputs and the served columns are unchanged \u2014 the values were measured identical). Note also that the data cannot say WHICH direction the dependency runs upstream: it shows the two are identical, not that `orderrows` is the original.\n",
+      "sme_owner": "operator \u2014 NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE rather than a personal name because this bundle is a public example; there is exactly one operator on this estate, so the role identifies them, and the vocabulary asks for \"the named person or role \u2014 never 'the team', never a tool\". The delivery contract's owner is the operator, and they have ruled on this entry \u2014 see decisions/0001.\n"
+    },
+    {
+      "id": "NS-ORDERS-02",
+      "title": "the order header measured, deliberately not served as a relation of its own",
+      "severity": "low",
+      "confidence": "I",
+      "table": "orders",
+      "table_inferred": true,
+      "impurity_class": null,
+      "coverage": "unreconciled",
+      "resolving_transforms": [],
+      "guarantee": null,
+      "evidence": null,
+      "finding": "Measured 2026-09-18. `main.orders` (93 470 rows, 6 columns) carries no measure: its columns are OrderKey, CustomerKey, StoreKey, DT, DeliveryDate, CurrencyCode. Every one of its 5 non-key columns is functionally determined by OrderKey (measured, P2) and every one of them is served on the line relation, so a header view would restate them at a coarser grain under a second name. Serving the line loses no order: 0 of the 93 470 headers have no line (S1), and the inner join keeps exactly the line population with no fan-out (223 974 joined rows = 223 974 orderrows rows; 93 470/93 470 distinct OrderKey in orders, so the join cannot multiply \u2014 S1, S2).\n",
+      "current_handling": "NOT PROMOTED as its own relation; CONSUMED as an input to v_contoso_order_line, where OrderKey is a degenerate dimension (the framework's degenerate_dimension pattern: a grouping key with no dimension table, modelled as a property of the fact rather than as a separate reference). Order- grain questions are answerable from the line relation by count(DISTINCT OrderKey) and by grouping on the header attributes it carries.\n",
+      "residual_risk": "An order-level FIGURE cannot be stored anywhere today. REVERSED IF: the delivery gains an order-level measure (freight, an order-level total, a header discount) \u2014 a line view can only repeat such a column, never hold it; or a question needs orders that have no lines (0 today, S1); or a header attribute stops being functionally determined by OrderKey. Any of those makes a second served relation at order grain the right answer, and it must then be promoted deliberately rather than by copying the line view.\n",
+      "sme_owner": "operator \u2014 NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE rather than a personal name because this bundle is a public example; there is exactly one operator on this estate, so the role identifies them, and the vocabulary asks for \"the named person or role \u2014 never 'the team', never a tool\". They are the one who can say whether an order-level figure is expected in this delivery. Not yet ruled.\n"
+    },
+    {
+      "id": "NS-CUSTOMER-01",
+      "title": "12 of the 24 customer columns measured, deliberately not served",
+      "severity": "low",
+      "confidence": "I",
+      "table": "customer",
+      "table_inferred": true,
+      "impurity_class": null,
+      "coverage": "unreconciled",
+      "resolving_transforms": [],
+      "guarantee": null,
+      "evidence": null,
+      "finding": "Measured 2026-09-18. `main.customer` has 24 columns over 104 990 rows. The question scope this bundle declares (README: the contested total, by brand, by region country -> continent, by currency, gross vs net, by period) names geography and nothing else about a customer. 12 columns are served \u2014 CustomerKey, GeoAreaKey, StartDT, EndDT, Continent, CountryFull, Country, StateFull, State, City, ZipCode, Gender \u2014 including the only continent column in the whole delivery (`store` has none: 0 continent-like columns, S10) whose country -> continent map is a function over 8 countries with 0 countries carrying two continents (S11). The 12 NOT served are Title, GivenName, MiddleInitial, Surname, StreetAddress, Birthday, Age, Occupation, Company, Vehicle, Latitude, Longitude. `Age` is additionally measured STALE: year(Birthday) + Age is 2020 or 2021 on every row while the facts run to 2025-12-31 (P1 #8), so it answers as-of a year nobody asked about.\n",
+      "current_handling": "NOT PROMOTED. dim_contoso_customer serves the 12 columns above at one row per CustomerKey; the other 12 stay in the landing and in data/sources/customer.yaml, measured, unserved and unreferenced. Nothing is filtered: 104 990 rows in, 104 990 rows out (52 189 of them appear on an order, S13 \u2014 a dimension over-covering its fact is disclosed, not trimmed).\n",
+      "residual_risk": "A question that needs a customer attribute cannot be answered until the column is promoted; the refusal is not destructive and the fix is one line in the transform's projection. REVERSED IF: a question in scope names a demographic attribute (then the column is added, and `Age` only with a ruling on its as-of year); or the declared question scope changes. Deliberately NOT a privacy claim: this is MIT-licensed synthetic data and no such claim would be measurable.\n",
+      "sme_owner": "operator \u2014 NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE rather than a personal name because this bundle is a public example; there is exactly one operator on this estate, so the role identifies them, and the vocabulary asks for \"the named person or role \u2014 never 'the team', never a tool\". Both rulings this entry needs \u2014 the as-of ruling on the derived age column, and the scope ruling \u2014 are theirs. Not yet ruled.\n"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+metadata:
+  table: v_contoso_order_line
+  source: Contoso Data Generator V2 (SQLBI, MIT) — parquet, loaded by setup.sh
+  schema_version: 0.1.14
+  status: draft
+  kind: served_dataset
+  served_kind: fact
+  observed: '2026-09-18'
+  confidence: I
+  generated_by: p3_datasets.py (P3 · dataset-promotion)
+  notes: 'SERVED RELATION (the seam the ontology binds to). Nothing here is aggregated: one row of this
+    view is one row of `orderrows`, carrying its order''s five header attributes, which are functionally
+    determined by OrderKey (measured, P2). `sales.ExchangeRate` is deliberately absent: it reproduces
+    the currencyexchange USD->CurrencyCode quote on 223 974/223 974 rows (P1 R4), and the rate is served
+    at its own grain in v_contoso_fx_rate_day, where any pair the question asks is available (S16, S17).'
+table:
+  name: v_contoso_order_line
+  schema: contoso_served
+  type: view
+  description: 'One row per order line: the single served fact of this bundle. Line grain (OrderKey, RowNumber)
+    — measured 223 974 rows / 223 974 distinct keys / 0 duplicates over the served projection (p3_dataset_promotion.sql
+    S19). Built from the header/detail pair orders x orderrows: the join is lossless and cannot fan out
+    (orders.OrderKey is unique, 93 470/93 470; 0 headers without lines; 223 974 joined rows = 223 974
+    orderrows rows — S1, S2). The raw relation `sales` is the same figure delivered a second time and
+    is deliberately NOT served (register NS-ORDERS-01). Amounts are denominated in CurrencyCode and are
+    store-local: a cross-currency SUM without a conversion is not a total (S7).'
+  confidence: I
+columns:
+- name: OrderKey
+  type: bigint
+  role: composite_key_part
+  confidence: I
+  notes: 'part 1 of the cell key. A DEGENERATE DIMENSION here: the order header is not served as a relation
+    of its own (NS-ORDERS-02), so this column groups the lines of an order and joins to nothing.'
+- name: RowNumber
+  type: integer
+  role: composite_key_part
+  confidence: I
+  notes: part 2 of the cell key; indispensable — (OrderKey, ProductKey) is NOT unique (223 713 pairs over
+    223 974 rows, P2 G2). Numbering starts at 0 and 1 448 orders have gaps, so a dense line index may
+    not be assumed (P1 U5). `sales` carries the identical values under the name LineNumber (0 rows either
+    way on EXCEPT, S4).
+- name: OrderDate
+  type: timestamp
+  role: foreign_key
+  confidence: I
+  notes: RENAMED from the landing's `DT` to the name this same value carries in the `sales` delivery (measured
+    identical on 223 974/223 974 rows, S5 diff_orderdate = 0). The only renamed column in this bundle;
+    every other served column keeps its landing name.
+- name: DeliveryDate
+  type: timestamp
+  role: foreign_key
+  confidence: I
+  notes: 'second role of the one calendar (role_playing_dimension): 0 values off the calendar (S15). Runs
+    to 2026-01-06, six days past the last order.'
+- name: CustomerKey
+  type: integer
+  role: foreign_key
+  confidence: I
+- name: StoreKey
+  type: integer
+  role: foreign_key
+  confidence: I
+  notes: '93 550/223 974 lines (41.8 %) carry the sentinel StoreKey 999999 (''Online''), which IS served
+    (S18): filtering it would silently drop 41.8 % of the fact.'
+- name: ProductKey
+  type: integer
+  role: foreign_key
+  confidence: I
+- name: CurrencyCode
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: the denomination of every amount on the row; 5 measured values. Joins to the fx grid as FromCurrency
+    together with the day, not by itself.
+- name: Quantity
+  type: integer
+  role: value
+  confidence: I
+- name: UnitPrice
+  type: decimal(20,5)
+  role: value
+  confidence: I
+  notes: list price per unit (the GROSS side of the scope's gross/net question).
+- name: NetPrice
+  type: decimal(20,5)
+  role: value
+  confidence: I
+  notes: price per unit after discount; measured <= UnitPrice on every row, below it on 136 913/223 974
+    lines (S6).
+- name: UnitCost
+  type: decimal(20,5)
+  role: value
+  confidence: I
+foreign_keys:
+- name: fk_product
+  from_column: ProductKey
+  to_table: dim_contoso_product
+  to_column: ProductKey
+  enforced: false
+  confidence: I
+  notes: 0 orphans measured over 223 974 lines (P1 O5)
+- name: fk_store
+  from_column: StoreKey
+  to_table: dim_contoso_store
+  to_column: StoreKey
+  enforced: false
+  confidence: I
+  notes: 0 orphans measured, sentinel row included (P1 O6)
+- name: fk_customer
+  from_column: CustomerKey
+  to_table: dim_contoso_customer
+  to_column: CustomerKey
+  enforced: false
+  confidence: I
+  notes: 0 orphans measured (P1 O4)
+- name: fk_order_date
+  from_column: OrderDate
+  to_table: dim_contoso_calendar_day
+  to_column: Date
+  enforced: false
+  confidence: I
+  notes: 'role: order placed; 0 dates off the calendar (S15)'
+- name: fk_delivery_date
+  from_column: DeliveryDate
+  to_table: dim_contoso_calendar_day
+  to_column: Date
+  enforced: false
+  confidence: I
+  notes: 'role: delivery; 0 dates off the calendar (S15). Second role of ONE calendar — role_playing_dimension,
+    not a second dimension.'

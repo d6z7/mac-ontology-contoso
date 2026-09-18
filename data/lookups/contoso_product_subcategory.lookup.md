@@ -1,0 +1,45 @@
+---
+type: Lookup
+title: contoso_product_subcategory.lookup
+source_yaml: data/lookups/contoso_product_subcategory.lookup.csv
+tags:
+- CONTOSO
+- lookup
+---
+
+Reference lookup · 32 rows · SSOT: `data/lookups/contoso_product_subcategory.lookup.csv` (CSV).
+
+| SubCategoryKey | label | search_key | parent_category_key | source_view | confidence | note |
+| --- | --- | --- | --- | --- | --- | --- |
+| 101 | MP4&MP3 | mp4&mp3 | 1 | dim_contoso_product | I | served products in this subcategory: 45 |
+| 104 | Recording Pen | recording pen | 1 | dim_contoso_product | I | served products in this subcategory: 20 |
+| 106 | Bluetooth Headphones | bluetooth headphones | 1 | dim_contoso_product | I | served products in this subcategory: 50 |
+| 201 | Televisions | televisions | 2 | dim_contoso_product | I | served products in this subcategory: 50 |
+| 202 | VCD & DVD | vcd & dvd | 2 | dim_contoso_product | I | served products in this subcategory: 26 |
+| 203 | Home Theater System | home theater system | 2 | dim_contoso_product | I | served products in this subcategory: 100 |
+| 205 | Car Video | car video | 2 | dim_contoso_product | I | served products in this subcategory: 46 |
+| 301 | Laptops | laptops | 3 | dim_contoso_product | I | served products in this subcategory: 78 |
+| 303 | Desktops | desktops | 3 | dim_contoso_product | I | served products in this subcategory: 45 |
+| 304 | Monitors | monitors | 3 | dim_contoso_product | I | served products in this subcategory: 78 |
+| 305 | Projectors & Screens | projectors & screens | 3 | dim_contoso_product | I | served products in this subcategory: 103 |
+| 306 | Printers, Scanners & Fax | printers, scanners & fax | 3 | dim_contoso_product | I | served products in this subcategory: 101 |
+| 308 | Computers Accessories | computers accessories | 3 | dim_contoso_product | I | served products in this subcategory: 201 |
+| 401 | Digital Cameras | digital cameras | 4 | dim_contoso_product | I | served products in this subcategory: 100 |
+| 402 | Digital SLR Cameras | digital slr cameras | 4 | dim_contoso_product | I | served products in this subcategory: 100 |
+| 405 | Camcorders | camcorders | 4 | dim_contoso_product | I | served products in this subcategory: 103 |
+| 406 | Cameras & Camcorders Accessories | cameras & camcorders accessories | 4 | dim_contoso_product | I | served products in this subcategory: 69 |
+| 501 | Home & Office Phones | home & office phones | 5 | dim_contoso_product | I | served products in this subcategory: 92 |
+| 503 | Touch Screen Phones | touch screen phones | 5 | dim_contoso_product | I | served products in this subcategory: 62 |
+| 504 | Smart phones & PDAs | smart phones & pdas | 5 | dim_contoso_product | I | served products in this subcategory: 101 |
+| 505 | Cell phones Accessories | cell phones accessories | 5 | dim_contoso_product | I | served products in this subcategory: 30 |
+| 602 | Movie DVD | movie dvd | 6 | dim_contoso_product | I | served products in this subcategory: 90 |
+| 701 | Boxed Games | boxed games | 7 | dim_contoso_product | I | served products in this subcategory: 46 |
+| 702 | Download Games | download games | 7 | dim_contoso_product | I | served products in this subcategory: 120 |
+| 801 | Washers & Dryers | washers & dryers | 8 | dim_contoso_product | I | served products in this subcategory: 70 |
+| 802 | Refrigerators | refrigerators | 8 | dim_contoso_product | I | served products in this subcategory: 86 |
+| 803 | Microwaves | microwaves | 8 | dim_contoso_product | I | served products in this subcategory: 102 |
+| 804 | Water Heaters | water heaters | 8 | dim_contoso_product | I | served products in this subcategory: 31 |
+| 805 | Coffee Machines | coffee machines | 8 | dim_contoso_product | I | served products in this subcategory: 74 |
+| 806 | Lamps | lamps | 8 | dim_contoso_product | I | served products in this subcategory: 158 |
+| 807 | Air Conditioners | air conditioners | 8 | dim_contoso_product | I | served products in this subcategory: 62 |
+| 808 | Fans | fans | 8 | dim_contoso_product | I | served products in this subcategory: 78 |

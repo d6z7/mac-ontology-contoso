@@ -1,0 +1,16 @@
+---
+type: Lookup
+title: contoso_weight_unit.lookup
+source_yaml: data/lookups/contoso_weight_unit.lookup.csv
+tags:
+- CONTOSO
+- lookup
+---
+
+Reference lookup · 3 rows · SSOT: `data/lookups/contoso_weight_unit.lookup.csv` (CSV).
+
+| WeightUnit | label | search_key | source_view | confidence | note |
+| --- | --- | --- | --- | --- | --- |
+| grams | grams | grams | dim_contoso_product | I | served rows with this unit: 10 |
+| ounces | ounces | ounces | dim_contoso_product | I | served rows with this unit: 418 |
+| pounds | pounds | pounds | dim_contoso_product | I | served rows with this unit: 1867 |

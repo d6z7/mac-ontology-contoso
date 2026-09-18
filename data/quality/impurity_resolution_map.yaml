@@ -1,0 +1,46 @@
+# data/quality/impurity_resolution_map.yaml — the CROSS-LINK, register -> the transform that dissolves it.
+#
+# WHY IT EXISTS. A transform rule carrying an `impurity_class` says "I dissolve a kind of dirt", and a
+# register entry says "this dirt was found". Without a link between them the Cleaning tab and the
+# Quality tab tell different stories: a fix nobody registered as a problem, or a problem claimed fixed
+# by nothing. check_dq_resolution_sync reads BOTH directions — a `resolves:` naming an unregistered id
+# is an ERROR, and a rule with an impurity_class and no `resolves:` is a WARN.
+#
+# WHY IT DID NOT EXIST UNTIL 2026-09-18. The bundle had no resolutions at all, and the gate warned on
+# six rules. That was not an oversight for this first entry: `one-delivery-of-the-line` recorded its
+# own reason for withholding the link — the fact-of-record ruling (RUN.md Q8) was open, so which
+# relation the transform should read was not yet decided. The operator ruled on 2026-09-18
+# (decisions/0001-order-line-fact-of-record.md) and the link became true.
+#
+# STILL WARNING, deliberately: five rules in this bundle dissolve an impurity and declare no
+# `resolves` — padded_label and stale_derived_attribute on dim_contoso_customer,
+# case_variant_vocabulary and absence_semantics on dim_contoso_product, absence_semantics on
+# dim_contoso_store. Each needs its own registered DQ entry before it can be linked here. They are
+# NOT added silently: registering a finding is the data-quality step's act, not this file's.
+
+metadata:
+  schema_version: 0.1.14
+  observed: '2026-09-18'
+  notes: >
+    One resolution. Opened when the order line's fact-of-record ruling closed NS-ORDERS-01; see that
+    entry for the evidence, the reversal condition, and the two snapshot-dependencies the closure
+    rests on (the source declares zero constraints, and the FX join matches on exact date equality).
+
+resolutions:
+  - finding_id: NS-ORDERS-01
+    resolving_transforms: [v_contoso_order_line]
+    coverage: resolved
+    note: >
+      Dissolved by the rule `one-delivery-of-the-line`, whose guarantee is that every figure on the
+      served line has exactly one home in the served plane — the line is built from
+      main.orderrows x main.orders and no transform in this bundle reads main.sales. What is dissolved
+      is the served-plane ambiguity, not the upstream redundancy: the delivery still ships the line
+      twice and this bundle cannot change that.
+
+      Evidence, measured twice independently. The pipeline measured 0 differences over 223 974 lines
+      across every shared column (P1 R1-R4, P3 S4/S5, T5). A second reader re-derived it on 2026-09-18
+      with different formulations — multiset comparison and a full-outer-join on the key — and
+      reconstructed all 13 of `sales`' columns from orders x orderrows x currencyexchange with 0 rows
+      differing in either direction, confirming both key sets are genuinely unique (223 974 distinct
+      of 223 974 rows on each side, 0 nulls in the key columns) so the comparison means what it
+      appears to mean.

@@ -1,0 +1,111 @@
+# data/transforms/dim_contoso_product.yaml — the product dimension's transform descriptor.
+#
+# The executable body is the sibling .sql (produces.sql_file). Every number was measured read-only over
+# contoso.duckdb by scratchpad/ingest/p4_transforms.py; the query is named after it (T…) and written out
+# with its answer in queries/p4_transformation_authoring.sql.
+#
+# `resolves:` is absent from every rule for the reason stated once in v_contoso_order_line.yaml (the DQ
+# ids and the resolution map belong to the data-quality step; writing one half of a two-way link turns
+# check_dq_resolution_sync red).
+
+metadata:
+  pipeline: dim_contoso_product
+  source: contoso
+  layer: data-transformation
+  schema_version: '0.1.14'
+  status: draft
+  confidence: I
+  observed: '2026-09-18'
+  generated_by: scratchpad/ingest/p4_transforms.py wrote the .sql; this descriptor is hand-authored
+  notes: >
+    AUTHORED, NOT DEPLOYED (connection.yaml declares read_only: true): the SELECT body was executed
+    read-only — 14 columns in the order and types the dataset descriptor declares (T1b), 2 517 rows /
+    2 517 distinct ProductKey / 0 duplicates (T2b) — and the CREATE OR REPLACE VIEW wrapper is authored
+    only. Both rules are status `authored`.
+
+produces:
+  relation: contoso_served.dim_contoso_product
+  sql_file: data/transforms/dim_contoso_product.sql
+  grain: "one row per ProductKey — one product"
+
+inputs:
+  - relation: main.product
+    kind: raw_source
+    role: product_master
+    descriptor: data/sources/product.yaml
+    note: >
+      The other 12 columns are carried unchanged and the projector reads them as passthrough edges from
+      the descriptor: ProductKey, ProductCode, ProductName, Manufacturer, Brand, Weight, Cost, Price,
+      CategoryKey, CategoryName, SubCategoryKey, SubCategoryName.
+    consumes:
+      Color: canonicalise-colour-case
+      WeightUnit: empty-string-is-missing
+
+transforms:
+  - id: canonicalise-colour-case
+    impurity_class: case_variant_vocabulary
+    raw_defect: >
+      Color is a closed vocabulary drifting by case: 17 spellings over 16 colours, 0 nulls, and exactly
+      one case-insensitive group carrying more than one spelling — Blue on 197 rows and blue on 3
+      (T6a, T6b; P1 #7). A GROUP BY Color therefore reports one colour as two groups.
+    rule: >
+      Fold every spelling onto the most-used spelling of its case-insensitive group, with the canonical
+      spelling MEASURED from the data (color_spelling counts each spelling, color_canon keeps the
+      majority one per lower(Color)) rather than transcribed as a hand-written value list. A lower() or
+      title-case fold was refused: 14 of the 17 spellings contain a space ('Silver Grey'), which a
+      per-word title-case fold corrupts, and DuckDB 1.5.5 has no initcap at all (measured).
+    sql: 'coalesce(cc.color_canonical, p."Color") AS Color'
+    establishes_guarantee: >
+      One spelling per colour in the served relation: 16 distinct values over 2 517 rows, 3 rows
+      respelled, and the fold cannot fan the dimension out — color_canon holds 16 rows / 16 distinct
+      keys and the LEFT JOIN returns 2 517 rows for 2 517 in (T6c). A consumer may GROUP BY Color and
+      count colours without case-folding it first.
+    status: authored
+    note: >
+      RESIDUAL RISK, declared rather than discovered later: the canonical spelling is the MAJORITY one,
+      so a reload in which a variant becomes the majority would change the served spelling (the
+      tie-break is deterministic — ORDER BY rows_with_spelling DESC, color_raw — so a tie cannot make
+      the view unstable, but a genuine majority flip will). The alternative, a transcribed mapping,
+      trades that for a list that silently goes stale when a new colour arrives.
+
+  - id: empty-string-is-missing
+    impurity_class: absence_semantics
+    raw_defect: >
+      WeightUnit spells missing as '' on 222 of 2 517 rows and never as NULL, so the delivery has two
+      spellings of absence across its relations (store.Status is the other) and a consumer testing
+      `IS NULL` finds none of them. The 222 are exactly the rows whose Weight is null (T7; P1 #6).
+    rule: "Read '' as absent: nullif the empty string to NULL. No value is invented for the 222 rows."
+    sql: "nullif(p.\"WeightUnit\", '') AS WeightUnit"
+    establishes_guarantee: >
+      Missing is spelled exactly one way — NULL on 222 of 2 517 rows — and the served vocabulary is the
+      3 real units (pounds, ounces, grams), so `count(DISTINCT WeightUnit)` returns 3 rather than 4 and
+      `WHERE WeightUnit IS NULL` finds every row that has no unit (T7).
+    status: authored
+
+open_transforms:
+  - id: unit-without-weight
+    impurity_class: contradictory_pair
+    raw_defect: >
+      62 of 2 517 rows name a weight unit for a weight that is not there (Weight IS NULL and WeightUnit
+      <> ''), and 0 rows the other way round — no row has a weight without a unit (T7; P1 #6). Of the
+      284 rows with no weight, 222 also have no unit and these 62 do.
+    proposed_rule: >
+      NONE until the meaning is ruled. If the weight is MISSING, the unit is a promise the data cannot
+      keep and both columns should read absent; if it is NOT APPLICABLE (a product that is not weighed),
+      the unit is meaningful and nothing is wrong. The two rulings imply opposite SQL, and neither can
+      be derived from the data.
+    needs_ruling: "For the 62 rows, is the weight missing or not applicable? (RUN.md Q7)"
+    status: PROPOSED
+
+governance:
+  owner: >
+    UNNAMED — no owner is declared for any relation of this source (RUN.md Q5). Machine-authored and
+    unratified.
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >
+        Created the product transform: the colour case fold and the empty-string-to-NULL rule, with the
+        62 unit-without-weight rows carried as an open item.
+      change_type: CREATION
+      by: P4 transformation-authoring (machine-authored, unratified)

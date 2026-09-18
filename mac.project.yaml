@@ -18,9 +18,141 @@ runtime:
   connector: mac.connector.duckdb
   connection: connection.yaml
 
+# HOW THIS BUNDLE SPELLS THE RELATIONS IT SERVES. A core key (mac.schema.json#ProjectFile.serving),
+# read by tools/check_served_name_distinct.py, which DERIVES the acceptance test from it. Declared
+# rather than left default because declaring is the only way the marker is enforced: with it, the
+# full shape <role>_<marker>_<business noun> is required and checked; without it the marker is a
+# suggestion. `roles:` is omitted on purpose so the role table stays single-homed in the schema's
+# own `default` (v/v/dim/meta) instead of being copied here. Marker = this bundle's own dataset
+# identity (metadata.dataset) — the token that makes these relations addressable as THIS source's.
+serving:
+  naming:
+    marker: contoso
+    example: "raw `product` -> served `dim_contoso_product` (the landing is already a clean business noun, so the marker is what makes the served name distinct)"
+
 planes:
   data: data
   ontology: ontology
 descriptors: data/datasets      # produced relations the ontology binds to (the seam)
-transforms: data/transforms     # (none yet — Contoso V2 ships ready-made tables)
-sources: data/sources           # (none yet)
+transforms: data/transforms     # written by the transformation step, one pair per served relation
+sources: data/sources           # the 8 raw landings, as measured from the warehouse catalog
+
+# THE VALUE REGISTERS A CONCEPT MAY DELEGATE TO — the name-to-code lookups an engine resolves a word
+# against OFFLINE, instead of probing the warehouse and reading "no rows" as "no such thing". A core
+# key (mac.schema.json#ProjectFile.lookups), so declaring the plane needs no `x-` extension.
+# DECLARED, AND STILL CONVENTIONAL: no tool reads this value. tools/mac_project.py#resolve does not
+# expose it, and every consumer (check_lookups, check_relation_identity, mac_model.LOOKUPS_DIR,
+# project_model, check_measure_additivity_registry) hardcodes `data/lookups`. mac_model's own comment
+# says so — "the ONE conventional register path (not a manifest key today)". The value below is
+# therefore the conventional path and nothing else: moving the directory would move the registers out
+# of every gate's sight while this line still claimed to point at them. See RUN.md P6 Q28.
+lookups: data/lookups
+
+# THE ESCAPE HATCH, used to DISCLOSE one file rather than to widen coverage. vocabulary.yaml is this
+# bundle's APPLICATION vocabulary — the four `contoso.field_role.*` terms every concept's
+# grounding.field_roles whitelist references. MAC owns the slot, the resolver and the gate and
+# deliberately does not define the file's SHAPE (mac.schema.json has no definition for it), so without
+# this entry it would be counted as an unknown YAML by the conformance enumeration. Declared with its
+# reason, following the framework's own worked example (example_shop_ontology/mac.project.yaml).
+conformance:
+  out_of_scope:
+    - path: vocabulary.yaml
+      reason: >-
+        Application-owned vocabulary, not framework `mac.*`: the four analytical column roles this
+        bundle's concepts reference. MAC owns the field_roles slot (mac.schema.json), the resolver
+        (check_references) and the gate (mac_shapes.yaml#field-roles-grounded); the terms are the
+        domain's. No MAC definition applies, and inventing one would make the framework own what it
+        delegates. Written by P7 · concept-authoring, which is the step that first needs a role term.
+
+# ══════════════════════════════════════════════════════════════════════════════════════════════════
+# REPRODUCTION — how this bundle is rebuilt, as CHECKABLE DATA rather than prose that goes stale.
+# ══════════════════════════════════════════════════════════════════════════════════════════════════
+# Only the stages this bundle has actually run are declared. `narrative:` is omitted DELIBERATELY:
+# there is no REPRODUCTION.md here yet, and check_reproduction.py raises MAC008 ERROR on a narrative
+# that does not resolve — a record pointing at a missing file is not a record.
+#
+# WHY THIS BLOCK EXISTS AT ALL. The plane doc's complaint about data/samples was, verbatim, that
+# "mac.project.yaml's reproduction.stages[].produces never lists it" — so the preview plane was the
+# one artifact family no bundle CLAIMED to produce. It is claimed here now, and the claim is
+# checkable: check_reproduction reports a PARTIALLY satisfied stage (MAC011, warning) when some of a
+# stage's output patterns match and others do not.
+reproduction:
+  # ══════════════════════════════════════════════════════════════════════════════════════════════
+  # TWO PIPELINES, BOTH STARTED BY HAND. This is the only place a reader of this bundle learns that
+  # there are two, and it is the operator's ruling made checkable rather than written in prose.
+  #
+  # The DATA pipeline's exit is NOT a produces-glob. It is A NAMED HUMAN'S SIGN-OFF: the ontology
+  # pipeline may not start until a person has approved this bundle's dataset configuration and ruled
+  # on the issues its own register holds. That was the actual reason the ontology lock existed — not
+  # "the files are incomplete" — and until this key existed the lock was standing in for it, which
+  # is why a first ingestion's concepts were refused and silently diverted to a temp directory
+  # instead of being authored here (2026-09-18 10:09).
+  #
+  # WHAT DECLARING THIS CHANGES FOR THIS BUNDLE, said plainly: nothing is unlocked. The refusal
+  # stops saying "protected" and starts naming the pipeline, the uncovered issue ids, the act and
+  # the route. Authoring opens when governance/data_plane_approval.yaml exists and validates —
+  # a file no agent's tool surface may write, marker or not.
+  #
+  # See mac-integration-kit/ontology/planes/PIPELINES.md; enforced by
+  # meaning-as-code/tools/check_data_plane_approved.py and by the PreToolUse ontology guard, which
+  # both resolve to ONE decision function and are proven to agree.
+  pipelines:
+    data:
+      entry: python3 -m sdk.cli.harvest --content-root <root> --mode onboard --accept
+      exit:
+        approval: governance/data_plane_approval.yaml
+    ontology:
+      entry: python3 -m sdk.cli.harvest --content-root <root> --mode ontology
+      requires:
+        pipeline: data
+  stages:
+  - id: measure-register
+    pipeline: data            # the measurement plane is part of the DATA pipeline
+    authoring: tool
+    billed: false                 # reads two files on disk; no warehouse and no outward call
+    command: "python3 data/lookups/contoso_measure.lookup.build.py <root>"
+    produces: [data/lookups/contoso_measure.lookup.csv]
+    note: >
+      The additivity projection. How a measure folds along an axis is stated ONCE, in the framework's
+      closed value domain mac_vocabulary.yaml#MeasureType; this stage reads that law and each measure
+      concept's own declared `measure_type` + `axis_kinds`, and writes the register the framework's
+      registry gate then recomputes cell-for-cell. Declared as a stage precisely because it is a
+      PROJECTION: the claim worth checking is that the file on disk is still what the law projects,
+      and `--check` on the same script is that check.
+
+      ONE GLOB AND NOT TWO: the `.md` twin beside the register is hand-authored (the classification
+      table a domain expert contradicts, the contestable calls, the refusal routing), so listing it
+      here would claim this command produces it.
+  - id: measure
+    pipeline: data            # the measurement plane is part of the DATA pipeline
+    authoring: tool
+    billed: false                 # the local DuckDB file named in connection.yaml; no outward call
+    command: "python3 meaning-as-code/tools/mac_profile.py <root> <stem>; python3 meaning-as-code/tools/mac_sample.py <root>"
+    produces: [data/profiles/*.yaml, data/samples/*.csv]
+    note: >
+      The measurement plane and its PREVIEW twin: a census of what each relation contains, and
+      twenty real rows of it in the descriptor's column order. Both DERIVED per relation, both
+      re-cut after a served view is deployed (a rename carries neither forward).
+
+      ONE STAGE AND NOT TWO on purpose: check_reproduction reports a PARTIALLY satisfied stage and
+      stays SILENT on a wholly unrun one, so fusing profiles with previews is what makes "profiles
+      present, the whole preview plane absent" visible at all. Splitting them for tidiness would
+      delete the only signal this declaration buys.
+
+      TWO PATTERNS AND NOT THREE. `data/samples/*.sample.csv` was rejected: glob cannot express
+      "served but not raw" — `*` matches `orders.src` — so once any raw preview exists that pattern
+      can never report "matches nothing", and the record would claim a distinction it cannot make.
+      What this record CANNOT see is a HALF-cut plane (raw previews present, served previews
+      absent); per-family denominators are check_sample_matches_descriptor.py's job, and it takes
+      its population from the 8 source + 6 dataset DESCRIPTORS rather than from this directory.
+
+      THE TWO COMMANDS USE TWO DIFFERENT ENGINE SEAMS, and the stage is a claim, so it says so:
+      mac_sample.py reads through `runtime.connector` (the connector seam, which reaches this
+      bundle's DuckDB directly); mac_profile.py still reads through the tools/_plugin.py seam and
+      acceptance/properties.yaml#engine, which is Athena-shaped and on this bundle resolves to a
+      local class NAMED `Athena` that opens DuckDB (tools/run_properties.py). Declared in one stage
+      for the shared TRIGGER, not because both halves are engine-portable.
+
+      DECLARED BEFORE any projection stage: objects.json's `sample` path is computed by GLOBBING
+      data/samples/ at projection time, so a preview cut afterwards leaves the console's Sample tab
+      absent until the projection is re-run.
