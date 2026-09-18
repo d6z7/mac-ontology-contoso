@@ -127,12 +127,14 @@ reproduction:
     pipeline: data            # the measurement plane is part of the DATA pipeline
     authoring: tool
     billed: false                 # the local DuckDB file named in connection.yaml; no outward call
-    command: "python3 meaning-as-code/tools/mac_profile.py <root> <stem>; python3 meaning-as-code/tools/mac_sample.py <root>"
-    produces: [data/profiles/*.yaml, data/samples/*.csv]
+    command: "python3 meaning-as-code/tools/mac_profile.py <root> <stem>; python3 meaning-as-code/tools/mac_sample.py <root>; python3 meaning-as-code/tools/mac_references.py <root> --plane sources; python3 meaning-as-code/tools/mac_references.py <root> --plane served"
+    produces: [data/profiles/*.yaml, data/samples/*.csv,
+               data/references/*.yaml, data/references_served/*.yaml]
     note: >
-      The measurement plane and its PREVIEW twin: a census of what each relation contains, and
-      twenty real rows of it in the descriptor's column order. Both DERIVED per relation, both
-      re-cut after a served view is deployed (a rename carries neither forward).
+      The measurement plane, its PREVIEW twin and its REFERENTIAL structure: a census of what each
+      relation contains, twenty real rows of it in the descriptor's column order, and which of its
+      columns point at which columns of the others. All three DERIVED per relation, all three
+      re-measured after a served view is deployed (a rename carries none of them forward).
 
       ONE STAGE AND NOT TWO on purpose: check_reproduction reports a PARTIALLY satisfied stage and
       stays SILENT on a wholly unrun one, so fusing profiles with previews is what makes "profiles
@@ -155,4 +157,36 @@ reproduction:
 
       DECLARED BEFORE any projection stage: objects.json's `sample` path is computed by GLOBBING
       data/samples/ at projection time, so a preview cut afterwards leaves the console's Sample tab
-      absent until the projection is re-run.
+      absent until the projection is re-run. The same is true of the two reference planes —
+      sdk/project/er_model.py reads them at projection time and writes objects.json#er_model, so a
+      plane measured after the projection leaves the ER diagram EMPTY until it is re-run.
+
+      THE REFERENTIAL STRUCTURE JOINS THIS STAGE AND DOES NOT GET ITS OWN, for the same measured
+      reason the previews did, now with a second witness. Reproduced on three synthetic bundles
+      through check_reproduction: fused with sources measured and served not, the stage reports
+      `warning[MAC011 coverage-missing]: 1 of 4 output pattern(s) match nothing` naming
+      data/references_served/*.yaml; fused with no references at all it reports `2 of 4` naming
+      both directories; as its OWN stage beside this one, the identical bundle prints
+      `check_reproduction: no findings`. All three exit 0. Splitting it for tidiness would delete
+      the only signal the declaration buys.
+
+      AND UNLIKE THE PREVIEWS, THE HALF-MEASURED STATE IS VISIBLE HERE. The paragraph above has to
+      disclaim that glob cannot express "served but not raw", because both preview families share
+      one directory. The two reference planes have two directories, so
+      data/references_served/*.yaml can report matching nothing on its own — a sources-only
+      measurement is a warning here rather than a silence. A bundle mid-ingestion that has run only
+      `--plane sources` therefore carries a standing MAC011 until it promotes: that warning is the
+      half-measured state being VISIBLE, not a failure.
+
+      FOUR PATTERNS AND NOT SIX. `*.yaml` excludes references.run.json by extension exactly as
+      `*.csv` excludes samples.run.json. A run-record pattern would add no signal: the record is
+      written in the same branch as the per-relation files, so it can never miss while they hit.
+
+      `billed: false` IS STILL TRUE HERE AND IS THE ONE FACT THAT COULD SPLIT THIS STAGE LATER.
+      These two invocations ran 171 + 87 measurement statements over 1,028 + 548 considered pairs
+      against the local DuckDB file named in connection.yaml. Free against a local file; NOT free
+      against a cloud warehouse — and `billed` is one boolean for the whole stage, so the first
+      billed bundle must split this stage rather than let one flag speak for four commands.
+
+      `--plane` IS PART OF EACH COMMAND, not a decoration on it. Dropping it measures the sources
+      plane twice and leaves the served diagram empty, with no error anywhere.
