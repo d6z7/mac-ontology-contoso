@@ -25,3 +25,4 @@ tags:
 | `City` | varchar | discriminator |
 | `ZipCode` | varchar | value |
 | `Gender` | varchar | discriminator |
+| `age_band_5y` | integer | discriminator |
