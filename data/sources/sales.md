@@ -10,23 +10,23 @@ tags:
 - CONTOSO
 - source
 - lifecycle:draft
-- confidence:C
+- confidence:I
 ---
 
 ## Columns
 
-| column | type | role | confidence |
-|---|---|---|---|
-| `OrderKey` | bigint | composite_key_part |  |
-| `LineNumber` | integer | composite_key_part |  |
-| `OrderDate` | timestamp | value |  |
-| `DeliveryDate` | timestamp | value |  |
-| `CustomerKey` | integer | value |  |
-| `StoreKey` | integer | value |  |
-| `ProductKey` | integer | value |  |
-| `Quantity` | integer | value |  |
-| `UnitPrice` | decimal(20,5) | value |  |
-| `NetPrice` | decimal(20,5) | value |  |
-| `UnitCost` | decimal(20,5) | value |  |
-| `CurrencyCode` | varchar | value |  |
-| `ExchangeRate` | decimal(20,5) | value |  |
+| column | type | role |
+|---|---|---|
+| `OrderKey` | bigint | composite_key_part |
+| `LineNumber` | integer | composite_key_part |
+| `OrderDate` | timestamp | value |
+| `DeliveryDate` | timestamp | value |
+| `CustomerKey` | integer | value |
+| `StoreKey` | integer | value |
+| `ProductKey` | integer | value |
+| `Quantity` | integer | value |
+| `UnitPrice` | decimal(20,5) | value |
+| `NetPrice` | decimal(20,5) | value |
+| `UnitCost` | decimal(20,5) | value |
+| `CurrencyCode` | varchar | value |
+| `ExchangeRate` | decimal(20,5) | value |

@@ -10,24 +10,24 @@ tags:
 - CONTOSO
 - source
 - lifecycle:draft
-- confidence:C
+- confidence:I
 ---
 
 ## Columns
 
-| column | type | role | confidence |
-|---|---|---|---|
-| `ProductKey` | integer | primary_key |  |
-| `ProductCode` | varchar | value |  |
-| `ProductName` | varchar | value |  |
-| `Manufacturer` | varchar | value |  |
-| `Brand` | varchar | value |  |
-| `Color` | varchar | value |  |
-| `WeightUnit` | varchar | value |  |
-| `Weight` | decimal(20,5) | value |  |
-| `Cost` | decimal(20,5) | value |  |
-| `Price` | decimal(20,5) | value |  |
-| `CategoryKey` | integer | value |  |
-| `CategoryName` | varchar | value |  |
-| `SubCategoryKey` | integer | value |  |
-| `SubCategoryName` | varchar | value |  |
+| column | type | role |
+|---|---|---|
+| `ProductKey` | integer | primary_key |
+| `ProductCode` | varchar | value |
+| `ProductName` | varchar | value |
+| `Manufacturer` | varchar | value |
+| `Brand` | varchar | value |
+| `Color` | varchar | value |
+| `WeightUnit` | varchar | value |
+| `Weight` | decimal(20,5) | value |
+| `Cost` | decimal(20,5) | value |
+| `Price` | decimal(20,5) | value |
+| `CategoryKey` | integer | value |
+| `CategoryName` | varchar | value |
+| `SubCategoryKey` | integer | value |
+| `SubCategoryName` | varchar | value |

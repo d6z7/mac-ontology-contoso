@@ -13,7 +13,7 @@ tags:
 
 | column | type | role |
 |---|---|---|
-| `Date` | timestamp | primary_key |
+| `Date` | date | primary_key |
 | `DateKey` | varchar | value |
 | `Year` | integer | discriminator |
 | `YearQuarter` | varchar | discriminator |

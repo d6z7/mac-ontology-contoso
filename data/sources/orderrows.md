@@ -10,17 +10,17 @@ tags:
 - CONTOSO
 - source
 - lifecycle:draft
-- confidence:C
+- confidence:I
 ---
 
 ## Columns
 
-| column | type | role | confidence |
-|---|---|---|---|
-| `OrderKey` | bigint | composite_key_part |  |
-| `RowNumber` | integer | composite_key_part |  |
-| `ProductKey` | integer | value |  |
-| `Quantity` | integer | value |  |
-| `UnitPrice` | decimal(20,5) | value |  |
-| `NetPrice` | decimal(20,5) | value |  |
-| `UnitCost` | decimal(20,5) | value |  |
+| column | type | role |
+|---|---|---|
+| `OrderKey` | bigint | composite_key_part |
+| `RowNumber` | integer | composite_key_part |
+| `ProductKey` | integer | value |
+| `Quantity` | integer | value |
+| `UnitPrice` | decimal(20,5) | value |
+| `NetPrice` | decimal(20,5) | value |
+| `UnitCost` | decimal(20,5) | value |

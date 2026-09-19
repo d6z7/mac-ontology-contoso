@@ -61,23 +61,3 @@ Evidence, re-measured read-only 2026-09-18 over main.customer with the exact SQL
 
 ## SQL realization
 Realized by `dim_contoso_customer.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
-
-## Lineage (column-level)
-
-`contoso_served.dim_contoso_customer` · kinds: passthrough · rename
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `StateFull` | `customer.StateFull` | trim-padded-region-label | passthrough |
-| `State` | `customer.State` | trim-padded-region-label | passthrough |
-| `age_band_5y` | `customer.Birthday` | derive-age-band-as-of | rename |
-| `CustomerKey` | `customer.CustomerKey` | None | passthrough |
-| `GeoAreaKey` | `customer.GeoAreaKey` | None | passthrough |
-| `StartDT` | `customer.StartDT` | None | passthrough |
-| `EndDT` | `customer.EndDT` | None | passthrough |
-| `Continent` | `customer.Continent` | None | passthrough |
-| `Gender` | `customer.Gender` | None | passthrough |
-| `City` | `customer.City` | None | passthrough |
-| `ZipCode` | `customer.ZipCode` | None | passthrough |
-| `Country` | `customer.Country` | None | passthrough |
-| `CountryFull` | `customer.CountryFull` | None | passthrough |

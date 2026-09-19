@@ -27,27 +27,3 @@ Produces `contoso_served.dim_contoso_calendar_day` · grain: one row per Date �
 
 ## SQL realization
 Realized by `dim_contoso_calendar_day.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
-
-## Lineage (column-level)
-
-`contoso_served.dim_contoso_calendar_day` · kinds: passthrough
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `Date` | `date.Date` | None | passthrough |
-| `DateKey` | `date.DateKey` | None | passthrough |
-| `Year` | `date.Year` | None | passthrough |
-| `YearQuarter` | `date.YearQuarter` | None | passthrough |
-| `YearQuarterNumber` | `date.YearQuarterNumber` | None | passthrough |
-| `Quarter` | `date.Quarter` | None | passthrough |
-| `YearMonth` | `date.YearMonth` | None | passthrough |
-| `YearMonthShort` | `date.YearMonthShort` | None | passthrough |
-| `YearMonthNumber` | `date.YearMonthNumber` | None | passthrough |
-| `Month` | `date.Month` | None | passthrough |
-| `MonthShort` | `date.MonthShort` | None | passthrough |
-| `MonthNumber` | `date.MonthNumber` | None | passthrough |
-| `DayofWeek` | `date.DayofWeek` | None | passthrough |
-| `DayofWeekShort` | `date.DayofWeekShort` | None | passthrough |
-| `DayofWeekNumber` | `date.DayofWeekNumber` | None | passthrough |
-| `WorkingDay` | `date.WorkingDay` | None | passthrough |
-| `WorkingDayNumber` | `date.WorkingDayNumber` | None | passthrough |

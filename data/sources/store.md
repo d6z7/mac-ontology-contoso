@@ -10,21 +10,21 @@ tags:
 - CONTOSO
 - source
 - lifecycle:draft
-- confidence:C
+- confidence:I
 ---
 
 ## Columns
 
-| column | type | role | confidence |
-|---|---|---|---|
-| `StoreKey` | integer | primary_key |  |
-| `StoreCode` | integer | value |  |
-| `GeoAreaKey` | integer | value |  |
-| `CountryCode` | varchar | value |  |
-| `CountryName` | varchar | value |  |
-| `State` | varchar | value |  |
-| `OpenDate` | timestamp | value |  |
-| `CloseDate` | timestamp | value |  |
-| `Description` | varchar | value |  |
-| `SquareMeters` | integer | value |  |
-| `Status` | varchar | value |  |
+| column | type | role |
+|---|---|---|
+| `StoreKey` | integer | primary_key |
+| `StoreCode` | integer | value |
+| `GeoAreaKey` | integer | value |
+| `CountryCode` | varchar | value |
+| `CountryName` | varchar | value |
+| `State` | varchar | value |
+| `OpenDate` | timestamp | value |
+| `CloseDate` | timestamp | value |
+| `Description` | varchar | value |
+| `SquareMeters` | integer | value |
+| `Status` | varchar | value |

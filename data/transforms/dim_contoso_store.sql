@@ -12,6 +12,13 @@
 --     the served column spells missing exactly one way, NULL on 59 of 74 rows. It does NOT
 --     impute a meaning: whether '' meant 'operating' is an open ruling, and one of the 58 rows
 --     carries a CloseDate, which is evidence against reading '' as 'operating' (T8).
+-- CASTS   OpenDate, CloseDate: TIMESTAMP -> DATE. OPERATOR RULING 2026-09-19 ("change the dates
+--   from sources to datasets ... all time fields are anyway 00000"). LOSSLESS, measured not
+--   assumed: 0 non-midnight values over 74 of 74 OpenDate and 16 of 74 non-null CloseDate (58 are
+--   NULL = still open, and a cast leaves a NULL a NULL). The landing `main.store` keeps TIMESTAMP.
+--   OpenDate IS THE VERSION-ORDERING COLUMN of this SCD-2 dimension — (StoreCode, OpenDate) is the
+--   uniqueness claim, 74 of 74 — and the cast preserves it exactly, re-measured after: 74 distinct
+--   pairs over 74 rows.
 -- CARRIES UNFIXED: the sentinel row (StoreKey 999999 / StoreCode -1 / GeoAreaKey -1 /
 --   CountryCode '--' / CountryName+State 'Online'), the SCD-2 versioning (67 codes over 74 rows)
 --   and GeoAreaKey, which joins to nothing in this delivery.
@@ -24,8 +31,8 @@ SELECT s."StoreKey",
        s."CountryName",
        s."State",
        s."Description",
-       s."OpenDate",
-       s."CloseDate",
+       CAST(s."OpenDate" AS DATE) AS "OpenDate",
+       CAST(s."CloseDate" AS DATE) AS "CloseDate",
        s."SquareMeters",
        nullif(s."Status", '') AS Status
 FROM main.store s;

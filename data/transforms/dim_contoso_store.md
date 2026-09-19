@@ -37,21 +37,3 @@ Produces `contoso_served.dim_contoso_store` · grain: one row per StoreKey — o
 
 ## SQL realization
 Realized by `dim_contoso_store.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
-
-## Lineage (column-level)
-
-`contoso_served.dim_contoso_store` · kinds: passthrough
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `Status` | `store.Status` | empty-string-is-missing | passthrough |
-| `StoreKey` | `store.StoreKey` | None | passthrough |
-| `StoreCode` | `store.StoreCode` | None | passthrough |
-| `GeoAreaKey` | `store.GeoAreaKey` | None | passthrough |
-| `CountryCode` | `store.CountryCode` | None | passthrough |
-| `CountryName` | `store.CountryName` | None | passthrough |
-| `State` | `store.State` | None | passthrough |
-| `OpenDate` | `store.OpenDate` | None | passthrough |
-| `CloseDate` | `store.CloseDate` | None | passthrough |
-| `Description` | `store.Description` | None | passthrough |
-| `SquareMeters` | `store.SquareMeters` | None | passthrough |

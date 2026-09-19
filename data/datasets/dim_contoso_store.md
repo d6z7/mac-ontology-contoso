@@ -20,7 +20,7 @@ tags:
 | `CountryName` | varchar | discriminator |
 | `State` | varchar | discriminator |
 | `Description` | varchar | value |
-| `OpenDate` | timestamp | value |
-| `CloseDate` | timestamp | value |
+| `OpenDate` | date | value |
+| `CloseDate` | date | value |
 | `SquareMeters` | integer | value |
 | `Status` | varchar | discriminator |

@@ -10,27 +10,27 @@ tags:
 - CONTOSO
 - source
 - lifecycle:draft
-- confidence:C
+- confidence:I
 ---
 
 ## Columns
 
-| column | type | role | confidence |
-|---|---|---|---|
-| `Date` | timestamp | primary_key |  |
-| `DateKey` | varchar | value |  |
-| `Year` | integer | value |  |
-| `YearQuarter` | varchar | value |  |
-| `YearQuarterNumber` | integer | value |  |
-| `Quarter` | varchar | value |  |
-| `YearMonth` | varchar | value |  |
-| `YearMonthShort` | varchar | value |  |
-| `YearMonthNumber` | integer | value |  |
-| `Month` | varchar | value |  |
-| `MonthShort` | varchar | value |  |
-| `MonthNumber` | integer | value |  |
-| `DayofWeek` | varchar | value |  |
-| `DayofWeekShort` | varchar | value |  |
-| `DayofWeekNumber` | integer | value |  |
-| `WorkingDay` | integer | value |  |
-| `WorkingDayNumber` | integer | value |  |
+| column | type | role |
+|---|---|---|
+| `Date` | timestamp | primary_key |
+| `DateKey` | varchar | value |
+| `Year` | integer | value |
+| `YearQuarter` | varchar | value |
+| `YearQuarterNumber` | integer | value |
+| `Quarter` | varchar | value |
+| `YearMonth` | varchar | value |
+| `YearMonthShort` | varchar | value |
+| `YearMonthNumber` | integer | value |
+| `Month` | varchar | value |
+| `MonthShort` | varchar | value |
+| `MonthNumber` | integer | value |
+| `DayofWeek` | varchar | value |
+| `DayofWeekShort` | varchar | value |
+| `DayofWeekNumber` | integer | value |
+| `WorkingDay` | integer | value |
+| `WorkingDayNumber` | integer | value |

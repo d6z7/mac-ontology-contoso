@@ -21,9 +21,13 @@ metadata:
     read-only — 17 columns in the order and types the dataset descriptor declares (T1e), 4 018 rows /
     4 018 distinct Date / 0 duplicates (T2e). NO RULE IS APPLIED: `transforms` is empty, and the three
     things measurably odd about this relation are carried as open items below.
-    Measured and deliberately unchanged: every Date is a timestamp at midnight (P1 V10), which is what
-    makes the fact's OrderDate/DeliveryDate join to it exactly (0 dates off the calendar, P3 S15) —
-    normalising it would break that join, not improve it.
+    ONE CAST SINCE 2026-09-19 and `transforms` is still empty because a type cast repairs no defect
+    in the data: Date is served as DATE, cast from the landing's TIMESTAMP on the operator's ruling.
+    Every Date was a timestamp at midnight (P1 V10), re-measured as 0 non-midnight over 4 018 of
+    4 018 rows immediately before the cast, so the cast is lossless. That midnight is what made the
+    fact's OrderDate/DeliveryDate join to this column exactly (0 dates off the calendar, P3 S15), so
+    BOTH SIDES were cast in the same change rather than this one alone — re-measured after: 3 450 of
+    4 018 ordered days, 3 498 of 4 018 delivered days, inclusion 1.0 over 223 974 rows, 0 orphans.
 
 produces:
   relation: contoso_served.dim_contoso_calendar_day
@@ -55,7 +59,7 @@ open_transforms:
       declares this column varchar, so retyping it in the transform would make the served relation
       contradict the seam the ontology binds to; changing a served type is a promotion decision. And
       WHICH column the calendar keys on is itself open.
-    needs_ruling: "Does the calendar key on Date (timestamp) or DateKey (varchar YYYYMMDD)? (RUN.md Q11)"
+    needs_ruling: "Does the calendar key on Date (DATE since 2026-09-19) or DateKey (varchar YYYYMMDD)? (RUN.md Q11)"
     status: PROPOSED
 
   - id: boolean-as-integer
@@ -67,7 +71,7 @@ open_transforms:
       `d."WorkingDay" <> 0 AS WorkingDay` would serve it as a boolean — NOT applied, for the same reason
       as varchar-datekey: the dataset descriptor declares it integer, and a served type change belongs
       to the promotion step, not to this transform.
-    needs_ruling: "Should a served column's type be corrected when the landing's type is wrong? (kit/framework gap, RUN.md Q19-adjacent)"
+    needs_ruling: "Should a served column's type be corrected when the landing's type is wrong? (kit/framework gap, RUN.md Q19-adjacent) — ANSWERED 2026-09-19 FOR THE TEMPORAL CASE ONLY (timestamp -> date, the 8 served date columns). This flag is NOT covered by that ruling and stays integer."
     status: PROPOSED
 
   - id: calendar-covers-more-than-the-facts
@@ -97,3 +101,15 @@ governance:
         and the calendar's over-coverage carried as open items.
       change_type: CREATION
       by: P4 transformation-authoring (machine-authored, unratified)
+    - date: 2026-09-19
+      change: >
+        Date is served as DATE, cast in the .sql from the landing's TIMESTAMP. OPERATOR RULING
+        2026-09-19: "change the dates from sources to datasets ... all time fields are anyway
+        00000". LOSSLESS, MEASURED NOT ASSUMED: 0 non-midnight values over 4 018 of 4 018 rows on
+        this column, and 0 over all 19 date/timestamp columns of the warehouse (1 816 902 non-null
+        values). main.date is UNTOUCHED and keeps TIMESTAMP. Both sides of the fact-to-calendar
+        equality were cast together; re-measured identical after: 3 450 of 4 018 ordered days,
+        3 498 of 4 018 delivered days, inclusion 1.0 over 223 974 rows, 0 orphans. The two
+        NON-temporal type mismatches (varchar DateKey, integer WorkingDay) are NOT swept in.
+      change_type: CORRECTION
+      by: operator ruling 2026-09-19, applied by the transform (unratified)

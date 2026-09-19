@@ -10,14 +10,14 @@ tags:
 - CONTOSO
 - source
 - lifecycle:draft
-- confidence:C
+- confidence:I
 ---
 
 ## Columns
 
-| column | type | role | confidence |
-|---|---|---|---|
-| `Date` | timestamp | composite_key_part |  |
-| `FromCurrency` | varchar | composite_key_part |  |
-| `ToCurrency` | varchar | composite_key_part |  |
-| `Exchange` | decimal(20,5) | value |  |
+| column | type | role |
+|---|---|---|
+| `Date` | timestamp | composite_key_part |
+| `FromCurrency` | varchar | composite_key_part |
+| `ToCurrency` | varchar | composite_key_part |
+| `Exchange` | decimal(20,5) | value |

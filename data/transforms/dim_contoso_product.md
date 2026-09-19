@@ -38,24 +38,3 @@ Produces `contoso_served.dim_contoso_product` · grain: one row per ProductKey �
 
 ## SQL realization
 Realized by `dim_contoso_product.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
-
-## Lineage (column-level)
-
-`contoso_served.dim_contoso_product` · kinds: passthrough
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `Color` | `product.Color` | canonicalise-colour-case | passthrough |
-| `WeightUnit` | `product.WeightUnit` | empty-string-is-missing | passthrough |
-| `ProductKey` | `product.ProductKey` | None | passthrough |
-| `ProductCode` | `product.ProductCode` | None | passthrough |
-| `ProductName` | `product.ProductName` | None | passthrough |
-| `Manufacturer` | `product.Manufacturer` | None | passthrough |
-| `Brand` | `product.Brand` | None | passthrough |
-| `Weight` | `product.Weight` | None | passthrough |
-| `Cost` | `product.Cost` | None | passthrough |
-| `Price` | `product.Price` | None | passthrough |
-| `CategoryKey` | `product.CategoryKey` | None | passthrough |
-| `CategoryName` | `product.CategoryName` | None | passthrough |
-| `SubCategoryKey` | `product.SubCategoryKey` | None | passthrough |
-| `SubCategoryName` | `product.SubCategoryName` | None | passthrough |

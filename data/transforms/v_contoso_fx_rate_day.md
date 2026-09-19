@@ -19,14 +19,3 @@ Produces `contoso_served.v_contoso_fx_rate_day` · grain: one row per (Date, Fro
 
 ## SQL realization
 Realized by `v_contoso_fx_rate_day.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
-
-## Lineage (column-level)
-
-`contoso_served.v_contoso_fx_rate_day` · kinds: passthrough
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `Date` | `currencyexchange.Date` | None | passthrough |
-| `FromCurrency` | `currencyexchange.FromCurrency` | None | passthrough |
-| `ToCurrency` | `currencyexchange.ToCurrency` | None | passthrough |
-| `Exchange` | `currencyexchange.Exchange` | None | passthrough |

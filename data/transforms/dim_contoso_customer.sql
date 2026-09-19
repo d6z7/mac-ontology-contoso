@@ -45,6 +45,20 @@
 --   · NEITHER INPUT IS SERVED. Birthday is CONSUMED and NOT PROJECTED: it is the exact date of birth,
 --     i.e. the identifier the band exists to generalise. A consumer cannot recover it, or a
 --     single-year age, from the served row.
+-- CASTS   StartDT, EndDT: TIMESTAMP -> DATE. OPERATOR RULING 2026-09-19 ("change the dates from
+--   sources to datasets ... all time fields are anyway 00000"). LOSSLESS, measured not assumed:
+--   0 non-midnight values over 104 990 of 104 990 rows on each of the two columns (and 0 over all
+--   19 date/timestamp columns of the warehouse, 1 816 902 non-null values). The landing
+--   `main.customer` keeps TIMESTAMP; the cast lives at the sources->datasets seam.
+--   `Birthday` IS NOT CAST AND IS NOT A SERVED COLUMN — it is consumed by age_band_5y below and
+--   deliberately not projected, so its type is the landing's business and stays TIMESTAMP. The
+--   band's arithmetic is unchanged by this ruling: date_diff/strftime read a midnight timestamp
+--   and a date identically, and the derived value was re-measured after the cast — 15 bands,
+--   0 nulls over 104 990 rows, smallest cell 1 396.
+--   WHAT A DATE CANNOT CARRY, and nothing catches it: a TIMESTAMP column could hold 09:30; a DATE
+--   cannot. A future delivery whose StartDT carries a time is now TRUNCATED at this view rather
+--   than refused, silently. No gate, suite property or rule in this bundle asserts midnight on the
+--   landing, so that truncation would be invisible. Recorded as a known gap, not guarded.
 -- CARRIES UNFIXED: the one customer whose validity window has zero length (StartDT = EndDT);
 --   GeoAreaKey, which joins to nothing in this delivery; and the QUASI-IDENTIFIER shape of the
 --   served row — ZipCode alone singles out 29 193 of 104 990 customers, and adding age_band_5y to
@@ -57,8 +71,8 @@
 CREATE OR REPLACE VIEW contoso_served.dim_contoso_customer AS
 SELECT c."CustomerKey",
        c."GeoAreaKey",
-       c."StartDT",
-       c."EndDT",
+       CAST(c."StartDT" AS DATE) AS "StartDT",
+       CAST(c."EndDT" AS DATE) AS "EndDT",
        c."Continent",
        c."CountryFull",
        c."Country",

@@ -53,22 +53,3 @@ Produces `contoso_served.v_contoso_order_line` · grain: one row per (OrderKey, 
 
 ## SQL realization
 Realized by `v_contoso_order_line.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
-
-## Lineage (column-level)
-
-`contoso_served.v_contoso_order_line` · kinds: passthrough · rename
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `OrderKey` | `orderrows.OrderKey` | None | passthrough |
-| `RowNumber` | `orderrows.RowNumber` | None | passthrough |
-| `ProductKey` | `orderrows.ProductKey` | None | passthrough |
-| `Quantity` | `orderrows.Quantity` | None | passthrough |
-| `UnitPrice` | `orderrows.UnitPrice` | None | passthrough |
-| `NetPrice` | `orderrows.NetPrice` | None | passthrough |
-| `UnitCost` | `orderrows.UnitCost` | None | passthrough |
-| `OrderDate` | `orders.DT` | rename-dt-to-orderdate | rename |
-| `CustomerKey` | `orders.CustomerKey` | attach-order-header | passthrough |
-| `StoreKey` | `orders.StoreKey` | attach-order-header | passthrough |
-| `DeliveryDate` | `orders.DeliveryDate` | attach-order-header | passthrough |
-| `CurrencyCode` | `orders.CurrencyCode` | attach-order-header | passthrough |

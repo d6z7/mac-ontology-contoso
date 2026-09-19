@@ -15,8 +15,8 @@ tags:
 |---|---|---|
 | `OrderKey` | bigint | composite_key_part |
 | `RowNumber` | integer | composite_key_part |
-| `OrderDate` | timestamp | foreign_key |
-| `DeliveryDate` | timestamp | foreign_key |
+| `OrderDate` | date | foreign_key |
+| `DeliveryDate` | date | foreign_key |
 | `CustomerKey` | integer | foreign_key |
 | `StoreKey` | integer | foreign_key |
 | `ProductKey` | integer | foreign_key |

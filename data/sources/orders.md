@@ -10,16 +10,16 @@ tags:
 - CONTOSO
 - source
 - lifecycle:draft
-- confidence:C
+- confidence:I
 ---
 
 ## Columns
 
-| column | type | role | confidence |
-|---|---|---|---|
-| `OrderKey` | bigint | primary_key |  |
-| `CustomerKey` | integer | value |  |
-| `StoreKey` | integer | value |  |
-| `DT` | timestamp | value |  |
-| `DeliveryDate` | timestamp | value |  |
-| `CurrencyCode` | varchar | value |  |
+| column | type | role |
+|---|---|---|
+| `OrderKey` | bigint | primary_key |
+| `CustomerKey` | integer | value |
+| `StoreKey` | integer | value |
+| `DT` | timestamp | value |
+| `DeliveryDate` | timestamp | value |
+| `CurrencyCode` | varchar | value |

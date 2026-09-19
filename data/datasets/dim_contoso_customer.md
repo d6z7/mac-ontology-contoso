@@ -15,8 +15,8 @@ tags:
 |---|---|---|
 | `CustomerKey` | integer | primary_key |
 | `GeoAreaKey` | integer | value |
-| `StartDT` | timestamp | value |
-| `EndDT` | timestamp | value |
+| `StartDT` | date | value |
+| `EndDT` | date | value |
 | `Continent` | varchar | discriminator |
 | `CountryFull` | varchar | discriminator |
 | `Country` | varchar | discriminator |
