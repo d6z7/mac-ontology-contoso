@@ -39,12 +39,14 @@ All 32 members, their keys, their search keys, their product counts and their PA
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `ProductKey` | key | `dim_contoso_product` (key) |  |  |
-| `SubCategoryKey` | key | `dim_contoso_product` |  |  |
-| `SubCategoryName` | dimension | `dim_contoso_product` |  |  |
-| `CategoryKey` | key | `dim_contoso_product` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `ProductKey` | integer | key | `dim_contoso_product` (key) | — | — |
+| `SubCategoryKey` | integer | key | `dim_contoso_product` | — | — |
+| `SubCategoryName` | varchar | dimension | `dim_contoso_product` | — | — |
+| `CategoryKey` | integer | key | `dim_contoso_product` | — | — |
+
+_Declared per column, over 4 columns: description 0 of 4 · type 4 of 4 · joins → 0 of 4. An em dash is a column for which nothing is declared._
 
 ## Relationships
 

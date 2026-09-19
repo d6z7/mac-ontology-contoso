@@ -39,11 +39,13 @@ All 11 members, their product counts and their manufacturers are enumerated abov
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `ProductKey` | key | `dim_contoso_product` (key) |  |  |
-| `Brand` | dimension | `dim_contoso_product` |  |  |
-| `Manufacturer` | attribute | `dim_contoso_product` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `ProductKey` | integer | key | `dim_contoso_product` (key) | — | — |
+| `Brand` | varchar | dimension | `dim_contoso_product` | 11 measured values; the scope's 'by brand' axis. Brand <-> Manufacturer is 1:1 today (P2), whether by law is unruled (Q13). | — |
+| `Manufacturer` | varchar | attribute | `dim_contoso_product` | — | — |
+
+_Declared per column, over 3 columns: description 1 of 3 · type 3 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
 
 ## Relationships
 

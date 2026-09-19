@@ -1,17 +1,17 @@
 ---
 type: Doc
 title: SME questions — ontology
-description: 29 questions and 43 sign-off requests the model and its tests put to an SME
+description: 29 questions and 45 sign-off requests the model and its tests put to an SME
 tags:
 - CONTOSO
 - sme-questions
 ---
 
-What the model and its tests ask a subject-matter expert: **29 question(s)** and **43 sign-off request(s)**, 72 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
+What the model and its tests ask a subject-matter expert: **29 question(s)** and **45 sign-off request(s)**, 74 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
 
 Conversation status is not part of this projection; it lives in the bundle's SME question ledger.
 
-Rows by origin: concept-field 29 · register 43
+Rows by origin: concept-field 29 · register 45
 
 ## Questions — 29
 
@@ -247,7 +247,7 @@ Rows by origin: concept-field 29 · register 43
 
 > Should 'Restructured' roll up under 'Closed' for reporting? Both always carry a CloseDate, so structurally they are the same event with different causes; whether a business report wants them separate is not something the data can say.
 
-## Sign-offs — 43
+## Sign-offs — 45
 
 ### `concept:age_band#confidence`
 
@@ -473,6 +473,13 @@ Rows by origin: concept-field 29 · register 43
 
 > Is the rule “Gross is quantity times LIST price, per line, then summed” on “Gross Sales Amount” correct? It is recorded as proposed, not confirmed.
 
+### `rule:gross_sales_amount.evidence.no_line_is_not_a_zero#confidence`
+
+- origin: register · owner role: not declared · concept: [gross_sales_amount](concepts/gross_sales_amount.md)
+- source: `ontology/concepts/finance/gross_sales_amount.yaml` → `contract.rules[id=gross_sales_amount.evidence.no_line_is_not_a_zero]`
+
+> Is the rule “A scope with no line has no gross figure — refuse, never report a zero” on “Gross Sales Amount” correct? It is recorded as proposed, not confirmed.
+
 ### `rule:net_sales_amount.ambiguity.gross_or_net#confidence`
 
 - origin: register · owner role: not declared · concept: [net_sales_amount](concepts/net_sales_amount.md)
@@ -486,6 +493,13 @@ Rows by origin: concept-field 29 · register 43
 - source: `ontology/concepts/finance/net_sales_amount.yaml` → `contract.rules[id=net_sales_amount.derivation.quantity_times_net_price]`
 
 > Is the rule “Net is quantity times DISCOUNTED price, per line, then summed” on “Net Sales Amount” correct? It is recorded as proposed, not confirmed.
+
+### `rule:net_sales_amount.evidence.no_line_is_not_a_zero#confidence`
+
+- origin: register · owner role: not declared · concept: [net_sales_amount](concepts/net_sales_amount.md)
+- source: `ontology/concepts/finance/net_sales_amount.yaml` → `contract.rules[id=net_sales_amount.evidence.no_line_is_not_a_zero]`
+
+> Is the rule “A scope with no line has no net figure — refuse, never report a zero” on “Net Sales Amount” correct? It is recorded as proposed, not confirmed.
 
 ### `rule:order_line.currency.no_bare_cross_currency_sum#confidence`
 

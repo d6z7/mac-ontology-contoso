@@ -39,11 +39,13 @@ The three members and their country lists are enumerated above; the same map is 
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `CustomerKey` | key | `dim_contoso_customer` (key) |  |  |
-| `Continent` | dimension | `dim_contoso_customer` |  |  |
-| `Country` | dimension | `dim_contoso_customer` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `CustomerKey` | integer | key | `dim_contoso_customer` (key) | — | — |
+| `Continent` | varchar | dimension | `dim_contoso_customer` | 3 measured values; the only continent column in the delivery (S10/S11). | — |
+| `Country` | varchar | dimension | `dim_contoso_customer` | 8 measured values; covers every store country except the sentinel '--' (S11, S12). | — |
+
+_Declared per column, over 3 columns: description 2 of 3 · type 3 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
 
 ## Relationships
 

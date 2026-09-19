@@ -44,13 +44,24 @@ one row = one country code, in the dimension that carries it
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `Country` | dimension | `dim_contoso_customer` |  |  |
-| `CountryFull` | attribute | `dim_contoso_customer` |  |  |
-| `Continent` | — | `dim_contoso_customer` |  |  |
-| `CountryCode` | dimension | `dim_contoso_store` |  |  |
-| `CountryName` | attribute | `dim_contoso_store` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `Country` | varchar | dimension | `dim_contoso_customer` | 8 measured values; covers every store country except the sentinel '--' (S11, S12). | — |
+| `CountryFull` | varchar | attribute | `dim_contoso_customer` | 8 measured values. | — |
+| `Continent` | varchar | — | `dim_contoso_customer` | 3 measured values; the only continent column in the delivery (S10/S11). | — |
+| `CountryCode` | varchar | dimension | `dim_contoso_store` | 9 measured values, one of which is the sentinel '--' on the 'Online' row. | — |
+| `CountryName` | varchar | attribute | `dim_contoso_store` | 9 measured values, one of which is 'Online' — a channel sitting in a country column (RUN.md Q7). Not corrected here: correcting it would invent a market for 41.8 % of the fact. | — |
+
+_Declared per column, over 5 columns: description 5 of 5 · type 5 of 5 · joins → 0 of 5. An em dash is a column for which nothing is declared._
+
+## Relationships
+
+*0 join(s) out · 2 in — click a concept to open it.*
+
+**Referenced by** — these point at this concept:
+
+- [Customer](customer.md) — on `Country`
+- [Store](store.md) — on `CountryCode`
 
 ## Source of record
 - Full MAC concept: `country.yaml` — open the **YAML** tab for the complete typed definition.

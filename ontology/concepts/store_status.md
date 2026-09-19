@@ -39,12 +39,22 @@ Both coded members, their labels, their search keys and their version counts are
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `StoreKey` | key | `dim_contoso_store` (key) |  |  |
-| `StoreCode` | key | `dim_contoso_store` |  |  |
-| `Status` | dimension | `dim_contoso_store` |  |  |
-| `CloseDate` | dimension | `dim_contoso_store` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `StoreKey` | integer | key | `dim_contoso_store` (key) | — | — |
+| `StoreCode` | integer | key | `dim_contoso_store` | the store's natural code; NOT unique (67 codes over 74 rows). (StoreCode, OpenDate) is measured unique (74/74) — the natural temporal key of the SCD-2 (P2 G6). | — |
+| `Status` | varchar | dimension | `dim_contoso_store` | CLEANSED: the landing spells missing two ways, '' on 58 rows and NULL on 1 (P1 #5); the served column uses NULL for both. Whether '' meant 'operating' is an open ruling (Q7). | — |
+| `CloseDate` | date | dimension | `dim_contoso_store` | null on 58/74 rows (P1 #5). DATE since 2026-09-19, same cast as OpenDate; lossless over the 16 of 74 non-null values (0 non-midnight), and a cast leaves the 58 nulls null. | — |
+
+_Declared per column, over 4 columns: description 3 of 4 · type 4 of 4 · joins → 0 of 4. An em dash is a column for which nothing is declared._
+
+## Relationships
+
+*0 join(s) out · 1 in — click a concept to open it.*
+
+**Referenced by** — these point at this concept:
+
+- [Store](store.md) — on `Status`
 
 ## Source of record
 - Full MAC concept: `store_status.yaml` — open the **YAML** tab for the complete typed definition.

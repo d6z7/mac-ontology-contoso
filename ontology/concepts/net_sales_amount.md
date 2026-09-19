@@ -10,6 +10,7 @@ resource: table://v_contoso_order_line
 rule_pages:
 - rules/net_sales_amount.derivation.quantity_times_net_price.md
 - rules/net_sales_amount.ambiguity.gross_or_net.md
+- rules/net_sales_amount.evidence.no_line_is_not_a_zero.md
 ---
 
 The money value of sales AFTER discount: per order line, Quantity x NetPrice, summed over the lines in scope. This is what "total sales" means here when the question does not say otherwise.
@@ -44,14 +45,41 @@ computed per order line — (OrderKey, RowNumber) — then folded over the axes 
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `OrderKey` | key | `v_contoso_order_line` |  |  |
-| `RowNumber` | key | `v_contoso_order_line` |  |  |
-| `Quantity` | measure | `v_contoso_order_line` |  |  |
-| `NetPrice` | measure | `v_contoso_order_line` |  |  |
-| `CurrencyCode` | dimension | `v_contoso_order_line` |  |  |
-| `OrderDate` | dimension | `v_contoso_order_line` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `OrderKey` | bigint | key | `v_contoso_order_line` | part 1 of the cell key. A DEGENERATE DIMENSION here: the order header is not served as a relation of its own (NS-ORDERS-02), so this column groups the lines of an order and joins to nothing. | — |
+| `RowNumber` | integer | key | `v_contoso_order_line` | part 2 of the cell key; indispensable — (OrderKey, ProductKey) is NOT unique (223 713 pairs over 223 974 rows, P2 G2). Numbering starts at 0 and 1 448 orders have gaps, so a dense line index may not be assumed (P1 U5). `sales` carries the identical values under the name LineNumber (0 rows either way on EXCEPT, S4). | — |
+| `Quantity` | integer | measure | `v_contoso_order_line` | — | [Order Line](order_line.md) _(business)_ |
+| `NetPrice` | decimal(20,5) | measure | `v_contoso_order_line` | price per unit after discount; measured <= UnitPrice on every row, below it on 136 913/223 974 lines (S6). | — |
+| `CurrencyCode` | varchar | dimension | `v_contoso_order_line` | the denomination of every amount on the row; 5 measured values. Joins to the fx grid as FromCurrency together with the day, not by itself. | — |
+| `OrderDate` | date | dimension | `v_contoso_order_line` | RENAMED from the landing's `DT` to the name this same value carries in the `sales` delivery (measured identical on 223 974/223 974 rows, S5 diff_orderdate = 0). The only renamed column in this bundle; every other served column keeps its landing name. DATE since 2026-09-19, cast in the transform from the landing's TIMESTAMP on the operator's ruling; lossless and measured, not assumed — 0 non-midnight over 223 974 of 223 974 rows immediately before the cast. main.orders (and the unread main.sales) keep TIMESTAMP. Both joins that cross this column were cast on both sides in the same change: the conversion join to v_contoso_fx_rate_day.Date and the ordered role to dim_contoso_calendar_day.Date. | — |
+
+_Declared per column, over 6 columns: description 5 of 6 · type 6 of 6 · joins → 1 of 6. An em dash is a column for which nothing is declared._
+
+## Axes
+
+Measure type: `Flow` — `mac.MeasureType.Flow`.
+
+| axis | axis kind | fold |
+|---|---|---|
+| `brand` | categorical | additive |
+| `continent` | categorical | additive |
+| `country` | categorical | additive |
+| `customer` | categorical | additive |
+| `product` | categorical | additive |
+| `product_category` | categorical | additive |
+| `store` | categorical | additive |
+| `time` | time | additive |
+
+_The fold is read from the framework registry (`MeasureType.<type>.additivity.<axis kind>`), not declared on this concept. An em dash means the crossing is not declared there._
+
+## Relationships
+
+*1 join(s) out · 0 in — click a concept to open it.*
+
+**Joins to** — this concept references:
+
+- [Order Line](order_line.md) — joined on `Quantity`
 
 ## Source of record
 - Full MAC concept: `net_sales_amount.yaml` — open the **YAML** tab for the complete typed definition.

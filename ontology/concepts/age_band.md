@@ -41,10 +41,20 @@ The 15 members, their meanings and their populations are declared in this file; 
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `CustomerKey` | key | `dim_contoso_customer` (key) |  |  |
-| `age_band_5y` | dimension | `dim_contoso_customer` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `CustomerKey` | integer | key | `dim_contoso_customer` (key) | — | — |
+| `age_band_5y` | integer | dimension | `dim_contoso_customer` | DERIVED, NOT DELIVERED, AND IT CARRIES AN AS-OF DATE. The customer's age in whole years, floored to a 5-year band and served as the band's LOWER BOUND (20, 25, … 90 — an integer, so it sorts and compares as an age), derived from the unserved `Birthday` AS OF 2025-12-31. That date is the delivery's fact horizon (the newest order date) and is a CHOICE: the same three places must agree on it — the rule `derive-age-band-as-of` in data/transforms/dim_contoso_customer.yaml, the literal in the .sql, and this note. WHEN THE FACT HORIZON MOVES THE BAND MUST BE RE-DERIVED, and nothing enforces that (DQ-CUSTOMER-01, residual risk 1). Measured 2026-09-18: 15 bands, 0 nulls over 104 990 rows, smallest cell 1 396, no customer alone in a band. NOT SERVED alongside it: the stored `Age` (as-of 2020/2021 on every row, and unbanded) and `Birthday` (the identifier this band generalises) — see DQ-CUSTOMER-01 and NS-CUSTOMER-01. GROUPING ON IT IS LEGITIMATE AND HAS A MEASURED COST: the band alone singles out nobody, but added to ZipCode + Gender it takes the uniquely identifiable population from 35 894 to 74 617 of 104 990 (DQ-CUSTOMER-02, `coverage: gap`). | — |
+
+_Declared per column, over 2 columns: description 1 of 2 · type 2 of 2 · joins → 0 of 2. An em dash is a column for which nothing is declared._
+
+## Relationships
+
+*0 join(s) out · 1 in — click a concept to open it.*
+
+**Referenced by** — these point at this concept:
+
+- [Customer](customer.md) — on `age_band_5y`
 
 ## Source of record
 - Full MAC concept: `age_band.yaml` — open the **YAML** tab for the complete typed definition.

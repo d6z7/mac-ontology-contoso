@@ -43,22 +43,24 @@ one row = one product — ProductKey
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `ProductKey` | key | `dim_contoso_product` (key) |  |  |
-| `ProductCode` | dimension | `dim_contoso_product` |  |  |
-| `ProductName` | attribute | `dim_contoso_product` |  |  |
-| `Manufacturer` | attribute | `dim_contoso_product` |  |  |
-| `Brand` | dimension | `dim_contoso_product` |  |  |
-| `Color` | dimension | `dim_contoso_product` |  |  |
-| `WeightUnit` | dimension | `dim_contoso_product` |  |  |
-| `Weight` | measure | `dim_contoso_product` |  |  |
-| `Cost` | measure | `dim_contoso_product` |  |  |
-| `Price` | measure | `dim_contoso_product` |  |  |
-| `CategoryKey` | key | `dim_contoso_product` |  |  |
-| `CategoryName` | dimension | `dim_contoso_product` |  |  |
-| `SubCategoryKey` | key | `dim_contoso_product` |  |  |
-| `SubCategoryName` | dimension | `dim_contoso_product` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `ProductKey` | integer | key | `dim_contoso_product` (key) | ProductKey — the identity, and the column the fact joins on. | — |
+| `ProductCode` | varchar | dimension | `dim_contoso_product` | measured unique today (2 517/2 517, P2 G5); whether it is the product's business identity is an open ruling (RUN.md Q10), so it is served as a value, not as the key. | — |
+| `ProductName` | varchar | attribute | `dim_contoso_product` | measured unique today (2 517/2 517) — almost certainly convention, not law (Q10). | — |
+| `Manufacturer` | varchar | attribute | `dim_contoso_product` | Manufacturer — 1:1 with Brand today (measured 0 brands with two manufacturers). | — |
+| `Brand` | varchar | dimension | `dim_contoso_product` | 11 measured values; the scope's 'by brand' axis. Brand <-> Manufacturer is 1:1 today (P2), whether by law is unruled (Q13). | — |
+| `Color` | varchar | dimension | `dim_contoso_product` | CLEANSED: the landing carries 17 spellings that fold to 16 (Blue 197 rows / blue 3) — a closed vocabulary drifting by case (P1 #7, S8). The served column carries one spelling per colour; the rule belongs to the transform (P4). | — |
+| `WeightUnit` | varchar | dimension | `dim_contoso_product` | CLEANSED: '' in the landing on 222 rows becomes NULL (absence_semantics). 62 rows name a unit for a weight that is not there (P1 #6) — missing vs not-applicable is an open ruling (Q7), not something this promotion decides. | — |
+| `Weight` | decimal(20,5) | measure | `dim_contoso_product` | null on 284/2 517 rows (P1). | — |
+| `Cost` | decimal(20,5) | measure | `dim_contoso_product` | Cost — the catalogue cost. The cost actually booked is UnitCost on the order line. | — |
+| `Price` | decimal(20,5) | measure | `dim_contoso_product` | Price — the catalogue list price. NOT the price a line sold at: the line carries its own UnitPrice and NetPrice, and a sales figure is computed from those, never from here. | — |
+| `CategoryKey` | integer | key | `dim_contoso_product` | — | — |
+| `CategoryName` | varchar | dimension | `dim_contoso_product` | — | — |
+| `SubCategoryKey` | integer | key | `dim_contoso_product` | — | — |
+| `SubCategoryName` | varchar | dimension | `dim_contoso_product` | — | — |
+
+_Declared per column, over 14 columns: description 10 of 14 · type 14 of 14 · joins → 0 of 14. An em dash is a column for which nothing is declared._
 
 ## Relationships
 

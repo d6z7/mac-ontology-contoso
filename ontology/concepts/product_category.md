@@ -39,11 +39,13 @@ All 8 members, their keys, their search keys and their product counts are in dat
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `ProductKey` | key | `dim_contoso_product` (key) |  |  |
-| `CategoryKey` | key | `dim_contoso_product` |  |  |
-| `CategoryName` | dimension | `dim_contoso_product` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `ProductKey` | integer | key | `dim_contoso_product` (key) | — | — |
+| `CategoryKey` | integer | key | `dim_contoso_product` | — | — |
+| `CategoryName` | varchar | dimension | `dim_contoso_product` | — | — |
+
+_Declared per column, over 3 columns: description 0 of 3 · type 3 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
 
 ## Relationships
 

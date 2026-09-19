@@ -40,11 +40,23 @@ The five members are in data/lookups/contoso_currency.lookup.csv, cut from the s
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `CurrencyCode` | dimension | `v_contoso_order_line` |  |  |
-| `FromCurrency` | key | `v_contoso_fx_rate_day` |  |  |
-| `ToCurrency` | key | `v_contoso_fx_rate_day` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `CurrencyCode` | varchar | dimension | `v_contoso_order_line` | the denomination of every amount on the row; 5 measured values. Joins to the fx grid as FromCurrency together with the day, not by itself. | — |
+| `FromCurrency` | varchar | key | `v_contoso_fx_rate_day` | 5 measured values. | — |
+| `ToCurrency` | varchar | key | `v_contoso_fx_rate_day` | 5 measured values. | — |
+
+_Declared per column, over 3 columns: description 3 of 3 · type 3 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
+
+## Relationships
+
+*0 join(s) out · 3 in — click a concept to open it.*
+
+**Referenced by** — these point at this concept:
+
+- [Exchange Rate](exchange_rate.md) — on `FromCurrency`
+- [Exchange Rate](exchange_rate.md) — on `ToCurrency`
+- [Order Line](order_line.md) — on `CurrencyCode`
 
 ## Source of record
 - Full MAC concept: `currency.yaml` — open the **YAML** tab for the complete typed definition.

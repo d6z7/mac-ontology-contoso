@@ -42,25 +42,33 @@ one row = one customer — CustomerKey
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `CustomerKey` | key | `dim_contoso_customer` (key) |  |  |
-| `GeoAreaKey` | key | `dim_contoso_customer` |  |  |
-| `StartDT` | attribute | `dim_contoso_customer` |  |  |
-| `EndDT` | attribute | `dim_contoso_customer` |  |  |
-| `Continent` | dimension | `dim_contoso_customer` |  |  |
-| `CountryFull` | attribute | `dim_contoso_customer` |  |  |
-| `Country` | dimension | `dim_contoso_customer` |  |  |
-| `StateFull` | attribute | `dim_contoso_customer` |  |  |
-| `State` | dimension | `dim_contoso_customer` |  |  |
-| `City` | attribute | `dim_contoso_customer` |  |  |
-| `ZipCode` | attribute | `dim_contoso_customer` |  |  |
-| `Gender` | dimension | `dim_contoso_customer` |  |  |
-| `age_band_5y` | dimension | `dim_contoso_customer` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `CustomerKey` | integer | key | `dim_contoso_customer` (key) | CustomerKey — the identity, and the column the fact joins on. | — |
+| `GeoAreaKey` | integer | key | `dim_contoso_customer` | 608 distinct values and no geography relation to join (P1 O9); determines Country and Continent (measured, P2). | [Region](geo_area.md) _(business)_ |
+| `StartDT` | date | attribute | `dim_contoso_customer` | validity window start. DATE since 2026-09-19, cast in the transform from the landing's TIMESTAMP on the operator's ruling; lossless and measured, not assumed — 0 non-midnight over 104 990 of 104 990 rows immediately before the cast. main.customer keeps TIMESTAMP. No customer is restated today (1 row each, P2 G7) — whether a restatement can arrive is an open ruling (Q12). One customer has StartDT = EndDT. | — |
+| `EndDT` | date | attribute | `dim_contoso_customer` | validity window end. DATE since 2026-09-19, same cast and same evidence as StartDT: 0 non-midnight over 104 990 of 104 990 rows. | — |
+| `Continent` | varchar | dimension | `dim_contoso_customer` | 3 measured values; the only continent column in the delivery (S10/S11). | — |
+| `CountryFull` | varchar | attribute | `dim_contoso_customer` | 8 measured values. | — |
+| `Country` | varchar | dimension | `dim_contoso_customer` | 8 measured values; covers every store country except the sentinel '--' (S11, S12). | [Country](country.md) _(business)_ |
+| `StateFull` | varchar | attribute | `dim_contoso_customer` | — | — |
+| `State` | varchar | dimension | `dim_contoso_customer` | — | — |
+| `City` | varchar | attribute | `dim_contoso_customer` | — | — |
+| `ZipCode` | varchar | attribute | `dim_contoso_customer` | — | — |
+| `Gender` | varchar | dimension | `dim_contoso_customer` | 2 measured values. | — |
+| `age_band_5y` | integer | dimension | `dim_contoso_customer` | DERIVED, NOT DELIVERED, AND IT CARRIES AN AS-OF DATE. The customer's age in whole years, floored to a 5-year band and served as the band's LOWER BOUND (20, 25, … 90 — an integer, so it sorts and compares as an age), derived from the unserved `Birthday` AS OF 2025-12-31. That date is the delivery's fact horizon (the newest order date) and is a CHOICE: the same three places must agree on it — the rule `derive-age-band-as-of` in data/transforms/dim_contoso_customer.yaml, the literal in the .sql, and this note. WHEN THE FACT HORIZON MOVES THE BAND MUST BE RE-DERIVED, and nothing enforces that (DQ-CUSTOMER-01, residual risk 1). Measured 2026-09-18: 15 bands, 0 nulls over 104 990 rows, smallest cell 1 396, no customer alone in a band. NOT SERVED alongside it: the stored `Age` (as-of 2020/2021 on every row, and unbanded) and `Birthday` (the identifier this band generalises) — see DQ-CUSTOMER-01 and NS-CUSTOMER-01. GROUPING ON IT IS LEGITIMATE AND HAS A MEASURED COST: the band alone singles out nobody, but added to ZipCode + Gender it takes the uniquely identifiable population from 35 894 to 74 617 of 104 990 (DQ-CUSTOMER-02, `coverage: gap`). | [Age Band](age_band.md) _(business)_ |
+
+_Declared per column, over 13 columns: description 9 of 13 · type 13 of 13 · joins → 3 of 13. An em dash is a column for which nothing is declared._
 
 ## Relationships
 
-*0 join(s) out · 1 in — click a concept to open it.*
+*3 join(s) out · 1 in — click a concept to open it.*
+
+**Joins to** — this concept references:
+
+- [Age Band](age_band.md) — joined on `age_band_5y`
+- [Country](country.md) — joined on `Country`
+- [Region](geo_area.md) — joined on `GeoAreaKey`
 
 **Referenced by** — these point at this concept:
 

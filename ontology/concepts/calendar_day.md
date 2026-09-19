@@ -43,25 +43,27 @@ one row = one calendar day — Date
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `Date` | key | `dim_contoso_calendar_day` (key) |  |  |
-| `DateKey` | key | `dim_contoso_calendar_day` |  |  |
-| `Year` | dimension | `dim_contoso_calendar_day` |  |  |
-| `YearQuarter` | dimension | `dim_contoso_calendar_day` |  |  |
-| `YearQuarterNumber` | attribute | `dim_contoso_calendar_day` |  |  |
-| `Quarter` | dimension | `dim_contoso_calendar_day` |  |  |
-| `YearMonth` | dimension | `dim_contoso_calendar_day` |  |  |
-| `YearMonthShort` | attribute | `dim_contoso_calendar_day` |  |  |
-| `YearMonthNumber` | attribute | `dim_contoso_calendar_day` |  |  |
-| `Month` | dimension | `dim_contoso_calendar_day` |  |  |
-| `MonthShort` | attribute | `dim_contoso_calendar_day` |  |  |
-| `MonthNumber` | dimension | `dim_contoso_calendar_day` |  |  |
-| `DayofWeek` | dimension | `dim_contoso_calendar_day` |  |  |
-| `DayofWeekShort` | attribute | `dim_contoso_calendar_day` |  |  |
-| `DayofWeekNumber` | dimension | `dim_contoso_calendar_day` |  |  |
-| `WorkingDay` | dimension | `dim_contoso_calendar_day` |  |  |
-| `WorkingDayNumber` | attribute | `dim_contoso_calendar_day` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `Date` | date | key | `dim_contoso_calendar_day` (key) | DATE since 2026-09-19, cast in the transform from the landing's TIMESTAMP on the operator's ruling. Lossless and measured, not assumed: every value was a timestamp at midnight (P1 V10), re-measured as 0 non-midnight over 4 018 of 4 018 rows immediately before the cast. main.date keeps TIMESTAMP; the served type is decided at the sources->datasets seam. The fact's OrderDate/DeliveryDate join this column by exact equality and were cast in the same change, so both sides are DATE — re-measured after: 3 450 of 4 018 ordered days, 3 498 of 4 018 delivered days, inclusion 1.0 over 223 974 rows, 0 orphans. DateKey is the same identity as varchar YYYYMMDD; which one the calendar keys on is still an open ruling (RUN.md Q11) — this descriptor keys on Date because the facts carry the day. | — |
+| `DateKey` | varchar | key | `dim_contoso_calendar_day` | varchar YYYYMMDD on every row (P1 V9); bijective with Date (4 018/4 018, P2 G8). | — |
+| `Year` | integer | dimension | `dim_contoso_calendar_day` | Year — 11 distinct values. | — |
+| `YearQuarter` | varchar | dimension | `dim_contoso_calendar_day` | — | — |
+| `YearQuarterNumber` | integer | attribute | `dim_contoso_calendar_day` | — | — |
+| `Quarter` | varchar | dimension | `dim_contoso_calendar_day` | — | — |
+| `YearMonth` | varchar | dimension | `dim_contoso_calendar_day` | — | — |
+| `YearMonthShort` | varchar | attribute | `dim_contoso_calendar_day` | — | — |
+| `YearMonthNumber` | integer | attribute | `dim_contoso_calendar_day` | — | — |
+| `Month` | varchar | dimension | `dim_contoso_calendar_day` | — | — |
+| `MonthShort` | varchar | attribute | `dim_contoso_calendar_day` | — | — |
+| `MonthNumber` | integer | dimension | `dim_contoso_calendar_day` | — | — |
+| `DayofWeek` | varchar | dimension | `dim_contoso_calendar_day` | — | — |
+| `DayofWeekShort` | varchar | attribute | `dim_contoso_calendar_day` | — | — |
+| `DayofWeekNumber` | integer | dimension | `dim_contoso_calendar_day` | — | — |
+| `WorkingDay` | integer | dimension | `dim_contoso_calendar_day` | declared integer, used as a boolean (0/1 only, P1 V12). | — |
+| `WorkingDayNumber` | integer | attribute | `dim_contoso_calendar_day` | — | — |
+
+_Declared per column, over 17 columns: description 4 of 17 · type 17 of 17 · joins → 0 of 17. An em dash is a column for which nothing is declared._
 
 ## Relationships
 

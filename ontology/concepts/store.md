@@ -44,23 +44,31 @@ one row = one VERSION of one store — StoreKey; the business entity is StoreCod
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `StoreKey` | key | `dim_contoso_store` (key) |  |  |
-| `StoreCode` | key | `dim_contoso_store` |  |  |
-| `GeoAreaKey` | key | `dim_contoso_store` |  |  |
-| `CountryCode` | dimension | `dim_contoso_store` |  |  |
-| `CountryName` | attribute | `dim_contoso_store` |  |  |
-| `State` | dimension | `dim_contoso_store` |  |  |
-| `Description` | attribute | `dim_contoso_store` |  |  |
-| `OpenDate` | dimension | `dim_contoso_store` |  |  |
-| `CloseDate` | dimension | `dim_contoso_store` |  |  |
-| `SquareMeters` | measure | `dim_contoso_store` |  |  |
-| `Status` | dimension | `dim_contoso_store` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `StoreKey` | integer | key | `dim_contoso_store` (key) | StoreKey — the version surrogate, the identity, and the column the fact joins on. | [Store Status](store_status.md) _(business)_ |
+| `StoreCode` | integer | key | `dim_contoso_store` | the store's natural code; NOT unique (67 codes over 74 rows). (StoreCode, OpenDate) is measured unique (74/74) — the natural temporal key of the SCD-2 (P2 G6). | — |
+| `GeoAreaKey` | integer | key | `dim_contoso_store` | no geography relation exists in this delivery to join it to (P1 O9); it behaves as a state/region key (1:1 with State, measured P2). | [Region](geo_area.md) _(business)_ |
+| `CountryCode` | varchar | dimension | `dim_contoso_store` | 9 measured values, one of which is the sentinel '--' on the 'Online' row. | [Country](country.md) _(business)_ |
+| `CountryName` | varchar | attribute | `dim_contoso_store` | 9 measured values, one of which is 'Online' — a channel sitting in a country column (RUN.md Q7). Not corrected here: correcting it would invent a market for 41.8 % of the fact. | — |
+| `State` | varchar | dimension | `dim_contoso_store` | — | — |
+| `Description` | varchar | attribute | `dim_contoso_store` | Description — the outlet's display name, and the register's search key. | — |
+| `OpenDate` | date | dimension | `dim_contoso_store` | DATE since 2026-09-19, cast in the transform from the landing's TIMESTAMP on the operator's ruling; lossless and measured, not assumed — 0 non-midnight over 74 of 74 rows immediately before the cast. main.store keeps TIMESTAMP. This is the version-ordering column of the SCD-2 dimension and the cast preserves the uniqueness claim exactly: (StoreCode, OpenDate) is 74 distinct pairs over 74 rows, re-measured after. | — |
+| `CloseDate` | date | dimension | `dim_contoso_store` | null on 58/74 rows (P1 #5). DATE since 2026-09-19, same cast as OpenDate; lossless over the 16 of 74 non-null values (0 non-midnight), and a cast leaves the 58 nulls null. | — |
+| `SquareMeters` | integer | measure | `dim_contoso_store` | null on 1/74 rows (the sentinel). | — |
+| `Status` | varchar | dimension | `dim_contoso_store` | CLEANSED: the landing spells missing two ways, '' on 58 rows and NULL on 1 (P1 #5); the served column uses NULL for both. Whether '' meant 'operating' is an open ruling (Q7). | — |
+
+_Declared per column, over 11 columns: description 10 of 11 · type 11 of 11 · joins → 3 of 11. An em dash is a column for which nothing is declared._
 
 ## Relationships
 
-*0 join(s) out · 1 in — click a concept to open it.*
+*3 join(s) out · 1 in — click a concept to open it.*
+
+**Joins to** — this concept references:
+
+- [Country](country.md) — joined on `CountryCode`
+- [Region](geo_area.md) — joined on `GeoAreaKey`
+- [Store Status](store_status.md) — joined on `StoreKey`
 
 **Referenced by** — these point at this concept:
 

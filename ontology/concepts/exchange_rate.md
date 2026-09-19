@@ -43,16 +43,34 @@ one row = one day's quote for one ORDERED currency pair — (Date, FromCurrency,
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `Date` | key | `v_contoso_fx_rate_day` |  |  |
-| `FromCurrency` | key | `v_contoso_fx_rate_day` |  |  |
-| `ToCurrency` | key | `v_contoso_fx_rate_day` |  |  |
-| `Exchange` | measure | `v_contoso_fx_rate_day` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `Date` | date | key | `v_contoso_fx_rate_day` | DATE since 2026-09-19, cast in the transform from the landing's TIMESTAMP on the operator's ruling; lossless and measured, not assumed — 0 non-midnight over 100 450 of 100 450 rows immediately before the cast. main.currencyexchange keeps TIMESTAMP. THE CONVERSION JOIN CROSSES THIS COLUMN: rules.yaml#order_line_usd_conversion matches it to v_contoso_order_line.OrderDate on exact equality, and both sides were cast in the same change. Re-measured after, identical: 223 974 join rows over 223 974 lines, 0 lines without a quote, min 1 / max 1 quotes per line, sum(Quantity * NetPrice * Exchange) = 223 597 710.61. | — |
+| `FromCurrency` | varchar | key | `v_contoso_fx_rate_day` | 5 measured values. | [Currency](currency.md) _(business)_ |
+| `ToCurrency` | varchar | key | `v_contoso_fx_rate_day` | 5 measured values. | [Currency](currency.md) _(business)_ |
+| `Exchange` | decimal(20,5) | measure | `v_contoso_fx_rate_day` | the rate; exactly 1 on all 20 090 self-pairs (P1 V11), > 0 on every row (P1 V1). NOT additive — its additivity class is P8's to register. | — |
+
+_Declared per column, over 4 columns: description 4 of 4 · type 4 of 4 · joins → 2 of 4. An em dash is a column for which nothing is declared._
+
+## Axes
+
+Measure type: `Precomputed` — `mac.MeasureType.Precomputed`.
+
+| axis | axis kind | fold |
+|---|---|---|
+| `currency_pair` | categorical | none |
+| `time` | time | none |
+
+_The fold is read from the framework registry (`MeasureType.<type>.additivity.<axis kind>`), not declared on this concept. An em dash means the crossing is not declared there._
 
 ## Relationships
 
-*0 join(s) out · 1 in — click a concept to open it.*
+*2 join(s) out · 1 in — click a concept to open it.*
+
+**Joins to** — this concept references:
+
+- [Currency](currency.md) — joined on `FromCurrency`
+- [Currency](currency.md) — joined on `ToCurrency`
 
 **Referenced by** — these point at this concept:
 

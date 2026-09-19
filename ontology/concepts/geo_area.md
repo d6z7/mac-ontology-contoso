@@ -45,15 +45,26 @@ one row = one region key, in the dimension that carries it
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `CustomerKey` | key | `dim_contoso_customer` (key) |  |  |
-| `GeoAreaKey` | key | `dim_contoso_customer`, `dim_contoso_store` |  |  |
-| `State` | dimension | `dim_contoso_customer`, `dim_contoso_store` |  |  |
-| `StateFull` | attribute | `dim_contoso_customer` |  |  |
-| `Country` | dimension | `dim_contoso_customer` |  |  |
-| `StoreKey` | key | `dim_contoso_store` (key) |  |  |
-| `CountryCode` | dimension | `dim_contoso_store` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `CustomerKey` | integer | key | `dim_contoso_customer` (key) | — | — |
+| `GeoAreaKey` | integer | key | `dim_contoso_customer`, `dim_contoso_store` | 608 distinct values and no geography relation to join (P1 O9); determines Country and Continent (measured, P2). | — |
+| `State` | varchar | dimension | `dim_contoso_customer`, `dim_contoso_store` | — | — |
+| `StateFull` | varchar | attribute | `dim_contoso_customer` | — | — |
+| `Country` | varchar | dimension | `dim_contoso_customer` | 8 measured values; covers every store country except the sentinel '--' (S11, S12). | — |
+| `StoreKey` | integer | key | `dim_contoso_store` (key) | — | — |
+| `CountryCode` | varchar | dimension | `dim_contoso_store` | 9 measured values, one of which is the sentinel '--' on the 'Online' row. | — |
+
+_Declared per column, over 7 columns: description 3 of 7 · type 7 of 7 · joins → 0 of 7. An em dash is a column for which nothing is declared._
+
+## Relationships
+
+*0 join(s) out · 2 in — click a concept to open it.*
+
+**Referenced by** — these point at this concept:
+
+- [Customer](customer.md) — on `GeoAreaKey`
+- [Store](store.md) — on `GeoAreaKey`
 
 ## Source of record
 - Full MAC concept: `geo_area.yaml` — open the **YAML** tab for the complete typed definition.
