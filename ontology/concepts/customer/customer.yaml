@@ -1,0 +1,212 @@
+# CONTOSO > customer > Customer — ROLL-UP GEOGRAPHY IN, POINT GEOGRAPHY OUT.
+#
+# Shaped by three rulings, all `accepted` with `ruled_by: operator` in
+# data/quality/data_quality_register.yaml:
+#   NS-CUSTOMER-01  12 of the 24 landing columns are not served — no name, address, occupation,
+#                   company, vehicle, and NO coordinates (104 990 distinct (Latitude, Longitude)
+#                   pairs over 104 990 rows: a perfect identifier). `Birthday` is consumed, never
+#                   served.
+#   DQ-CUSTOMER-01  age reaches this row ONLY as `age_band_5y`, as of a declared date.
+#   DQ-CUSTOMER-02  the served row is a quasi-identifier and nothing is treated — ZipCode alone
+#                   singles out 29 193 of 104 990. So ZipCode and City are declared
+#                   `contoso.field_role.attribute`: display-only, never a group axis.
+
+metadata:
+  concept: Customer
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Customer
+  label: Customer
+  class: entity
+  identity:
+    kind: fk_name
+    canonical_key: CustomerKey
+    note: >-
+      One row per CustomerKey, inherited from the measured grain of the landing
+      (data/profiles/customer.yaml#identity_evidence, key [CustomerKey], full_groups 104 990) and
+      re-measured over the served view: 104 990 rows / 104 990 distinct / 0 duplicates.
+  definition: >-
+    A person who can place an order, served as the GEOGRAPHY they belong to plus two generalised
+    demographics: continent, country, state, city, postal code, gender, and a 5-year age band. One
+    row per customer.
+
+    IT IS NOT A PERSON RECORD. No name, no address line, no occupation, no company, no vehicle and
+    no coordinates are served — twelve of the landing's twenty-four columns are deliberately
+    withheld (NS-CUSTOMER-01), and `Birthday` is consumed to derive the age band without ever
+    reaching this row.
+
+    IT IS ALSO NOT A BUYER LIST. The dimension over-covers the fact by half: 52 189 of the 104 990
+    customers appear on an order, so a count of customers is not a count of buyers, and the
+    difference is disclosed here rather than filtered away.
+  semantics:
+    purpose: >-
+      The geography axis of the bundle's "by region" question, and the only relation in the whole
+      delivery that carries a CONTINENT — the store dimension has none — which is what makes a
+      country-to-continent roll-up answerable at all.
+    scope: >-
+      All 104 990 delivered customers, unfiltered: 104 990 rows in, 104 990 rows out. 52 189 of
+      them appear on at least one order.
+    null_semantics: >-
+      Nothing served here is null. What IS absent is absent by ruling rather than by data: single
+      year of age, date of birth, and any point location. Those are unanswerable from this row, and
+      a question about them is a refusal with a reason (NS-CUSTOMER-01, DQ-CUSTOMER-01) rather than
+      an empty result.
+
+properties:
+  - name: customerKey
+    type: integer
+    required: true
+    doc: "CustomerKey — the identity, and the column the fact joins on."
+  - name: startDT
+    type: timestamp
+    required: true
+    doc: >-
+      StartDT — validity window start. NO CUSTOMER IS RESTATED TODAY: 104 990 rows over 104 990
+      keys, one row each, so this dimension is NOT versioned the way the store dimension is and no
+      snapshot collapse applies. One customer carries StartDT = EndDT. Whether a restatement can
+      arrive is an open question below.
+  - name: endDT
+    type: timestamp
+    required: true
+    doc: "EndDT — validity window end."
+  - name: ageBand5y
+    type: integer
+    required: true
+    doc: >-
+      age_band_5y — DERIVED, NOT DELIVERED, and it carries an as-of date. See the AgeBand concept
+      for what the integer means and why single-year age is unanswerable.
+
+grounding:
+  kind: sql_table
+  grain: "one row = one customer — CustomerKey"
+  sources:
+    - relation: dim_contoso_customer
+      key: CustomerKey
+      columns: [CustomerKey, GeoAreaKey, StartDT, EndDT, Continent, CountryFull, Country,
+                StateFull, State, City, ZipCode, Gender, age_band_5y]
+  serves_from: data/transforms/dim_contoso_customer.sql
+  field_roles:
+    CustomerKey: contoso.field_role.key
+    GeoAreaKey: contoso.field_role.key
+    Continent: contoso.field_role.dimension
+    Country: contoso.field_role.dimension
+    CountryFull: contoso.field_role.attribute
+    State: contoso.field_role.dimension
+    StateFull: contoso.field_role.attribute
+    Gender: contoso.field_role.dimension
+    age_band_5y: contoso.field_role.dimension
+    City: contoso.field_role.attribute
+    ZipCode: contoso.field_role.attribute
+    StartDT: contoso.field_role.attribute
+    EndDT: contoso.field_role.attribute
+  note: >-
+    THE ROLE SPLIT IS THE RULING, MADE MACHINE-READABLE. `ZipCode` and `City` are `attribute` —
+    display-only, never filter or group — because DQ-CUSTOMER-02 measured that ZipCode alone
+    singles out 29 193 of 104 990 served rows and is the dominant identifier in the row, ahead of
+    Gender and far ahead of the age band. The band is `dimension` and legitimately groupable (15
+    bands, smallest cell 1 396, 0 customers singled out by it alone), with the measured cost that
+    adding it to ZipCode + Gender takes uniqueness from 35 894 to 74 617 — which is precisely why
+    ZipCode is not an axis here.
+
+    `CountryFull` and `StateFull` are `attribute` while `Country` and `State` are `dimension`: the
+    codes are what the registers resolve to and what the store dimension also carries, so grouping
+    on the long name would split the same geography two ways. Both are 8 distinct values, measured
+    1:1 with their codes.
+
+    Every column NOT listed carries no ontology meaning — and here that list is empty, because the
+    twelve withheld columns never reach this relation at all.
+
+contract:
+  default_reading: >-
+    An unqualified customer geography question means the CUSTOMER's geography, not the store's. The
+    two are different axes: the store dimension stops at country and has no continent, and 41.8 %
+    of lines point at the 'Online' sentinel store whose country code is '--'. So a
+    country-or-continent breakdown defaults to this relation.
+  no_probe_guarantee: >-
+    Read dim_contoso_customer at CustomerKey; the geography words resolve offline through
+    data/lookups/contoso_country.lookup.csv (9 rows, carrying the continent so the
+    country-to-continent roll-up needs no probe) and
+    data/lookups/contoso_geo_area.lookup.csv (608 rows, the delivery's only region key); gender
+    through data/lookups/contoso_gender.lookup.csv (2 rows); the age band through the AgeBand
+    concept's own closed value set. Nothing here needs a warehouse probe, and no register is cut
+    for City or ZipCode because neither is an axis.
+  rules:
+    - id: customer.geography.rollup_only
+      kind: mac.rule_kind.exclusion
+      subject: Geography rolls up — the point location is not served and not derivable
+      when: "a question asks where a customer is, or asks to map, cluster or locate customers"
+      then: >-
+        answer from the roll-up chain this row serves — `{Continent}`, `{Country}`, `{State}`,
+        `{GeoAreaKey}` — and refuse the point, naming NS-CUSTOMER-01 as the ruling
+      never: >-
+        treating `{City}` or `{ZipCode}` as a location axis to group by, or implying a coordinate
+        exists on this row: the landing's 104 990 distinct (Latitude, Longitude) pairs over 104 990
+        rows are a perfect identifier and are deliberately not served
+      why: >-
+        the declared question scope aggregates to region and country, a point cannot roll up, and
+        serving the point would make every generalisation in this row pointless
+      binds: [City, ZipCode, Continent, Country, State, GeoAreaKey]
+      confidence: P
+
+constraints:
+  - assert: "Country determines Continent — the roll-up is a function, not a many-to-many"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT Country FROM contoso_served.dim_contoso_customer
+      GROUP BY 1 HAVING count(DISTINCT Continent) > 1)
+    notes: >-
+      Measured 0 of 8 countries on 2026-09-18. ERROR because a country on two continents would make
+      every continent figure double-count silently, and this is the only relation that can answer a
+      continent question at all.
+  - assert: "The dimension is not versioned — one row per customer"
+    severity: WARNING
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) - count(DISTINCT CustomerKey) FROM contoso_served.dim_contoso_customer
+    notes: >-
+      Measured 0 on 2026-09-18 (104 990 = 104 990). Held as a constraint because StartDT / EndDT
+      are served: the moment a second row per key arrives, every join to this dimension fans out
+      and the shape becomes the store dimension's (SCD-2), which needs a snapshot collapse this
+      concept deliberately does not declare. See CUS-Q1.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7. The three customer rulings are expressed as declarations rather than prose:
+        the withheld columns as their absence from grounding, the quasi-identifier finding as
+        `attribute` roles on ZipCode and City, and the age ruling as a separate AgeBand concept.
+      change_type: CREATION
+      by: operator
+      rationale: >-
+        NS-CUSTOMER-01, DQ-CUSTOMER-01 and DQ-CUSTOMER-02, all accepted by the operator in
+        data/quality/data_quality_register.yaml.
+
+open_questions:
+  - id: CUS-Q1
+    topic: versioning
+    question: >-
+      Can a customer be restated — a second row for one CustomerKey with a new validity window? No
+      customer is restated today (1 row each, measured), so this concept declares no snapshot
+      collapse; if restatement is possible the concept needs one before the first duplicate lands.
+    status: OPEN
+    owner_for_resolution: operator
+  - id: CUS-Q2
+    topic: customer versus store geography
+    question: >-
+      When a question says "by region" without saying whose, is the customer's geography or the
+      store's intended? This concept defaults to the customer's because the store dimension has no
+      continent and 41.8 % of lines sit at the 'Online' sentinel, but that is a modelling choice and
+      not a measurement.
+    status: OPEN
+    owner_for_resolution: operator

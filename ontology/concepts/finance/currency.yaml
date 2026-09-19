@@ -1,0 +1,186 @@
+# CONTOSO > finance > Currency — the closed set of 5 denominations, and the reason a bare
+# cross-currency total is not a number. The value set is measured on BOTH the fact's CurrencyCode
+# and the fx grid's two code columns, and the three agree exactly.
+
+metadata:
+  concept: Currency
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Currency
+  label: Currency
+  class: enumeration
+  identity:
+    kind: iso
+    canonical_key: CurrencyCode
+    note: >-
+      The stored codes are ISO 4217 three-letter codes. `iso` records where the code SHAPE comes
+      from; it does not license recalling anything else about the currency from outside the data —
+      the register's label column is empty on all 5 rows, deliberately.
+  definition: >-
+    The denomination an order's amounts are stated in, and the two ends of an exchange quote. Five
+    codes, measured identical across the three columns that carry them: the fact's CurrencyCode
+    (USD 113 614, EUR 49 203, CAD 24 250, GBP 22 829, AUD 14 078 lines) and the fx grid's
+    FromCurrency and ToCurrency (5 distinct each).
+
+    IT IS NOT A REPORTING CURRENCY. There is no declared currency this bundle reports in; every
+    served amount is the order's own local money, and an order is measured to carry exactly one
+    currency (0 of 93 470 orders carry two).
+
+    AND IT CARRIES NO NAMES. The delivery states no currency name anywhere, so this concept has
+    codes and no labels. "Dollars" does not resolve here — USD, CAD and AUD are all dollars — and
+    that unresolvable word is a refusal, not a near miss to be picked.
+  semantics:
+    purpose: >-
+      The unit that decides whether two sales figures may be added at all: the currency axis of the
+      bundle's contested total, and the join key of every conversion.
+    null_semantics: >-
+      No absence to interpret: CurrencyCode is measured non-null on all 223 974 lines and the fx
+      code columns on all 100 450 rows. There is no 'unknown currency' member and none is needed.
+
+values:
+  closure: closed
+  closure_why: >-
+    ENUMERATED FROM THE SERVED PLANE, TWICE, AND THE MEMBER LIST IS DELEGATED RATHER THAN COPIED.
+    Measured 2026-09-18: exactly 5 distinct CurrencyCode values over 223 974 served order lines,
+    exactly 5 distinct FromCurrency and 5 distinct ToCurrency over 100 450 served quotes, and the
+    three sets are the same 5. The fx grid is 100 450 = 4 018 x 5 x 5, which is a second,
+    independent witness that there are exactly 5.
+
+    `items:` IS DELIBERATELY ABSENT. The value domain is the register
+    data/lookups/contoso_currency.lookup.csv, cut from the served plane and bound below through
+    mac.canon.enum_from_register, so the five codes and their measured line counts have ONE home.
+    An inline copy would be a second home for a fact P6 already serves, and it would not move when
+    the register is re-cut. `check_enumeration_closure` accepts the register form for exactly this
+    reason and verifies instead that the register resolves.
+
+    A SIXTH CODE IS THE REVERSAL CONDITION and it is checked rather than hoped for: it would break
+    the 4 018 x 5 x 5 identity the ExchangeRate concept holds as a constraint, and the three-column
+    set equality below.
+  realized_by:
+    udf: mac.canon.enum_from_register
+    params:
+      register: contoso_currency.lookup.csv
+      key_column: CurrencyCode
+  canonicalization: >-
+    None applied and none needed: the codes are stored in one spelling on every relation that
+    carries them, measured. Unlike Color (17 spellings folding to 16) and WeightUnit ('' to NULL),
+    no transform rule touches these values.
+
+    WHAT THE REGISTER'S `confidence: Q` ON EVERY ROW MEANS, because it is easy to misread: the
+    uncertainty is about the LABEL, not the membership. The delivery states no currency NAME
+    anywhere, so the register's label column is empty on all 5 rows and a human must supply the
+    names (CUR-Q1). Membership itself is measured on 223 974 lines and 100 450 quotes.
+
+grounding:
+  kind: sql_table
+  sources:
+    - relation: v_contoso_order_line
+      key: [OrderKey, RowNumber]
+      columns: [CurrencyCode]
+    - relation: v_contoso_fx_rate_day
+      key: [Date, FromCurrency, ToCurrency]
+      columns: [FromCurrency, ToCurrency]
+  discriminator: CurrencyCode
+  field_roles:
+    CurrencyCode: contoso.field_role.dimension
+    FromCurrency: contoso.field_role.key
+    ToCurrency: contoso.field_role.key
+  note: >-
+    ONE CONCEPT, TWO RELATIONS, THREE COLUMNS — the M:N grounding the framework's `sources[]` exists
+    for. `CurrencyCode` is the column the value set is enumerated FROM and the one a question groups
+    by, so it is `dimension` and it is the declared discriminator. The fx grid's two columns are
+    `key` because a quote is only meaningful as an ORDERED pair with its day; filtering
+    `FromCurrency` alone returns five different pairs (see ExchangeRate).
+
+    NO LOOKUP IS CUT FROM THE FX RELATION and that is deliberate:
+    data/lookups/contoso_currency.lookup.csv is cut from v_contoso_order_line, because the currency
+    a question names is the one the money is IN, not one end of a quote.
+
+contract:
+  default_reading: >-
+    A question that names no currency is answered in the order's OWN currency, per currency, with
+    the currency stated — never as one silent cross-currency sum. A question that names a currency
+    resolves the word through data/lookups/contoso_currency.lookup.csv to one of the 5 codes and
+    filters on the code.
+  no_probe_guarantee: >-
+    The five members are in data/lookups/contoso_currency.lookup.csv, cut from the served plane and
+    bound as this concept's value domain, so a currency word is resolved offline and an unresolvable
+    word (a currency NAME, or a sixth code) is a refusal derived from a closed set rather than from
+    an empty query. Conversion is the ExchangeRate concept's declared direction; nothing here needs
+    a probe.
+  resolution: >-
+    Resolve through data/lookups/contoso_currency.lookup.csv on the code, never on a label: the
+    label column is empty on all 5 rows by design, so there is nothing to match a name against.
+  rules:
+    - id: currency.labels.codes_only
+      kind: mac.rule_kind.ambiguity
+      subject: A currency NAME does not resolve here — the delivery holds no names
+      when: "a question names a currency in words — dollars, euros, pounds, sterling"
+      then: >-
+        for a word that maps unambiguously to one of the 5 codes, resolve it and say which code was
+        used; for an ambiguous word ask which is meant, naming the candidate codes
+      never: >-
+        picking one of `{CurrencyCode}`'s dollar codes for a bare 'dollars' — USD, CAD and AUD are
+        all dollars, and the delivery states no name for any of them to arbitrate with
+      why: >-
+        the register's label column is empty on all 5 rows because no currency name exists anywhere
+        in the delivery; an ambiguity the data cannot settle is a question for the asker, not a
+        default
+      binds: [CurrencyCode]
+      confidence: P
+
+constraints:
+  - assert: "The fact's currency codes and the fx grid's code columns are the same closed set of 5"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT (SELECT count(*) FROM (SELECT DISTINCT CurrencyCode FROM contoso_served.v_contoso_order_line
+               EXCEPT SELECT DISTINCT FromCurrency FROM contoso_served.v_contoso_fx_rate_day))
+           + (SELECT count(*) FROM (SELECT DISTINCT FromCurrency FROM contoso_served.v_contoso_fx_rate_day
+               EXCEPT SELECT DISTINCT ToCurrency FROM contoso_served.v_contoso_fx_rate_day))
+    notes: >-
+      Measured 0 on 2026-09-18. ERROR because a currency on the fact with no quote makes its
+      amounts unconvertible, and the equality join would return nothing rather than say so.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as one enumeration over two served relations, with the value set enumerated
+        from the served plane and labels left empty because the delivery states none.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: CUR-Q1
+    topic: currency names
+    question: >-
+      What are the five currencies called? The delivery states no name anywhere, so every label is
+      empty and a question phrased in words ('in euros') can only be resolved by convention, which
+      this bundle declines to invent. A human supplies the five names.
+    status: NEEDS_SME_CONFIRMATION
+    owner_for_resolution: operator
+  - id: CUR-Q3
+    topic: closure confirmation
+    question: >-
+      The closed claim currently rests on the register-delegation route, which `check_enumeration_closure`
+      accepts without per-member confirmation. Can a human also confirm the five codes as the whole
+      domain, so the claim holds on its own evidence rather than on a delegation?
+    status: NEEDS_SME_CONFIRMATION
+    owner_for_resolution: operator
+  - id: CUR-Q2
+    topic: reporting currency
+    question: >-
+      Should this bundle declare a reporting currency, so that a cross-currency total has a default
+      answer instead of a per-currency breakdown?
+    status: OPEN
+    owner_for_resolution: operator

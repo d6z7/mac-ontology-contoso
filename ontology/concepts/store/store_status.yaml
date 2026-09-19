@@ -1,0 +1,199 @@
+# CONTOSO > store > StoreStatus — a CLOSED set of two members, and an ABSENCE that is the third
+# state. The delivery has NO CODE for an operating store: "operating" is spelled NULL. That is the
+# whole reason this concept exists — a question about open stores otherwise resolves to nothing and
+# reads as "there are none".
+
+metadata:
+  concept: StoreStatus
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: StoreStatus
+  label: Store Status
+  class: enumeration
+  identity:
+    kind: code
+    canonical_key: Status
+    note: >-
+      The stored value IS the code — 'Closed', 'Restructured' — and there is no status key. Two
+      measured non-null values over 74 store versions.
+  definition: >-
+    The lifecycle event recorded against a store version: 'Closed' (8 versions) or 'Restructured'
+    (7 versions). Nothing else is recorded.
+
+    IT IS NOT A COMPLETE STATE MACHINE, and this is the point. There is NO CODE FOR AN OPERATING
+    STORE. 59 of the 74 versions carry NULL, and 58 of those are versions with no CloseDate — still
+    open. So "operating" exists only as the absence of a status, and the one remaining NULL is a
+    version that IS closed by its dates and carries no status event at all.
+
+    IT IS ALSO NOT A FILTER ON THE STORE DIMENSION. Both coded members are served and so is the
+    NULL; nothing is excluded by status anywhere in this bundle.
+  semantics:
+    purpose: >-
+      To make the missing opposite visible: the value set a question like "closed stores" resolves
+      against, and the declaration that its complement cannot be read from this column alone.
+    null_semantics: >-
+      NULL MEANS "NO STATUS EVENT RECORDED", NOT "UNKNOWN STATUS" and not "operating". It is
+      measured on 59 of 74 versions. The transform conformed two spellings of the absence into one:
+      the landing carried '' on 58 rows and NULL on 1, and the served column uses NULL for both —
+      so the served NULL is a union of two upstream absences and whether the empty string meant
+      'operating' is an open ruling. Read operating status from `CloseDate IS NULL` (58 of 74), not
+      from this column.
+
+values:
+  closure: closed
+  closure_why: >-
+    ENUMERATED FROM THE SERVED COLUMN, AND THE MEMBER LIST IS DELEGATED RATHER THAN COPIED. Measured
+    2026-09-18 over dim_contoso_store: exactly 2 distinct non-null values of `Status` — 'Closed' on
+    8 versions, 'Restructured' on 7 — plus NULL on 59, over 74 rows.
+
+    `items:` IS DELIBERATELY ABSENT. The value domain is the register
+    data/lookups/contoso_store_status.lookup.csv, cut from the served plane and bound below through
+    mac.canon.enum_from_register, so the two codes, their labels, their search keys and their
+    version counts have ONE home. `check_enumeration_closure` accepts the register form and checks
+    instead that the register resolves.
+
+    CLOSED IS A CLAIM ABOUT THE CODED MEMBERS ONLY. The absence is not a third member and is
+    deliberately not minted as one: inventing an 'Operating' code would put a value in the ontology
+    that no row carries, and a filter on it would return nothing while looking correct. The absence
+    is declared in `null_semantics` instead, which is where the framework homes it — and the register
+    was cut specifically to make the missing opposite visible.
+  realized_by:
+    udf: mac.canon.enum_from_register
+    params:
+      register: contoso_store_status.lookup.csv
+      key_column: Status
+  canonicalization: >-
+    Rule on data/transforms/dim_contoso_store.yaml conformed the landing's two spellings of the
+    absence — '' on 58 rows and NULL on 1 — into a single served NULL (the framework's
+    absence_semantics shape). The two coded values are untouched.
+
+    'Restructured' IS NOT A SYNONYM FOR 'Closed', and no canonicalization folds them. Both always
+    carry a CloseDate, so structurally they are the same event; but a restructured version's
+    successor is another version of the same StoreCode, which is what makes this an SCD-2 delivery
+    rather than a set of shut stores. A question about stores that SHUT must not silently include
+    restructurings, and a question about the estate's history must not silently exclude them.
+
+grounding:
+  kind: sql_table
+  sources:
+    - relation: dim_contoso_store
+      key: StoreKey
+      columns: [StoreKey, StoreCode, Status, CloseDate]
+  serves_from: data/transforms/dim_contoso_store.sql
+  discriminator: Status
+  field_roles:
+    Status: contoso.field_role.dimension
+    CloseDate: contoso.field_role.dimension
+    StoreKey: contoso.field_role.key
+    StoreCode: contoso.field_role.key
+  note: >-
+    A VALUE SET HELD IN THE STORE DIMENSION, with no relation of its own. `CloseDate` is declared
+    here deliberately even though it is not the status column: it is the column an "open stores"
+    question must actually be answered from, and a concept that named only `Status` would leave that
+    half of the notion ungrounded.
+
+    NO `closure_anomaly_check` BINDING, and the reason is worth recording rather than left as an
+    empty slot. That canon's signature is closure_anomaly_check(table, column, closure,
+    known_values) — it needs the member list passed IN. This concept delegates its member list to
+    the register, so supplying `known_values` inline would recreate exactly the second home the
+    delegation exists to avoid. The out-of-set query the canon would have produced is written once,
+    as the first constraint below, over the same two members the register holds.
+
+contract:
+  default_reading: >-
+    "Closed stores" means `Status` = 'Closed' — NOT 'Closed' plus 'Restructured' — and the answer
+    says so, offering the restructured versions alongside. "Open" or "operating" stores means
+    `CloseDate IS NULL`, because no status code says so; the answer discloses which column it came
+    from.
+  no_probe_guarantee: >-
+    Both coded members, their labels, their search keys and their version counts are in
+    data/lookups/contoso_store_status.lookup.csv, cut from the served plane and bound as this
+    concept's value domain; the absence and
+    what it means are declared in `null_semantics`; the operating test is `CloseDate IS NULL` on the
+    same row. So a status word resolves offline, and a word that resolves to neither member (a
+    question about 'active' or 'trading' stores) is answered from the declared absence rather than
+    from an empty query.
+  resolution: >-
+    Resolve a status word through data/lookups/contoso_store_status.lookup.csv on its `search_key`
+    to the stored spelling. A word meaning the opposite resolves to no member by design: route it to
+    `CloseDate IS NULL`.
+  rules:
+    - id: store_status.absence.operating_has_no_code
+      kind: mac.rule_kind.resolution
+      subject: >-
+        "Operating" is an absence here, not a code — read it from the dates
+      when: "a question asks for open, operating, active or trading stores"
+      then: >-
+        answer from `{CloseDate}` IS NULL — 58 of 74 versions — and say that the operating state is
+        read from the validity window because the status column has no code for it
+      never: >-
+        filtering `{Status}` for an 'Open' or 'Operating' value, which does not exist and returns
+        nothing; and never reading `{Status}` IS NULL as "operating", because one of the 59 nulls is
+        a version that IS closed by its dates
+      why: >-
+        the served NULL is the union of two upstream absences and is one row wider than the
+        operating set, so the dates and the status column disagree on exactly one version and only
+        the dates can answer the question
+      binds: [Status, CloseDate]
+      confidence: P
+
+constraints:
+  - assert: "No value outside the two coded members appears in the served column"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.dim_contoso_store
+      WHERE Status IS NOT NULL AND Status NOT IN ('Closed', 'Restructured')
+    notes: >-
+      Measured 0 of 74 rows on 2026-09-18. This is the closed set's out-of-set query, the check
+      mac.canon.closure_anomaly_check realizes.
+  - assert: "The status column is one row wider than the operating set — the two disagree on exactly one version"
+    severity: INFORMATIONAL
+    machine_executable: true
+    sql_assertion: >-
+      SELECT (SELECT count(*) FROM contoso_served.dim_contoso_store WHERE Status IS NULL)
+           - (SELECT count(*) FROM contoso_served.dim_contoso_store WHERE CloseDate IS NULL)
+    notes: >-
+      Measured 59 - 58 = 1 on 2026-09-18. Held as a check rather than as prose because it is the
+      whole reason the operating test is the date column and not the status column; if it ever
+      reaches 0 the two readings coincide and the rule above can be simplified.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as a closed two-member enumeration whose complement is declared as an absence
+        rather than minted as a third code, with the operating test grounded on CloseDate.
+      change_type: CREATION
+      by: operator
+      rationale: >-
+        data/lookups/contoso_store_status.lookup.csv was cut specifically to "make visible that there
+        is no code for the opposite"; a concept is where that visibility becomes answerable.
+
+open_questions:
+  - id: SST-Q1
+    topic: what the empty string meant
+    question: >-
+      Did the landing's '' on 58 store rows mean 'operating', or 'not recorded'? The transform
+      conformed it to NULL alongside the one genuine NULL, so the two are no longer
+      distinguishable in the served plane. If it meant 'operating', a third member is legitimate and
+      this concept's absence reading is over-cautious.
+    status: NEEDS_SME_CONFIRMATION
+    owner_for_resolution: operator
+  - id: SST-Q2
+    topic: restructured versus closed
+    question: >-
+      Should 'Restructured' roll up under 'Closed' for reporting? Both always carry a CloseDate, so
+      structurally they are the same event with different causes; whether a business report wants
+      them separate is not something the data can say.
+    status: OPEN
+    owner_for_resolution: operator

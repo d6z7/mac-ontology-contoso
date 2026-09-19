@@ -1,0 +1,167 @@
+# CONTOSO > catalog > Brand — a GROUPING over Product with no table of its own. The bundle's
+# declared "by brand" axis, and the reason this dataset was chosen: multi-brand x multi-market x a
+# contested total.
+
+metadata:
+  concept: Brand
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Brand
+  label: Brand
+  class: grouping
+  identity:
+    kind: code
+    canonical_key: Brand
+    note: >-
+      The stored value IS the code — there is no brand key in the delivery and none is invented. 11
+      measured values over 2 517 products. A fabricated key by concatenation is exactly what the
+      framework's no-fabricated-identifiers rule forbids, and it would read downstream as a real
+      absence.
+  definition: >-
+    The brand a product is sold under: 11 members over 2 517 products, held as a column of the
+    product dimension. This is the axis the bundle's "by brand" question groups by.
+
+    IT IS NOT A MANUFACTURER. The two are 1:1 in this delivery (measured, 0 brands carrying two
+    manufacturers) but they are different notions and the coincidence is not declared to be law —
+    'Contoso' the brand against 'Contoso, Ltd' the manufacturer. Manufacturer is served as a
+    display attribute of the product, not as a second grouping.
+
+    IT IS NOT A PRODUCT LINE OR A CATEGORY EITHER. Brands cut ACROSS the category hierarchy: a
+    brand's products appear in several categories and a category's products in several brands, so
+    brand and category are two orthogonal axes and neither rolls up into the other.
+  semantics:
+    purpose: >-
+      The first axis of the declared question scope, and the one that makes the "total" contested at
+      all — a brand total and a group total are different numbers and both are asked for.
+    null_semantics: >-
+      No absence: Brand is non-null on all 2 517 products, so every product belongs to exactly one
+      brand and there is no 'unbranded' member.
+
+members:
+  over: Product
+  member_source:
+    kind: rule
+    rule: >-
+      Membership is the `Brand` column of dim_contoso_product: a product belongs to the one brand
+      its row names. Measured 2026-09-18: 11 distinct values, 0 nulls over 2 517 rows, so the
+      partition is total and disjoint and the 11 member counts below sum to 2 517.
+  realized_by:
+    udf: mac.canon.grouping_from_register
+    params:
+      register: data/lookups/dim_contoso_product.lookup.csv
+      group_key: brand
+      member_col: ProductKey
+      carry: [label, search_key]
+  note: >-
+    `definitions:` IS DELIBERATELY OMITTED and the member sets are sourced from the register
+    instead. The exploded (brand, product) register already exists —
+    data/lookups/dim_contoso_product.lookup.csv, 2 517 rows, one per product, carrying its brand —
+    and the per-brand labels and manufacturers are in
+    data/lookups/contoso_brand.lookup.csv, 11 rows. Re-listing 11 members plus their product counts
+    here would be a second home for a fact the register holds, and it would not move when the
+    register is re-cut. The measured shape, for a reader: 11 members, largest 'Contoso' at 710 of
+    2 517 products (28 % of the catalogue), smallest 'Northwind Traders' at 47, 0 nulls, so the 11
+    member sets partition all 2 517 products.
+
+grounding:
+  kind: sql_table
+  sources:
+    - relation: dim_contoso_product
+      key: ProductKey
+      columns: [ProductKey, Brand, Manufacturer]
+  serves_from: data/transforms/dim_contoso_product.sql
+  discriminator: Brand
+  field_roles:
+    Brand: contoso.field_role.dimension
+    Manufacturer: contoso.field_role.attribute
+    ProductKey: contoso.field_role.key
+  note: >-
+    A ROLL-UP HELD INSIDE THE PRODUCT DIMENSION, not a relation of its own. There is no brand table
+    and none should be built: the members are enumerated above and in
+    data/lookups/contoso_brand.lookup.csv, both cut from the served plane.
+
+    THE BRAND REACHES THE FACT THROUGH THE PRODUCT AND ONLY THROUGH IT. The order line carries no
+    brand column, so a brand figure is the product join followed by a group — which is why this
+    concept grounds on the product dimension and declares `ProductKey` as its key.
+
+contract:
+  default_reading: >-
+    A brand named in words resolves through the register to the stored spelling and is filtered on
+    it. An unqualified brand total means NetSalesAmount for that brand's products, in the order's
+    own currency, per currency — brand and currency are independent axes and neither is implied by
+    the other.
+  no_probe_guarantee: >-
+    All 11 members, their product counts and their manufacturers are enumerated above and in
+    data/lookups/contoso_brand.lookup.csv, cut from the served plane with a search key per member —
+    so a brand word resolves offline and a brand the delivery does not carry is a refusal derived
+    from a closed member list rather than from an empty query. Membership needs no probe either: it
+    is the product row's own column.
+  resolution: >-
+    Resolve a brand word through data/lookups/contoso_brand.lookup.csv on its `search_key` to the
+    stored `Brand` spelling, then filter on it. Never match on `Manufacturer`, which is a display
+    attribute even though it is 1:1 today.
+  rules:
+    - id: brand.axis.orthogonal_to_category
+      kind: mac.rule_kind.aggregation
+      subject: Brand and category are two axes — neither rolls up into the other
+      when: "a question combines brand with the category hierarchy"
+      then: >-
+        group by both independently: `{Brand}` and `{CategoryName}` are separate axes of the same
+        product row, so the cross-product is the answer
+      never: >-
+        treating `{Brand}` as a level of the category hierarchy, or a category as a level of brand —
+        a brand's products span categories and a category's products span brands
+      why: >-
+        fusing two orthogonal axes into one hierarchy is the modelling error the cookbook names, and
+        here it would silently drop every cell of the cross-product but one
+      binds: [Brand, CategoryName]
+      confidence: P
+
+constraints:
+  - assert: "The 11 enumerated members are the whole served set, and the partition is total"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.dim_contoso_product WHERE Brand IS NULL
+    notes: >-
+      Measured 0 nulls over 2 517 rows on 2026-09-18, 11 distinct values. This is the out-of-set
+      query for the enumerated member list; a twelfth brand or a null means the member list above
+      and the register must both be re-cut.
+  - assert: "Brand and Manufacturer are 1:1 today — recorded, not relied on"
+    severity: INFORMATIONAL
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT Brand FROM contoso_served.dim_contoso_product
+      GROUP BY 1 HAVING count(DISTINCT Manufacturer) > 1)
+    notes: >-
+      Measured 0 of 11 brands on 2026-09-18. INFORMATIONAL deliberately: whether this is law or
+      coincidence is unruled (BRD-Q1), and nothing in this concept depends on it.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as a grouping over Product with its member sets bound to the P6 register
+        through mac.canon.grouping_from_register, so the 11 members have one home that is cut from
+        the served plane.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: BRD-Q1
+    topic: brand versus manufacturer
+    question: >-
+      Is Brand 1:1 with Manufacturer by law, or by coincidence in this snapshot? Measured 1:1 over
+      all 11 brands today. If it is law, one of the two is redundant; if it is not, a manufacturer
+      axis may eventually be wanted and this concept does not provide one.
+    status: OPEN
+    owner_for_resolution: operator

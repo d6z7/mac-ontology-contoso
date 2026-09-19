@@ -1,0 +1,192 @@
+# CONTOSO — the RULES layer. P9 · edges-and-rules.
+#
+# WHAT IS IN HERE AND WHAT IS NOT, because the word "rule" names two different things in this
+# framework and putting one in the other's home is how a fact ends up with two homes.
+#
+#   THIS FILE holds DERIVATIONS: a value that is COMPUTED and not stored, with a renderable machine
+#   form (cookbook B4). Each entry says which concept it `derives`, which concepts it reads (`over`),
+#   what it means in plain language (`logic`), and carries the `template` an engine actually renders.
+#   The concept it derives carries `derived_by_rule:` naming it, and does NOT restate the formula.
+#
+#   THE CONCEPT FILES hold their own `contract.rules` — typed when / then / never statements with the
+#   measurement attached. Those are PROHIBITIONS and RESOLUTIONS, not derivations, and they stay
+#   there. This file does not copy them and they do not copy this file.
+#
+# THREE ENTRIES, AND THE ARGUMENT FOR THE NUMBER BEING THREE. Two of the bundle's three measures are
+# computed from columns that exist while the measure itself does not — there is no extended-amount
+# column anywhere in the warehouse, so `total sales` has no stored form and must be derived. The
+# third entry is the relation the conversion edge is realised by. Nothing else in this bundle is
+# computed: ExchangeRate reads a stored column (`Exchange`) and therefore carries no
+# `derived_by_rule`; the roll-ups and enumerations read stored columns through their registers; and
+# per the P8 skill's step 8 there is NO per-measure aggregation rule anywhere, because the fold is
+# derived from (measure_type x axis_kinds) by the framework law and a rule narrating that is a second
+# home for it.
+
+metadata:
+  layer: rules
+  source: CONTOSO
+  schema_version: '0.1.14'
+  status: draft
+  date: 2026-09-18
+  owner: operator
+  provenance: authored
+  confidence: I
+  measured_on: >-
+    Every number quoted in a `logic:` or `conditions:` block below was measured on 2026-09-18 against
+    contoso_served through the connector connection.yaml declares, and every template below was
+    EXECUTED as written rather than reasoned about. The three results: gross 232 601 542.66, net
+    218 814 471.66 — both reproducing queries/p8_measure_semantics.sql#B3 to the cent — and the
+    conversion set 223 974 pairs over 223 974 distinct lines.
+
+rules:
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  - rule: net_sales_amount
+    derives: NetSalesAmount
+    over: [OrderLine]
+    logic: >
+      Net sales is the money value of sales AFTER discount, and it is the DEFAULT reading of a bare
+      "total sales" in this bundle. There is no extended-amount column in the warehouse: the figure
+      is Quantity x NetPrice computed PER LINE at the declared grain (OrderKey, RowNumber) and only
+      then summed over the scope. Measured 2026-09-18 over all 223 974 lines: 218 814 471.66 in the
+      orders' own denominations.
+
+      The multiplication must happen per row. SUM(NetPrice) x SUM(Quantity) is not this figure at any
+      grain, and SUM(NetPrice) alone is a sum of per-unit prices, which is not a money figure at all.
+
+      THE RESULT IS NOT A SINGLE-CURRENCY NUMBER. Every amount is denominated in the order's own
+      CurrencyCode (measured: USD 113 614 lines, EUR 49 203, CAD 24 250, GBP 22 829, AUD 14 078), so
+      a figure summed across more than one of them has no unit until a conversion is stated. That
+      prohibition is held once, on the OrderLine concept
+      (`order_line.currency.no_bare_cross_currency_sum`), and the conversion it points at is the
+      third rule in this file. It is not restated here.
+    render_kind: sql_expression
+    template: |
+      SUM(f."Quantity" * f."NetPrice")    -- per-line product, then folded. NEVER SUM(price) * SUM(qty).
+    requires_join: |
+      contoso_served.v_contoso_order_line f
+      -- No join. The fact carries both columns, so net sales needs no dimension at all; the axes a
+      -- question slices it by are reached through ontology/edges.yaml, not from here.
+    conditions:
+      - "Every line contributes: there is no status column and no returns relation, so nothing is filtered out. 0 of 223 974 lines carry Quantity <= 0 or NetPrice < 0."
+      - "Includes the 93 550 lines placed at the 'Online' sentinel store — a served member, not a null (store.sentinel.online_is_served)."
+      - "Folded over OrderDate by default, not DeliveryDate. The two coincide on 130 424 of 223 974 lines, so the choice is invisible on 58.2 % of the fact and is bound by the order_line__ordered_on__calendar_day edge rather than left to the query."
+      - "Additivity is NOT declared here. NetSalesAmount declares mac.MeasureType.Flow and its axis kinds; the per-axis fold is derived from those by mac_vocabulary.yaml#MeasureType and projected into data/lookups/contoso_measure.lookup.csv."
+    edge_cases:
+      - "A line with no discount carries NetPrice = UnitPrice. That is a real full-price line, not missing data, and it is included."
+      - "An empty scope has no line, which is not a zero amount. Return no row rather than 0."
+    validated_against: [v_contoso_order_line]
+    inspectable: true
+    cross_references:
+      - "ontology/concepts/finance/net_sales_amount.yaml#concept"
+      - "queries/p8_measure_semantics.sql"
+    confidence: I
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  - rule: gross_sales_amount
+    derives: GrossSalesAmount
+    over: [OrderLine]
+    logic: >
+      Gross sales is the money value of sales BEFORE discount: Quantity x UnitPrice per line at the
+      declared grain, then summed. Measured 2026-09-18 over all 223 974 lines: 232 601 542.66 in the
+      orders' own denominations.
+
+      IT IS NOT THE DEFAULT AND IT IS NOT A SMALL CORRECTION TO NET. NetPrice is strictly below
+      UnitPrice on 136 913 of 223 974 lines, so the two figures differ on 61 % of the fact and the gap
+      between the numbers above is 13 787 071.00. A question resolves here only when it says gross,
+      list price, or before discount; the disclosure rule for a bare total is held once, on
+      NetSalesAmount (`net_sales_amount.ambiguity.gross_or_net`).
+    render_kind: sql_expression
+    template: |
+      SUM(f."Quantity" * f."UnitPrice")   -- list price per unit x units, per line, then folded.
+    requires_join: |
+      contoso_served.v_contoso_order_line f
+      -- No join, as with net: both columns are on the fact.
+    conditions:
+      - "Same scope as net sales — every line, no filter, 'Online' included, folded over OrderDate by default."
+      - "Measured 0 of 223 974 rows where NetPrice > UnitPrice, so gross is never below net on any line. Held as a constraint on the GrossSalesAmount concept rather than assumed here."
+      - "Additivity is derived, not declared: mac.MeasureType.Flow x the concept's axis kinds."
+    edge_cases:
+      - "Gross minus net is the discount given, but no Discount measure is declared. Deriving one is a modelling act, not an arithmetic one, and it has not been done."
+    validated_against: [v_contoso_order_line]
+    inspectable: true
+    cross_references:
+      - "ontology/concepts/finance/gross_sales_amount.yaml#concept"
+      - "queries/p8_measure_semantics.sql"
+    confidence: I
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────────
+  # THE RELATION THE CONVERSION EDGE IS REALISED BY. ontology/edges.yaml#order_line__converts_at__exchange_rate
+  # points its `resolved_by` here. This rule computes the edge's instance set — which quote belongs to
+  # which line — rather than an amount, which is why its render_kind is derived_set and not
+  # sql_expression.
+  - rule: order_line_usd_conversion
+    derives: ExchangeRate
+    over: [OrderLine, ExchangeRate]
+    logic: >
+      One order line relates to exactly ONE exchange-rate quote: the quote whose Date is the line's
+      ORDER date and whose ordered pair is USD -> the line's own CurrencyCode. Multiplying a line
+      amount by that quote's Exchange converts it; the rate is dimensionless and may be multiplied by
+      an amount but never added to one.
+
+      ALL THREE CLAUSES OR NONE. FromCurrency is pinned to the literal 'USD' — the measured base of
+      this delivery's own rate, not a column of the fact and not a parameter a question may set.
+      Constraining Date alone returns 25 quotes per line, because the grid is complete over 5 x 5
+      ordered pairs; measured live 2026-09-18, min 25 and max 25 over all 223 974 lines. A
+      half-specified filter therefore does not fail, it silently averages five currencies.
+
+      THE DIRECTION IS A MEASUREMENT AND THE WRONG ONE IS PLAUSIBLE. The reverse orientation
+      (FromCurrency = the line's currency, ToCurrency = 'USD') reproduces 113 627 of 223 974 lines —
+      exactly the lines whose rate is 1.0: 113 614 USD lines plus 13 EUR lines on the single par date
+      2022-08-31. So the wrong direction looks right on 51 % of the data and on 100 % of any USD-only
+      sample, and inverts every non-USD figure with no error anywhere. The prohibition, with its
+      per-currency table, is held once on the ExchangeRate concept
+      (`exchange_rate.direction.usd_base_as_of_order_date` and `exchange_rate.pair.never_half_a_pair`)
+      and in decisions/0001-order-line-fact-of-record.md §4. This rule renders that ruling; it does
+      not restate it.
+
+      MEASURED RESULT OF THE TEMPLATE BELOW, executed as written on 2026-09-18: 223 974 pairs over
+      223 974 distinct lines — exactly one quote per line, none missing, none doubled — with rates
+      from 0.67253 to 1.72530.
+    render_kind: derived_set
+    template: |
+      SELECT f."OrderKey",
+             f."RowNumber",
+             x."Exchange" AS rate_usd_to_line_currency
+      FROM contoso_served.v_contoso_order_line f
+        JOIN contoso_served.v_contoso_fx_rate_day x
+          ON  x."Date"         = f."OrderDate"        -- the ORDER day, never the delivery day
+         AND  x."FromCurrency" = 'USD'                -- PINNED: the measured base, not a parameter
+         AND  x."ToCurrency"   = f."CurrencyCode"     -- the line's own denomination
+    conditions:
+      - "'USD' is a measured constant, not a value from the question, so it is a literal rather than a bound parameter. Any value a question supplies — a period, a currency to report in — is bound as a parameter and never interpolated."
+      - "An INNER join is correct today only because the quote grid is gapless: 100 450 rows = 4 018 days x 5 x 5, difference 0, and it runs to 2026-12-31, a year past the newest order. It is an equality join, not as-of."
+      - "Converted amounts are folded; rates are not. A period figure converts each line at its own day's quote and then sums, and does not average the rate over the period. Measured cost of getting that backwards: the monthly-average fold is off by 14 350.30 delivery-wide (0.006528 %) but by up to 0.523494 % in the worst single month, and the last-quote fold is off by 4 432 157.76 (2.01611 %)."
+    edge_cases:
+      - "A line dated outside the 4 018-day grid would be DROPPED by this inner join rather than refused, which is a silent loss. 0 such lines exist today. Open questions FX-Q1 and OL-Q2 carry the as-of alternative; they are the operator's to rule on."
+      - "The 20 090 self-pair rows (FromCurrency = ToCurrency) are exactly 1.0, so a USD line converts by multiplying by 1 and needs no special case."
+    validated_against: [v_contoso_order_line, v_contoso_fx_rate_day]
+    inspectable: true
+    cross_references:
+      - "ontology/edges.yaml"
+      - "ontology/concepts/finance/exchange_rate.yaml#concept"
+      - "decisions/0001-order-line-fact-of-record.md"
+    confidence: I
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P9. Two derivations for the two computed measures, which had no machine form
+        anywhere and therefore could not be rendered; one derived_set realising the conversion edge.
+        The concepts GrossSalesAmount and NetSalesAmount now carry `derived_by_rule:` naming their
+        rule here, and their prose derivation rules were rewritten to keep the PROHIBITION and drop
+        the formula, so the formula has one home (cookbook B4 step 5, single-homing).
+      change_type: CREATION
+      by: operator
+      rationale: >-
+        A measure with no stored column and no rendered template is a concept an engine cannot answer
+        from; and a formula stated in prose next to a template that renders it is the two-homes defect
+        this framework refuses everywhere else.

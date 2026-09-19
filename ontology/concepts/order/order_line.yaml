@@ -1,0 +1,234 @@
+# CONTOSO > order > OrderLine — the single served FACT of this bundle.
+#
+# GROUNDED ON THE SERVED LINE RELATION AND NOTHING ELSE. `main.sales` carries the same 223 974 lines
+# and is deliberately NOT served (register NS-ORDERS-01, ruled `accepted` by the operator); serving
+# both would give every figure here two defensible answers and an engine would pick by accident.
+# Evidence and the reversal conditions: decisions/0001-order-line-fact-of-record.md.
+
+metadata:
+  concept: OrderLine
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: OrderLine
+  label: Order Line
+  class: event
+  identity:
+    kind: composite
+    note: >-
+      The grain is a two-column cell key and `canonical_key` is deliberately omitted rather than
+      made a list: measured 223 974 rows / 223 974 distinct (OrderKey, RowNumber) / 0 duplicates
+      over the served projection, and inherited from the measured grain of the detail landing
+      (data/profiles/orderrows.yaml#identity_evidence, key [OrderKey, RowNumber], full_groups
+      223 974, method mac_admit_identity.py/1). (OrderKey, ProductKey) is NOT unique — 223 713
+      pairs over 223 974 rows — so RowNumber is indispensable and no single column is the identity.
+  definition: >-
+    One line of one customer order: one product, in one quantity, at one list price and one
+    discounted price, placed at one store on one day and delivered on one day. This is the fact of
+    record for every sales figure in this bundle, at line grain (OrderKey, RowNumber).
+
+    IT IS NOT AN ORDER. An order is a group of these lines sharing one OrderKey; the order header is
+    consumed into this relation and deliberately not served as a relation of its own (NS-ORDERS-02),
+    so an order-grain question is answered by count(DISTINCT OrderKey) and by grouping on the header
+    attributes this row repeats — never by joining to a header relation, which does not exist.
+
+    IT IS ALSO NOT `main.sales`. That relation delivers the identical 223 974 lines a second time
+    and is measured, described and not served (NS-ORDERS-01); a figure summed from both is exactly
+    double.
+  semantics:
+    purpose: >-
+      The grain of sales analysis: the relation every amount, count and breakdown in this bundle is
+      read from, and the one place the contested "total" is settled.
+    scope: >-
+      Placed lines from 2016-05-18 to 2025-12-31 (measured over the served relation), each already
+      delivered. 93 470 distinct orders, 0 orders without a line.
+    null_semantics: >-
+      Nothing on this row is nullable: OrderDate, DeliveryDate, CustomerKey, StoreKey, ProductKey,
+      CurrencyCode, Quantity, UnitPrice, NetPrice and UnitCost are all measured non-null on
+      223 974 of 223 974 rows. There is therefore no absence to interpret here, and an empty result
+      from this relation is a scope with no line rather than a line with no value.
+
+lifecycle:
+  phase_sequence: [PLACED, DELIVERED]
+  boundary: "DeliveryDate present is the PLACED -> DELIVERED boundary."
+  phases:
+    - name: PLACED
+      meaning: "The line exists and is dated (OrderDate)."
+      states: [PLACED]
+    - name: DELIVERED
+      meaning: "The line has a delivery date on or after its order date."
+      states: [DELIVERED]
+  phase_closure: closed
+  note: >-
+    THE LIFECYCLE IS DEGENERATE IN THIS DELIVERY AND THAT IS THE POINT OF RECORDING IT. Measured
+    2026-09-18 over the served relation: DeliveryDate is non-null on 223 974 of 223 974 lines and
+    is never earlier than OrderDate (0 rows), so EVERY served line is already in the DELIVERED
+    phase and a line in flight is not representable at all. 130 424 of 223 974 lines (58.2 %) carry
+    DeliveryDate = OrderDate, and delivery runs to 2026-01-06, six days past the last order.
+
+    So "orders not yet delivered" is unanswerable from this relation — not zero. The delivery is a
+    completed-history snapshot; the phase names exist so that question gets a grounded refusal
+    instead of a count of 0 read as a real one. NOT modelled as a status enumeration, because no
+    status column exists: the phase is read from a date that is always present.
+
+properties:
+  - name: orderKey
+    type: integer
+    required: true
+    doc: >-
+      OrderKey — part 1 of the cell key AND a DEGENERATE DIMENSION. It groups the lines of one order
+      and joins to NOTHING: the header is not served as a relation (NS-ORDERS-02), so this is
+      modelled as a property of the fact rather than as a reference concept with an edge. Measured
+      93 470 distinct values over 223 974 lines. Framework pattern: degenerate_dimension.
+  - name: rowNumber
+    type: integer
+    required: true
+    doc: >-
+      RowNumber — part 2 of the cell key. Numbering starts at 0 and 1 448 orders have gaps, so a
+      dense line index may not be assumed and RowNumber is an identifier, never a count.
+  - name: quantity
+    type: integer
+    required: true
+    doc: "Quantity — units on the line; measured > 0 on all 223 974 rows."
+  - name: unitPrice
+    type: number
+    required: true
+    doc: "UnitPrice — list price per unit, the GROSS side of the scope's gross/net question."
+  - name: netPrice
+    type: number
+    required: true
+    doc: >-
+      NetPrice — price per unit after discount. Measured <= UnitPrice on every row and strictly
+      below it on 136 913 of 223 974 lines, so the discount is real and the two are not the same
+      figure under two names.
+  - name: unitCost
+    type: number
+    required: true
+    doc: "UnitCost — cost per unit; served, and no margin measure is declared over it yet."
+
+grounding:
+  kind: sql_table
+  grain: "one row = one line of one order — (OrderKey, RowNumber)"
+  sources:
+    - relation: v_contoso_order_line
+      key: [OrderKey, RowNumber]
+      columns: [OrderKey, RowNumber, OrderDate, DeliveryDate, CustomerKey, StoreKey, ProductKey,
+                CurrencyCode, Quantity, UnitPrice, NetPrice, UnitCost]
+  serves_from: data/transforms/v_contoso_order_line.sql
+  field_roles:
+    OrderKey: contoso.field_role.key
+    RowNumber: contoso.field_role.key
+    OrderDate: contoso.field_role.dimension
+    DeliveryDate: contoso.field_role.dimension
+    CustomerKey: contoso.field_role.key
+    StoreKey: contoso.field_role.key
+    ProductKey: contoso.field_role.key
+    CurrencyCode: contoso.field_role.dimension
+    Quantity: contoso.field_role.measure
+    UnitPrice: contoso.field_role.measure
+    NetPrice: contoso.field_role.measure
+    UnitCost: contoso.field_role.measure
+  note: >-
+    EVERY SERVED COLUMN IS WHITELISTED, which is itself a declaration: this relation carries no
+    column without ontology meaning. The four key columns that point at dimensions are `key` and not
+    `dimension` because a question resolves a name to a code through a register and then filters on
+    the code; the two dates are `dimension` because they are the axis a period question groups by.
+
+contract:
+  default_reading: >-
+    A bare "sales" question means this relation at line grain, in the order's own CurrencyCode,
+    over OrderDate (not DeliveryDate), counting every line including the 93 550 placed at the
+    'Online' sentinel store. For the gross-versus-net default see the NetSalesAmount concept; this
+    concept fixes the RELATION, the GRAIN and the DATE ROLE, which are the three choices a silent
+    question otherwise leaves to accident.
+  no_probe_guarantee: >-
+    Read v_contoso_order_line at its declared key; the two date roles and the four dimension keys
+    are the columns whitelisted above. Nothing here needs a warehouse probe, and nothing here needs
+    the header relation, which does not exist.
+  rules:
+    - id: order_line.grain.no_header_relation
+      kind: mac.rule_kind.resolution
+      subject: An order-grain figure comes from the line, because no header relation is served
+      when: "a question asks about ORDERS rather than order lines — how many orders, orders per month, average order"
+      then: >-
+        answer from `{v_contoso_order_line}` by count(DISTINCT `{OrderKey}`) and by grouping on the
+        header attributes the line repeats (`{OrderDate}`, `{DeliveryDate}`, `{CustomerKey}`,
+        `{StoreKey}`, `{CurrencyCode}`), which are functionally determined by `{OrderKey}` (measured)
+      never: >-
+        joining to an order header relation — none is served (NS-ORDERS-02) — or counting rows of
+        `{v_contoso_order_line}` as orders, which overstates 93 470 orders as 223 974
+      why: >-
+        the header is consumed into the line and carries no measure of its own, so order grain is a
+        DISTINCT count and not a second relation
+      binds: [OrderKey]
+      confidence: P
+    - id: order_line.currency.no_bare_cross_currency_sum
+      kind: mac.rule_kind.aggregation
+      subject: Amounts are store-local — a multi-currency sum needs a stated conversion
+      when: "summing `{UnitPrice}`, `{NetPrice}` or `{UnitCost}` across rows whose `{CurrencyCode}` differs"
+      then: >-
+        either restrict to one `{CurrencyCode}` and say which, or convert through
+        `{v_contoso_fx_rate_day}` in the direction the ExchangeRate concept declares, and disclose
+        the choice with the figure
+      never: >-
+        adding amounts denominated in different currencies as if they shared a unit — measured 5
+        currencies on the fact (USD 113 614, EUR 49 203, CAD 24 250, GBP 22 829, AUD 14 078), so a
+        bare global SUM is a number with no unit
+      why: >-
+        the amounts are the store's local money, not a reporting currency; this is the second of the
+        four contested readings the bundle exists to settle
+      binds: [CurrencyCode, UnitPrice, NetPrice, UnitCost]
+      confidence: P
+
+constraints:
+  - assert: "One order is denominated in exactly one currency"
+    severity: INFORMATIONAL
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT OrderKey FROM contoso_served.v_contoso_order_line
+      GROUP BY 1 HAVING count(DISTINCT CurrencyCode) > 1)
+    notes: >-
+      Measured 0 of 93 470 orders on 2026-09-18, so an order-level conversion is well defined today.
+      INFORMATIONAL rather than ERROR because this database declares no constraints at all — no
+      primary key, no foreign key, no unique — so nothing stops the next load from breaking it.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 over the served line relation, after the operator opened the ontology
+        pipeline. Grain inherited from the measured detail grain rather than declared fresh;
+        OrderKey modelled as a degenerate dimension per NS-ORDERS-02.
+      change_type: CREATION
+      by: operator
+      rationale: >-
+        NS-ORDERS-01 fixes the fact of record and NS-ORDERS-02 refuses the header relation; both are
+        `accepted` with `ruled_by: operator` in data/quality/data_quality_register.yaml.
+
+open_questions:
+  - id: OL-Q1
+    topic: order-level figures
+    question: >-
+      Is an order-level measure (freight, an order total, a header discount) expected in this
+      delivery? A line relation can repeat a header column but never hold one, so the day such a
+      figure arrives a second served relation at order grain becomes the right answer immediately.
+    status: OPEN
+    owner_for_resolution: operator
+    cross_references: data/quality/NS-ORDERS-02.md
+  - id: OL-Q2
+    topic: fx join robustness
+    question: >-
+      Should the rate be matched as-of (latest quote on or before the order date) rather than on
+      exact date equality? Equality works only because the quote grid is gapless and runs a year
+      past the newest order; an order dated off the grid yields a silent NULL.
+    status: OPEN
+    owner_for_resolution: operator
+    cross_references: decisions/0001-order-line-fact-of-record.md

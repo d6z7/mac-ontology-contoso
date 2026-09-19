@@ -1,0 +1,181 @@
+# CONTOSO > finance > ExchangeRate — the daily quote, and the one rule in this bundle that punishes
+# a guess. THE DIRECTION IS MEASURED AND STATED: USD -> the ORDER'S currency, as of the ORDER date.
+# The opposite direction reproduces 113 627 of 223 974 lines — exactly the lines whose rate is 1.0 —
+# so a sample-based check sees the wrong direction "work". Numbers:
+# decisions/0001-order-line-fact-of-record.md.
+#
+# `additivity:` IS DELIBERATELY ABSENT — derived from mac_vocabulary.yaml#MeasureType.Precomputed x
+# the axis kinds below, and projected into data/lookups/contoso_measure.lookup.csv.
+
+metadata:
+  concept: ExchangeRate
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: ExchangeRate
+  label: Exchange Rate
+  class: measure
+  identity:
+    kind: code
+    note: >-
+      Identified by its register code. The QUOTE is identified by the relation's composite key
+      (Date, FromCurrency, ToCurrency) — measured 100 450 rows / 100 450 distinct keys / 0
+      duplicates — which is the grain, not the measure's identity.
+  definition: >-
+    The rate at which one currency converted into another on one calendar day: the number of
+    ToCurrency units per one unit of FromCurrency, quoted per (Date, FromCurrency, ToCurrency).
+    Served at its own grain rather than carried on the sales line.
+
+    IT IS NOT AN AMOUNT, and it is not additive in any direction. Summing rates across days or
+    across pairs produces a number with no meaning; averaging them is a different, unweighted
+    figure from converting each amount at its own day's rate. It is joined and multiplied, never
+    folded.
+
+    IT IS ALSO NOT DIRECTIONLESS. (USD, EUR) and (EUR, USD) are two different rows with two
+    different values, and picking the wrong one inverts every non-USD figure while leaving every
+    USD figure untouched.
+  semantics:
+    purpose: >-
+      The conversion the bundle's currency question needs: the grid is complete — 100 450 rows =
+      4 018 days x 5 x 5 — and every (order day, order currency) has all 5 quotes out
+      (14 106 of 14 106), so any conversion a question asks is available by join rather than by
+      estimate.
+    unit: >-
+      ratio — ToCurrency units per 1 unit of FromCurrency. Dimensionless, so it may be MULTIPLIED by
+      a currency amount (yielding that amount in ToCurrency) but never added to one, and two rates
+      may be compared only within the same ordered pair.
+    measure_type: mac.MeasureType.Precomputed
+    axis_kinds:
+      time: mac.axis_kind.time
+      currency_pair: mac.axis_kind.categorical
+    null_semantics: >-
+      The grid has no holes to interpret: 0 rows carry a null or non-positive rate, and the
+      self-pairs are exactly 1 on all 20 090 of them. A missing quote would mean a date outside the
+      4 018-day grid, which is an out-of-scope date rather than an unknown rate.
+
+grounding:
+  kind: sql_table
+  grain: "one row = one day's quote for one ORDERED currency pair — (Date, FromCurrency, ToCurrency)"
+  sources:
+    - relation: v_contoso_fx_rate_day
+      key: [Date, FromCurrency, ToCurrency]
+      columns: [Date, FromCurrency, ToCurrency, Exchange]
+  serves_from: data/transforms/v_contoso_fx_rate_day.sql
+  discriminator: Exchange
+  field_roles:
+    Date: contoso.field_role.key
+    FromCurrency: contoso.field_role.key
+    ToCurrency: contoso.field_role.key
+    Exchange: contoso.field_role.measure
+  note: >-
+    `discriminator` NAMES THE COLUMN THAT SEPARATES THIS CONCEPT FROM THE OTHER READER OF THIS
+    RELATION (Currency, which reads the two code columns as its value set), not a predicate — no
+    rows are excluded. All three key columns are `key` and not `dimension` because the pair must be
+    filtered as an ORDERED pair together with the day; filtering on FromCurrency alone is what
+    produces the inverted answer this concept exists to prevent.
+
+contract:
+  default_reading: >-
+    A conversion with no direction stated means USD -> the ORDER'S CurrencyCode, as of the ORDER
+    date: FromCurrency = 'USD', ToCurrency = the line's CurrencyCode, Date = the line's OrderDate.
+    That is the direction the delivery's own ExchangeRate column reproduces on 223 974 of 223 974
+    lines with 0 missing quotes and 0 differences. When a question asks for a figure IN a named
+    currency, say which direction was used in the answer.
+  no_probe_guarantee: >-
+    The quote is read from v_contoso_fx_rate_day at its full composite key; the currency codes
+    resolve through data/lookups/contoso_currency.lookup.csv, whose 5 members are the same 5
+    measured on both this relation's code columns; the fold is none on both axes, resolved from
+    measure_type x axis_kinds. No probe is needed to discover which pairs exist — the grid is
+    complete by measurement.
+  axis_handling: >-
+    The rate is read AT A DATE, never over a range. A period question about money converts each
+    line at its own OrderDate's quote and then folds the converted amounts; it does not fold rates
+    and then convert once, and it does not average the rate over the period.
+  rules:
+    - id: exchange_rate.direction.usd_base_as_of_order_date
+      kind: mac.rule_kind.resolution
+      subject: The direction is USD to the order's currency, on the order's day — measured, not inferred
+      when: "converting a line amount from `{v_contoso_order_line}` using `{v_contoso_fx_rate_day}`"
+      then: >-
+        join on `{Date}` = the line's `{OrderDate}` AND `{FromCurrency}` = 'USD' AND `{ToCurrency}`
+        = the line's `{CurrencyCode}`, and multiply the amount by `{Exchange}`
+      never: >-
+        the reverse orientation (`{FromCurrency}` = the line's `{CurrencyCode}`, `{ToCurrency}` =
+        'USD'), which REPRODUCES 113 627 of 223 974 lines and therefore passes any USD-heavy sample
+        while inverting every non-USD figure
+      why: >-
+        the 113 627 lines the wrong direction reproduces are exactly the lines whose rate is 1.0 —
+        113 614 USD lines plus 13 EUR lines on the single par date 2022-08-31 — so sampling cannot
+        tell the directions apart and the direction has to be declared with its measurement attached
+      binds: [FromCurrency, ToCurrency, Date, Exchange]
+      confidence: P
+    - id: exchange_rate.pair.never_half_a_pair
+      kind: mac.rule_kind.resolution
+      subject: A quote is keyed by an ordered pair and a day — all three, or none
+      when: "filtering or joining `{v_contoso_fx_rate_day}`"
+      then: >-
+        constrain all three key columns — `{Date}`, `{FromCurrency}` and `{ToCurrency}` — together
+      never: >-
+        constraining `{FromCurrency}` or `{Date}` alone and aggregating what comes back: the grid is
+        complete, so a half-specified filter returns 5 rows per day per currency and silently
+        averages five different pairs
+      why: >-
+        completeness makes the wrong query return plausible rows instead of none, which is the
+        failure mode a gapless grid creates
+      binds: [Date, FromCurrency, ToCurrency]
+      confidence: P
+
+constraints:
+  - assert: "Every self-pair quote is exactly 1 and every rate is positive"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.v_contoso_fx_rate_day
+      WHERE Exchange <= 0 OR (FromCurrency = ToCurrency AND Exchange <> 1)
+    notes: >-
+      Measured 0 of 100 450 rows on 2026-09-18. ERROR because a self-pair other than 1, or a
+      non-positive rate, would corrupt every converted figure with no other symptom.
+  - assert: "The quote grid is complete — one row for every (day, from, to) combination"
+    severity: WARNING
+    machine_executable: true
+    sql_assertion: >-
+      SELECT (SELECT count(*) FROM contoso_served.v_contoso_fx_rate_day)
+           - (SELECT count(DISTINCT Date) * count(DISTINCT FromCurrency) * count(DISTINCT ToCurrency)
+              FROM contoso_served.v_contoso_fx_rate_day)
+    notes: >-
+      Measured 100 450 = 4 018 x 5 x 5, difference 0, on 2026-09-18. The as-of-date join in the
+      direction rule is only safe while this holds; if the grid gains a hole the equality join
+      yields a silent NULL rather than an error (open question OL-Q2 on the OrderLine concept).
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 with the measured FX direction stated as a typed rule rather than left to be
+        re-derived. measure_type Precomputed and the two axis kinds are the inputs
+        data/lookups/contoso_measure.lookup.csv was projected from; no additivity written.
+      change_type: CREATION
+      by: operator
+      rationale: >-
+        decisions/0001-order-line-fact-of-record.md section 4 records why the direction is written
+        down: the wrong direction looks right on 51 % of the data and on 100 % of any USD-only
+        sample.
+
+open_questions:
+  - id: FX-Q1
+    topic: as-of versus equality
+    question: >-
+      Should the line-to-quote join be as-of (latest quote on or before the order date) instead of
+      exact date equality? Equality works only because the grid is gapless and runs a year past the
+      newest order; an order dated off the grid yields a silent NULL rather than a refusal.
+    status: OPEN
+    owner_for_resolution: operator
+    cross_references: decisions/0001-order-line-fact-of-record.md

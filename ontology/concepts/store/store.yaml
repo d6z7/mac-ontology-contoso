@@ -1,0 +1,268 @@
+# CONTOSO > store > Store — AN SCD-2 DIMENSION, and the one concept in this bundle that has to
+# collapse versions. The descriptor promoted the FINER grain (74 versions) and said in as many
+# words that it "leaves the collapse to the ontology". This is that collapse, declared as a slot
+# with a canon behind it rather than written as a join hint in prose.
+
+metadata:
+  concept: Store
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Store
+  label: Store
+  class: reference
+  identity:
+    kind: fk_name
+    canonical_key: StoreKey
+    note: >-
+      KEYED ON THE VERSION, NOT ON THE BUSINESS CODE, and that is deliberate. StoreKey is the
+      surrogate: 74 rows / 74 distinct / 0 duplicates, and it is what the fact carries, so a line
+      joins the version it was placed against and the join cannot fan out. `StoreCode` is the
+      natural key and is NOT unique — 67 codes over 74 rows — so it cannot be the canonical key;
+      (StoreCode, OpenDate) is the natural temporal key, measured unique 74 of 74.
+  definition: >-
+    A retail outlet, served as ONE ROW PER VERSION of that outlet: 74 versions of 67 stores, each
+    with its own validity window, geography, floor area and status. The order line carries the
+    version it was placed against.
+
+    IT IS NOT ONE ROW PER STORE. Six store codes carry more than one version and one carries three;
+    the windows do not overlap (measured 0 overlapping pairs). So a count of rows here is a count of
+    versions, and a question about "how many stores" means 67, not 74.
+
+    IT IS NOT A LIST OF PHYSICAL PLACES EITHER. The sentinel version — StoreKey 999999, StoreCode
+    -1, GeoAreaKey -1, CountryCode '--', CountryName and State both 'Online' — is a SALES CHANNEL
+    sitting in a store dimension. It IS served, because 93 550 of 223 974 lines (41.8 %) point at
+    it: dropping it is the single largest silent error available in this bundle.
+
+    AND ITS GEOGRAPHY STOPS AT COUNTRY. There is no continent column here (measured 0), so a
+    store-side continent roll-up is not servable; that level exists only on the customer side.
+  semantics:
+    purpose: >-
+      The selling-location axis: where a line was sold, at the version of the outlet it was sold by,
+      and the relation that carries the online channel as a first-class member.
+    scope: >-
+      All 74 delivered store versions, unfiltered, sentinel included. The fact touches 64 of them;
+      the other 10 versions made no sale in the delivered period.
+    null_semantics: >-
+      THREE ABSENCES, THREE MEANINGS. `CloseDate` is NULL on 58 of 74 versions and means STILL OPEN,
+      not unknown. `Status` is NULL on 59 and means NO STATUS EVENT — the delivery has no code for
+      an operating store, so the absence is the only way "operating" is expressed; see the
+      StoreStatus concept, and note the one version that is closed AND unstatused. `SquareMeters` is
+      NULL on 1 row, the sentinel, because a channel has no floor.
+
+properties:
+  - name: storeKey
+    type: integer
+    required: true
+    doc: "StoreKey — the version surrogate, the identity, and the column the fact joins on."
+  - name: storeCode
+    type: integer
+    required: true
+    doc: >-
+      StoreCode — the natural business key. NOT unique: 67 codes over 74 rows, 6 of them versioned
+      and one three times. (StoreCode, OpenDate) is unique, measured 74 of 74.
+  - name: openDate
+    type: timestamp
+    required: true
+    doc: "OpenDate — the version's validity start, and the version-ordering column of the collapse."
+  - name: closeDate
+    type: timestamp
+    required: false
+    doc: >-
+      CloseDate — the version's validity end. NULL on 58 of 74 = still open. Measured: no code has
+      two open versions, so the current version is well defined where one exists.
+  - name: squareMeters
+    type: integer
+    required: false
+    doc: "SquareMeters — floor area; NULL on the sentinel row only."
+  - name: description
+    type: string
+    required: true
+    doc: "Description — the outlet's display name, and the register's search key."
+
+grounding:
+  kind: sql_table
+  grain: "one row = one VERSION of one store — StoreKey; the business entity is StoreCode"
+  sources:
+    - relation: dim_contoso_store
+      key: StoreKey
+      columns: [StoreKey, StoreCode, GeoAreaKey, CountryCode, CountryName, State, Description,
+                OpenDate, CloseDate, SquareMeters, Status]
+  serves_from: data/transforms/dim_contoso_store.sql
+  snapshot_rule: >-
+    THE FACT NEEDS NO COLLAPSE; AN UNDATED QUESTION DOES. A line carries StoreKey, the version
+    surrogate, so joining the fact to this relation gives exactly one row per line and cannot
+    multiply — that is measured (0 fan-out) and is why the descriptor could promote the finer grain.
+    A question that names a store WITHOUT a date is the case that needs collapsing: 6 of the 67
+    codes have more than one version, so "store 7" is three rows. Collapse to ONE ROW PER StoreCode,
+    ordered by OpenDate descending — the latest version — unless the question gives an as-of date,
+    in which case take the version whose window contains it.
+  realized_by:
+    udf: mac.canon.snapshot_collapse
+    applied_as: subquery_wrapper
+    params:
+      table: dim_contoso_store
+      natural_key: StoreCode
+      order_by: OpenDate
+      valid_from: OpenDate
+      valid_to: CloseDate
+    note: >-
+      `natural_key: StoreCode` IS RETYPED ON PURPOSE AND check_canon_binding WARNS ABOUT IT
+      (MAC003). The canon declares `params_from: {natural_key: profile#identity_evidence.key}` — read
+      it, do not retype it — but this relation's measured identity_evidence.key is [StoreKey], the
+      VERSION surrogate, because that is what makes a row unique. Partitioning the collapse by it
+      returns 74 of 74 rows: no collapse at all, silently. The natural key of an SCD-2 relation is
+      not its measured row key, and for this relation it is StoreCode (67 codes; (StoreCode,
+      OpenDate) measured unique 74 of 74). Recorded as a kit/framework collision rather than
+      resolved by obeying the warning, per the shared-facts rule on collisions: obeying it here
+      would turn the collapse into a no-op.
+  field_roles:
+    StoreKey: contoso.field_role.key
+    StoreCode: contoso.field_role.key
+    GeoAreaKey: contoso.field_role.key
+    CountryCode: contoso.field_role.dimension
+    CountryName: contoso.field_role.attribute
+    State: contoso.field_role.dimension
+    Status: contoso.field_role.dimension
+    Description: contoso.field_role.attribute
+    OpenDate: contoso.field_role.dimension
+    CloseDate: contoso.field_role.dimension
+    SquareMeters: contoso.field_role.measure
+  note: >-
+    WHY THE COLLAPSE IS A CANON AND NOT A `WHERE CloseDate IS NULL`, with the number that settles
+    it. Measured 2026-09-18: 9 of the 67 store codes have NO open version at all — every version of
+    them is closed — so filtering on `CloseDate IS NULL` returns 58 codes and SILENTLY DROPS 9,
+    together with every sale they ever made. The canon's latest-version collapse (ROW_NUMBER
+    partitioned by StoreCode ordered by OpenDate descending) returns 67 of 67. The two look
+    equivalent on the 58 and disagree on the 9, which is exactly the shape a hand-written join hint
+    gets wrong.
+
+    `Description` IS `attribute`, NOT `dimension`: it is the register's search key, so a store word
+    is resolved through data/lookups/dim_contoso_store.lookup.csv to a StoreKey and then filtered on
+    the key — never matched as a string.
+
+contract:
+  default_reading: >-
+    A store named without a date means its LATEST version. A count of stores means 67 distinct
+    StoreCode, not 74 rows. A store-side geography breakdown stops at country and includes the '--'
+    online sentinel as its own row. Say which reading was used when the question is silent.
+  no_probe_guarantee: >-
+    All 74 versions are in data/lookups/dim_contoso_store.lookup.csv, cut from the served plane,
+    each with its description as a search key, its store code, country, state and status — so a
+    store word resolves offline to a StoreKey. The version collapse is the declared snapshot_rule
+    with a canon behind it, the status value set is the StoreStatus concept, and the geography
+    resolves through data/lookups/contoso_country.lookup.csv and
+    data/lookups/contoso_geo_area.lookup.csv. Nothing here needs a probe.
+  resolution: >-
+    Resolve a store word through data/lookups/dim_contoso_store.lookup.csv on its `search_key`
+    (which covers the description and the store code) to a `StoreKey`, then filter on the key. When
+    the word resolves to a CODE with several versions, apply the snapshot_rule before answering.
+  rules:
+    - id: store.versions.entity_count_is_the_code
+      kind: mac.rule_kind.aggregation
+      subject: Counting stores counts codes, not rows — 67, never 74
+      when: "counting stores, or reporting how many outlets there are"
+      then: >-
+        count DISTINCT `{StoreCode}`, which is 67
+      never: >-
+        counting rows of `{dim_contoso_store}` or DISTINCT `{StoreKey}`, which is 74 — the version
+        count, inflated by the 6 codes that have more than one version and the one that has three
+      why: >-
+        the relation is served at version grain deliberately, so every entity-level count has to
+        collapse first; the two numbers differ by 7 and nothing in a result set says which you got
+      binds: [StoreCode, StoreKey]
+      confidence: P
+    - id: store.sentinel.online_is_served
+      kind: mac.rule_kind.guarantee
+      subject: The online sentinel is a real member carrying 41.8 % of the fact
+      when: "filtering, counting or breaking a figure down by store"
+      then: >-
+        include `{StoreKey}` 999999 as its own row, labelled as the online channel
+      never: >-
+        excluding `{StoreKey}` 999999 as invalid geography: 93 550 of 223 974 lines point at it, so
+        excluding it removes 41.8 % of the fact
+      why: >-
+        the delivery encodes a channel as a store with sentinel geography; the honest model keeps it
+        and discloses it, and this is the largest available silent error in the bundle
+      binds: [StoreKey]
+      confidence: P
+      # NARROWED AT P10 — SINGLE-HOMING, and two independent instruments agreed on this one pair.
+      # This rule also bound `{CountryCode}` and `{CountryName}` and banned repairing '--' / 'Online'
+      # into a real country. That is Country's fact, and Country already states it:
+      # country.sentinel.online_is_a_member binds exactly those two columns and carries the same
+      # repair ban with the same 93 550 of 223 974 measurement. Measured across all 26 typed rules,
+      # this was the ONLY pair that both shared a bound column across two concepts AND overlapped in
+      # wording (jaccard 0.31 on when/then/never; every other cross-concept binds-overlap had
+      # distinct directives). What stays here is the store's own fact — StoreKey 999999 is a served
+      # member — and the geography ban is cited rather than copied. The citation is this comment and
+      # not a `cross_references:` key, because the contract.rules item schema is
+      # additionalProperties:false and admits no such field (mac.schema.json#/$defs/contract).
+
+constraints:
+  - assert: "The SCD-2 windows do not overlap — a code is never two versions at once"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.dim_contoso_store a
+      JOIN contoso_served.dim_contoso_store b
+        ON a.StoreCode = b.StoreCode AND a.StoreKey < b.StoreKey
+       AND a.OpenDate <= coalesce(b.CloseDate, DATE '9999-12-31')
+       AND b.OpenDate <= coalesce(a.CloseDate, DATE '9999-12-31')
+    notes: >-
+      Measured 0 pairs on 2026-09-18. ERROR because the as-of branch of the snapshot collapse
+      assumes it: with overlapping windows an as-of date would select two versions and the join
+      would fan out.
+  - assert: "No store code has two open versions — the latest version is unambiguous"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT StoreCode FROM contoso_served.dim_contoso_store
+      WHERE CloseDate IS NULL GROUP BY 1 HAVING count(*) > 1)
+    notes: "Measured 0 of 67 codes on 2026-09-18."
+  - assert: "Every StoreKey on the fact resolves to a store version, sentinel included"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.v_contoso_order_line l
+      WHERE NOT EXISTS (SELECT 1 FROM contoso_served.dim_contoso_store s
+                        WHERE s.StoreKey = l.StoreKey)
+    notes: >-
+      Measured 0 of 223 974 lines on 2026-09-18, sentinel included. The database declares no foreign
+      keys, so this check is the only thing behind it.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7. The version collapse the dataset descriptor explicitly left to the ontology is
+        declared here as grounding.snapshot_rule bound to mac.canon.snapshot_collapse, with the
+        measured reason the naive open-version filter is wrong (it drops 9 of 67 codes).
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: STR-Q1
+    topic: what a store IS
+    question: >-
+      Is the business entity the store CODE (67) or the store VERSION (74)? This concept answers
+      "code, collapsed to the latest version" and keys on the version because the fact does. The
+      descriptor recorded the question as unruled and a human still owns it — the answer changes
+      every store count in the bundle.
+    status: NEEDS_SME_CONFIRMATION
+    owner_for_resolution: operator
+  - id: STR-Q2
+    topic: the sentinel's geography
+    question: >-
+      Should the online channel be modelled as a store at all, or as a separate channel axis?
+      Keeping it here puts 41.8 % of the fact in a row whose country, region and state are all
+      sentinels, so every store-geography figure carries a residual that is not a place.
+    status: OPEN
+    owner_for_resolution: operator
