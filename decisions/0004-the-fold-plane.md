@@ -364,3 +364,104 @@ planner and the real suites over three bundles, or by instrumenting the guard in
 given with denominators throughout. The prototype ran from shadow copies; no repository file was
 written by it, nothing was written under any `ontology/` directory, no lock marker was created,
 moved or removed, and the warehouse was never opened for write.
+
+---
+
+## 11. AMENDMENT, 2026-09-20 — five options measured after this record was written
+
+The operator asked for every option on the table to be re-analysed before any further
+implementation, and proposed one of their own. Five were built as real planes and run. This section
+records what changed; §1–§10 above stand except where named here.
+
+**The suite denominator in §3 and §5 was stale.** This record quotes 758 passed / 2 skipped for the
+runtime suite. The fold law's own test file added 3, so the figure is **761 passed / 2 skipped**, and
+the estate is **1432 passed / 3 skipped of 1435**. Every count in this section uses 1435.
+
+### 11.1 The authored minimum is 29 tokens, not 43
+
+§6 put the honest minimum at 24 tokens for this bundle and the ladder stopped at 43 estate-wide.
+Pushed further and re-run: **29 tokens estate-wide (11 on this bundle) holds 16 of 18**, with 0 of 30
+answer signatures moved, 0 of 4 chips lost against the 52-token plane, and 0 of 1435 tests. Two
+merges were tested and both REJECTED on evidence: folding `per` into `denominated_by` removes a term
+and adds a token, and moving `modality` onto `grain_semantics` emits a FALSE plan disclosure on 5 of
+30 measures.
+
+### 11.2 The operator's fail-closed-on-ingest proposal: keep the term, reject the default
+
+Proposed: at ingest, write a complete plane in which every column is closed, and let an SME open one
+column at a time when a question needs it. **The operator's central insight is confirmed** — because
+the plane EXISTS and is complete, nothing is absent, so it costs **0 of 1435 tests** and entirely
+avoids the 142-failure bill that `MAC_FOLD_CLOSED_WORLD` pays. A positive control proves the null is
+real: a plane that closes the suites' own dominant fixture relation fails 59 of 763.
+
+Measured against it, and decisive:
+
+* the closed skeleton with **0 SME rulings scores 1 of 18**, and **regresses 3 of 18** — cases 1, 2
+  and 16 are legitimate sums it now refuses. Day one: **0 of 6 console chips, 0 of 3 bare totals**.
+* refusal-driven authoring has a **hard ceiling**. A refusal names only **2 of 11** terms, so
+  following the refusals reaches a fixpoint at **8 of 18** with 13 tokens. It cannot get to 16.
+* the intermediate — skeleton plus the 6 rulings the console's own question corpus demands — scores
+  6 of 18 and restores **6 of 6 chips**, but **12 of its 14 restored answers are undisclosed
+  five-currency sums.** Refusal-driven authoring re-opens the defect the plane exists to close.
+
+**KEEP: the `UNDECLARED` term and its own refusal lane** — "the ingest listed this column and nobody
+has ruled how it folds", tier `inferred`. It changes 0 of 18 and 0 of 1435 and earns its keep in the
+sentence an SME acts on. The alternative the proposal named, defaulting to `none`, states a
+**falsehood on 7 of 8 relations**: `none` is the claim "resolve a stored row instead", and these
+relations store no such row.
+
+**REJECT: the complete closed skeleton as a shipping default**, on the regression and the ceiling.
+
+### 11.3 Report mode is strictly dominated — §1.4's rollout question is closed
+
+0003 §3.6 recommended report mode first, and §5 of this record left it open. Measured: report mode
+scores **3 of 18 correct and 13 of 18 confidently wrong** — which is exactly today's runtime, plus
+the cost of authoring a plane. And the footnote has no reader: `CaveatKind` is closed at
+`dq | open_question | staleness`, and the presenter promotes only the applied-declaration prefix. It
+is not a gentler rollout; it is the incumbent with extra steps.
+
+### 11.4 The physical home: not `data/datasets`
+
+This record named no home, which was an omission — the prototype's comments proposed `x-` keys on
+`data/datasets/<relation>.yaml` on the grounds that the runtime already parses those files and they
+sit outside the armed lock. **Measured, that home is unusable**: the ingest's own promotion stage
+regenerates those files and destroys **9 of 9** such keys; the schema rejects **8 of 9**; the
+grounding column model is `extra="forbid"` with four fields, so none reaches the parser; a gate
+returns exit 1 on the keys; and a prior commit already removed 19 of 19 `x-` keys from these exact
+files. There is also no concept plane there, so `counts_as` and `modality` have nowhere to sit —
+**13 of 18**, not 16.
+
+**Recommended and UNRULED: a new top-level `fold/<bundle>.fold.yaml`**, with a `FoldFile` definition
+added to the schema first. Measured: exit 0 for an SME edit with and without an unlock marker, 0 of 3
+digest moves, outside the projected surface, and touched by no generator.
+
+### 11.5 Both boolean designs, built and scored
+
+The operator proposed per-column booleans, then escalated to one boolean per operator. Built:
+**two booleans score 4 of 18** (1 of 18 when the flag is flipped on the price columns, which is the
+axis-dependence proof); **six booleans score 8 of 18** at 126 tokens, and a seventh regresses case 5.
+Adding back the three pointer fields reaches 16 of 18 at **143 tokens — 2.75× the 52-token plane for
+byte-identical behaviour.**
+
+The instinct behind the proposal is nonetheless recorded as correct, and it changed how this design
+is presented rather than what it is: the common case IS one word, 60 of 71 columns need nothing, and
+a 13-row table at four grains was the wrong introduction. `is_sortable` is dropped — it would read
+`yes` on **71 of 71** columns.
+
+### 11.6 Three things nobody had proposed, all recommended, none needing any vocabulary
+
+* **Fix the live SQL defects.** Two are pure construction bugs — a `JOIN` with an empty `ON` clause,
+  reproduced live, and a collapse that partitions by a column already unique so 74 of 74 rows
+  survive. Neither needs a declaration.
+* **Wire `open_question_id`.** It is `None` at **15 of 15** construction sites and nothing sets it,
+  while older refusals say the words "filing an open question" in their prose. This is what makes a
+  refusal teach rather than merely stop.
+* **Route fold refusals into the existing Clarification lane.** Measured as the only route from
+  "0 of 3 bare totals answerable" back to answerable: a refusal that names ≤6 candidate repairs is a
+  question the asker can settle, not a wall.
+
+### 11.7 What this amendment does not change
+
+Cases 4 and 11 are unreachable under **every** option measured. Case 4 needs the precedence ruling
+(§5, still open: 6 of 1435 tests, 16 → 17 of 18). Case 11 is a missing edge — no plane, no boolean,
+no home and no derivation reaches it.
