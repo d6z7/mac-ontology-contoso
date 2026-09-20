@@ -1,5 +1,7 @@
 # 0003 — Semantic types for columns: the role SELECTS, the type REFUSES
 
+> **SUPERSEDED IN APPROACH — see [0005](0005-what-we-learned-and-what-supersedes-0002-0004.md) (2026-09-20).** Its measurements stand; its proposal largely should not be built. The premise all three records share — that the model needs new declarations — was measured wrong: the facts are mostly declared already and the runtime does not read them.
+
 **Status:** PROPOSED — only the operator may ratify. Nothing in this record has been built.
 **Audience:** whoever next proposes a per-column field to make the model refuse a wrong operation;
 anyone about to add a third home for what a column means.
