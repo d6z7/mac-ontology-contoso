@@ -1,0 +1,74 @@
+# CONTOSO > finance > QuantitySold — the unit count on the fact.
+
+metadata:
+  concept: QuantitySold
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: QuantitySold
+  label: Quantity Sold
+  class: measure
+  identity:
+    kind: code
+    note: >-
+      A raw column on the fact table, not a computed measure. SUM(Quantity) is the
+      total units sold over the lines in scope.
+  definition: >-
+    The number of units on an order line. SUM(Quantity) over the lines in scope gives
+    the total units sold. Measured > 0 on all 223 974 rows — no zero or negative
+    quantities exist in this delivery.
+  semantics:
+    purpose: >-
+      The unit-count measure: how many items were sold, independent of price or currency.
+      The simplest aggregate on the fact — a count of goods, not a count of entities.
+    measure_type: mac.MeasureType.Flow
+    axis_kinds:
+      time: mac.axis_kind.time
+      customer: mac.axis_kind.categorical
+      product: mac.axis_kind.categorical
+    null_semantics: >-
+      Quantity is non-null on all 223 974 lines. An empty scope returns no rows,
+      not a zero — the same absence semantics as NetSalesAmount.
+
+derived_by_rule: quantity_sold
+
+grounding:
+  kind: sql_table
+  grain: "one row = one order line — (OrderKey, RowNumber)"
+  sources:
+    - relation: v_contoso_order_line
+      key: OrderKey
+      columns: [OrderKey, RowNumber, OrderDate, DeliveryDate, CustomerKey, StoreKey,
+                ProductKey, CurrencyCode, Quantity, UnitPrice, NetPrice, UnitCost]
+  field_roles:
+    OrderKey: contoso.field_role.key
+    RowNumber: contoso.field_role.key
+    OrderDate: contoso.field_role.period
+    DeliveryDate: contoso.field_role.dimension
+    CustomerKey: contoso.field_role.key
+    StoreKey: contoso.field_role.key
+    ProductKey: contoso.field_role.key
+    CurrencyCode: contoso.field_role.dimension
+    Quantity: contoso.field_role.measure
+
+contract:
+  default_reading: >-
+    A bare "quantity sold" or "units sold" means SUM(Quantity) over the order lines in scope,
+    in whatever currency the lines carry. No conversion is applied by default.
+  no_probe_guarantee: >-
+    The Quantity column is on the served fact table and is non-null on every row.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-22
+  change_log:
+    - date: 2026-09-22
+      change: "Created as a standalone measure concept for the DSQP corpus (ADR-006 Phase 2)."
+      change_type: CREATION
+      by: operator

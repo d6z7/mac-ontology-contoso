@@ -1,0 +1,73 @@
+# CONTOSO > catalog > Color — the product colour enumeration.
+
+metadata:
+  concept: Color
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Color
+  label: Color
+  class: enumeration
+  identity:
+    kind: fk_name
+    canonical_key: Color
+    note: >-
+      16 cleansed values over 2,517 products. fk_name (not code) because Color is not a
+      discriminator on a tall table — it's a simple attribute on each product row.
+  definition: >-
+    The product colour, cleansed by the transform from 17 landing spellings to 16 served
+    values (Blue collapsed from two spellings). A closed enumeration: every product carries
+    exactly one colour.
+  semantics:
+    purpose: >-
+      A categorical axis for product analysis — revenue by colour, product count by colour.
+
+grounding:
+  kind: sql_table
+  grain: "one row = one product — ProductKey; Color is one attribute of the product"
+  sources:
+    - relation: dim_contoso_product
+      key: ProductKey
+      columns: [ProductKey, Color]
+  field_roles:
+    ProductKey: contoso.field_role.key
+    Color: contoso.field_role.dimension
+
+contract:
+  default_reading: >-
+    A question naming a colour resolves through data/lookups/contoso_color.lookup.csv
+    on search_key to the cleansed spelling.
+  rules:
+    - id: color.resolution.by_register
+      kind: mac.rule_kind.resolution
+      subject: Resolve a colour word through the offline register
+      when: "a question names a colour"
+      then: >-
+        resolve through data/lookups/contoso_color.lookup.csv on search_key to the Color value
+      never: >-
+        guessing a colour spelling — the register has all 16
+      binds: [Color]
+      confidence: P
+      realized_by:
+        udf: mac.canon.resolve_by_register
+        params:
+          thing: color
+          code: Color
+          register: data/lookups/contoso_color.lookup.csv
+          search: search_key
+          display_label: label
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-22
+  change_log:
+    - date: 2026-09-22
+      change: "Created as an enumeration concept for the DSQP corpus (ADR-006 Phase 2)."
+      change_type: CREATION
+      by: operator
