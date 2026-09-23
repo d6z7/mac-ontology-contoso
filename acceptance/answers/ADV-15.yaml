@@ -1,0 +1,238 @@
+id: ADV-15
+captured_at: '2026-09-23T21:20:55+00:00'
+ontology_fingerprint: c465e1ffbb302413
+acceptance_fingerprint: 1cfcd2a8d6f5f5e5
+engine:
+  provider: bedrock
+  model: global.anthropic.claude-opus-4-6-v1
+  effort: max
+  mode: llm-execute
+  athena: true
+route: wiki+athena
+answer: 'Customer: no value returned.'
+answer_parts:
+  value: null
+  unit: null
+  measure: Customer
+  reading: 'An unqualified customer geography question means the CUSTOMER''s geography,
+    not the store''s. The two are different axes: the store dimension stops at country
+    and has no continent, and 41.8 % of lines point at the ''Online'' sentinel store
+    whose country code is ''--''. So a country-or-continent breakdown defaults to
+    this relation.'
+  table: null
+  status: error
+  confidence: I
+  assumptions:
+  - kind: dq
+    text: Country determines Continent — the roll-up is a function, not a many-to-many
+      (Measured 0 of 8 countries on 2026-09-18. ERROR because a country on two continents
+      would make every continent figure double-count silently, and this is the only
+      relation that can answer a continent question at all.)
+    ref: concept://example/contoso/Customer
+  - kind: dq
+    text: 'The dimension is not versioned — one row per customer (Measured 0 on 2026-09-18
+      (104 990 = 104 990). Held as a constraint because StartDT / EndDT are served:
+      the moment a second row per key arrives, every join to this dimension fans out
+      and the shape becomes the store dimension''s (SCD-2), which needs a snapshot
+      collapse this concept deliberately does not declare. See CUS-Q1.)'
+    ref: concept://example/contoso/Customer
+  - kind: dq
+    text: Every ProductKey on the fact resolves to a product (Measured 0 of 223 974
+      lines on 2026-09-18. ERROR because this database declares no foreign keys at
+      all, so nothing but a check stands behind it.)
+    ref: concept://example/contoso/Product
+  - kind: dq
+    text: 'The dimension is not versioned — one row per product (Measured 0 on 2026-09-18
+      (2 517 = 2 517). Held because the store dimension in this same delivery IS versioned:
+      if products start keeping history the same way, every join here fans out and
+      this concept needs a snapshot collapse it deliberately does not declare.)'
+    ref: concept://example/contoso/Product
+  - kind: dq
+    text: The 11 enumerated members are the whole served set, and the partition is
+      total (Measured 0 nulls over 2 517 rows on 2026-09-18, 11 distinct values. This
+      is the out-of-set query for the enumerated member list; a twelfth brand or a
+      null means the member list above and the register must both be re-cut.)
+    ref: concept://example/contoso/Brand
+  - kind: dq
+    text: 'An order agrees with itself on customer, store, order date, currency and
+      delivery date (Measured 0 of 93 470 orders on 2026-09-24, on every one of the
+      five axes independently. This is the whole basis for declaring Order an event
+      rather than a derived grouping: it is atomic in the data. A non-zero here means
+      the concept''s grain claim is false and the rules above must be re-read before
+      anything is answered from them.)'
+    ref: concept://example/contoso/Order
+  - kind: dq
+    text: Every served line belongs to exactly one order (Measured 0 nulls over 223
+      974 rows on 2026-09-24. A null OrderKey would be a line no order owns, and the
+      distinct count would silently drop it.)
+    ref: concept://example/contoso/Order
+  - kind: dq
+    text: 'The SCD-2 windows do not overlap — a code is never two versions at once
+      (Measured 0 pairs on 2026-09-18. ERROR because the as-of branch of the snapshot
+      collapse assumes it: with overlapping windows an as-of date would select two
+      versions and the join would fan out.)'
+    ref: concept://example/contoso/Store
+  - kind: dq
+    text: No store code has two open versions — the latest version is unambiguous
+      (Measured 0 of 67 codes on 2026-09-18.)
+    ref: concept://example/contoso/Store
+  - kind: dq
+    text: Every StoreKey on the fact resolves to a store version, sentinel included
+      (Measured 0 of 223 974 lines on 2026-09-18, sentinel included. The database
+      declares no foreign keys, so this check is the only thing behind it.)
+    ref: concept://example/contoso/Store
+  - kind: dq
+    text: counted by CustomerKey (identity.canonical_key of Customer)
+    ref: null
+  - kind: dq
+    text: "execution failed (query_failed): [query_failed] Parser Error: syntax error\
+      \ at or near \"ne\"\n\nLINE 6: ...roduct.Brand = $brand AND dim_contoso_customer.CustomerKey\
+      \ ne dim_contoso_store.CountryCode\n                                       \
+      \                               ^"
+    ref: null
+  concepts:
+  - concept: Customer
+    label: Customer
+    ref: concept://example/contoso/Customer
+  - concept: OrderLine
+    label: Order Line
+    ref: concept://example/contoso/OrderLine
+  - concept: Product
+    label: Product
+    ref: concept://example/contoso/Product
+  - concept: Brand
+    label: Brand
+    ref: concept://example/contoso/Brand
+  - concept: Order
+    label: Order
+    ref: concept://example/contoso/Order
+  - concept: Store
+    label: Store
+    ref: concept://example/contoso/Store
+  rules: []
+  edges:
+  - order_line__placed_by__customer
+  - order_line__sells__product
+  - product__has__brand
+  - order__placed_by__customer
+  - order__placed_at__store
+  intent:
+    subject: Customer
+    operation: count
+    slices: []
+    filters:
+    - term: Brand
+      op: eq
+      value: Contoso
+      utterance: Contoso brand products
+    join_filters:
+    - left_term: Customer
+      op: ne
+      right_term: Store
+      right_column: CountryCode
+      utterance: ''
+    period: null
+    ordering: null
+    limit: null
+    denominator: null
+    stage: null
+    confidence: 0.7
+  raw: 'answer_id=UUID(''d28dee6f-583f-49ef-b3e0-e45d44a9a331'') pack=PackIdentifier(name=''example/contoso'',
+    version=''live'') question=''How many customers bought Contoso brand products
+    in stores outside their home country?'' intent=Intent(subject=''Customer'', operation=<OperationKind.COUNT:
+    ''count''>, slices=[], filters=[FilterRef(term=''Brand'', op=<FilterOp.EQ: ''eq''>,
+    value=''Contoso'', utterance=''Contoso brand products'')], join_filters=[JoinFilterRef(left_term=''Customer'',
+    op=<FilterOp.NE: ''ne''>, right_term=''Store'', right_column=''CountryCode'',
+    utterance='''')], period=None, ordering=None, limit=None, denominator=None, stage=None,
+    confidence=0.7) status=''error'' value=None unit=None semantics_applied=SemanticsApplied(measure=''Customer'',
+    reading="An unqualified customer geography question means the CUSTOMER''s geography,
+    not the store''s. The two are different axes: the store dimension stops at country
+    and has no continent, and 41.8 % of lines point at the ''Online'' sentinel store
+    whose country code is ''--''. So a country-or-continent breakdown defaults to
+    this relation.", definitions=[DefinitionRef(concept=''Customer'', ref=''concept://example/contoso/Customer''),
+    DefinitionRef(concept=''OrderLine'', ref=''concept://example/contoso/OrderLine''),
+    DefinitionRef(concept=''Product'', ref=''concept://example/contoso/Product''),
+    DefinitionRef(concept=''Brand'', ref=''concept://example/contoso/Brand''), DefinitionRef(concept=''Order'',
+    ref=''concept://example/contoso/Order''), DefinitionRef(concept=''Store'', ref=''concept://example/contoso/Store'')],
+    rules=[], edges=[''order_line__placed_by__customer'', ''order_line__sells__product'',
+    ''product__has__brand'', ''order__placed_by__customer'', ''order__placed_at__store''])
+    caveats=[Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''Country determines Continent
+    — the roll-up is a function, not a many-to-many (Measured 0 of 8 countries on
+    2026-09-18. ERROR because a country on two continents would make every continent
+    figure double-count silently, and this is the only relation that can answer a
+    continent question at all.)'', ref=''concept://example/contoso/Customer''), Caveat(kind=<CaveatKind.DQ:
+    ''dq''>, note="The dimension is not versioned — one row per customer (Measured
+    0 on 2026-09-18 (104 990 = 104 990). Held as a constraint because StartDT / EndDT
+    are served: the moment a second row per key arrives, every join to this dimension
+    fans out and the shape becomes the store dimension''s (SCD-2), which needs a snapshot
+    collapse this concept deliberately does not declare. See CUS-Q1.)", ref=''concept://example/contoso/Customer''),
+    Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''Every ProductKey on the fact resolves
+    to a product (Measured 0 of 223 974 lines on 2026-09-18. ERROR because this database
+    declares no foreign keys at all, so nothing but a check stands behind it.)'',
+    ref=''concept://example/contoso/Product''), Caveat(kind=<CaveatKind.DQ: ''dq''>,
+    note=''The dimension is not versioned — one row per product (Measured 0 on 2026-09-18
+    (2 517 = 2 517). Held because the store dimension in this same delivery IS versioned:
+    if products start keeping history the same way, every join here fans out and this
+    concept needs a snapshot collapse it deliberately does not declare.)'', ref=''concept://example/contoso/Product''),
+    Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''The 11 enumerated members are the
+    whole served set, and the partition is total (Measured 0 nulls over 2 517 rows
+    on 2026-09-18, 11 distinct values. This is the out-of-set query for the enumerated
+    member list; a twelfth brand or a null means the member list above and the register
+    must both be re-cut.)'', ref=''concept://example/contoso/Brand''), Caveat(kind=<CaveatKind.DQ:
+    ''dq''>, note="An order agrees with itself on customer, store, order date, currency
+    and delivery date (Measured 0 of 93 470 orders on 2026-09-24, on every one of
+    the five axes independently. This is the whole basis for declaring Order an event
+    rather than a derived grouping: it is atomic in the data. A non-zero here means
+    the concept''s grain claim is false and the rules above must be re-read before
+    anything is answered from them.)", ref=''concept://example/contoso/Order''), Caveat(kind=<CaveatKind.DQ:
+    ''dq''>, note=''Every served line belongs to exactly one order (Measured 0 nulls
+    over 223 974 rows on 2026-09-24. A null OrderKey would be a line no order owns,
+    and the distinct count would silently drop it.)'', ref=''concept://example/contoso/Order''),
+    Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''The SCD-2 windows do not overlap —
+    a code is never two versions at once (Measured 0 pairs on 2026-09-18. ERROR because
+    the as-of branch of the snapshot collapse assumes it: with overlapping windows
+    an as-of date would select two versions and the join would fan out.)'', ref=''concept://example/contoso/Store''),
+    Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''No store code has two open versions
+    — the latest version is unambiguous (Measured 0 of 67 codes on 2026-09-18.)'',
+    ref=''concept://example/contoso/Store''), Caveat(kind=<CaveatKind.DQ: ''dq''>,
+    note=''Every StoreKey on the fact resolves to a store version, sentinel included
+    (Measured 0 of 223 974 lines on 2026-09-18, sentinel included. The database declares
+    no foreign keys, so this check is the only thing behind it.)'', ref=''concept://example/contoso/Store''),
+    Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''counted by CustomerKey (identity.canonical_key
+    of Customer)'', ref=None), Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''execution
+    failed (query_failed): [query_failed] Parser Error: syntax error at or near "ne"\n\nLINE
+    6: ...roduct.Brand = $brand AND dim_contoso_customer.CustomerKey ne dim_contoso_store.CountryCode\n                                                                      ^'',
+    ref=None)] confidence=<ConfidenceTier.INFERRED: ''I''> provenance=Provenance(sql=''SELECT
+    COUNT(DISTINCT dim_contoso_customer.CustomerKey) AS customer\nFROM contoso_served.dim_contoso_customer\nJOIN
+    contoso_served.v_contoso_order_line ON v_contoso_order_line.CustomerKey = dim_contoso_customer.CustomerKey\nJOIN
+    contoso_served.dim_contoso_product ON v_contoso_order_line.ProductKey = dim_contoso_product.ProductKey\nJOIN
+    contoso_served.dim_contoso_store ON v_contoso_order_line.StoreKey = dim_contoso_store.StoreKey\nWHERE
+    dim_contoso_product.Brand = :brand AND dim_contoso_customer.CustomerKey ne dim_contoso_store.CountryCode'',
+    params={''brand'': ''Contoso''}, adapter=AdapterProvenance(kind=''duckdb'', engine_query_id=''duckdb-3'',
+    bytes_scanned=0), views=[''contoso_served.dim_contoso_customer'', ''contoso_served.dim_contoso_product'',
+    ''contoso_served.dim_contoso_store'', ''contoso_served.v_contoso_order_line''],
+    executed_at=datetime.datetime(2026, 9, 23, 21, 20, 55, 163929, tzinfo=datetime.timezone.utc),
+    runtime_version=''0.1.0'')'
+sql:
+- 'SELECT COUNT(DISTINCT dim_contoso_customer.CustomerKey) AS customer
+
+  FROM contoso_served.dim_contoso_customer
+
+  JOIN contoso_served.v_contoso_order_line ON v_contoso_order_line.CustomerKey = dim_contoso_customer.CustomerKey
+
+  JOIN contoso_served.dim_contoso_product ON v_contoso_order_line.ProductKey = dim_contoso_product.ProductKey
+
+  JOIN contoso_served.dim_contoso_store ON v_contoso_order_line.StoreKey = dim_contoso_store.StoreKey
+
+  WHERE dim_contoso_product.Brand = :brand AND dim_contoso_customer.CustomerKey ne
+  dim_contoso_store.CountryCode'
+sql_valid: null
+sql_errors: []
+disclosures: []
+result:
+  value: null
+  cols: []
+  rows: 0
+  sample_rows: []
+  status: no_value
+error: null
