@@ -1,0 +1,194 @@
+# CONTOSO > order > Order — the ORDER as a countable thing, over the same relation the LINE is
+# served from. There is no order table and none should be built: an order is a group of lines that
+# agree, and the agreement is measured below rather than assumed.
+
+metadata:
+  concept: Order
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Order
+  label: Order
+  class: event
+  identity:
+    kind: fk_name
+    canonical_key: OrderKey
+    note: >-
+      ONE COLUMN, AND IT IS UNIQUE AT THIS GRAIN BY MEASUREMENT, NOT BY ASSERTION. 93 470 distinct
+      OrderKey over 223 974 served lines, 0 nulls (measured 2026-09-24). OrderLine's identity is
+      deliberately the two-column cell key (OrderKey, RowNumber) and that is unchanged: this
+      concept is the COARSER grain over the same rows, not a second opinion about the line.
+  definition: >-
+    One purchase event: the lines a customer placed together, at one store, on one date, in one
+    currency. 93 470 of them over the served span 2016-05-18 to 2025-12-31, carrying 223 974
+    lines — a mean of 2.4 lines per order, minimum 1, maximum 7.
+
+    IT IS NOT A LINE, AND THE DIFFERENCE IS A FACTOR OF 2.4. "How many orders" and "how many order
+    lines" are different questions with different answers, and a system that models only the line
+    answers the second when asked the first. That factor is also the whole risk in any per-order
+    average: a value divided by the line count is 2.4 times too small and looks entirely plausible.
+
+    IT IS NOT A DELIVERY. `DeliveryDate` is carried on the line and an order agrees on it today,
+    but nothing here declares delivery to be part of the order's identity; an order that shipped
+    in two parts would still be one order.
+  semantics:
+    purpose: >-
+      The denominator every per-order figure needs, and the countable a question about purchases
+      actually names. It exists because the corpus asks "how many orders were placed in 2024" and
+      the bundle could only answer about lines.
+    null_semantics: >-
+      No absence: OrderKey is non-null on all 223 974 served lines, so every line belongs to
+      exactly one order and there is no unattributed line.
+
+lifecycle:
+  phase_sequence: [PLACED, DELIVERED]
+  boundary: DeliveryDate present is the PLACED -> DELIVERED boundary, as it is for the line.
+  phases:
+    - name: PLACED
+      meaning: The order exists and is dated (OrderDate).
+      states: [PLACED]
+    - name: DELIVERED
+      meaning: Every line of the order carries a delivery date on or after its order date.
+      states: [DELIVERED]
+  phase_closure: closed
+  note: >-
+    INHERITED FROM THE LINE, AND DEGENERATE FOR THE SAME REASON. DeliveryDate is non-null on all
+    223 974 served lines and never earlier than OrderDate, so every order is already DELIVERED and
+    an order in flight is not representable in this delivery at all. Recorded rather than omitted
+    because a reader asking "which orders are still open" must be told the delivery cannot answer
+    it, not handed an empty result.
+
+    THE ORDER'S PHASE IS THE LINE'S ONLY BECAUSE THE ORDER IS ATOMIC ON DeliveryDate — measured 0
+    of 93 470 orders carrying more than one. An order that shipped in two parts would have no
+    single phase, and ORD-Q2 is exactly that question.
+
+grounding:
+  kind: sql_table
+  grain: one row = one LINE; this concept counts the distinct OrderKey over those rows
+  sources:
+    - relation: v_contoso_order_line
+      key: [OrderKey]
+      columns: [OrderKey, OrderDate, DeliveryDate, CustomerKey, StoreKey, CurrencyCode]
+  serves_from: data/transforms/v_contoso_order_line.sql
+  field_roles:
+    OrderKey: contoso.field_role.key
+    OrderDate: contoso.field_role.period
+    DeliveryDate: contoso.field_role.dimension
+    CustomerKey: contoso.field_role.key
+    StoreKey: contoso.field_role.key
+    CurrencyCode: contoso.field_role.dimension
+  note: >-
+    TWO CONCEPTS OVER ONE RELATION, WHICH IS THE POINT AND NOT AN OVERSIGHT. The served plane holds
+    lines; an order is the group of lines sharing an OrderKey. Counting it is
+    `COUNT(DISTINCT OrderKey)` and needs no collapse, no view and no transform — which is why none
+    is added. Only the columns an ORDER is atomic on are declared here; the line's measures
+    (Quantity, UnitPrice, NetPrice, UnitCost) are NOT, because they belong to the line and summing
+    them is a question about lines wearing an order's name.
+
+contract:
+  default_reading: >-
+    "How many orders" means COUNT(DISTINCT OrderKey) over the lines in scope, by OrderDate. An
+    order is counted once however many lines it carries, and the answer discloses the line count
+    beside it when the question could have meant either.
+  no_probe_guarantee: >-
+    The order's atomicity on customer, store, date, currency and delivery date is measured and
+    recorded in the constraints below, so a question that groups an order by any of them needs no
+    probe to know the grouping is total.
+  resolution: >-
+    An order is not named in words in this delivery — there is no order register and none is
+    wanted. An order reaches a question through its date, its customer, its store or its currency,
+    never by being spelled.
+  rules:
+    - id: order.grain.not_the_line
+      kind: mac.rule_kind.aggregation
+      subject: An order is counted once, however many lines it carries
+      when: "a question counts orders, or divides a figure per order"
+      then: >-
+        count `COUNT(DISTINCT OrderKey)`; a per-order average divides by that count and never by
+        the row count of the line relation
+      never: >-
+        counting rows of `v_contoso_order_line` as orders, or dividing a total by the line count —
+        measured 2.4 lines per order, so either reads 2.4x wrong and looks plausible
+      why: >-
+        the relation served is the LINE. Every figure taken from it is a line figure until an
+        explicit distinct-count over OrderKey makes it an order figure
+      binds: [OrderKey]
+      confidence: P
+    - id: order.atomicity.one_value_per_order
+      kind: mac.rule_kind.aggregation
+      subject: An order carries ONE customer, store, date, currency and delivery date
+      when: "a question groups or filters orders by any of those axes"
+      then: >-
+        group on the line's own column — the partition is total, because every line of an order
+        agrees (measured 0 exceptions on all five axes over 93 470 orders)
+      never: >-
+        collapsing to one line per order first, or treating the agreement as unverified — it is
+        measured, and the constraint below is the out-of-set query that would find a breach
+      why: >-
+        without this an engine must either probe or collapse defensively; with it, grouping orders
+        by country or currency is the same cheap join a line figure already makes
+      binds: [OrderKey, CustomerKey, StoreKey, OrderDate, CurrencyCode]
+      confidence: P
+
+constraints:
+  - assert: "An order agrees with itself on customer, store, order date, currency and delivery date"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT OrderKey FROM contoso_served.v_contoso_order_line
+      GROUP BY OrderKey HAVING count(DISTINCT CustomerKey) > 1 OR count(DISTINCT StoreKey) > 1
+      OR count(DISTINCT OrderDate) > 1 OR count(DISTINCT CurrencyCode) > 1
+      OR count(DISTINCT DeliveryDate) > 1)
+    notes: >-
+      Measured 0 of 93 470 orders on 2026-09-24, on every one of the five axes independently. This
+      is the whole basis for declaring Order an event rather than a derived grouping: it is atomic
+      in the data. A non-zero here means the concept's grain claim is false and the rules above
+      must be re-read before anything is answered from them.
+  - assert: "Every served line belongs to exactly one order"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.v_contoso_order_line WHERE OrderKey IS NULL
+    notes: >-
+      Measured 0 nulls over 223 974 rows on 2026-09-24. A null OrderKey would be a line no order
+      owns, and the distinct count would silently drop it.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-24
+  change_log:
+    - date: 2026-09-24
+      change: >-
+        Created after the corpus replay showed "how many orders were placed in 2024" unanswerable:
+        the bundle modelled the line and not the purchase. Declared on the measured evidence that
+        an order is atomic on all five of its axes, over the relation already served. Recorded in
+        decisions/0006.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: ORD-Q1
+    topic: the order as a money figure
+    question: >-
+      Should this concept carry an order VALUE — the sum of its lines — as a measure of its own?
+      It is not declared here, deliberately: a per-order total is a line sum grouped by OrderKey,
+      and whether that deserves to be a named measure (with its own default reading and currency
+      disclosure) or stays a grouping of NetSalesAmount is a modelling decision nobody has made.
+      The question matters because "average order value" needs it, and that question is in the
+      corpus.
+    status: OPEN
+    owner_for_resolution: operator
+  - id: ORD-Q2
+    topic: delivery as part of the order
+    question: >-
+      An order agrees on DeliveryDate today (0 exceptions). Is that law, or a property of this
+      delivery? If an order could ship in two parts, `DeliveryDate` would leave the order's axes
+      and the atomicity rule above would need re-cutting on four axes rather than five.
+    status: OPEN
+    owner_for_resolution: operator

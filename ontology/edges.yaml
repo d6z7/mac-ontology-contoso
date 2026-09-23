@@ -284,6 +284,61 @@ metadata:
 edges:
 
   # ───────────────────────────────────────────────────────────────────────────────────────────────
+  - edge_id: order__comprises__order_line
+    level: business
+    type: shared_attribute
+    endpoints:
+      from: { source: CONTOSO, concept: Order, ref: "ontology/concepts/order/order.yaml#concept", role: comprises, cardinality: "1" }
+      to:   { source: CONTOSO, concept: OrderLine, ref: "ontology/concepts/order/order_line.yaml#concept", cardinality: "0..N" }
+    realized_by: "v_contoso_order_line.OrderKey"
+    resolved_by: "ontology/concepts/order/order.yaml#contract.rules.order.grain.not_the_line"
+    notes: >-
+      THE TWO GRAINS OVER ONE RELATION. An order comprises its lines; the two concepts are served
+      from the same rows and the OrderKey is what separates them. MEASURED 2026-09-24: 93 470
+      orders over 223 974 lines, minimum 1 line, mean 2.4, maximum 7, 0 nulls — so the `to` end is
+      "0..N" as a shape and never 0 in fact.
+
+      NO join_rule, DELIBERATELY. Both ends are the same relation; there is nothing to join. The
+      edge exists so the graph KNOWS the two grains are the same rows, and so a reader asking what
+      an Order connects to is told about its lines rather than being left to infer it from a
+      shared column name.
+    confidence: I
+
+  - edge_id: order__placed_by__customer
+    level: physical
+    type: foreign_key
+    endpoints:
+      from: { source: CONTOSO, concept: Order, ref: "ontology/concepts/order/order.yaml#concept", role: placedBy, cardinality: "0..N" }
+      to:   { source: CONTOSO, concept: Customer, ref: "ontology/concepts/customer/customer.yaml#concept", cardinality: "1" }
+    join_rule: "v_contoso_order_line.CustomerKey = dim_contoso_customer.CustomerKey"
+    realized_by: "v_contoso_order_line.CustomerKey"
+    resolved_by: "ontology/concepts/order/order.yaml#contract.rules.order.atomicity.one_value_per_order"
+    notes: >-
+      THE BUSINESS RELATIONSHIP: this order was placed BY this customer. The join is the LINE's
+      column, which is sound here only because the order is ATOMIC on it — measured 0 of 93 470
+      orders carrying more than one CustomerKey. That measurement is the edge's whole licence, and
+      it is why `resolved_by` points at the atomicity rule rather than at a resolution rule: what
+      needs saying is not how a customer is named but why one line's customer is the order's.
+      Mean 1.79 orders per customer, maximum 9.
+    confidence: I
+
+  - edge_id: order__placed_at__store
+    level: physical
+    type: foreign_key
+    endpoints:
+      from: { source: CONTOSO, concept: Order, ref: "ontology/concepts/order/order.yaml#concept", role: placedAt, cardinality: "0..N" }
+      to:   { source: CONTOSO, concept: Store, ref: "ontology/concepts/store/store.yaml#concept", cardinality: "1" }
+    join_rule: "v_contoso_order_line.StoreKey = dim_contoso_store.StoreKey"
+    realized_by: "v_contoso_order_line.StoreKey"
+    resolved_by: "ontology/concepts/order/order.yaml#contract.rules.order.atomicity.one_value_per_order"
+    notes: >-
+      THE BUSINESS RELATIONSHIP: this order was placed AT this store, the 'Online' sentinel
+      included. Same licence as the customer edge: measured 0 of 93 470 orders carrying more than
+      one StoreKey, so the line's column IS the order's store. The store dimension is SCD-2 and
+      the join lands on the version the line points at, exactly as it does for the line — a
+      question that COUNTS stores must still collapse, and that hazard is held on Store, not here.
+    confidence: I
+
   - edge_id: order_line__placed_by__customer
     level: physical
     type: foreign_key
