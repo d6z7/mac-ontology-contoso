@@ -1,0 +1,931 @@
+# Hand-written intents — the reference interpretation of every corpus question.
+#
+# WHAT THIS IS
+#   For each question, the Intent a PERFECT interpreter would emit. Written by hand,
+#   with no LLM involved.
+#
+# WHY IT EXISTS
+#   Running these through the planner separates the two failure sources that are
+#   otherwise indistinguishable from a wrong answer:
+#     * the intent PLANS  -> the planner is capable; the interpretation was at fault
+#     * the intent FAILS  -> a real declaration, framework or grammar gap, named exactly
+#   Before this file existed a wrong answer could not be attributed to either, and the
+#   same question was "fixed" repeatedly in the wrong layer.
+#
+# HOW TO USE IT
+#   As a regression fixture: these intents are inputs the planner must keep handling.
+#   `outcome` and `cause` record what the planner did on the run named below; they are
+#   observations, not expectations — when a declaration lands the outcome changes, and
+#   this file should be RE-RUN (acceptance/tools/intent_killtest.py), not hand-edited.
+#
+#   An intent here is one reading, not the only one. Where a question is genuinely
+#   ambiguous the intent takes the bundle's declared default; disagreeing with it is a
+#   finding about the ontology, not a bug in this file.
+#
+# CAUSE VOCABULARY (closed)
+#   decl:*     a declaration the bundle does not make — the planner refuses correctly
+#   sme:*      a modelling question only an SME can rule on (no concept for the grain)
+#   bug:*      the runtime or generator has the fact but one code path does not read it
+#   model:*    the Intent model genuinely cannot express the question
+#   correct:*  refusing IS the right answer
+#
+# WHAT THIS RUN IS NOT
+#   A correctness result. It says the pipeline can FORM the query — not that the number
+#   it returns is right. The corpus still carries no oracles.
+#
+run:
+  planner: mac-platform fix/meaning-plane-resolver @ 759b3b6
+  bundle: example/contoso @ product__has__brand
+  captured: '2026-09-23'
+  counts:
+    PLANS from a hand-written intent: 55
+    A. bundle declaration gap (planner correct): 7
+    C. Intent-model gap (new grammar needed): 1
+    B. framework gap in the generated meaning plane: 3
+    D. correctly refused: 2
+    A2. SME modelling question (no concept for the grain asked): 2
+
+questions:
+- id: ADV-01
+  question: Compare gross vs net revenue by brand in 2024
+  outcome: PLAN
+  detail: SELECT dim_contoso_product.Brand, SUM(f."Quantity" * f."UnitPrice")    AS gross_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_product ON f.ProductKey
+    = dim_contoso_product.ProductKey WHERE f.OrderDate >= :period_start AND f.OrderDate < :period_end
+    GROUP BY d
+  intent:
+    measure: GrossSalesAmount
+    operation: compare
+    slices:
+    - term: Brand
+    denominator: NetSalesAmount
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+- id: ADV-02
+  question: Which brand has the highest margin (gross minus net) in Europe?
+  outcome: REFUSAL
+  cause: decl:no-register-for-continent
+  detail: 'ontology_gap: [''Continent: resolve_by_register'']'
+  intent:
+    measure: GrossSalesAmount
+    operation: rank
+    slices:
+    - term: Brand
+    denominator: NetSalesAmount
+    filters:
+    - term: Continent
+      op: eq
+      value: Europe
+    ordering:
+      by: aggregate
+      direction: desc
+    limit: 1
+- id: ADV-03
+  question: Revenue per customer by country
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey GROUP BY dim_contoso_customer.Country
+  intent:
+    measure: NetSalesAmount
+    operation: ratio
+    slices:
+    - term: Country
+    denominator: Customer
+- id: ADV-04
+  question: Monthly revenue trend for Germany in 2024
+  outcome: PLAN
+  detail: SELECT dim_contoso_calendar_day.Month, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_calendar_day ON f.OrderDate
+    = dim_contoso_calendar_day.Date JOIN contoso_served.dim_contoso_customer ON f.CustomerKey = dim_conto
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    slices:
+    - term: CalendarDay
+      column: Month
+    filters:
+    - term: Country
+      op: eq
+      value: Germany
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+- id: ADV-05
+  question: Which month in 2024 had the biggest drop in revenue vs the previous month?
+  outcome: PLAN
+  detail: SELECT dim_contoso_calendar_day.Month, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_calendar_day ON f.OrderDate
+    = dim_contoso_calendar_day.Date WHERE f.OrderDate >= :period_start AND f.OrderDate < :period_end GROU
+  intent:
+    measure: NetSalesAmount
+    operation: rank
+    slices:
+    - term: CalendarDay
+      column: Month
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+    ordering:
+      by: aggregate
+      direction: asc
+    limit: 1
+- id: ADV-06
+  question: Year-over-year revenue growth by country
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, dim_contoso_calendar_day.Year, SUM(f."Quantity" * f."NetPrice")     AS
+    net_sales_amount FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer
+    ON f.CustomerKey = dim_contoso_customer.CustomerKey JOIN contoso_served.dim_contoso_calenda
+  intent:
+    measure: NetSalesAmount
+    operation: compare
+    slices:
+    - term: Country
+    - term: CalendarDay
+      column: Year
+- id: ADV-07
+  question: Revenue in Q1 2024 vs Q1 2023
+  outcome: REFUSAL
+  cause: decl:register-undeclared
+  detail: 'ontology_gap: [''CalendarDay: resolve_by_register'']'
+  intent:
+    measure: NetSalesAmount
+    operation: compare
+    slices:
+    - term: CalendarDay
+      column: Quarter
+    filters:
+    - term: CalendarDay
+      op: in
+      value:
+      - 2024-Q1
+      - 2023-Q1
+- id: ADV-08
+  question: Average order value by country
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey GROUP BY dim_contoso_customer.Country
+  intent:
+    measure: NetSalesAmount
+    operation: ratio
+    slices:
+    - term: Country
+    denominator: OrderLine
+- id: ADV-09
+  question: Countries where average order value exceeds 500
+  outcome: REFUSAL
+  cause: model:no-having-clause
+  detail: 'unresolved_term: [''NetSalesAmount'']'
+  intent:
+    measure: NetSalesAmount
+    operation: ratio
+    slices:
+    - term: Country
+    denominator: OrderLine
+    filters:
+    - term: NetSalesAmount
+      op: gt
+      value: 500
+- id: ADV-10
+  question: Products sold in more than 5 countries
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_product.ProductName, dim_contoso_product.ProductCode AS product
+    FROM contoso_served.dim_contoso_product JOIN contoso_served.v_contoso_order_line ON v_contoso_order_line.ProductKey
+    = dim_contoso_product.ProductKey JOIN contoso_served.dim_contoso_customer ON v_contoso_order
+  intent:
+    measure: Product
+    operation: list
+    slices:
+    - term: Product
+      column: ProductName
+    filters:
+    - term: Country
+      op: gt
+      value: 5
+- id: ADV-11
+  question: Revenue from new customers (first order in 2024) vs returning customers
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.GeoAreaKey, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey WHERE f.OrderDate >= :period_start AND f.OrderDate < :period_end
+    GR
+  intent:
+    measure: NetSalesAmount
+    operation: compare
+    slices:
+    - term: Customer
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+- id: ADV-12
+  question: Revenue from high-value products (Price > 1000)
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f JOIN contoso_served.dim_contoso_product ON f.ProductKey = dim_contoso_product.ProductKey WHERE f.ProductKey
+    > :product
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: Product
+      op: gt
+      value: 1000
+- id: ADV-13
+  question: Stores that sell more than the average store
+  outcome: PLAN
+  detail: SELECT dim_contoso_store.StoreCode, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_store ON f.StoreKey = dim_contoso_store.StoreKey
+    GROUP BY dim_contoso_store.StoreCode ORDER BY net_sales_amount DESC
+  intent:
+    measure: NetSalesAmount
+    operation: rank
+    slices:
+    - term: Store
+    ordering:
+      by: aggregate
+      direction: desc
+- id: ADV-14
+  question: Revenue from products in the Electronics category sold in German stores
+  outcome: REFUSAL
+  cause: decl:register-undeclared
+  detail: 'ontology_gap: [''ProductCategory: resolve_by_register'']'
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: ProductCategory
+      op: eq
+      value: Electronics
+    - term: Store
+      op: eq
+      value: Germany
+- id: ADV-15
+  question: How many customers bought Contoso brand products in stores outside their home country?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT dim_contoso_customer.CustomerKey) AS customer FROM contoso_served.dim_contoso_customer
+    JOIN contoso_served.v_contoso_order_line ON v_contoso_order_line.CustomerKey = dim_contoso_customer.CustomerKey
+    JOIN contoso_served.dim_contoso_product ON v_contoso_order_line.ProductKey = di
+  intent:
+    measure: Customer
+    operation: count
+    filters:
+    - term: Brand
+      op: eq
+      value: Contoso
+    join_filters:
+    - left_term: Country
+      op: ne
+      right_term: Store
+      right_column: CountryCode
+- id: ADV-16
+  question: Products sold in both Germany and France
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_product.ProductCode AS product FROM contoso_served.dim_contoso_product
+    JOIN contoso_served.v_contoso_order_line ON v_contoso_order_line.ProductKey = dim_contoso_product.ProductKey
+    JOIN contoso_served.dim_contoso_customer ON v_contoso_order_line.CustomerKey = dim_contoso_c
+  intent:
+    measure: Product
+    operation: list
+    filters:
+    - term: Country
+      op: in
+      value:
+      - Germany
+      - France
+- id: ADV-17
+  question: Brands sold in every country
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_customer.Country, dim_contoso_product.Brand AS brand FROM contoso_served.dim_contoso_product
+    JOIN contoso_served.v_contoso_order_line ON v_contoso_order_line.ProductKey = dim_contoso_product.ProductKey
+    JOIN contoso_served.dim_contoso_customer ON v_contoso_order_line.Custo
+  intent:
+    measure: Brand
+    operation: list
+    slices:
+    - term: Country
+- id: ADV-18
+  question: Customers who bought in all 4 quarters of 2024
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_calendar_day.Quarter, dim_contoso_customer.GeoAreaKey AS customer
+    FROM contoso_served.v_contoso_order_line JOIN contoso_served.dim_contoso_customer ON v_contoso_order_line.CustomerKey
+    = dim_contoso_customer.CustomerKey JOIN contoso_served.dim_contoso_calendar_day ON v_con
+  intent:
+    measure: Customer
+    operation: list
+    slices:
+    - term: CalendarDay
+      column: Quarter
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+- id: ADV-19
+  question: Which rules mention CurrencyCode and what do they forbid?
+  outcome: REFUSAL
+  cause: bug:generated-domain-misses-columns
+  detail: 'ontology_gap: [''ContractRule: resolve_by_register'']'
+  intent:
+    measure: ContractRule
+    operation: list
+    filters:
+    - term: ContractRule
+      op: eq
+      value: CurrencyCode
+- id: ADV-20
+  question: Concepts with more than 3 open questions
+  outcome: PLAN
+  detail: SELECT meta_open_question.concept_id, COUNT(DISTINCT meta_open_question.question_id) AS openquestion
+    FROM contoso_served.meta_open_question WHERE meta_open_question.question_id > :openquestion GROUP
+    BY meta_open_question.concept_id
+  intent:
+    measure: OpenQuestion
+    operation: count
+    slices:
+    - term: OpenQuestion
+      column: concept_id
+    filters:
+    - term: OpenQuestion
+      op: gt
+      value: 3
+- id: ADV-21
+  question: Show me the full lineage from OrderLine to Continent
+  outcome: PLAN
+  detail: SELECT DISTINCT meta_edge.from_concept AS edge FROM contoso_served.meta_edge WHERE meta_edge.edge_id
+    = :edge
+  intent:
+    measure: Edge
+    operation: list
+    filters:
+    - term: Edge
+      op: eq
+      value: OrderLine
+- id: ADV-22
+  question: Revenue
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+- id: ADV-23
+  question: Sales in Turkey
+  outcome: REFUSAL
+  cause: correct:value-not-in-data
+  detail: 'unresolved_term: [''Turkey'']'
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: Country
+      op: eq
+      value: Turkey
+- id: ADV-24
+  question: How many stores are open
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT cycle.StoreKey) AS store FROM (SELECT *, ROW_NUMBER() OVER (PARTITION
+    BY StoreKey ORDER BY OpenDate DESC) AS _mac_cycle_rank FROM contoso_served.dim_contoso_store) cycle
+    WHERE cycle._mac_cycle_rank = 1 AND cycle.Status <> :storestatus
+  intent:
+    measure: Store
+    operation: count
+    filters:
+    - term: StoreStatus
+      op: ne
+      value: Closed
+- id: ADV-25
+  question: Average price
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT dim_contoso_product.ProductKey) AS product FROM contoso_served.dim_contoso_product
+  intent:
+    measure: Product
+    operation: average
+- id: AGG-01
+  question: What is the total net revenue?
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+- id: AGG-02
+  question: What is the total quantity sold?
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity") AS quantity_sold FROM contoso_served.v_contoso_order_line f
+  intent:
+    measure: QuantitySold
+    operation: sum
+- id: AGG-03
+  question: Show net revenue by customer country
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey GROUP BY dim_contoso_customer.Country
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    slices:
+    - term: Country
+- id: AGG-04
+  question: Break down net revenue by brand
+  outcome: PLAN
+  detail: SELECT dim_contoso_product.Brand, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM
+    contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_product ON f.ProductKey = dim_contoso_product.ProductKey
+    GROUP BY dim_contoso_product.Brand
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    slices:
+    - term: Brand
+- id: AGG-05
+  question: What is the net revenue in Germany?
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey = dim_contoso_customer.CustomerKey WHERE
+    dim_contoso_customer.Country = :country
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: Country
+      op: eq
+      value: Germany
+- id: AGG-06
+  question: What is the net revenue for the Contoso brand?
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f JOIN contoso_served.dim_contoso_product ON f.ProductKey = dim_contoso_product.ProductKey WHERE dim_contoso_product.Brand
+    = :brand
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: Brand
+      op: eq
+      value: Contoso
+- id: AGG-07
+  question: What was the net revenue in Q1 2024?
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f WHERE f.OrderDate >= :period_start AND f.OrderDate < :period_end
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    period:
+      start: '2024-01-01'
+      end: '2024-04-01'
+- id: AGG-08
+  question: Compare net revenue in Germany versus France
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey WHERE dim_contoso_customer.Country IN (:country_0, :country_1)
+    GROUP B
+  intent:
+    measure: NetSalesAmount
+    operation: compare
+    slices:
+    - term: Country
+    filters:
+    - term: Country
+      op: in
+      value:
+      - Germany
+      - France
+- id: AGG-09
+  question: Which brand sold more in total, Contoso or Fabrikam?
+  outcome: PLAN
+  detail: SELECT dim_contoso_product.Brand, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM
+    contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_product ON f.ProductKey = dim_contoso_product.ProductKey
+    WHERE dim_contoso_product.Brand IN (:brand_0, :brand_1) GROUP BY dim_contoso_
+  intent:
+    measure: NetSalesAmount
+    operation: compare
+    slices:
+    - term: Brand
+    filters:
+    - term: Brand
+      op: in
+      value:
+      - Contoso
+      - Fabrikam
+- id: AGG-10
+  question: What are the top 5 countries by net revenue?
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey GROUP BY dim_contoso_customer.Country ORDER BY net_sales_amount
+    DESC L
+  intent:
+    measure: NetSalesAmount
+    operation: rank
+    slices:
+    - term: Country
+    ordering:
+      by: aggregate
+      direction: desc
+    limit: 5
+- id: AGG-11
+  question: What are the top 3 products by quantity sold?
+  outcome: PLAN
+  detail: SELECT dim_contoso_product.ProductName, SUM(f."Quantity") AS quantity_sold FROM contoso_served.v_contoso_order_line
+    f JOIN contoso_served.dim_contoso_product ON f.ProductKey = dim_contoso_product.ProductKey GROUP BY
+    dim_contoso_product.ProductName ORDER BY quantity_sold DESC LIMIT 3
+  intent:
+    measure: QuantitySold
+    operation: rank
+    slices:
+    - term: Product
+      column: ProductName
+    ordering:
+      by: aggregate
+      direction: desc
+    limit: 3
+- id: AGG-12
+  question: What percentage of total net revenue comes from Germany?
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey WHERE dim_contoso_customer.Country = :country GROUP BY dim_contoso_cus
+  intent:
+    measure: NetSalesAmount
+    operation: ratio
+    slices:
+    - term: Country
+    filters:
+    - term: Country
+      op: eq
+      value: Germany
+- id: AGG-13
+  question: What is the ratio of gross revenue to net revenue?
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."UnitPrice")    AS gross_sales_amount FROM contoso_served.v_contoso_order_line
+    f
+  intent:
+    measure: GrossSalesAmount
+    operation: ratio
+    denominator: NetSalesAmount
+- id: AGG-14
+  question: What is the total net revenue converted to USD?
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f WHERE f.CurrencyCode = :currency
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: Currency
+      op: eq
+      value: USD
+- id: AGG-15
+  question: Show net revenue by brand and customer country for 2024
+  outcome: PLAN
+  detail: SELECT dim_contoso_product.Brand, dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS
+    net_sales_amount FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_product
+    ON f.ProductKey = dim_contoso_product.ProductKey JOIN contoso_served.dim_contoso_customer ON f.C
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    slices:
+    - term: Brand
+    - term: Country
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+- id: MQ-01
+  question: What is the definition of Customer in this bundle?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT meta_concept.concept_id) AS concept FROM contoso_served.meta_concept WHERE
+    meta_concept.concept_id = :concept
+  intent:
+    measure: Concept
+    operation: define
+    filters:
+    - term: Concept
+      op: eq
+      value: Customer
+- id: MQ-02
+  question: How many concepts are there in the ontology?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT meta_concept.concept_id) AS concept FROM contoso_served.meta_concept
+  intent:
+    measure: Concept
+    operation: count
+- id: MQ-03
+  question: How many rules bind CurrencyCode?
+  outcome: REFUSAL
+  cause: bug:generated-concept-not-countable
+  detail: 'ontology_gap: [''RuleBinding.measure_column'']'
+  intent:
+    measure: RuleBinding
+    operation: count
+    filters:
+    - term: RuleBinding
+      op: eq
+      value: CurrencyCode
+- id: MQ-04
+  question: What concepts is OrderLine connected to?
+  outcome: PLAN
+  detail: SELECT DISTINCT meta_edge.from_concept AS edge FROM contoso_served.meta_edge WHERE meta_edge.edge_id
+    = :edge
+  intent:
+    measure: Edge
+    operation: list
+    filters:
+    - term: Edge
+      op: eq
+      value: OrderLine
+- id: MQ-05
+  question: Which concepts have open questions?
+  outcome: PLAN
+  detail: SELECT DISTINCT meta_open_question.concept_id, meta_open_question.concept_id AS openquestion
+    FROM contoso_served.meta_open_question
+  intent:
+    measure: OpenQuestion
+    operation: list
+    slices:
+    - term: OpenQuestion
+      column: concept_id
+- id: MQ-06
+  question: What is the average store size in square meters?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT cycle.StoreKey) AS store FROM (SELECT *, ROW_NUMBER() OVER (PARTITION
+    BY StoreKey ORDER BY OpenDate DESC) AS _mac_cycle_rank FROM contoso_served.dim_contoso_store) cycle
+    WHERE cycle._mac_cycle_rank = 1
+  intent:
+    measure: Store
+    operation: average
+- id: MQ-07
+  question: What is the revenue from the online store?
+  outcome: REFUSAL
+  cause: decl:register-undeclared
+  detail: 'ontology_gap: [''Store: resolve_by_register'']'
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: Store
+      op: eq
+      value: Online
+- id: MQ-08
+  question: Which products were NOT sold in 2024?
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_product.ProductCode AS product FROM contoso_served.dim_contoso_product
+    WHERE dim_contoso_product.ProductKey NOT IN (SELECT DISTINCT contoso_served.v_contoso_order_line.ProductKey
+    FROM contoso_served.v_contoso_order_line     WHERE contoso_served.v_contoso_order_line.OrderD
+  intent:
+    measure: Product
+    operation: exists
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+- id: MQ-09
+  question: Are there any stores in Italy with no sales?
+  outcome: PLAN
+  detail: SELECT DISTINCT cycle.StoreCode AS store FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY StoreKey
+    ORDER BY OpenDate DESC) AS _mac_cycle_rank FROM contoso_served.dim_contoso_store) cycle WHERE cycle._mac_cycle_rank
+    = 1 AND cycle.StoreKey NOT IN (SELECT DISTINCT contoso_served.v_contoso_order_line.Sto
+  intent:
+    measure: Store
+    operation: exists
+    filters:
+    - term: Country
+      op: eq
+      value: Italy
+- id: MQ-10
+  question: Which stores closed after 2020?
+  outcome: REFUSAL
+  cause: decl:register-undeclared
+  detail: 'ontology_gap: [''Store: resolve_by_register'']'
+  intent:
+    measure: Store
+    operation: list
+    filters:
+    - term: Store
+      op: gt
+      value: '2020-12-31'
+- id: MQ-11
+  question: Show me revenue by country for customers in the same country as their store
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
+    = dim_contoso_customer.CustomerKey JOIN contoso_served.dim_contoso_store ON f.StoreKey = dim_contoso_stor
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    slices:
+    - term: Country
+    join_filters:
+    - left_term: Country
+      op: eq
+      right_term: Store
+      right_column: CountryCode
+- id: MQ-12
+  question: Total sales in dollars
+  outcome: PLAN
+  detail: SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount FROM contoso_served.v_contoso_order_line
+    f WHERE f.CurrencyCode = :currency
+  intent:
+    measure: NetSalesAmount
+    operation: sum
+    filters:
+    - term: Currency
+      op: eq
+      value: USD
+- id: MQ-13
+  question: Show all edges from the Customer concept and what each connects to
+  outcome: PLAN
+  detail: SELECT DISTINCT meta_edge.from_concept AS edge FROM contoso_served.meta_edge WHERE meta_edge.edge_id
+    = :edge
+  intent:
+    measure: Edge
+    operation: list
+    filters:
+    - term: Edge
+      op: eq
+      value: Customer
+- id: MQ-14
+  question: How many constraints are there across all concepts, and which concept has the most?
+  outcome: REFUSAL
+  cause: bug:generated-concept-not-countable
+  detail: 'ontology_gap: [''DeclaredConstraint.measure_column'']'
+  intent:
+    measure: DeclaredConstraint
+    operation: count
+    slices:
+    - term: DeclaredConstraint
+      column: concept_id
+- id: MQ-15
+  question: What is the average customer age?
+  outcome: REFUSAL
+  cause: correct:declared-unanswerable
+  detail: 'ontology_gap: [''Customer.City'']'
+  intent:
+    measure: Customer
+    operation: average
+- id: RC01
+  question: What brands do we sell?
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_product.Brand AS brand FROM contoso_served.dim_contoso_product
+  intent:
+    measure: Brand
+    operation: list
+- id: RC02
+  question: List all countries where we have customers.
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_customer.Country AS country FROM contoso_served.dim_contoso_customer
+  intent:
+    measure: Country
+    operation: list
+- id: RC03
+  question: What product colors are available in our catalog?
+  outcome: PLAN
+  detail: SELECT DISTINCT dim_contoso_product.Color AS color FROM contoso_served.dim_contoso_product
+  intent:
+    measure: Color
+    operation: list
+- id: RC04
+  question: How many customers do we have?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT dim_contoso_customer.CustomerKey) AS customer FROM contoso_served.dim_contoso_customer
+  intent:
+    measure: Customer
+    operation: count
+- id: RC05
+  question: How many stores do we have?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT cycle.StoreKey) AS store FROM (SELECT *, ROW_NUMBER() OVER (PARTITION
+    BY StoreKey ORDER BY OpenDate DESC) AS _mac_cycle_rank FROM contoso_served.dim_contoso_store) cycle
+    WHERE cycle._mac_cycle_rank = 1
+  intent:
+    measure: Store
+    operation: count
+- id: RC06
+  question: How many products are in our catalog?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT dim_contoso_product.ProductKey) AS product FROM contoso_served.dim_contoso_product
+  intent:
+    measure: Product
+    operation: count
+- id: RC07
+  question: How many customers are in Germany?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT dim_contoso_customer.CustomerKey) AS customer FROM contoso_served.dim_contoso_customer
+    WHERE dim_contoso_customer.Country = :country
+  intent:
+    measure: Customer
+    operation: count
+    filters:
+    - term: Country
+      op: eq
+      value: Germany
+- id: RC08
+  question: How many stores are closed?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT cycle.StoreKey) AS store FROM (SELECT *, ROW_NUMBER() OVER (PARTITION
+    BY StoreKey ORDER BY OpenDate DESC) AS _mac_cycle_rank FROM contoso_served.dim_contoso_store) cycle
+    WHERE cycle._mac_cycle_rank = 1 AND cycle.Status = :storestatus
+  intent:
+    measure: Store
+    operation: count
+    filters:
+    - term: StoreStatus
+      op: eq
+      value: Closed
+- id: RC09
+  question: How many products does the Contoso brand have?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT dim_contoso_product.ProductKey) AS product FROM contoso_served.dim_contoso_product
+    WHERE dim_contoso_product.Brand = :brand
+  intent:
+    measure: Product
+    operation: count
+    filters:
+    - term: Brand
+      op: eq
+      value: Contoso
+- id: RC10
+  question: How many orders were placed in 2024?
+  outcome: REFUSAL
+  cause: sme:no-order-concept
+  detail: 'ontology_gap: [''OrderLine.measure_column'']'
+  intent:
+    measure: OrderLine
+    operation: count
+    period:
+      start: '2024-01-01'
+      end: '2025-01-01'
+- id: RC11
+  question: How many distinct products were sold in 2023?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT v_contoso_order_line.ProductKey) AS product FROM contoso_served.v_contoso_order_line
+    JOIN contoso_served.dim_contoso_product ON v_contoso_order_line.ProductKey = dim_contoso_product.ProductKey
+    WHERE v_contoso_order_line.OrderDate >= :period_start AND v_contoso_order_line.OrderD
+  intent:
+    measure: Product
+    operation: count
+    period:
+      start: '2023-01-01'
+      end: '2024-01-01'
+- id: RC12
+  question: How many female customers are in Europe?
+  outcome: REFUSAL
+  cause: decl:no-gender-concept
+  detail: 'unresolved_term: [''Female'']'
+  intent:
+    measure: Customer
+    operation: count
+    filters:
+    - term: Gender
+      op: eq
+      value: Female
+    - term: Continent
+      op: eq
+      value: Europe
+- id: RC13
+  question: How many orders were placed in euros during Q1 2024?
+  outcome: REFUSAL
+  cause: sme:no-order-concept
+  detail: 'ontology_gap: [''OrderLine.measure_column'']'
+  intent:
+    measure: OrderLine
+    operation: count
+    filters:
+    - term: Currency
+      op: eq
+      value: EUR
+    period:
+      start: '2024-01-01'
+      end: '2024-04-01'
+- id: RC14
+  question: How many customers are aged between 25 and 44?
+  outcome: REFUSAL
+  cause: decl:age-band-values
+  detail: 'unresolved_term: [''25-29'']'
+  intent:
+    measure: Customer
+    operation: count
+    filters:
+    - term: AgeBand
+      op: in
+      value:
+      - 25-29
+      - 30-34
+      - 35-39
+      - 40-44
+- id: RC15
+  question: How many different products did customers in France buy in Q1 2024?
+  outcome: PLAN
+  detail: SELECT COUNT(DISTINCT v_contoso_order_line.ProductKey) AS product FROM contoso_served.v_contoso_order_line
+    JOIN contoso_served.dim_contoso_product ON v_contoso_order_line.ProductKey = dim_contoso_product.ProductKey
+    JOIN contoso_served.dim_contoso_customer ON v_contoso_order_line.CustomerKey = dim_co
+  intent:
+    measure: Product
+    operation: count
+    filters:
+    - term: Country
+      op: eq
+      value: France
+    period:
+      start: '2024-01-01'
+      end: '2024-04-01'
