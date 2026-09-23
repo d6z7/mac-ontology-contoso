@@ -136,23 +136,47 @@ moment the claim stops being true:
 Gates at adoption: `validate_schema` 0 findings on the new files, `check_references` 0 errors,
 `check_shapes` OK over 9 shapes × 20 concepts.
 
-## 8. WHAT THIS LEAVES OPEN — the served order header
+## 8. WHY THE HEADER IS NOT SERVED — and it is a RULING, not an omission
 
-`main.orders` is the right home for this concept and is not reachable from it. It is a LANDING
-table; the bundle serves `v_contoso_order_line` and the dimensions, and nothing at order grain.
-So `Order` grounds on the line relation, declares a `members:` block to say its members are the
-distinct keys, and pays for it in two places a reader can see:
+`main.orders` is the header and it is deliberately not promoted. The bundle decided that on
+2026-09-18 and wrote it down: **register NS-ORDERS-02**, cited by the line dataset's own `OrderKey`
+column, which calls it *"a DEGENERATE DIMENSION here: the order header is not served as a relation
+of its own"*.
+
+Its reasoning, and it is good:
+
+* `main.orders` **carries no measure** — OrderKey, CustomerKey, StoreKey, DT, DeliveryDate,
+  CurrencyCode and nothing else.
+* Every non-key column is functionally determined by OrderKey and is **already served on the line
+  relation**, so a header view would restate the same facts at a coarser grain under a second name.
+* Serving the line loses no order: 0 of 93 470 headers have no line, and the join cannot fan out.
+* The prescribed handling is exactly what this concept does: *"Order-grain questions are answerable
+  from the line relation by count(DISTINCT OrderKey) and by grouping on the header attributes it
+  carries."*
+
+**THE REGISTER NAMES ITS OWN REVERSAL CONDITIONS, AND ALL THREE FAIL TODAY** (re-measured
+2026-09-24): no order-level measure exists; 0 orders have no line; 0 orders disagree with
+themselves on any header attribute. So the ruling stands, and this concept is the shape it
+prescribes rather than a workaround around it.
+
+> **CORRECTION 2026-09-24.** An earlier revision of this section offered cutting
+> `v_contoso_order_header` as an open alternative "not large, and out of scope". That was wrong
+> twice: it was already ruled against, and it was written without reading the register the line
+> dataset points at from the very column in question. The view was in fact cut and then reverted
+> when the register was found. What reverses NS-ORDERS-02 is one of its three conditions being
+> met — not a preference about which relation reads more naturally.
+
+### What the concept pays for that ruling, visibly
 
 * the sample's `population` is 223 974 — the host ROWS the concept claims, not its 93 470 members.
-  Consistent with every other key-grain concept (`Currency` records the same 223 974 for the same
-  reason), and confusable on THIS concept because "order" and "order item" are the one pair where
-  the two numbers look interchangeable.
-* the grain claim depends on the served view remaining a join to the header, which is what the
-  §7 tripwire watches.
+  Consistent with every key-grain concept (`Currency` records the same number for the same reason).
+  The sampler now leads its line with the MEMBER count, so the first number a reader meets is
+  93 470.
+* the grain claim depends on the served view remaining a join to a one-row-per-order header, which
+  is what the §7 tripwire watches.
 
-**Cutting `v_contoso_order_header` would remove both.** It is a transform, a descriptor and a
-re-grounding — not large, and out of scope for the decision that was asked for. Recorded here so
-it is a choice rather than an omission.
+Both are the cost of a degenerate dimension, which is a named pattern with known ergonomics — not
+a defect to be designed away.
 
 ### And the delivery this bundle deliberately does not read
 
