@@ -1,6 +1,12 @@
 # CONTOSO > order > Order — the ORDER as a countable thing, over the same relation the LINE is
-# served from. There is no order table and none should be built: an order is a group of lines that
-# agree, and the agreement is measured below rather than assumed.
+# served from.
+#
+# THE HEADER EXISTS AND IS NOT SERVED, which is the whole reason this concept is shaped the way it
+# is. `main.orders` holds one row per order (93 470) with the customer, store, date, currency and
+# delivery date on it; the served view is `main.orderrows JOIN main.orders`. Nothing at ORDER grain
+# is served, so this concept grounds on the line relation it can reach and declares a `members:`
+# block to say its members are the distinct keys. decisions/0006 §8 records cutting a served header
+# as the open alternative.
 
 metadata:
   concept: Order
@@ -20,10 +26,16 @@ concept:
     kind: fk_name
     canonical_key: OrderKey
     note: >-
-      ONE COLUMN, AND IT IS UNIQUE AT THIS GRAIN BY MEASUREMENT, NOT BY ASSERTION. 93 470 distinct
-      OrderKey over 223 974 served lines, 0 nulls (measured 2026-09-24). OrderLine's identity is
-      deliberately the two-column cell key (OrderKey, RowNumber) and that is unchanged: this
-      concept is the COARSER grain over the same rows, not a second opinion about the line.
+      ONE COLUMN, AND IT IS THE HEADER'S OWN KEY. 93 470 distinct OrderKey over 223 974 served
+      lines, 0 nulls (measured 2026-09-24) — and one row per OrderKey in `main.orders`, which is
+      where the uniqueness actually comes from. OrderLine's identity is deliberately the
+      two-column cell key (OrderKey, RowNumber) and that is unchanged: this concept is the COARSER
+      grain over the same rows, not a second opinion about the line.
+
+      ON THE ORDINAL'S NAME: the flat `main.sales` delivery calls it `LineNumber` and the served
+      `main.orderrows` calls it `RowNumber`. Same ordinal — both 0..6, agreeing on all 223 974
+      rows — so a reader who knows the line as (OrderKey, LineNumber) and this bundle's
+      (OrderKey, RowNumber) are naming one key.
   definition: >-
     One purchase event: the lines a customer placed together, at one store, on one date, in one
     currency. 93 470 of them over the served span 2016-05-18 to 2025-12-31, carrying 223 974
@@ -107,8 +119,8 @@ grounding:
     StoreKey: contoso.field_role.key
     CurrencyCode: contoso.field_role.dimension
   note: >-
-    TWO CONCEPTS OVER ONE RELATION, WHICH IS THE POINT AND NOT AN OVERSIGHT. The served plane holds
-    lines; an order is the group of lines sharing an OrderKey. Counting it is
+    TWO CONCEPTS OVER ONE RELATION, BECAUSE ONLY ONE IS SERVED. The order header exists in the
+    landing and is not in the served plane; the served plane holds lines. Counting an order is
     `COUNT(DISTINCT OrderKey)` and needs no collapse, no view and no transform — which is why none
     is added. Only the columns an ORDER is atomic on are declared here; the line's measures
     (Quantity, UnitPrice, NetPrice, UnitCost) are NOT, because they belong to the line and summing
