@@ -34,22 +34,23 @@
 #   it returns is right. The corpus still carries no oracles.
 #
 run:
-  planner: mac-platform develop
-  bundle: example/contoso @ Order (decisions/0006)
+  planner: mac-platform develop @ ratio built
+  bundle: example/contoso @ Order + 3 registers
   captured: '2026-09-24'
   counts:
-    C. Intent-model gap (new grammar needed): 5
+    PLANS from a hand-written intent: 57
     A. bundle declaration gap (planner correct): 7
-    PLANS from a hand-written intent: 53
+    C. Intent-model gap (new grammar needed): 1
     B. framework gap in the generated meaning plane: 3
     D. correctly refused: 2
 
 questions:
 - id: ADV-01
   question: Compare gross vs net revenue by brand in 2024
-  outcome: REFUSAL
-  cause: model:ratio-not-built
-  detail: 'unsupported_intent: [''ratio: GrossSalesAmount / NetSalesAmount'']'
+  outcome: PLAN
+  detail: SELECT dim_contoso_product.Brand, (SUM(f."Quantity" * f."UnitPrice")   ) / NULLIF(SUM(f."Quantity"
+    * f."NetPrice")    , 0) AS gross_sales_amount_per_netsalesamount FROM contoso_served.v_contoso_order_line
+    f JOIN contoso_served.dim_contoso_product ON f.ProductKey = dim_contoso_product.ProductKey WHER
   intent:
     measure: GrossSalesAmount
     operation: compare
@@ -63,7 +64,7 @@ questions:
   question: Which brand has the highest margin (gross minus net) in Europe?
   outcome: REFUSAL
   cause: decl:no-register-for-continent
-  detail: 'unsupported_intent: [''ratio: GrossSalesAmount / NetSalesAmount'']'
+  detail: 'ontology_gap: [''Continent: resolve_by_register'']'
   intent:
     measure: GrossSalesAmount
     operation: rank
@@ -80,9 +81,10 @@ questions:
     limit: 1
 - id: ADV-03
   question: Revenue per customer by country
-  outcome: REFUSAL
-  cause: model:ratio-not-built
-  detail: 'unsupported_intent: [''ratio: NetSalesAmount / Customer'']'
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, (SUM(f."Quantity" * f."NetPrice")    ) / NULLIF(COUNT(DISTINCT
+    dim_contoso_customer.CustomerKey), 0) AS net_sales_amount_per_customer FROM contoso_served.v_contoso_order_line
+    f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey = dim_contoso_customer.Custo
   intent:
     measure: NetSalesAmount
     operation: ratio
@@ -144,7 +146,7 @@ questions:
   question: Revenue in Q1 2024 vs Q1 2023
   outcome: REFUSAL
   cause: decl:register-undeclared
-  detail: 'ontology_gap: [''CalendarDay: resolve_by_register'']'
+  detail: 'unresolved_term: [''2024-Q1'']'
   intent:
     measure: NetSalesAmount
     operation: compare
@@ -159,20 +161,21 @@ questions:
       - 2023-Q1
 - id: ADV-08
   question: Average order value by country
-  outcome: REFUSAL
-  cause: model:ratio-not-built
-  detail: 'unsupported_intent: [''ratio: NetSalesAmount / OrderLine'']'
+  outcome: PLAN
+  detail: SELECT dim_contoso_customer.Country, (SUM(f."Quantity" * f."NetPrice")    ) / NULLIF(COUNT(DISTINCT
+    f.OrderKey), 0) AS net_sales_amount_per_order FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer
+    ON f.CustomerKey = dim_contoso_customer.CustomerKey GROUP BY dim_conto
   intent:
     measure: NetSalesAmount
     operation: ratio
     slices:
     - term: Country
-    denominator: OrderLine
+    denominator: Order
 - id: ADV-09
   question: Countries where average order value exceeds 500
   outcome: REFUSAL
   cause: model:no-having-clause
-  detail: 'unsupported_intent: [''ratio: NetSalesAmount / OrderLine'']'
+  detail: 'unresolved_term: [''NetSalesAmount'']'
   intent:
     measure: NetSalesAmount
     operation: ratio
@@ -245,7 +248,7 @@ questions:
   question: Revenue from products in the Electronics category sold in German stores
   outcome: REFUSAL
   cause: decl:register-undeclared
-  detail: 'ontology_gap: [''ProductCategory: resolve_by_register'']'
+  detail: 'unresolved_term: [''Electronics'']'
   intent:
     measure: NetSalesAmount
     operation: sum
@@ -553,9 +556,9 @@ questions:
       value: Germany
 - id: AGG-13
   question: What is the ratio of gross revenue to net revenue?
-  outcome: REFUSAL
-  cause: model:ratio-not-built
-  detail: 'unsupported_intent: [''ratio: GrossSalesAmount / NetSalesAmount'']'
+  outcome: PLAN
+  detail: SELECT (SUM(f."Quantity" * f."UnitPrice")   ) / NULLIF(SUM(f."Quantity" * f."NetPrice")    ,
+    0) AS gross_sales_amount_per_netsalesamount FROM contoso_served.v_contoso_order_line f
   intent:
     measure: GrossSalesAmount
     operation: ratio
@@ -653,7 +656,7 @@ questions:
   question: What is the revenue from the online store?
   outcome: REFUSAL
   cause: decl:register-undeclared
-  detail: 'ontology_gap: [''Store: resolve_by_register'']'
+  detail: 'unresolved_term: [''Online'']'
   intent:
     measure: NetSalesAmount
     operation: sum
@@ -690,7 +693,7 @@ questions:
   question: Which stores closed after 2020?
   outcome: REFUSAL
   cause: decl:register-undeclared
-  detail: 'ontology_gap: [''Store: resolve_by_register'']'
+  detail: 'unresolved_term: [''2020-12-31'']'
   intent:
     measure: Store
     operation: list
