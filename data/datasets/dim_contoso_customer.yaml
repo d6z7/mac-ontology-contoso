@@ -1,0 +1,106 @@
+metadata:
+  table: dim_contoso_customer
+  source: Contoso Data Generator V2 (SQLBI, MIT) — parquet, loaded by setup.sh
+  schema_version: 0.1.14
+  status: draft
+  kind: served_dataset
+  served_kind: dimension
+  observed: '2026-09-18'
+  confidence: I
+  generated_by: p3_datasets.py (P3 · dataset-promotion)
+  notes: 'SERVED RELATION. 13 columns: 12 of the 24 landing columns are served (the 12 refused are
+    registered in data/quality/data_quality_register.yaml, NS-CUSTOMER-01, with the reason and the
+    condition that reverses it) plus one DERIVED column, `age_band_5y`, whose only input — `Birthday` —
+    is consumed and not served. Nothing is aggregated or filtered: 104 990 rows in, 104 990 rows out.'
+table:
+  name: dim_contoso_customer
+  schema: contoso_served
+  type: view
+  description: 'One row per customer (CustomerKey; 104 990 rows / 104 990 distinct / 0 duplicates, P2).
+    Served for the geography the question scope groups by: this is the ONLY relation in the delivery that
+    carries a continent (3 values), and its country -> continent map is a function over 8 countries (0
+    countries with two continents, S11). 52 189 of the 104 990 customers appear on an order (S13) — the
+    dimension over-covers the fact by half, which is normal for a dimension and is disclosed rather than
+    filtered. A COLUMN PROJECTION PLUS ONE DERIVATION: 12 of the landing''s 24 columns are served
+    (register NS-CUSTOMER-01) and `age_band_5y` is derived from the unserved `Birthday` as of
+    2025-12-31 (DQ-CUSTOMER-01), which is why an age is groupable here while neither a date of birth
+    nor the delivery''s five-years-stale `Age` reaches the served row.'
+  confidence: I
+columns:
+- name: CustomerKey
+  type: integer
+  role: primary_key
+  confidence: I
+- name: GeoAreaKey
+  type: integer
+  role: value
+  confidence: I
+  notes: 608 distinct values and no geography relation to join (P1 O9); determines Country and Continent
+    (measured, P2).
+- name: StartDT
+  type: date
+  role: value
+  confidence: I
+  notes: 'validity window start. DATE since 2026-09-19, cast in the transform from the landing''s TIMESTAMP
+    on the operator''s ruling; lossless and measured, not assumed — 0 non-midnight over 104 990 of 104
+    990 rows immediately before the cast. main.customer keeps TIMESTAMP. No customer is restated today
+    (1 row each, P2 G7) — whether a restatement can arrive is an open ruling (Q12). One customer has StartDT
+    = EndDT.'
+- name: EndDT
+  type: date
+  role: value
+  confidence: I
+  notes: 'validity window end. DATE since 2026-09-19, same cast and same evidence as StartDT: 0 non-midnight
+    over 104 990 of 104 990 rows.'
+- name: Continent
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: 3 measured values; the only continent column in the delivery (S10/S11).
+- name: CountryFull
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: 8 measured values.
+- name: Country
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: 8 measured values; covers every store country except the sentinel '--' (S11, S12).
+- name: StateFull
+  type: varchar
+  role: discriminator
+  confidence: I
+- name: State
+  type: varchar
+  role: discriminator
+  confidence: I
+- name: City
+  type: varchar
+  role: discriminator
+  confidence: I
+- name: ZipCode
+  type: varchar
+  role: value
+  confidence: I
+- name: Gender
+  type: varchar
+  role: discriminator
+  confidence: I
+  notes: 2 measured values.
+- name: age_band_5y
+  type: integer
+  role: discriminator
+  confidence: I
+  notes: 'DERIVED, NOT DELIVERED, AND IT CARRIES AN AS-OF DATE. The customer''s age in whole years,
+    floored to a 5-year band and served as the band''s LOWER BOUND (20, 25, … 90 — an integer, so it
+    sorts and compares as an age), derived from the unserved `Birthday` AS OF 2025-12-31. That date is
+    the delivery''s fact horizon (the newest order date) and is a CHOICE: the same three places must
+    agree on it — the rule `derive-age-band-as-of` in data/transforms/dim_contoso_customer.yaml, the
+    literal in the .sql, and this note. WHEN THE FACT HORIZON MOVES THE BAND MUST BE RE-DERIVED, and
+    nothing enforces that (DQ-CUSTOMER-01, residual risk 1). Measured 2026-09-18: 15 bands, 0 nulls
+    over 104 990 rows, smallest cell 1 396, no customer alone in a band. NOT SERVED alongside it: the
+    stored `Age` (as-of 2020/2021 on every row, and unbanded) and `Birthday` (the identifier this band
+    generalises) — see DQ-CUSTOMER-01 and NS-CUSTOMER-01. GROUPING ON IT IS LEGITIMATE AND HAS A
+    MEASURED COST: the band alone singles out nobody, but added to ZipCode + Gender it takes the
+    uniquely identifiable population from 35 894 to 74 617 of 104 990 (DQ-CUSTOMER-02, `coverage: gap`).'

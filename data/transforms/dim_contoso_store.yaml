@@ -1,0 +1,142 @@
+# data/transforms/dim_contoso_store.yaml — the store dimension's transform descriptor.
+#
+# The executable body is the sibling .sql. Every number was measured read-only over contoso.duckdb by
+# scratchpad/ingest/p4_transforms.py and is written out with its query and answer in
+# queries/p4_transformation_authoring.sql.
+#
+# This is the relation with the most UNFIXED defects in the bundle, and that is the point of the file:
+# three of the four things wrong with `store` cannot be fixed by SQL — they need someone to say what a
+# store is. They are carried in open_transforms[] with their numbers, not dropped.
+
+metadata:
+  pipeline: dim_contoso_store
+  source: contoso
+  layer: data-transformation
+  schema_version: '0.1.14'
+  status: draft
+  confidence: I
+  observed: '2026-09-18'
+  generated_by: scratchpad/ingest/p4_transforms.py wrote the .sql; this descriptor is hand-authored
+  notes: >
+    AUTHORED, NOT DEPLOYED (connection.yaml declares read_only: true): the SELECT body was executed
+    read-only — 11 columns in the order and types the dataset descriptor declares (T1c), 74 rows / 74
+    distinct StoreKey / 0 duplicates (T2c). The one rule is status `authored`.
+
+produces:
+  relation: contoso_served.dim_contoso_store
+  sql_file: data/transforms/dim_contoso_store.sql
+  grain: "one row per StoreKey — one store VERSION, not one store (see open_transforms/store-version-vs-store)"
+
+inputs:
+  - relation: main.store
+    kind: raw_source
+    role: store_master
+    descriptor: data/sources/store.yaml
+    note: >
+      The other 10 columns are carried unchanged and the projector reads them as passthrough edges from
+      the descriptor: StoreKey, StoreCode, GeoAreaKey, CountryCode, CountryName, State, Description,
+      OpenDate, CloseDate, SquareMeters.
+    consumes:
+      Status: empty-string-is-missing
+
+transforms:
+  - id: empty-string-is-missing
+    impurity_class: absence_semantics
+    raw_defect: >
+      Status spells missing two ways inside one 74-row relation: '' on 58 rows and NULL on 1 (the
+      sentinel), leaving 8 'Closed' and 7 'Restructured' (T8; P1 #5). A consumer testing `IS NULL` finds
+      1 of the 59 rows that carry no status.
+    rule: >
+      Read '' as absent: nullif the empty string to NULL. It does NOT impute a meaning — nothing here
+      rewrites '' to 'Open' or 'Operating' — because the meaning of the blank is unruled and the data
+      argues against the obvious reading (see note).
+    sql: "nullif(s.\"Status\", '') AS Status"
+    establishes_guarantee: >
+      Missing has exactly one spelling — NULL on 59 of 74 rows — and the served vocabulary is exactly
+      the 2 named values it measured (Closed, Restructured), so `count(DISTINCT Status)` returns 2 and
+      `WHERE Status IS NULL` finds every row without one (T8).
+    status: authored
+    note: >
+      EVIDENCE AGAINST 'blank means operating', which is why the rule stops at unifying the spelling: 1
+      of the 58 blank rows carries a CloseDate, and 0 rows with a named status lack one (T8). If blank
+      meant operating, that row would be an open store with a closing date.
+
+open_transforms:
+  - id: sentinel-store-row
+    impurity_class: sentinel_key
+    raw_defect: >
+      One row carries every sentinel at once — StoreKey 999999, StoreCode -1, GeoAreaKey -1, CountryCode
+      '--', CountryName 'Online', State 'Online', and (P1 #3) NULL Status and NULL SquareMeters — and
+      93 550 of 223 974 order lines (41.8 %) point at it (T11c).
+    proposed_rule: >
+      Serve it as it is, and once a human rules what it is, add a declared channel attribute (e.g. an
+      is_online flag or a channel column) so a question can separate the channel from the store estate.
+      NOT a filter: dropping the row would silently delete 41.8 % of the fact. NOT a value correction:
+      rewriting 'Online' to a country would invent a market for that 41.8 %.
+    needs_ruling: "Is 'Online' (StoreKey 999999) a store or a channel? (RUN.md Q7)"
+    status: PROPOSED
+
+  - id: store-version-vs-store
+    impurity_class: scd_type_2_grain
+    raw_defect: >
+      The relation is an SCD-2 delivery served at version grain: 74 rows over 67 StoreCodes, 6 codes
+      carrying more than one version and one carrying three (T11g; P2 G6/G6b measured
+      (StoreCode, OpenDate) unique 74/74 and no two versions of a code overlapping in time). An undated
+      question that groups by store therefore counts 74 stores where the estate has 67.
+    proposed_rule: >
+      A current-version projection (or a valid-from/valid-to collapse) beside this one, once 'what is a
+      store' is ruled. Not applied here: the fact carries StoreKey, so the version grain is what a line
+      joins, and collapsing it in this transform would break that join for every line.
+    needs_ruling: "Is a store the code (67) or the version (74)? (RUN.md Q9)"
+    status: PROPOSED
+
+  - id: dimension-over-covers-the-fact
+    impurity_class: over_coverage
+    raw_defect: >
+      10 of the 74 served store versions never appear on an order (T14; P1 O10). A question that counts
+      stores from this relation counts 10 that have never sold.
+    proposed_rule: >
+      NONE — DO NOT FILTER. A dimension legitimately over-covers its fact, and trimming it would make
+      'which stores had no sales' unanswerable and would change the served row count on every reload.
+      Carried here as a DISCLOSURE so the number is visible where the transform is read; the count that
+      a question needs is a fact-side count, which is a concept-level distinction (P7).
+    needs_ruling: "None required — disclosed, not a defect. Recorded so the non-action is deliberate."
+    status: PROPOSED
+
+  - id: geoareakey-resolves-to-nothing
+    impurity_class: orphan_key
+    raw_defect: >
+      GeoAreaKey is shaped like a foreign key and has no referent: 67 distinct values here, 608 in
+      customer, 4 store values absent from customer, and 0 relations in the warehouse whose name even
+      contains 'geo' (T11d; P1 O9).
+    proposed_rule: >
+      NONE — there is nothing to resolve it against. It is served because it is a measured column (and
+      because P2 measured it determining State/Country/Continent on the customer side), but no join can
+      be declared for it until the delivery gains a geography relation or a human states that it is an
+      internal code with no dimension.
+    needs_ruling: "Is a geography dimension expected in this delivery and absent? (RUN.md Q7)"
+    status: PROPOSED
+
+governance:
+  owner: >
+    UNNAMED — no owner is declared for any relation of this source (RUN.md Q5). Machine-authored and
+    unratified.
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >
+        Created the store transform: one rule (the two spellings of missing in Status) and three
+        measured defects carried as open items, each naming the ruling it waits on.
+      change_type: CREATION
+      by: P4 transformation-authoring (machine-authored, unratified)
+    - date: 2026-09-19
+      change: >
+        OpenDate and CloseDate are served as DATE, cast in the .sql from the landing's TIMESTAMP.
+        OPERATOR RULING 2026-09-19: "change the dates from sources to datasets ... all time fields
+        are anyway 00000". LOSSLESS, MEASURED NOT ASSUMED: 0 non-midnight over 74 of 74 OpenDate
+        and over the 16 of 74 non-null CloseDate; the 58 nulls stay null. main.store is UNTOUCHED
+        and keeps TIMESTAMP. OpenDate is the SCD-2 version-ordering column and the cast preserves
+        its uniqueness claim exactly — (StoreCode, OpenDate) 74 distinct pairs over 74 rows,
+        re-measured after.
+      change_type: CORRECTION
+      by: operator ruling 2026-09-19, applied by the transform (unratified)

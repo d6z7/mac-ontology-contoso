@@ -1,0 +1,165 @@
+# CONTOSO > catalog > ProductSubcategory — the LOWER level of the two-level catalogue hierarchy, a
+# GROUPING over Product whose members roll up into ProductCategory. Like its parent, it has no
+# relation of its own: the key and the name are columns of the product dimension.
+
+metadata:
+  concept: ProductSubcategory
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: ProductSubcategory
+  label: Product Subcategory
+  class: grouping
+  identity:
+    kind: fk_name
+    canonical_key: SubCategoryKey
+    note: >-
+      Keyed on SubCategoryKey — an integer, 32 measured values, 1:1 with SubCategoryName (measured).
+      The keys are NOT dense and they ENCODE THEIR PARENT: 101, 104, 106 sit under category 1;
+      201, 202, 203 under category 2. That encoding is an observation about the delivery and is NOT
+      relied on — parentage is read from `CategoryKey` on the same row, never parsed out of the
+      subcategory key.
+  definition: >-
+    The lower level of the catalogue hierarchy: the 32 narrow groups a product belongs to, each
+    inside exactly one of the 8 categories — MP4&MP3 and Bluetooth Headphones inside Audio,
+    Televisions and Home Theater System inside TV and Video, and so on.
+
+    IT IS NOT THE CATEGORY. 32 members against 8; a category question answered here returns four
+    times the rows with the same column heading.
+
+    IT IS NOT A SEPARATE HIERARCHY BRANCH EITHER. Every subcategory has exactly one parent category
+    (measured, 0 subcategories carrying two), so this level and its parent are one hierarchy read at
+    two grains, not two axes.
+  semantics:
+    purpose: >-
+      The fine product axis: the level a "which product types sell" question means, and the level at
+      which the catalogue's 2 517 products are grouped into cells small enough to compare.
+    null_semantics: >-
+      No absence: SubCategoryKey and SubCategoryName are non-null on all 2 517 products, so the 32
+      members partition the catalogue completely.
+
+members:
+  over: Product
+  member_source:
+    kind: rule
+    rule: >-
+      Membership is the `SubCategoryKey` column of dim_contoso_product: a product belongs to the one
+      subcategory its row names. Measured 2026-09-18: 32 distinct SubCategoryKey values, 32 distinct
+      SubCategoryName values, 0 nulls over 2 517 rows, and 0 subcategories carrying more than one
+      CategoryKey — so the partition is total and disjoint and the roll-up into ProductCategory is a
+      function.
+  realized_by:
+    udf: mac.canon.grouping_from_register
+    params:
+      register: data/lookups/dim_contoso_product.lookup.csv
+      group_key: subcategory_key
+      member_col: ProductKey
+      carry: [label, search_key]
+  note: >-
+    `definitions:` IS DELIBERATELY OMITTED. The exploded (subcategory, product) register already
+    exists — data/lookups/dim_contoso_product.lookup.csv, 2 517 rows carrying each product's
+    subcategory key — and the 32 per-subcategory labels WITH THEIR PARENT are in
+    data/lookups/contoso_product_subcategory.lookup.csv, whose `parent_category_key` column is what
+    makes the two-level roll-up resolve offline. Listing 32 members here would be a second home for
+    both registers.
+
+grounding:
+  kind: sql_table
+  sources:
+    - relation: dim_contoso_product
+      key: ProductKey
+      columns: [ProductKey, SubCategoryKey, SubCategoryName, CategoryKey]
+  serves_from: data/transforms/dim_contoso_product.sql
+  discriminator: SubCategoryKey
+  field_roles:
+    SubCategoryKey: contoso.field_role.key
+    SubCategoryName: contoso.field_role.dimension
+    CategoryKey: contoso.field_role.key
+    ProductKey: contoso.field_role.key
+  note: >-
+    A ROLL-UP HELD INSIDE THE PRODUCT DIMENSION, one level below ProductCategory. `CategoryKey` is
+    declared here as a `key` because it is how this level's PARENT is read — from the product row,
+    not from the subcategory key's digits.
+
+contract:
+  default_reading: >-
+    An unqualified "category" does NOT mean this level; it means ProductCategory. This level is used
+    when the question names a value that only exists here, or explicitly says subcategory or product
+    type. Say which level was used.
+  no_probe_guarantee: >-
+    All 32 members, their keys, their search keys, their product counts and their PARENT category
+    key are in data/lookups/contoso_product_subcategory.lookup.csv, cut from the served plane; the
+    exploded membership is in data/lookups/dim_contoso_product.lookup.csv, and the 8 parent labels
+    are in data/lookups/contoso_product_category.lookup.csv. So a subcategory word resolves offline,
+    the roll-up to its category resolves offline, and a subcategory the delivery does not carry is a
+    refusal derived from a closed 32-member register.
+  resolution: >-
+    Resolve a subcategory word through data/lookups/contoso_product_subcategory.lookup.csv on its
+    `search_key` to the `SubCategoryKey`, then filter on the key. Read the parent from that
+    register's `parent_category_key` column, or from `CategoryKey` on the product row.
+  rules:
+    - id: product_subcategory.parent.read_the_column_not_the_key
+      kind: mac.rule_kind.resolution
+      subject: A subcategory's parent is read from the row, never parsed out of its key
+      when: "rolling a subcategory up to its category"
+      then: >-
+        read `{CategoryKey}` from the same `{dim_contoso_product}` row, or
+        `parent_category_key` from data/lookups/contoso_product_subcategory.lookup.csv
+      never: >-
+        deriving the parent from the digits of `{SubCategoryKey}` — 101 and 104 do sit under
+        category 1 in this delivery, but that is an observed encoding and not a declared rule, and
+        a key like 1001 would break it silently
+      why: >-
+        an identifier's internal structure is a coincidence until someone rules that it is a
+        contract; reading meaning out of a key is how a fabricated identifier gets believed
+      binds: [SubCategoryKey, CategoryKey]
+      confidence: P
+
+constraints:
+  - assert: "Every subcategory has exactly one parent category — the roll-up is a function"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT SubCategoryKey FROM contoso_served.dim_contoso_product
+      GROUP BY 1 HAVING count(DISTINCT CategoryKey) > 1)
+    notes: >-
+      Measured 0 of 32 subcategories on 2026-09-18. ERROR because a subcategory under two categories
+      makes every category total double-count through the finer level.
+  - assert: "SubCategoryKey and SubCategoryName are 1:1, and both are present on every product"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT (SELECT count(DISTINCT SubCategoryKey) FROM contoso_served.dim_contoso_product)
+           - (SELECT count(DISTINCT SubCategoryName) FROM contoso_served.dim_contoso_product)
+           + (SELECT count(*) FROM contoso_served.dim_contoso_product
+              WHERE SubCategoryKey IS NULL OR SubCategoryName IS NULL)
+    notes: >-
+      Measured 32 and 32, 0 nulls over 2 517 rows, total 0, on 2026-09-18. SubCategoryName is
+      declared a `dimension` role on the strength of the equality.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as the lower of two grouping concepts over Product, with parentage read from
+        the product row rather than from the key's digits.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: PSC-Q1
+    topic: key encoding
+    question: >-
+      Is the SubCategoryKey-to-CategoryKey digit encoding (101 under 1, 201 under 2) a delivery
+      contract or a coincidence? This concept refuses to rely on it either way; a ruling would let a
+      consumer use it, or retire the question.
+    status: OPEN
+    owner_for_resolution: operator

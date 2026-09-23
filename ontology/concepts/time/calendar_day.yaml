@@ -1,0 +1,249 @@
+# CONTOSO > time > CalendarDay — ONE conformed calendar, joined by the fact in TWO ROLES
+# (OrderDate and DeliveryDate) rather than served as two relations. The framework's
+# role_playing_dimension pattern: one reference concept, and the roles belong on the edges, which
+# are P9's to declare and not this concept's to restate.
+
+metadata:
+  concept: CalendarDay
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: CalendarDay
+  label: Calendar Day
+  class: reference
+  identity:
+    kind: fk_name
+    canonical_key: Date
+    note: >-
+      One row per day, inherited from the measured grain of the landing
+      (data/profiles/date.yaml#identity_evidence, key [Date], full_groups 4 018) and re-measured
+      over the served view: 4 018 rows / 4 018 distinct / 0 duplicates. Keyed on `Date` and not on
+      `DateKey` because the facts carry timestamps; the two are bijective (4 018 of 4 018, measured)
+      and which one the calendar SHOULD key on is an open ruling.
+  definition: >-
+    One calendar day, with the period labels a question groups by pre-computed on the row: year,
+    quarter, month, day of week, and a working-day flag. 4 018 consecutive days, 2016-01-01 to
+    2026-12-31, with no gaps — a 4 018-day span carrying 4 018 rows.
+
+    IT IS NOT THE EXTENT OF THE DATA, and this is the trap. The calendar covers MORE than the facts
+    do: 359 of its days fall after the last fact date (2026-01-06) and 568 days carry no sale at
+    all. So max(Date) here is 2026-12-31 while the newest order is 2025-12-31 — the latest day in
+    this relation is not the latest day of data, and "latest" must be resolved from the measure's
+    own data rather than from this dimension.
+
+    IT IS ALSO NOT TWO DIMENSIONS. The fact carries two dates — OrderDate and DeliveryDate, both
+    measured fully on this calendar (0 values off it) — and they are two ROLES of this one
+    conformed calendar, not an order calendar and a delivery calendar.
+  semantics:
+    purpose: >-
+      The period axis of every figure in the bundle. The hierarchy is held HERE as columns rather
+      than derived in SQL, which is what lets a period question be answered from declarations
+      instead of from date arithmetic.
+    scope: >-
+      2016-01-01 to 2026-12-31 inclusive, 4 018 days, gapless. Order dates run 2016-05-18 to
+      2025-12-31 and delivery dates to 2026-01-06, so the calendar is wider than the fact at both
+      ends.
+    null_semantics: >-
+      No nulls anywhere on this relation. A day with no sale is a real day with no fact, which is
+      an absence of ROWS on the fact and never a zero on this row — densifying a period breakdown
+      with the 568 saleless days is a presentation choice a question has to ask for.
+
+properties:
+  - name: date
+    type: timestamp
+    required: true
+    doc: >-
+      Date — the identity. A timestamp at midnight on every row (measured), which is what lets the
+      fact's timestamps join by equality.
+  - name: dateKey
+    type: string
+    required: true
+    doc: >-
+      DateKey — varchar YYYYMMDD on every row; bijective with Date (4 018 of 4 018). The same
+      identity in a second spelling, served and not used as the key.
+  - name: year
+    type: integer
+    required: true
+    doc: "Year — 11 distinct values."
+  - name: workingDay
+    type: integer
+    required: true
+    doc: >-
+      WorkingDay — declared integer, used as a BOOLEAN: measured 0 or 1 only, 2 760 working days
+      and 1 258 non-working over 4 018 rows. Never summed — a sum of this column is a count of
+      working days wearing a misleading name.
+
+grounding:
+  kind: sql_table
+  grain: "one row = one calendar day — Date"
+  sources:
+    - relation: dim_contoso_calendar_day
+      key: Date
+      columns: [Date, DateKey, Year, YearQuarter, YearQuarterNumber, Quarter, YearMonth,
+                YearMonthShort, YearMonthNumber, Month, MonthShort, MonthNumber, DayofWeek,
+                DayofWeekShort, DayofWeekNumber, WorkingDay, WorkingDayNumber]
+  serves_from: data/transforms/dim_contoso_calendar_day.sql
+  field_roles:
+    Date: contoso.field_role.key
+    DateKey: contoso.field_role.key
+    Year: contoso.field_role.dimension
+    YearQuarter: contoso.field_role.dimension
+    Quarter: contoso.field_role.dimension
+    YearMonth: contoso.field_role.dimension
+    Month: contoso.field_role.dimension
+    MonthNumber: contoso.field_role.dimension
+    DayofWeek: contoso.field_role.dimension
+    DayofWeekNumber: contoso.field_role.dimension
+    WorkingDay: contoso.field_role.dimension
+    YearQuarterNumber: contoso.field_role.attribute
+    YearMonthNumber: contoso.field_role.attribute
+    YearMonthShort: contoso.field_role.attribute
+    MonthShort: contoso.field_role.attribute
+    DayofWeekShort: contoso.field_role.attribute
+    WorkingDayNumber: contoso.field_role.attribute
+  note: >-
+    THE ROLE SPLIT IS THE WHOLE VALUE OF THIS DIMENSION. The eleven `dimension` columns are the
+    period axes a question may group by; the six `attribute` columns are the sort keys and short
+    labels beside them, display-only, because grouping on a short label and on its long twin splits
+    the same period two ways.
+
+    `WorkingDay` IS A `dimension` AND NOT A `measure`, despite being an integer: it is a 0/1 flag
+    (measured) and summing it silently produces a count. `WorkingDayNumber` is `attribute` for the
+    same reason — it is an ordinal, not a quantity.
+
+    NO GROUPING CONCEPT IS MINTED FOR MONTH, QUARTER OR YEAR, and that is a decision rather than an
+    omission: the roll-up is already held as columns on this row (that is why the descriptor pins
+    the hierarchy here), the labels resolve offline through
+    data/lookups/contoso_calendar_month.lookup.csv,
+    data/lookups/contoso_calendar_quarter.lookup.csv,
+    data/lookups/contoso_calendar_weekday.lookup.csv and
+    data/lookups/contoso_working_day.lookup.csv, and how a bare period is READ is the framework's own
+    law over measure_type x axis_kinds — not a per-bundle concept. Minting four groupings would
+    restate one fact in five places.
+
+contract:
+  default_reading: >-
+    An unqualified period question is answered over the ORDER date role, not the delivery role, and
+    the role is stated in the answer. A period range is read against the FACT's extent, not this
+    calendar's: the calendar runs a year past the newest order, so a "to date" figure bounded by
+    max(Date) here would report almost twelve empty months as real.
+  no_probe_guarantee: >-
+    Every period label a question can name is a column of this row — year, quarter, month, weekday,
+    working day — and the words resolve offline through
+    data/lookups/contoso_calendar_month.lookup.csv (12 rows, each with its quarter),
+    data/lookups/contoso_calendar_quarter.lookup.csv (4),
+    data/lookups/contoso_calendar_weekday.lookup.csv (7) and
+    data/lookups/contoso_working_day.lookup.csv (2). The grain is the declared key. Nothing here
+    needs a probe, and a date outside 2016-01-01..2026-12-31 is a refusal derived from a measured
+    gapless span.
+  resolution: >-
+    Resolve a month word through data/lookups/contoso_calendar_month.lookup.csv to its
+    `MonthNumber`, a quarter word through data/lookups/contoso_calendar_quarter.lookup.csv to its
+    `Quarter` label, a weekday through data/lookups/contoso_calendar_weekday.lookup.csv to its
+    `DayofWeekNumber`, and "working day" through data/lookups/contoso_working_day.lookup.csv to the
+    `WorkingDay` flag. Then filter on the resolved column, never on a short label.
+  axis_handling: >-
+    TWO ROLES, ONE CALENDAR. A figure is read over exactly one role at a time and the role is named:
+    the order role for "sales in March", the delivery role for "delivered in March". A breakdown must
+    not mix them, and a figure must not be attributed to both. The roles themselves are properties of
+    the two references between the fact and this dimension, and they are declared there — at P9 —
+    rather than restated here.
+  rules:
+    - id: calendar_day.extent.latest_comes_from_the_fact
+      kind: mac.rule_kind.resolution
+      subject: The calendar is wider than the data — never take "latest" from this dimension
+      when: "resolving a relative period — latest, current, this year, year to date, the last N months"
+      then: >-
+        take the anchor from the FACT's own date column in
+        `{v_contoso_order_line}` and state the resolved window
+      never: >-
+        anchoring on max(`{Date}`) of `{dim_contoso_calendar_day}`, which is 2026-12-31 — 359 days
+        and almost twelve empty months past the newest order (2025-12-31) — so a year-to-date figure
+        anchored here reports emptiness as a real result
+      why: >-
+        this dimension deliberately covers more than the facts do (568 of its days carry no sale at
+        all), so its extent is a property of the calendar and not of the data
+      binds: [Date]
+      confidence: P
+    - id: calendar_day.working_day.flag_not_quantity
+      kind: mac.rule_kind.aggregation
+      subject: WorkingDay is a 0/1 flag — filter or group on it, never sum it
+      when: "using `{WorkingDay}` in a query"
+      then: >-
+        filter on it, or group by it, reading 1 as a working day (2 760 of 4 018) and 0 as
+        non-working (1 258)
+      never: >-
+        summing `{WorkingDay}` or averaging `{WorkingDayNumber}`: the column is declared integer and
+        measured boolean, so a SUM returns a count of working days under the name of a total
+      why: >-
+        a flag typed as an integer is the one column on this relation that a generic numeric
+        aggregation will silently accept
+      binds: [WorkingDay, WorkingDayNumber]
+      confidence: P
+
+constraints:
+  - assert: "The calendar is gapless — one row per day across its whole span"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) - (date_diff('day', min(Date), max(Date)) + 1)
+      FROM contoso_served.dim_contoso_calendar_day
+    notes: >-
+      Measured 4 018 rows over a 4 018-day span, difference 0, on 2026-09-18. ERROR because the
+      fact's equality join to this dimension assumes it: a missing day would drop every line placed
+      on it with no error anywhere.
+  - assert: "Both fact date roles fall entirely on the calendar"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT (SELECT count(*) FROM contoso_served.v_contoso_order_line l
+              WHERE NOT EXISTS (SELECT 1 FROM contoso_served.dim_contoso_calendar_day d
+                                WHERE d.Date = l.OrderDate))
+           + (SELECT count(*) FROM contoso_served.v_contoso_order_line l
+              WHERE NOT EXISTS (SELECT 1 FROM contoso_served.dim_contoso_calendar_day d
+                                WHERE d.Date = l.DeliveryDate))
+    notes: >-
+      Measured 0 of 223 974 lines on each role, total 0, on 2026-09-18. The second role reaches
+      2026-01-06, six days past the last order, so the calendar's forward extent is load-bearing for
+      the delivery role and not merely generous.
+  - assert: "WorkingDay is boolean in fact, whatever its declared type"
+    severity: WARNING
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.dim_contoso_calendar_day WHERE WorkingDay NOT IN (0, 1)
+    notes: "Measured 0 of 4 018 rows on 2026-09-18."
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as ONE conformed calendar rather than two role-specific dimensions, with the
+        period roll-up left as declared columns and no month/quarter/year grouping concepts minted.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: CAL-Q1
+    topic: the key
+    question: >-
+      Should the calendar key on `Date` or on `DateKey`? The two are bijective over all 4 018 rows;
+      this concept keys on Date because the facts carry timestamps, but a delivery whose facts carry
+      YYYYMMDD strings would want the other, and only one of the two can be the declared key.
+    status: OPEN
+    owner_for_resolution: operator
+  - id: CAL-Q2
+    topic: fiscal calendar
+    question: >-
+      Is the calendar year the reporting year? Only Gregorian periods are served — there is no
+      fiscal-period column anywhere in the delivery — so a fiscal question cannot be answered and
+      would need a new column rather than a new concept.
+    status: OPEN
+    owner_for_resolution: operator

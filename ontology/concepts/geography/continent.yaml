@@ -1,0 +1,172 @@
+# CONTOSO > geography > Continent — a GROUPING over Country, with no table of its own.
+#
+# It is grounded on dim_contoso_customer because that is the ONLY relation in the whole delivery
+# that carries a continent: the store dimension has none (0 continent-like columns, measured), so a
+# store-side continent roll-up is NOT servable and this concept says so rather than leaving the
+# question to be discovered at answer time.
+
+metadata:
+  concept: Continent
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Continent
+  label: Continent
+  class: grouping
+  identity:
+    kind: fk_name
+    canonical_key: Continent
+    note: >-
+      fk_name not code — Continent is a grouping label, not a discriminator.
+      The stored value IS the name — 'Europe', 'North America', 'Australia' — so the code and the
+      label are one column. Three measured values. No continent key exists in the delivery and none
+      is invented.
+  definition: >-
+    The continent a country belongs to: the top of the bundle's declared country-to-continent
+    roll-up. Three members over eight countries, and the map is a FUNCTION — measured, 0 countries
+    carrying two continents.
+
+    IT IS NOT A GEOGRAPHY OF STORES. The store dimension has no continent column at all, so this
+    roll-up exists only on the customer side. A question asking for sales by continent is answered
+    through the customer, and a store-side continent figure is not available — a refusal with a
+    reason, not an empty result.
+
+    IT IS ALSO NOT A COMPLETE WORLD. 'Australia' here is the continent a single country (AU) sits
+    in, and the three members are only the continents the eight delivered countries reach. Asia,
+    Africa and South America are absent because no customer is in them, which is a coverage fact
+    rather than a modelling one.
+  semantics:
+    purpose: >-
+      The coarsest axis of the "by region" question the bundle declares, and the level at which the
+      contested total is usually compared across markets.
+    null_semantics: >-
+      No nulls: Continent is non-null on all 104 990 customer rows. The store-side '--' sentinel has
+      NO continent — not a null continent, but no row in this roll-up at all — so an online line
+      cannot be attributed to a continent from the store side.
+
+members:
+  over: Country
+  member_source:
+    kind: rule
+    rule: >-
+      Membership is the functional map held in the customer dimension: each of the 8 served
+      countries carries exactly one Continent value on every one of its rows. Measured 2026-09-18:
+      0 of 8 countries carry more than one continent, so a country belongs to exactly one member
+      and the roll-up cannot double-count. The same map is carried in
+      data/lookups/contoso_country.lookup.csv's `continent` column, so it also resolves offline.
+  realized_by:
+    udf: mac.canon.grouping_from_register
+    params:
+      register: data/lookups/contoso_country.lookup.csv
+      group_key: continent
+      member_col: Country
+      carry: [label]
+  note: >-
+    `definitions:` IS DELIBERATELY OMITTED and the member sets are sourced from the register.
+    data/lookups/contoso_country.lookup.csv is already exploded one row per (continent, country) —
+    the shape this canon re-aggregates — so re-listing the three member sets here would be a second
+    home for a fact the register holds and would not move when it is re-cut. The measured shape, for
+    a reader: 3 members over 8 countries, North America 2 countries / 55 294 customers, Europe 5 /
+    39 588, Australia 1 / 10 108, and the store-side '--' sentinel row carries an EMPTY continent, so
+    it is a member of none.
+
+grounding:
+  kind: sql_table
+  sources:
+    - relation: dim_contoso_customer
+      key: CustomerKey
+      columns: [CustomerKey, Continent, Country]
+  serves_from: data/transforms/dim_contoso_customer.sql
+  discriminator: Continent
+  field_roles:
+    Continent: contoso.field_role.dimension
+    Country: contoso.field_role.dimension
+    CustomerKey: contoso.field_role.key
+  note: >-
+    A ROLL-UP HELD INSIDE A DIMENSION, not a relation of its own. No continent table exists and none
+    should be built: the member sets are enumerated above and in
+    data/lookups/contoso_country.lookup.csv's `continent` column, both cut from the served plane.
+
+    NOT GROUNDED ON dim_contoso_store, and that is the substantive fact rather than an omission:
+    that relation carries 0 continent-like columns, so the store side cannot reach this level.
+
+contract:
+  default_reading: >-
+    A continent breakdown means the CUSTOMER's continent, because that is the only side that has
+    one. Three members; the online channel is absent from all three and is reported as its own
+    residual rather than folded into any of them.
+  no_probe_guarantee: >-
+    The three members and their country lists are enumerated above; the same map is in
+    data/lookups/contoso_country.lookup.csv, which carries the continent alongside each country
+    code, so a continent word resolves offline and so does the roll-up from a country. Nothing here
+    needs a probe, and a continent the delivery does not reach is a refusal derived from a closed
+    member list.
+  resolution: >-
+    Resolve a continent word through data/lookups/contoso_country.lookup.csv's `continent` column,
+    or from the member lists above; then filter on `Continent`, or on the member countries' codes.
+  rules:
+    - id: continent.side.customer_only
+      kind: mac.rule_kind.exclusion
+      subject: There is no store-side continent — the roll-up exists on one side only
+      when: "a question asks for a continent figure about STORES, or about where sales were made"
+      then: >-
+        REFUSE the store-side continent and say why — `{dim_contoso_store}` carries no continent
+        column — then offer the customer-side continent figure, or the store-side figure at
+        `{CountryCode}` level, which is as far as that relation reaches
+      never: >-
+        deriving a store continent by mapping `{CountryCode}` through the customer dimension: that
+        silently attributes the 93 550 online lines to nothing and asserts a roll-up the store
+        relation does not carry
+      why: >-
+        this is the one geography level at which the two roles are not symmetrical, and the
+        asymmetry is invisible in a result set
+      binds: [Continent, Country]
+      confidence: P
+
+constraints:
+  - assert: "The country-to-continent map is a function — exactly one continent per country"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT Country FROM contoso_served.dim_contoso_customer
+      GROUP BY 1 HAVING count(DISTINCT Continent) > 1)
+    notes: >-
+      Measured 0 of 8 countries on 2026-09-18. ERROR because a country on two continents makes every
+      continent total double-count with no other symptom, and this roll-up has no second source to
+      cross-check against.
+  - assert: "The three enumerated members are the whole served set"
+    severity: WARNING
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT DISTINCT Continent FROM contoso_served.dim_contoso_customer
+      WHERE Continent NOT IN ('Europe', 'North America', 'Australia'))
+    notes: >-
+      Measured 0 on 2026-09-18 (3 distinct values over 104 990 rows). The out-of-set query for the
+      enumerated member list above; a fourth continent arriving means a country was added.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as a grouping over Country with no table of its own, grounded on the single
+        relation that carries the discriminating column.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: CON-Q1
+    topic: the online channel
+    question: >-
+      Where do the 93 550 online lines belong in a continent total? They have a customer (and so a
+      customer continent) but no store geography, so a store-side view has to put them somewhere or
+      outside everything. Tied to CTY-Q1 on the Country concept.
+    status: OPEN
+    owner_for_resolution: operator

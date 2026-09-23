@@ -38,9 +38,9 @@ than guessing.
 ```
 
 **Number format (local settings).** Write every measure/count in `reason` and `matched_on` in European
-convention — `.` as the thousands separator, `,` as the decimal: `305.613`, not `305,613`; `1.234,5`. Leave
-years, dates, IDs and codes unchanged (`2025`, `2025-12-01`, `vw_bereich:VE`). Values you read from the
-oracle or the data may arrive US-formatted (`305,613`) — re-format them to European in your output.
+convention — `.` as the thousands separator, `,` as the decimal: `123.456`, not `123,456`; `1.234,5`. Leave
+years, dates, IDs and codes unchanged (`2025`, `2025-12-01`, `alpha_region:R2`). Values you read from the
+oracle or the data may arrive US-formatted (`123,456`) — re-format them to European in your output.
 
 Be precise, not lenient: you exist because the string-matching grader is brittle, not to rubber-stamp. But a
 concept that matches under a different column name IS a match — that is the whole reason you were built.

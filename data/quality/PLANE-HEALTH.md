@@ -13,12 +13,12 @@ The structural health of this source's data plane — the same numbers the gates
 
 | link | count |
 |---|---|
-| raw sources | 0 |
-| transformations | 0 |
+| raw sources | 8 |
+| transformations | 6 |
 | served datasets | 6 |
 | ontology concepts | 0 |
 
-⚠️ **6** dataset(s) with no transformation: `customer`, `orderrows`, `orders`, `product`, `sales`, `store`
+✅ every dataset is produced by a transformation.
 
 ## Change protocol — autodiscovery vs manual
 
@@ -26,7 +26,7 @@ The structural health of this source's data plane — the same numbers the gates
 |---|---|
 | objects harvested (self-documenting) | 0 |
 | objects authored / tuned (need a protocol entry) | 0 |
-| objects with no provenance stamp | 6 |
+| objects with no provenance stamp | 20 |
 | protocolled interventions | 0 |
 
 ⚠️ no `interventions/ledger.yaml` yet — manual changes are unrecorded.

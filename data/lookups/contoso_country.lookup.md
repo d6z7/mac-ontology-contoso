@@ -1,0 +1,22 @@
+---
+type: Lookup
+title: contoso_country.lookup
+source_yaml: data/lookups/contoso_country.lookup.csv
+tags:
+- CONTOSO
+- lookup
+---
+
+Reference lookup · 9 rows · SSOT: `data/lookups/contoso_country.lookup.csv` (CSV).
+
+| Country | label | search_key | continent | source_view | confidence | note |
+| --- | --- | --- | --- | --- | --- | --- |
+| -- | Online | online |  | dim_contoso_store | Q | SENTINEL, not a country: the online store version carries CountryCode '--' and CountryName/State 'Online'. Kept so a store row always resolves; its continent is empty because the data states none. Whether '--' means 'no geography' or 'global' is an open ruling |
+| AU | Australia | australia | Australia | dim_contoso_customer | I | served customers in this country: 10108 |
+| CA | Canada | canada | North America | dim_contoso_customer | I | served customers in this country: 10111 |
+| DE | Germany | germany | Europe | dim_contoso_customer | I | served customers in this country: 9981 |
+| FR | France | france | Europe | dim_contoso_customer | I | served customers in this country: 4879 |
+| GB | United Kingdom | united kingdom | Europe | dim_contoso_customer | I | served customers in this country: 14781 |
+| IT | Italy | italy | Europe | dim_contoso_customer | I | served customers in this country: 5036 |
+| NL | Netherlands | netherlands | Europe | dim_contoso_customer | I | served customers in this country: 4911 |
+| US | United States | united states | North America | dim_contoso_customer | I | served customers in this country: 45183 |

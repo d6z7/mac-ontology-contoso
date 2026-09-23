@@ -1,38 +1,57 @@
 ---
-type: Enum
+type: Grouping
 title: Brand
-description: The set of 11 Contoso house brands a product belongs to (product.Brand).
+description: 'The brand a product is sold under: 11 members over 2 517 products, held as a column of the product dimension.'
 tags:
 - CONTOSO
-- enumeration
-- confidence:C
-resource: table://product
+- grouping
+- confidence:I
+resource: table://dim_contoso_product
+rule_pages:
+- rules/brand.axis.orthogonal_to_category.md
 ---
 
-The set of 11 Contoso house brands a product belongs to (product.Brand). A closed set — a twelfth would be a portfolio change, not an undocumented value.
+The brand a product is sold under: 11 members over 2 517 products, held as a column of the product dimension. This is the axis the bundle's "by brand" question groups by.
+IT IS NOT A MANUFACTURER. The two are 1:1 in this delivery (measured, 0 brands carrying two manufacturers) but they are different notions and the coincidence is not declared to be law — 'Contoso' the brand against 'Contoso, Ltd' the manufacturer. Manufacturer is served as a display attribute of the product, not as a second grouping.
+IT IS NOT A PRODUCT LINE OR A CATEGORY EITHER. Brands cut ACROSS the category hierarchy: a brand's products appear in several categories and a category's products in several brands, so brand and category are two orthogonal axes and neither rolls up into the other.
 
 ## Details
 
 - **Identity** — code
-- **Version** — 0.1
-- **Schema version** — 0.1.9
+- **Version** — 1.0
+- **Schema version** — 0.1.14
 - **Status** — draft
-- **Owner** — demo-team
-- **Governance owner** — demo-team
-- **Last reviewed** — 2026-07-19
+- **Owner** — operator
+- **Governance owner** — operator
+- **Last reviewed** — 2026-09-18
+
+## How to answer
+
+*What an agent needs ONLY, to answer with this concept — no data probing.*
+
+```text
+All 11 members, their product counts and their manufacturers are enumerated above and in data/lookups/contoso_brand.lookup.csv, cut from the served plane with a search key per member — so a brand word resolves offline and a brand the delivery does not carry is a refusal derived from a closed member list rather than from an empty query. Membership needs no probe either: it is the product row's own column.
+```
 
 ## Grounded in
 
-- `product` — key `ProductKey`
-
-## Grain
-the Brand column of product (11 brands)
+- `dim_contoso_product` — key `ProductKey`
 
 ## Fields
 
-| column | role | grounded in | description | joins → |
-|---|---|---|---|---|
-| `Brand` | — | `product` |  |  |
+| column | type | role | grounded in | description | joins → |
+|---|---|---|---|---|---|
+| `ProductKey` | integer | key | `dim_contoso_product` (key) | — | — |
+| `Brand` | varchar | dimension | `dim_contoso_product` | 11 measured values; the scope's 'by brand' axis. Brand <-> Manufacturer is 1:1 today (P2), whether by law is unruled (Q13). | — |
+| `Manufacturer` | varchar | attribute | `dim_contoso_product` | — | — |
+
+_Declared per column, over 3 columns: description 1 of 3 · type 3 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
+
+## Relationships
+
+*0 join(s) out · 0 in — click a concept to open it.*
+
+**Groups** → **Product** — the leaf concept this rolls up.
 
 ## Source of record
 - Full MAC concept: `brand.yaml` — open the **YAML** tab for the complete typed definition.

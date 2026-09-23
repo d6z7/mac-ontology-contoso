@@ -1,0 +1,52 @@
+# vocabulary.yaml — this bundle's APPLICATION vocabulary: the four analytical ROLES a grounded
+# column can carry, defined ONCE here and referenced as `contoso.field_role.*` from every concept's
+# `grounding.field_roles` whitelist.
+#
+# WHY THIS FILE EXISTS. `grounding.field_roles` (mac.schema.json, v0.1.7) is the slot that says which
+# grounded columns carry ontology meaning AND what each one MEANS analytically; the framework owns the
+# slot, the resolver (tools/check_references.py#_index_app_terms) and the gate (mac_shapes.yaml
+# #field-roles-grounded), while the TERMS are the application's. Without this file the role values
+# would be tokens nothing resolves: measured on a fixture (scratchpad/ingest/p7/nstest) —
+# `contoso.field_role.dimension` is reported as an unresolved application-vocabulary reference when the
+# term is missing, and resolves silently once it is defined here. The file must be NAMED
+# vocabulary.yaml: the resolver rglobs that exact name (tools/mac_checks_adoption.py warns about "the
+# second half of the mechanism, in a file check_references never opens").
+#
+# THE LANDMINE THIS FILE ARMS, stated here because the next author will meet it and not expect it.
+# Declaring the namespace `contoso` makes EVERY `contoso.<word>` token in any scanned YAML STRING a
+# reference that must resolve. Measured on the same fixture: a concept whose definition said "measured
+# read-only over contoso.duckdb" became an ERROR purely because the namespace exists. The warehouse
+# file is therefore never named in a concept's prose (say "this bundle's warehouse file"), and the
+# seven existing `contoso.duckdb` mentions in data/transforms/*.yaml are safe only because they sit in
+# YAML COMMENTS, which the resolver does not parse. A schema-qualified relation is safe by a different
+# route — the resolver accepts `<prefix>.<declared relation>` — which is why `contoso_served.*` tokens
+# resolve. See the run record, P7.
+#
+# Not framework `mac.*`: these terms are domain-owned. mac.project.yaml#conformance.out_of_scope
+# declares this file, following the framework's own worked example (example_shop_ontology).
+namespace: contoso
+
+field_role:
+  closed: true
+  description: >
+    The analytical role of a grounded column — where a query may use it, and the default guardrail
+    that follows. A column NOT listed in a concept's grounding.field_roles carries no ontology
+    meaning at all; that omission is a declaration, not an oversight. Behavioural specifics stay in
+    the concept's typed contract.rules.
+  terms:
+    key: >
+      Identity or join column — resolve a name to it through a register, then filter or join on the
+      exact value. Never matched on a label.
+    dimension: >
+      A categorical slice or group axis — legitimate in WHERE and in GROUP BY.
+    attribute: >
+      Descriptive, display-only — SELECT it to show a reader; the default guardrail is NEVER filter
+      or group on it, because it is not a stable identity.
+    measure: >
+      A numeric payload — fold it only as its measure type and the axis allow (the law is
+      mac_vocabulary.yaml#MeasureType, read there, never restated per concept); never filter on it.
+    period: >
+      The column that carries the reporting period — the date a question's period filter binds to.
+      When a relation has several date columns (OrderDate, DeliveryDate), this role disambiguates
+      which one the planner uses. The default_reading prose already says it; this makes it machine-
+      readable.

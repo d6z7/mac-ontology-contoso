@@ -1220,7 +1220,7 @@ def render_board(out_path, artifact=False):
 
 
 # ============================ ASK APP (the ask.html split: workspace + conversation) ==================
-# A faithful Contoso build of the FPL ask.html page: LEFT = workspace (the focused report you pin/graph/
+# A faithful Contoso build of the upstream ask.html page: LEFT = workspace (the focused report you pin/graph/
 # compare), RIGHT = conversation (persistent trace). Ask a question -> it is walked through the ontology
 # and answered from EXECUTED data (build_entries, run against contoso.duckdb) — never guessed. Light by
 # default, theme-aware; the session persists in localStorage and nothing re-runs on reload.

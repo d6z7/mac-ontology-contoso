@@ -22,3 +22,9 @@ state is a GAP to flag, not a value to guess.
 
 Recorded data-quality findings that change how you must query. Full detail in `references/known_issues/`.
 
+- [DQ-CUSTOMER-01](known_issues/DQ-CUSTOMER-01.md) — _medium_ · `customer.Age` is a derived attribute frozen five years before the facts it would describe · **partial**
+- [DQ-CUSTOMER-02](known_issues/DQ-CUSTOMER-02.md) — _low_ · the served customer row is a quasi-identifier — ZipCode alone singles out 29 193 of 104 990 customers, and the age band nearly doubles that · **gap**
+- [NS-CUSTOMER-01](known_issues/NS-CUSTOMER-01.md) — _low_ · 12 of the 24 customer columns measured, deliberately not served · **not yet reconciled**
+- [NS-ORDERS-01](known_issues/NS-ORDERS-01.md) — _low_ · `sales` measured, deliberately not served — it is the served order line delivered a second time · **resolved**
+- [NS-ORDERS-02](known_issues/NS-ORDERS-02.md) — _low_ · the order header measured, deliberately not served as a relation of its own · **not yet reconciled**
+- [NS-SERVING-01](known_issues/NS-SERVING-01.md) — _medium_ · 15 leftover views in the warehouse, measured, neither treated as sources nor served · **not yet reconciled**

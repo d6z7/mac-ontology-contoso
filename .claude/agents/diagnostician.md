@@ -1,6 +1,6 @@
 ---
 name: diagnostician
-description: Explains WHY a GAPS answer came out the way it did — reads the ontology and identifies which rules fired, which are missing/too weak, and what to change to get the expected result. Rule-level root-cause analysis. Pure reasoning + ontology reads, no database.
+description: Explains WHY an ALPHA answer came out the way it did — reads the ontology and identifies which rules fired, which are missing/too weak, and what to change to get the expected result. Rule-level root-cause analysis. Pure reasoning + ontology reads, no database.
 tools: Read, Grep, Glob
 model: opus
 ---

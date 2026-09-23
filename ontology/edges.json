@@ -1,0 +1,347 @@
+{
+  "edges": [
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "customer__banded_as__age_band",
+      "from": "Customer",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this customer falls in this 5-year age band AS OF A DECLARED DATE. The as-of date is not decoration \u2014 it is half the relationship, which is why the resolution rule cited is the one that makes the date travel with the figure rather than the one that refuses single-year age. MEASURED: 104 990 of 104 990 rows carry an age_band_5y, 0 nulls, 15 distinct bands, and 0 of 104 990 customers carry more than one band \u2014 so the `to` end is \"1\". THE RULINGS THIS EDGE IS SUBORDINATE TO, both of them: DQ-CUSTOMER-01 \u2014 age is served ONLY as `age_band_5y` as of 2025-12-31 and single-year age is UNANSWERABLE, so traversing this edge and averaging the band codes produces a wrong number with no symptom (`age_band.precision.single_year_refused` refuses it). NS-CUSTOMER-01 \u2014 `Birthday` is CONSUMED to derive the band and never served, so this edge is the ONLY route from a customer to anything age-shaped, by design.",
+      "proof": {
+        "detail": "104990 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "dim_contoso_customer.age_band_5y",
+      "resolved_by": "ontology/concepts/customer/age_band.yaml#contract.rules.age_band.as_of.date_travels_with_the_figure",
+      "to": "AgeBand",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#customer__banded_as__age_band"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "customer__resides_in__country",
+      "from": "Customer",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this customer RESIDES IN this country \u2014 the country of the buyer, not of the sale. This is the DEFAULT country role in the bundle and the rule above requires the choice to be disclosed with the figure rather than defaulted in silence. MEASURED: 104 990 of 104 990 customer rows carry a non-empty Country, 0 nulls, so the `to` end is \"1\" and not \"0..1\"; 8 distinct values, 1:1 with CountryFull (measured at P7); 0 of 104 990 customers carry more than one Country, which is trivially so at this grain and is recorded because it is the claim the measurement actually counts. WHY THIS IS NOT A ROLL-UP DECLINED AS CONCEPT STRUCTURE: Continent over Country IS a roll-up and IS declined (metadata.structure_not_edges item 1). Customer-resides-in-Country is not a whole-to-part membership \u2014 Country declares no `members:` over Customer \u2014 it is an attribute of the customer row whose value is another named concept, which cookbook C3(a) rules is an edge. NS-CUSTOMER-01 still governs: roll-up geography only, so this edge is traversed to a country and never to a coordinate, and DQ-CUSTOMER-02 still forbids grouping to ZipCode.",
+      "proof": {
+        "detail": "104990 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "dim_contoso_customer.Country",
+      "resolved_by": "ontology/concepts/geography/country.yaml#contract.rules.country.roles.customer_or_store_never_both",
+      "to": "Country",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#customer__resides_in__country"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "customer__resides_in__geo_area",
+      "from": "Customer",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this customer resides in this geographic area (a state/region-level area, 1:1 with State on this side \u2014 measured at P7). MEASURED: 104 990 of 104 990 rows carry a GeoAreaKey, 0 nulls, 608 distinct values over the range 1..616, so the `to` end is \"1\". The DANGLING measurement that governs the physical layer is the same one: 2 candidate parents measured, 0 admitted, recorded in metadata.references_declined and carried as planned edge `customer__located_in__geo_area`. WHAT THIS EDGE DOES NOT CLAIM: that the key resolves to a row anywhere. It does not \u2014 there is no relation to resolve it against, which is why the concept calls this the framework's opaque-code shape. The key identifies an area and groups by it; it does not fetch its attributes. The cited rule is the store-side register gap, which is the rule that states the register is incomplete and must be said rather than silently returned empty.",
+      "proof": {
+        "detail": "104990 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "dim_contoso_customer.GeoAreaKey",
+      "resolved_by": "ontology/concepts/geography/geo_area.yaml#contract.rules.geo_area.register.declared_gap_on_the_store_side",
+      "to": "GeoArea",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#customer__resides_in__geo_area"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "exchange_rate__quotes_from__currency",
+      "from": "ExchangeRate",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this quote is FROM this currency \u2014 the base end of an ordered pair. MEASURED: 100 450 of 100 450 quote rows carry a FromCurrency, 0 nulls, 5 distinct codes, so the `to` end is \"1\". WHY THIS IS ONE OF TWO AND NEVER ONE OF ONE: the quote's identity is the composite (Date, FromCurrency, ToCurrency) \u2014 100 450 rows / 100 450 distinct keys / 0 duplicates \u2014 and the cited rule holds that a quote is read with ALL THREE clauses or none. Measured cost of half a pair: constraining Date alone returns 25 quotes per line (5x5 complete grid), min 25 max 25 over all 223 974 lines, so a half-specified filter silently averages five currencies instead of failing. Two role-tagged edges make the pair structural in this layer instead of only in prose. THIS EDGE DOES NOT SAY WHICH END THE LINE'S CURRENCY IS. That is the unresolved-by-measurement half recorded in metadata.references_declined and RULED by `exchange_rate.direction.usd_base_as_of_order_date` plus decisions/0001-order-line-fact-of-record.md: FromCurrency is pinned to the literal 'USD'. Nothing here infers a direction from inclusion.",
+      "proof": {
+        "detail": "100450 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "v_contoso_fx_rate_day.FromCurrency",
+      "resolved_by": "ontology/concepts/finance/exchange_rate.yaml#contract.rules.exchange_rate.pair.never_half_a_pair",
+      "to": "Currency",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#exchange_rate__quotes_from__currency"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "exchange_rate__quotes_to__currency",
+      "from": "ExchangeRate",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this quote is TO this currency \u2014 the quoted end of the ordered pair. MEASURED: 100 450 of 100 450 quote rows carry a ToCurrency, 0 nulls, 5 distinct codes, so the `to` end is \"1\". 20 090 of 100 450 rows are self-pairs (FromCurrency = ToCurrency) and are exactly 1.0, so this end and the previous one coincide on a fifth of the grid \u2014 one more reason a sample cannot tell the two apart and the direction must be cited rather than observed. THE ROLE IS THE WHOLE POINT, and it is the same shape as the calendar's two roles: one concept, two role-tagged edges, so a query must say which end it means. An un-roled ExchangeRate-Currency edge would be the classic silent error the framework's role_playing_dimension pattern names.",
+      "proof": {
+        "detail": "100450 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "v_contoso_fx_rate_day.ToCurrency",
+      "resolved_by": "ontology/concepts/finance/exchange_rate.yaml#contract.rules.exchange_rate.pair.never_half_a_pair",
+      "to": "Currency",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#exchange_rate__quotes_to__currency"
+    },
+    {
+      "cardinality_from": "1",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "gross_sales_amount__measured_on__order_line",
+      "from": "GrossSalesAmount",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: gross sales is MEASURED ON the order line and nowhere else. It is 1:1 both ways \u2014 one gross amount per line, one line per amount \u2014 because the measure is computed per row at the declared grain (OrderKey, RowNumber) and only then folded. MEASURED: both inputs are present on every row \u2014 223 974 of 223 974 lines carry a non-null UnitPrice and 223 974 of 223 974 carry a non-null Quantity, 0 nulls either side \u2014 so the measure is defined on the whole fact and no line is silently skipped. The realisation declares BOTH clauses; mac_measure_edges counts the first and records the second as declared-but-not-measured rather than implying it counted both. WHY THIS IS AN EDGE AND NOT A RESTATEMENT OF THE GROUNDING. The grounding says which relation the measure binds. This says the measure stands in a relationship to the FACT CONCEPT, which is what a traversal follows: GrossSalesAmount -> OrderLine -> {Customer, Product, Store, CalendarDay, ExchangeRate}, two hops to every declared axis, no probe. Before it, the measures were reachable only by reading metadata.count_argument. THE FORMULA IS NOT HERE. It has one home \u2014 ontology/rules.yaml#rules.gross_sales_amount \u2014 and the cited concept rule holds the PROHIBITION (never SUM(price) x SUM(qty)). This edge cites both and restates neither.",
+      "proof": {
+        "detail": "223974 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "v_contoso_order_line.UnitPrice; v_contoso_order_line.Quantity",
+      "resolved_by": "ontology/concepts/finance/gross_sales_amount.yaml#contract.rules.gross_sales_amount.derivation.quantity_times_unit_price",
+      "to": "OrderLine",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#gross_sales_amount__measured_on__order_line"
+    },
+    {
+      "cardinality_from": "1",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "net_sales_amount__measured_on__order_line",
+      "from": "NetSalesAmount",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: net sales is MEASURED ON the order line, 1:1 both ways, for the same reason as gross. MEASURED: 223 974 of 223 974 lines carry a non-null NetPrice and 223 974 of 223 974 a non-null Quantity, 0 nulls either side. THIS IS THE DEFAULT MEASURE OF THE BUNDLE, so this is the edge a bare \"total sales\" traverses. The disclosure that makes that safe is held once, on the concept (`net_sales_amount.ambiguity.gross_or_net`): net and gross differ on 136 913 of 223 974 lines, a 13 787 071.00 gap, so the reading is stated with the figure rather than assumed. Not restated here, and this edge carries no preference of its own.",
+      "proof": {
+        "detail": "223974 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "v_contoso_order_line.NetPrice; v_contoso_order_line.Quantity",
+      "resolved_by": "ontology/concepts/finance/net_sales_amount.yaml#contract.rules.net_sales_amount.derivation.quantity_times_net_price",
+      "to": "OrderLine",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#net_sales_amount__measured_on__order_line"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "order_line__delivered_on__calendar_day",
+      "from": "OrderLine",
+      "join_rule": "v_contoso_order_line.DeliveryDate = dim_contoso_calendar_day.Date",
+      "level": "physical",
+      "notes": "THE BUSINESS RELATIONSHIP: the line was DELIVERED on this calendar day \u2014 the SECOND role of the one calendar, and the reason this dimension is modelled once and joined twice rather than cloned. MEASURED: child many : parent one; child MANDATORY, parent OPTIONAL \u2014 3 498 of 4 018 days carry a delivery, 520 do not (parent_coverage 0.870582, span_ratio 0.876286); inclusion 1.0 over 223 974 rows, 0 orphans, max_parent_rows_per_value 1. WHY THE ROLE IS THE WHOLE POINT, measured: 130 424 of 223 974 lines (58.2 %) carry DeliveryDate = OrderDate, so binding a period question to the wrong role is invisible on more than half the fact and produces a plausible number with no error anywhere. The two roles resolve different day sets (3 450 vs 3 498) and delivery runs to 2026-01-06, six days past the last order. A question must name its role; this bundle's default is the ordered role, and the choice is disclosed with the figure.",
+      "proof": {
+        "detail": "3498/3498 resolve, max fanout 1",
+        "state": "proved"
+      },
+      "realisation": "join_rule",
+      "realized_by": "data/references_served/v_contoso_order_line.yaml#references.v_contoso_order_line.DeliveryDate__dim_contoso_calendar_day.Date",
+      "resolved_by": null,
+      "to": "CalendarDay",
+      "type": "foreign_key",
+      "verified_by": "evidence/edge_measurements.json#order_line__delivered_on__calendar_day"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "order_line__ordered_on__calendar_day",
+      "from": "OrderLine",
+      "join_rule": "v_contoso_order_line.OrderDate = dim_contoso_calendar_day.Date",
+      "level": "physical",
+      "notes": "THE BUSINESS RELATIONSHIP: the line was PLACED on this calendar day. This is the DEFAULT period axis for every sales figure in the bundle \u2014 OrderLine's `contract.default_reading` fixes it \u2014 so a bare \"sales by month\" binds HERE and not to the delivered role. MEASURED: child many : parent one; child MANDATORY, parent OPTIONAL \u2014 3 450 of 4 018 calendar days carry an order and 568 do not (parent_coverage 0.858636, span_ratio 0.874793); inclusion 1.0 over 223 974 rows, 0 orphans, max_parent_rows_per_value 1. The 568 empty days are why the `from` end is \"0..N\": a day with no sales is a real day, and \"which days had no orders?\" is answerable only from the calendar side of this edge.",
+      "proof": {
+        "detail": "3450/3450 resolve, max fanout 1",
+        "state": "proved"
+      },
+      "realisation": "join_rule",
+      "realized_by": "data/references_served/v_contoso_order_line.yaml#references.v_contoso_order_line.OrderDate__dim_contoso_calendar_day.Date",
+      "resolved_by": null,
+      "to": "CalendarDay",
+      "type": "foreign_key",
+      "verified_by": "evidence/edge_measurements.json#order_line__ordered_on__calendar_day"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "order_line__denominated_in__currency",
+      "from": "OrderLine",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: every amount on this line \u2014 UnitPrice, NetPrice, UnitCost, and both derived measures \u2014 is DENOMINATED IN this currency. The relationship is a UNIT, which is why the rule it resolves by is the prohibition on the bare cross-currency sum rather than a lookup. MEASURED: 223 974 of 223 974 lines carry a CurrencyCode, 0 nulls, 5 distinct codes (USD 113 614 lines, EUR 49 203, CAD 24 250, GBP 22 829, AUD 14 078), so the `to` end is \"1\". MEASURED AND NOT PREVIOUSLY RECORDED ANYWHERE: the currency is constant WITHIN an order \u2014 0 of 93 470 OrderKeys carry two CurrencyCodes. So an order-grain money figure has a unit even though no order header is served (NS-ORDERS-02, `order_line.grain.no_header_relation`), and that is a measurement rather than an assumption. WHY THIS DOES NOT MAKE A CURRENCY DIMENSION EXIST: it does not. There is no currency relation; the code is a per-row unit marker and the closed value set is delegated to data/lookups/contoso_currency.lookup.csv via mac.canon.enum_from_register. This edge reaches a MEMBER OF A REGISTER, not a row of a table, which is exactly what `level: business` is for.",
+      "proof": {
+        "detail": "223974 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "v_contoso_order_line.CurrencyCode",
+      "resolved_by": "ontology/concepts/order/order_line.yaml#contract.rules.order_line.currency.no_bare_cross_currency_sum",
+      "to": "Currency",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#order_line__denominated_in__currency"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "order_line__placed_by__customer",
+      "from": "OrderLine",
+      "join_rule": "v_contoso_order_line.CustomerKey = dim_contoso_customer.CustomerKey",
+      "level": "physical",
+      "notes": "THE BUSINESS RELATIONSHIP: this line was placed BY this customer. MEASURED, cited not retyped (reference id in realized_by): cardinality child many : parent one; participation child MANDATORY, parent OPTIONAL; inclusion 1.0 over 223 974 non-null child rows with 0 orphan rows; max_parent_rows_per_value 1, which is why the `to` end is \"1\" and not \"0..1\". The `from` end is \"0..N\" and not \"1..N\" BECAUSE THE PARTICIPATION WAS MEASURED: parent_coverage 0.497085 \u2014 52 189 of 104 990 customers appear on a line and 52 801 DO NOT. A customer who never bought is a real customer, so \"customers with no orders\" is an answerable question across this edge and a naive inner join answers a different one. DQ-CUSTOMER-02 still governs the far end: the served customer row is an untreated quasi-identifier, so this edge may be traversed to AGGREGATE and must not be used to group by ZipCode.",
+      "proof": {
+        "detail": "52189/52189 resolve, max fanout 1",
+        "state": "proved"
+      },
+      "realisation": "join_rule",
+      "realized_by": "data/references_served/v_contoso_order_line.yaml#references.v_contoso_order_line.CustomerKey__dim_contoso_customer.CustomerKey",
+      "resolved_by": null,
+      "to": "Customer",
+      "type": "foreign_key",
+      "verified_by": "evidence/edge_measurements.json#order_line__placed_by__customer"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "order_line__converts_at__exchange_rate",
+      "from": "OrderLine",
+      "join_rule": null,
+      "level": "physical",
+      "notes": "THE BUSINESS RELATIONSHIP: this line's money converts at THIS quote \u2014 the one quote whose day is the line's order day and whose ordered pair is USD -> the line's own currency. It is minted because the relationship is real and the ontology was missing it: check_rule_reference_basis reported OrderLine's rule `order_line.currency.no_bare_cross_currency_sum` naming ExchangeRate with no edge between them, and its note gives two dispositions \u2014 the relationship is real and the edge layer is missing it, or the reference is a foil. It is the first. WHY THERE IS NO `join_rule`, WITH THE NUMBER. This relationship is a three-clause conditioned join and the gate that measures predicates reads exactly `a.x = b.y`. The single-equality predicate a gate COULD measure here is `v_contoso_order_line.OrderDate = v_contoso_fx_rate_day.Date`, and MEASURED LIVE on 2026-09-18 it returns 25 quotes for every one of the 223 974 lines \u2014 a 25x fan-out, because the grid is complete over 5 currencies x 5 currencies. Writing the measurable predicate would therefore write the exact defect ExchangeRate's rule `exchange_rate.pair.never_half_a_pair` forbids. So the realisation is declared as the rule that resolves it, and check_edge_joins_measured reports this edge as realised-without-a-join rather than measuring the wrong thing. THE CARDINALITY CLAIM IS STILL MEASURED, just not by that gate. MEASURED LIVE on 2026-09-18 over the full three-clause predicate: 223 974 of 223 974 lines match EXACTLY ONE quote (min 1, max 1, 0 lines without a quote), which is the \"1\" on the `to` end. Cross-checked against decisions/0001-order-line-fact-of-record.md, which reproduces the delivery's own dropped ExchangeRate column on 223 974 of 223 974 rows with 0 differences in this direction. The `from` end is \"0..N\" because most of the 100 450 quotes serve no line. THE DIRECTION IS THE RULING, NOT A PREFERENCE: the reverse orientation reproduces 113 627 of 223 974 lines \u2014 exactly the lines whose rate is 1.0 \u2014 so a sample-based check sees the wrong direction work. WHY THIS IS THE ONE EDGE IN THE FILE WITH NO `verified_by`, AND IT IS A FRAMEWORK DEFECT RATHER THAN A MISSING MEASUREMENT. evidence/edge_measurements.json reports this edge unmeasurable with the reason \"anchor 'rules.order_line_usd_conversion' resolves to nothing in ontology/rules.yaml\". THE ANCHOR RESOLVES. The rule is there (ontology/rules.yaml, third entry) and check_references resolves it, because that gate keys a list element on `id or name or rule or edge_id` (tools/check_references.py:138) \u2014 and `rule:` is the identifier mac.schema.json REQUIRES of a RulesFile entry. tools/mac_measure_edges.py:142 keys list elements on `id` ALONE, so it cannot see a rules.yaml entry at all. The measurement is therefore absent for a reason that has nothing to do with this edge, and the reason it PRINTS is false. Not worked around by renaming a schema identifier or by pointing the anchor somewhere it does not belong. Reported for the framework.",
+      "proof": {
+        "detail": null,
+        "state": "unproved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": null,
+      "resolved_by": "ontology/rules.yaml#rules.order_line_usd_conversion",
+      "to": "ExchangeRate",
+      "type": "composite_key",
+      "verified_by": null
+    },
+    {
+      "cardinality_from": "1..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "order_line__sells__product",
+      "from": "OrderLine",
+      "join_rule": "v_contoso_order_line.ProductKey = dim_contoso_product.ProductKey",
+      "level": "physical",
+      "notes": "THE BUSINESS RELATIONSHIP: this line sells this product, in the quantity and at the prices the line carries. MEASURED: child many : parent one; participation MANDATORY ON BOTH SIDES \u2014 parent_unreferenced 0, parent_coverage 1.0, all 2 517 catalogue products appear on at least one line \u2014 which is why this is the only edge in the file whose `from` end is \"1..N\". inclusion 1.0 over 223 974 rows, 0 orphans, max_parent_rows_per_value 1. THE TRAP THIS EDGE DOES NOT SOLVE, stated so it is not read as solved: the product dimension carries its OWN Price and Cost, and they are NOT the line's. Measured over the join, 122 953 of 223 974 lines disagree with the catalogue price (delta -799.99750 to +3748.50000) and the same 122 953 disagree on cost. The sale's money is the fact's; the catalogue's is the product's. Product's rule `product.price.catalogue_is_not_the_sale` holds it.",
+      "proof": {
+        "detail": "2517/2517 resolve, max fanout 1",
+        "state": "proved"
+      },
+      "realisation": "join_rule",
+      "realized_by": "data/references_served/v_contoso_order_line.yaml#references.v_contoso_order_line.ProductKey__dim_contoso_product.ProductKey",
+      "resolved_by": null,
+      "to": "Product",
+      "type": "foreign_key",
+      "verified_by": "evidence/edge_measurements.json#order_line__sells__product"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "order_line__placed_at__store",
+      "from": "OrderLine",
+      "join_rule": "v_contoso_order_line.StoreKey = dim_contoso_store.StoreKey",
+      "level": "physical",
+      "notes": "THE BUSINESS RELATIONSHIP: this line was placed AT this store \u2014 including the 'Online' sentinel, which Store's rule `store.sentinel.online_is_served` declares a served member rather than a null. MEASURED: child many : parent one; child MANDATORY, parent OPTIONAL \u2014 64 of 74 store rows carry a line, 10 do not (parent_coverage 0.864865); inclusion 1.0 over 223 974 rows, 0 orphans, max_parent_rows_per_value 1. WHY THIS EDGE IS SAFE WHILE THE DIMENSION IS SCD-2, because the two are easy to conflate. dim_contoso_store holds 74 VERSION rows over 67 store codes, so StoreKey is a version surrogate and not the store's identity. The join is on StoreKey, so it lands on the ONE version the line points at and measures a fanout of 1: this edge does not multiply anything. The SCD-2 hazard lives one layer up, in collapsing versions to a code, and it is held on the Store concept (`grounding.snapshot_rule` + mac.canon.snapshot_collapse) with its own measurement: 9 of 67 codes have no open version, so `WHERE CloseDate IS NULL` returns 58 codes and silently drops 9 with every sale they made, while the canon's latest-version collapse returns 67 of 67. A question that counts STORES must cross this edge and then collapse; a question that sums SALES must not collapse at all.",
+      "proof": {
+        "detail": "64/64 resolve, max fanout 1",
+        "state": "proved"
+      },
+      "realisation": "join_rule",
+      "realized_by": "data/references_served/v_contoso_order_line.yaml#references.v_contoso_order_line.StoreKey__dim_contoso_store.StoreKey",
+      "resolved_by": null,
+      "to": "Store",
+      "type": "foreign_key",
+      "verified_by": "evidence/edge_measurements.json#order_line__placed_at__store"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "store__located_in__country",
+      "from": "Store",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this store version is LOCATED IN this country \u2014 where the sale was made, which is a different question and a different number from who bought. MEASURED: 74 of 74 store versions carry a non-empty CountryCode, 0 nulls, so the `to` end is \"1\"; 9 distinct values against the customer side's 8, and the ninth is the '--' sentinel that `country.sentinel.online_is_a_member` catalogues as the online channel rather than a country \u2014 93 550 of 223 974 lines sit behind it. THE TWO ROLES ARE THEREFORE NOT INTERCHANGEABLE ON MEASURED EVIDENCE, not merely in principle: different member sets, different row counts, and no continent column on this side at all (`continent.side.customer_only`).",
+      "proof": {
+        "detail": "74 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "dim_contoso_store.CountryCode",
+      "resolved_by": "ontology/concepts/geography/country.yaml#contract.rules.country.roles.customer_or_store_never_both",
+      "to": "Country",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#store__located_in__country"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "1",
+      "confidence": "I",
+      "edge_id": "store__sited_in__geo_area",
+      "from": "Store",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this store version is sited in this geographic area \u2014 and one of them is not, which is the point of the cited rule. MEASURED: 74 of 74 versions carry a GeoAreaKey, 0 nulls, 67 distinct values over the range -1..616. THE RANGE STARTS AT -1: that is the 'Online' store's non-region, which `geo_area.sentinel.online_has_no_region` declares a catalogued member rather than a null. So the `to` end is \"1\" in the sense the data supports \u2014 every row carries a value \u2014 and the honest reading of one of those values is \"no region\", not \"region -1\". THE TWO GEOAREA ROLES ARE NOT ONE DOMAIN. 608 distinct keys on the customer side, 67 on the store side, overlapping but not equal. ONE geography dimension serving both is a HYPOTHESIS this bundle has not tested, and the planned physical edges say so rather than assuming it.",
+      "proof": {
+        "detail": "74 row(s), 0 without a value",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "dim_contoso_store.GeoAreaKey",
+      "resolved_by": "ontology/concepts/geography/geo_area.yaml#contract.rules.geo_area.sentinel.online_has_no_region",
+      "to": "GeoArea",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#store__sited_in__geo_area"
+    },
+    {
+      "cardinality_from": "0..N",
+      "cardinality_to": "0..1",
+      "confidence": "I",
+      "edge_id": "store__carries__store_status",
+      "from": "Store",
+      "join_rule": null,
+      "level": "business",
+      "notes": "THE BUSINESS RELATIONSHIP: this store version carries this exceptional status \u2014 'Closed' or 'Restructured' \u2014 or it carries NONE, which is the normal case and is the whole difficulty. THE `to` END IS \"0..1\" AND THAT IS THE MEASUREMENT, NOT A HEDGE: 59 of 74 store versions carry a NULL Status, only 15 carry a value, and there are 2 distinct values. 0 of 74 StoreKeys carry more than one Status, which is what \"at most one\" counts here. A `\"1\"` on this end would be false on 80 % of the dimension. WHAT AN ENGINE MUST NOT DO WITH THIS EDGE, held by the cited rule rather than restated: \"operating\" has NO CODE, so `Status = 'Open'` returns nothing, and `Status IS NULL` is NOT \"operating\" either \u2014 one of the 59 nulls is a version that IS closed by its dates. Open stores are read from `CloseDate IS NULL` (58 of 74), not from this edge. The edge exists to reach the two exceptional states; it deliberately cannot answer the normal one.",
+      "proof": {
+        "detail": "74 key(s), 0 breaching the cardinality",
+        "state": "proved"
+      },
+      "realisation": "resolved_by",
+      "realized_by": "dim_contoso_store.StoreKey -> dim_contoso_store.Status",
+      "resolved_by": "ontology/concepts/store/store_status.yaml#contract.rules.store_status.absence.operating_has_no_code",
+      "to": "StoreStatus",
+      "type": "shared_attribute",
+      "verified_by": "evidence/edge_measurements.json#store__carries__store_status"
+    }
+  ],
+  "measured": 16,
+  "total": 17,
+  "unproved": 1
+}

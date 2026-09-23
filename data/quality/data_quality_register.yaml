@@ -1,0 +1,541 @@
+# data/quality/data_quality_register.yaml — the register.
+#
+# TWO KINDS OF ENTRY LIVE HERE, and since 2026-09-18 both kinds are written:
+#   NS-<AREA>-<nn>   a relation (or a column set) that was MEASURED and deliberately NOT SERVED.
+#                    Written by the promotion step. A non-promotion recorded as silence is
+#                    indistinguishable from an oversight: six months on, nobody can tell whether the
+#                    relation was rejected or missed.
+#   DQ-<AREA>-<nn>   a data DEFECT, graded and dispositioned, cross-linked to the transform that
+#                    fixes it or honestly marked as not fixed. Owned by the data-quality step. The
+#                    first two — DQ-CUSTOMER-01 and DQ-CUSTOMER-02 — are at the bottom of this file.
+#                    The OTHER defects this bundle has measured are listed with their queries in
+#                    queries/p1_source_profiling.sql and are NOT restated here; four transform rules
+#                    still dissolve an impurity with no registered id behind them, which
+#                    check_dq_resolution_sync prints as an `impurity-unregistered` WARN per rule.
+#
+# Each NS entry says four things, per the promotion skill: the measured evidence, why not, what would
+# REVERSE the decision, and who owns that ruling. The promoted side of the same decision is not
+# repeated here — it lives in data/datasets/<served name>.yaml (one fact, one home).
+#
+# `confidence` is `I` on every entry even where the finding is a live measurement with a citable
+# number. Machine-authored content is capped at `I`; only a human may raise a field to `C`. (The
+# promotion skill's own worked example shows `C` on a measured finding — recorded as a kit collision
+# in the run record rather than resolved privately.)
+#
+# `status` IS `open` ON EVERY ENTRY THIS FILE'S AUTHORS WROTE, and that is not carelessness. (Two
+# entries now read `accepted`: NS-ORDERS-01 and NS-SERVING-01, both carrying the `ruled_by` and
+# `reason` that disposition demands, both ruled by the operator on 2026-09-18. Neither was written by
+# an agent's own judgement, which is the distinction the paragraph below is about.) The closed vocabulary
+# (mac_vocabulary.yaml#dq_status, read there) makes `accepted` mean "a NAMED HUMAN examined it and
+# chose to live with it" and requires `ruled_by` — "never 'the team', never a tool". The promotion
+# DECISION is made and is on the record (here, and in the served descriptors); the DISPOSITION is
+# undispositioned, because no human has ruled and no owner is declared for this source at all. An
+# `accepted` written by this step would claim a ruling that did not happen — the one kind of entry
+# the vocabulary exists to prevent. `open` asserts exactly what is true: recorded, not yet ruled.
+# The field itself is required by check_dq_resolution_sync and is absent from both the promotion
+# skill's worked example and the schema's property list — collision recorded in the run record.
+
+metadata:
+  source: Contoso Data Generator V2 (SQLBI, MIT) — parquet, loaded by setup.sh
+  schema_version: 0.1.14
+  status: draft
+  observed: '2026-09-18'
+  notes: >
+    Opened by the promotion step with the non-promotions only. Denominator of that decision: 8 raw
+    relations measured, 6 served (data/datasets/), 2 consumed into a served relation without being
+    served themselves, 1 relation and 1 column set deliberately not served. Every number quoted
+    below was measured; the query that produced it is named after it and is written out in full,
+    with its answer, in queries/p1_source_profiling.sql (P1) or queries/p3_dataset_promotion.sql (S).
+
+    EXTENDED 2026-09-18 by the data-quality step with the first two graded defects, both on the
+    customer dimension and both re-measured against the warehouse before being written:
+    DQ-CUSTOMER-01 (the stored `Age` is as-of 2020/2021 on 104 990 of 104 990 rows — dissolved by two
+    rules on dim_contoso_customer, `coverage: partial` because the replacement carries its own as-of
+    date) and DQ-CUSTOMER-02 (the served customer row is a quasi-identifier: ZipCode alone singles
+    out 29 193 of 104 990 customers — `coverage: gap`, deliberately untreated, and a PATTERN record
+    rather than an exposure because this is MIT-licensed synthetic data). Register denominator now:
+    6 issues — 4 non-promotions (`NS-`), 2 graded defects (`DQ-`).
+
+issues:
+  - id: NS-ORDERS-01
+    title: "`sales` measured, deliberately not served — it is the served order line delivered a second time"
+    # SEVERITY DEGRADED high -> low AND STATUS CLOSED open -> accepted, 2026-09-18, on the operator's
+    # ruling protocolled in decisions/0001-order-line-fact-of-record.md.
+    #
+    # WHY IT WAS NEVER `high`. This entry records a REDUNDANCY IN THE DELIVERY, not a defect in the
+    # data: the two candidate relations disagree on nothing (0 of 223 974 lines, every column).
+    # (Recorded for the record: no gate reads this field. The ontology gate counts per-issue human
+    # coverage, not severity — degrading it bought nothing and was never the thing that mattered.)
+    #
+    # `resolved` WAS WRITTEN HERE FIRST, AND IT WAS WRONG. Twice over, and the second is the serious
+    # one:
+    #   THE CATEGORY ERROR. `mac.dq_status.resolved` means a DEFECT WAS DISSOLVED BY A TRANSFORM. An
+    #   `NS-` entry is a relation measured and deliberately NOT SERVED. It was never a defect, so no
+    #   transform dissolved it. The transform's guarantee is real, and the `resolves:` cross-link on
+    #   `one-delivery-of-the-line` is real and stays — but a cross-link records what the transform
+    #   guarantees, not that a defect existed and is gone.
+    #   THE HOLE IT OPENED. `resolved` is the ONE disposition in the closed vocabulary that carries
+    #   `requires: []` — no `ruled_by`, no `reason`, nothing naming a human. The register and the
+    #   resolution map are both agent-writable. So an agent could close every entry in any register
+    #   with a word that names nobody, and under the rule that the ontology pipeline may not start
+    #   until issues are dispositioned, that would let an agent open its own gate. This entry WAS
+    #   that hole, standing open, with the coming gate cited in its own comment as the reason.
+    #   `check_data_plane_approved` now refuses it as reject class `resolved_on_non_defect`.
+    #
+    # `accepted` IS WHAT THIS IS: "A NAMED HUMAN EXAMINED IT AND CHOSE TO LIVE WITH IT" — the thing
+    # lived with being the duplicate delivery upstream, which this bundle cannot fix and does not
+    # need to. It requires `ruled_by` and `reason`, and both are below, because a disposition that
+    # claims a human acted must carry the evidence that one did.
+    severity: low
+    status: accepted
+    ruled_by: operator
+    reason: >
+      The delivery ships the order line twice and always will; this bundle serves one of them and
+      describes the other. Ruled 2026-09-18 by the operator, who is this source's owner: the
+      header/detail pair (orders x orderrows at OrderKey, RowNumber) is the order line's FACT OF
+      RECORD and `main.sales` is measured, described and not served — settling run record Q8, which
+      the promotion step correctly declined to settle on its own. Nothing is lost by the choice:
+      `sales` is exactly reconstructible from orders x orderrows x currencyexchange, measured twice
+      independently at 0 differences either way across all 13 columns. What is tolerated rather than
+      fixed is the upstream redundancy itself. Evidence, reversal conditions and the two
+      snapshot-dependencies this rests on: decisions/0001-order-line-fact-of-record.md.
+    confidence: I
+    finding: >
+      Measured 2026-09-18. `main.sales` (223 974 rows, 13 columns) carries the same line population as
+      `main.orderrows` at the same cell key: (OrderKey, LineNumber) EXCEPT (OrderKey, RowNumber)
+      returns 0 rows in both directions (P2 G3, S4), so LineNumber and RowNumber are the same values.
+      Joined line-for-line to `orderrows` x `orders`, it differs on NOTHING: 223 974 matched lines and
+      0 differences across ProductKey, Quantity, UnitPrice, NetPrice, UnitCost, CustomerKey, StoreKey,
+      OrderDate, DeliveryDate and CurrencyCode (S5; P1 R1-R3 measured the same over the same
+      denominator). It carries exactly one column the header/detail pair does not — ExchangeRate —
+      and that column reproduces the currencyexchange USD->CurrencyCode quote for the row's day on
+      223 974/223 974 rows, 0 missing quotes, 0 differences (P1 R4).
+    current_handling: >
+      NOT PROMOTED. No dataset descriptor, and no transform consumes it; its raw descriptor
+      (data/sources/sales.yaml) and its profile stay, so the measurement is not lost. The served line
+      relation is v_contoso_order_line, built from orders x orderrows at (OrderKey, RowNumber).
+      ExchangeRate is not served on the line either: the rate is served at its own grain in
+      v_contoso_fx_rate_day, where every pair a question can ask is present (100 450 = 4 018 x 5 x 5,
+      complete; all 5 quotes out on 14 106/14 106 order-day-currency combinations — S16, S17), which
+      is strictly more than the one USD-based direction sales carries. Serving both relations would
+      give every figure in this bundle two defensible answers and the engine would pick by accident.
+    residual_risk: >
+      RULED 2026-09-18 (operator): `v_contoso_order_line`, built from orders x orderrows at
+      (OrderKey, RowNumber), IS the order line's fact of record; `main.sales` is measured, described
+      and not served. That settles run record Q8, which the promotion step correctly declined to
+      settle on its own. Protocol: decisions/0001-order-line-fact-of-record.md.
+
+      WHAT REMAINS OPEN, and it is not the modelling. The derivability this closure rests on is a
+      fact about THIS SNAPSHOT and is enforced by nothing: an independent re-derivation on
+      2026-09-18 reconstructed all 13 sales columns from orders x orderrows x currencyexchange with
+      0 differences either way (multiset and full-outer-join formulations both), and in the same pass
+      measured that this database declares ZERO constraints — no primary key, no foreign key, no
+      unique — so nothing stops the next load from breaking the agreement. A one-time proof is not an
+      invariant. FOLLOW-UP: an acceptance property that re-measures the agreement per load, so the
+      reversal condition below is detected rather than assumed. Until that exists, this entry is
+      closed on evidence that is true and unpoliced.
+
+      A SECOND SNAPSHOT-DEPENDENCY, in the FX join: the rate is matched on exact date equality, which
+      works only because the quote grid is gapless and runs a year past the newest order (4 018
+      dates, 0 orders outside it today). An order dated off the grid yields a silent NULL. An
+      as-of join (latest quote on or before the order date) would be robust where equality is not.
+
+      REVERSED IF: a reload makes the agreement non-zero, i.e. sales and the pair stop agreeing; or
+      upstream retires `orderrows`/`orders`, making sales the only source of the line; or a human
+      re-rules that `sales` is the fact of record (then the transform swaps its inputs and the served
+      columns are unchanged — the values were measured identical). Note also that the data cannot say
+      WHICH direction the dependency runs upstream: it shows the two are identical, not that
+      `orderrows` is the original.
+    sme_owner: >
+      operator — NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE
+      rather than a personal name because this bundle is a public example; there is exactly one
+      operator on this estate, so the role identifies them, and the vocabulary asks for "the named
+      person or role — never 'the team', never a tool". The delivery contract's owner
+      is the operator, and they have ruled on this entry — see decisions/0001.
+
+  - id: NS-ORDERS-02
+    title: "the order header measured, deliberately not served as a relation of its own"
+    # RULED accepted 2026-09-18 by the operator, who first asked the question this entry should have
+    # answered on its own face: "i do not undestand what has order header have to do with anything?"
+    #
+    # THE ANSWER: NOTHING IS WRONG HERE. This entry is not a defect and never was. It is the
+    # promotion step's RECEIPT that `main.orders` was consumed into v_contoso_order_line and
+    # deliberately not served as a relation of its own — written so that "why is there no orders
+    # dataset?" has a recorded answer instead of silence. The register's own header states the rule
+    # it obeys: "A non-promotion recorded as silence is indistinguishable from an oversight: six
+    # months on, nobody can tell whether the relation was rejected or missed."
+    #
+    # WORTH RECORDING AGAINST THE PROMOTION SKILL, NOT AGAINST THIS BUNDLE: an entry of this kind
+    # can never be fixed, its whole content is "we considered it and did not", and it still counts
+    # against the register that now GATES the ontology pipeline. On this bundle it was the last of
+    # six standing between the operator and P6. Whether "consumed but not served" belongs in the
+    # register at all, or belongs as a note on the transform that consumes it, is a question for the
+    # promotion skill. Raised here because this is where the cost showed up.
+    severity: low
+    status: accepted
+    ruled_by: operator
+    reason: >
+      Ruled 2026-09-18 by the operator, this source's owner: the order header is consumed as an input
+      to v_contoso_order_line and is NOT served as a relation of its own. Measured grounds, none of
+      them in dispute: `main.orders` carries NO measure — nothing at order grain to sum; every one of
+      its five non-key columns is functionally determined by OrderKey and every one is already served
+      on the line; and 0 of its 93 470 headers has no line, so serving the line loses no order. A
+      header view could therefore only restate the same values at a coarser grain under a second
+      name, and `OrderKey` is served as a degenerate dimension so order-grain questions answer by
+      count(DISTINCT OrderKey) and by grouping on the header attributes the line already carries.
+
+      THE ONE THING THIS SHAPE CANNOT DO, which is the whole reversal condition: an ORDER-LEVEL
+      FIGURE has nowhere to live. A line view can repeat a header column but never hold one. So the
+      day the delivery gains freight, a header discount or an order total, a second served relation
+      at order grain becomes the right answer immediately — and it must then be promoted
+      deliberately rather than by copying the line view. Also reversed if a question needs orders
+      that have no lines (0 today), or if a header attribute stops being determined by OrderKey.
+    confidence: I
+    finding: >
+      Measured 2026-09-18. `main.orders` (93 470 rows, 6 columns) carries no measure: its columns are
+      OrderKey, CustomerKey, StoreKey, DT, DeliveryDate, CurrencyCode. Every one of its 5 non-key
+      columns is functionally determined by OrderKey (measured, P2) and every one of them is served on
+      the line relation, so a header view would restate them at a coarser grain under a second name.
+      Serving the line loses no order: 0 of the 93 470 headers have no line (S1), and the inner join
+      keeps exactly the line population with no fan-out (223 974 joined rows = 223 974 orderrows rows;
+      93 470/93 470 distinct OrderKey in orders, so the join cannot multiply — S1, S2).
+    current_handling: >
+      NOT PROMOTED as its own relation; CONSUMED as an input to v_contoso_order_line, where OrderKey
+      is a degenerate dimension (the framework's degenerate_dimension pattern: a grouping key with no
+      dimension table, modelled as a property of the fact rather than as a separate reference). Order-
+      grain questions are answerable from the line relation by count(DISTINCT OrderKey) and by
+      grouping on the header attributes it carries.
+    residual_risk: >
+      An order-level FIGURE cannot be stored anywhere today. REVERSED IF: the delivery gains an
+      order-level measure (freight, an order-level total, a header discount) — a line view can only
+      repeat such a column, never hold it; or a question needs orders that have no lines (0 today,
+      S1); or a header attribute stops being functionally determined by OrderKey. Any of those makes
+      a second served relation at order grain the right answer, and it must then be promoted
+      deliberately rather than by copying the line view.
+    sme_owner: >
+      operator — NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE
+      rather than a personal name because this bundle is a public example; there is exactly one
+      operator on this estate, so the role identifies them, and the vocabulary asks for "the named
+      person or role — never 'the team', never a tool". They are the one who can say whether
+      an order-level figure is expected in this delivery. Not yet ruled.
+
+  - id: NS-CUSTOMER-01
+    title: "12 of the 24 customer columns measured, deliberately not served"
+    # RULED accepted 2026-09-18 by the operator. TWO FACTS IN THIS ENTRY MOVED AFTER IT WAS WRITTEN
+    # and are corrected here rather than left to rot:
+    #   1. `Birthday` IS NO LONGER MERELY UNSERVED — IT IS CONSUMED. It feeds `age_band_5y` (the rule
+    #      `derive-age-band-as-of` on dim_contoso_customer). So it is load-bearing but not exposed,
+    #      which is a materially different state from "measured, unserved and unreferenced".
+    #   2. `Age`'s STALENESS IS NOW ITS OWN REGISTERED DEFECT, DQ-CUSTOMER-01 (accepted, treatment
+    #      cross-linked, `coverage: partial`). The finding text below still restates that measurement
+    #      inline, which double-homes it against this plane's own "one fact, one home" rule. The
+    #      measurement lives in DQ-CUSTOMER-01; read it there.
+    #   3. The served count is now 12 RAW columns PLUS ONE DERIVED (`age_band_5y`) = 13 served, so
+    #      the title's "12 of the 24" is about raw columns and stays true as written.
+    severity: low
+    status: accepted
+    ruled_by: operator
+    reason: >
+      Ruled 2026-09-18 by the operator, this source's owner: the served customer row is ROLL-UP
+      GEOGRAPHY plus gender plus the age band, and the ten identity / contact / free-demographic
+      columns (Title, GivenName, MiddleInitial, Surname, StreetAddress, Occupation, Company, Vehicle,
+      Latitude, Longitude) stay unserved, as does `Birthday` — consumed, never exposed.
+
+      THE SCOPE LINE IS ROLL-UP GEOGRAPHY IN, POINT GEOGRAPHY OUT, and that distinction is the whole
+      ruling, because "geography" read literally would admit the coordinates. Measured 2026-09-18:
+      `main.customer` carries 104 990 DISTINCT (Latitude, Longitude) pairs over 104 990 rows, so
+      EVERY customer sits at a unique point — a perfect identifier, strictly stronger than ZipCode,
+      which singles out 29 193 (DQ-CUSTOMER-02). Serving them would make every other generalisation
+      in the served plane pointless. They are also useless for the declared questions, which
+      aggregate to region and country: a point coordinate cannot roll up, and the geography chain
+      already served is what answers those.
+
+      Nothing is filtered by the non-promotion: 104 990 rows in, 104 990 out, 52 189 of them
+      appearing on an order — a dimension over-covering its fact, disclosed rather than trimmed.
+      The refusal is not destructive and the fix is one line in the transform's projection.
+      REVERSED IF a question in the declared scope names one of these attributes, or the scope
+      changes. Deliberately NOT a privacy claim: MIT-licensed synthetic data, and no such claim
+      would be measurable — see DQ-CUSTOMER-02 for the shape that does travel.
+    confidence: I
+    finding: >
+      Measured 2026-09-18. `main.customer` has 24 columns over 104 990 rows. The question scope this
+      bundle declares (README: the contested total, by brand, by region country -> continent, by
+      currency, gross vs net, by period) names geography and nothing else about a customer. 12 columns
+      are served — CustomerKey, GeoAreaKey, StartDT, EndDT, Continent, CountryFull, Country,
+      StateFull, State, City, ZipCode, Gender — including the only continent column in the whole
+      delivery (`store` has none: 0 continent-like columns, S10) whose country -> continent map is a
+      function over 8 countries with 0 countries carrying two continents (S11). The 12 NOT served are
+      Title, GivenName, MiddleInitial, Surname, StreetAddress, Birthday, Age, Occupation, Company,
+      Vehicle, Latitude, Longitude. `Age` is additionally measured STALE: year(Birthday) + Age is 2020
+      or 2021 on every row while the facts run to 2025-12-31 (P1 #8), so it answers as-of a year
+      nobody asked about.
+    current_handling: >
+      NOT PROMOTED. dim_contoso_customer serves the 12 columns above at one row per CustomerKey; the
+      other 12 stay in the landing and in data/sources/customer.yaml, measured, unserved and
+      unreferenced. Nothing is filtered: 104 990 rows in, 104 990 rows out (52 189 of them appear on
+      an order, S13 — a dimension over-covering its fact is disclosed, not trimmed).
+    residual_risk: >
+      A question that needs a customer attribute cannot be answered until the column is promoted; the
+      refusal is not destructive and the fix is one line in the transform's projection. REVERSED IF: a
+      question in scope names a demographic attribute (then the column is added, and `Age` only with a
+      ruling on its as-of year); or the declared question scope changes. Deliberately NOT a
+      privacy claim: this is MIT-licensed synthetic data and no such claim would be measurable.
+    sme_owner: >
+      operator — NAMED 2026-09-18, taking the seat run record Q5 left empty. Recorded as the ROLE
+      rather than a personal name because this bundle is a public example; there is exactly one
+      operator on this estate, so the role identifies them, and the vocabulary asks for "the named
+      person or role — never 'the team', never a tool". Both rulings this entry needs — the
+      as-of ruling on the derived age column, and the scope ruling — are theirs. Not yet ruled.
+
+  - id: NS-SERVING-01
+    title: "15 leftover views in the warehouse, measured, neither treated as sources nor served"
+    # CLOSED 2026-09-18: the operator dropped both schemas. The condition this entry records no
+    # longer exists — `information_schema` now holds the 8 BASE TABLEs in `main` and NOTHING else.
+    #
+    # WHAT WAS MEASURED BEFORE THE DROP, because a destructive act needs its evidence recorded before
+    # it, not after: every one of the 15 was a view over the SAME data/*.parquet files `main` reads.
+    # The 8 `contoso_raw` views are literally `SELECT * FROM read_parquet('<the same file>')`; the 7
+    # `contoso_served` views are renaming projections over those, and each returned exactly its
+    # source's row count (104 990 / 4 018 / 100 450 / 93 470 / 223 974 / 2 517 / 74). NO ROW EXISTED
+    # ONLY THERE, so nothing was lost. The 15 definitions were saved outside the bundle before the
+    # drop — deliberately outside, because they encode the deleted run's modelling decisions
+    # (`buyer_market`, `store_outlet`, an `order_line` built from `sales`, `nullif(StoreCode, -1)`)
+    # and putting them in the bundle would make them available to be inherited rather than
+    # re-measured. That last one is the sharpest example: the deleted run's `order_line` sourced
+    # `sales`, which is the relation NS-ORDERS-01 rules is NOT the fact of record.
+    #
+    # WHY `accepted` AND NOT `resolved`, THOUGH THE THING IS GONE. `resolved` means a defect was
+    # dissolved BY A TRANSFORM, evidenced by a cross-link; no transform did this, an operator did.
+    # `check_data_plane_approved` also refuses `resolved` on any `NS-` id, for the reason
+    # NS-ORDERS-01 records. VOCABULARY GAP, named rather than papered over: `mac.dq_status` has no
+    # term for "a named human ACTED and the condition is gone". `accepted` understates it — nothing
+    # is being lived with here — but it is the term that carries `ruled_by`, and naming the human is
+    # the property that matters. Reported to the operator rather than resolved privately.
+    severity: medium
+    status: accepted
+    ruled_by: operator
+    reason: >
+      The leftovers were a second vocabulary for one warehouse, not a second body of data. Dropped on
+      the operator's explicit instruction 2026-09-18 (`DROP SCHEMA contoso_served CASCADE; DROP SCHEMA
+      contoso_raw CASCADE`), after measuring that every row in them is reachable from `main` or from
+      the parquet files behind it. Verified after: `information_schema` holds 8 BASE TABLEs in `main`
+      and no views at all; main.orderrows still 223 974 rows and main.customer still 104 990, matching
+      the pre-drop measurements. The risk this entry existed to record — a reader of `contoso_served`
+      seeing 7 relations from a deleted run beside 6 from this one, unable to tell which is a result —
+      cannot arise, because this run's 6 views will be the only relations in that schema.
+    confidence: I
+    finding: >
+      Measured 2026-09-18 from information_schema, BEFORE THE DROP recorded above: the warehouse held
+      8 BASE TABLEs in `main` (what setup.sh builds from data/*.parquet) plus 15 VIEWs left by a
+      deleted run — 8 in `contoso_raw` and 7 in `contoso_served` (S20). The 8 `contoso_raw` views were measured row-for-row and
+      column-for-column identical to the `main` base tables before being set aside (P1). The 7
+      `contoso_served` views were deliberately NOT read: their names and renamed columns ARE the
+      deleted run's modelling decisions, and reading them would smuggle a deleted result into this
+      one. None of them carries a name this promotion coins (0 collisions over the 6 served names,
+      S21).
+    current_handling: >
+      NOT treated as sources (no raw descriptor, no profile) and NOT served. This bundle's own serving
+      schema is declared in connection.yaml#view_schema as `contoso_served`, so the 6 relations
+      promoted here will be created alongside those 7 leftovers unless they are dropped first.
+    residual_risk: >
+      A reader of `contoso_served` would see 7 relations from a deleted run beside 6 from this one and
+      could not tell which is a result. DROP cannot be done from here: the declared connection is
+      read-only and dropping is destructive. REVERSED/CLOSED WHEN: the operator drops
+      `contoso_raw` and `contoso_served` before the transform step materialises (run record Q2, Q15),
+      or rules that a different serving schema should be declared instead.
+    sme_owner: >
+      The operator of this checkout — it is their warehouse file and their console mount; no
+      modelling ruling is involved.
+
+  # ── THE FIRST TWO `DQ-` ENTRIES IN THIS REGISTER ─────────────────────────────────────────────────
+  # Written 2026-09-18 by the data-quality step, not by the promotion step. The header's distinction
+  # is the whole reason they are `DQ-` and not `NS-`: an `NS-` entry records a relation or a column
+  # set that was MEASURED AND DELIBERATELY NOT SERVED, and NS-CUSTOMER-01 above already holds that
+  # decision for all 12 unserved customer columns. Neither entry below is a promotion decision.
+  # DQ-CUSTOMER-01 is a DEFECT — a stored column whose value is wrong by five years — and
+  # DQ-CUSTOMER-02 is a DEFECT of the served plane's SHAPE, measured on the columns it does serve.
+  # `NS-` would have filed both under "we chose not to serve it", which is not what either says.
+  #
+  # BOTH ARE `open`, AND THAT IS THE LIMIT OF THIS STEP'S AUTHORITY. `accepted` and `wont_fix`
+  # require `ruled_by` and are the operator's to give (mac_vocabulary.yaml#dq_status). `resolved` is
+  # not written on either: see each entry for which part of it a transform actually dissolves and
+  # which part it does not.
+
+  - id: DQ-CUSTOMER-01
+    title: "`customer.Age` is a derived attribute frozen five years before the facts it would describe"
+    severity: medium
+    # STATUS CORRECTED open -> accepted, 2026-09-18. The entry originally reasoned "the resolution
+    # map records this as `coverage: partial` rather than `resolved`, AND WHY THE STATUS HERE IS
+    # `open`" — and that inference is wrong, on the same conflation twice in one day. COVERAGE and
+    # STATUS are different axes: coverage says how complete the TREATMENT is (partial, correctly —
+    # the band carries its own as-of clock), status says whether a HUMAN HAS RULED. The operator
+    # ruled: "age is served as age and rouded to 5 years precision. so 40,45,50,55, etc." and then
+    # "age ... ok". `resolved` would still overclaim — the defect is contained, not gone — but
+    # `accepted` is exactly "the defect is real, it is not being fixed, and that is a decision on
+    # the record". The residual below is what was accepted, not a reason to call it unruled.
+    status: accepted
+    ruled_by: operator
+    reason: >
+      Ruled 2026-09-18 by the operator, this source's owner: the served age is a 5-year band, not a
+      single year — "age is served as age and rouded to 5 years precision. so 40,45,50,55, etc."
+      The stored `Age` is refused (as-of 2020/2021 on 104 990 of 104 990 rows, 0 consistent with
+      2024-2026) and `Birthday` is consumed but never served, so the identifier does not reach the
+      served plane. TWO RESIDUALS WERE ACCEPTED WITH IT, both recorded in residual_risk and neither
+      cured: single-year age is no longer answerable from the served plane at all, a deliberate
+      loss of precision; and the band's own as-of date is a constant in the transform SQL that
+      nothing compares to the fact horizon, so it will go stale the same way unless the acceptance
+      property named in residual_risk 1 is built. That is why the resolution map keeps
+      `coverage: partial` — the treatment is partial, the ruling is not.
+    confidence: I
+    finding: >
+      Re-measured 2026-09-18 over `main.customer` (104 990 rows). `Age` is a STORED DERIVED value and
+      it is stale: year(Birthday) + Age is 2020 on 94 990 rows and 2021 on 10 000, so the column is
+      as-of one of two years in the past, while the order facts run to 2025-12-31. ZERO rows are
+      consistent with 2024, 2025 or 2026 — the staleness is total, not partial, and it is not drift
+      around a current value. Two further measurements matter for what may be served instead:
+      `Age` IS NOT BANDED as delivered — 67 distinct values from 19 to 85, of which only 21 833 of
+      104 990 rows (20.8 %) carry a multiple of 5 — and `Birthday` is NON-NULL on all 104 990 rows,
+      so a correct age is derivable for every customer without a fallback.
+      A consumer who filtered or grouped on the stored `Age` would be answering a question about
+      2020 in a delivery whose newest fact is five years younger, with nothing on the row to say so.
+    current_handling: >
+      TWO RULES ON `dim_contoso_customer`, both cross-linked from
+      data/quality/impurity_resolution_map.yaml:
+        · `exclude-stale-derived-age` — the stored `Age` is NOT PROJECTED. The fix is an absence, so
+          the rule quotes no SQL fragment and appears in no `consumes` map; the refusal is visible as
+          the projection list in data/transforms/dim_contoso_customer.sql.
+        · `derive-age-band-as-of` — a CORRECT age is derived from `Birthday` and served as
+          `age_band_5y`, banded to 5 years, AS OF THE DATE THE RULE DECLARES (2025-12-31, the fact
+          horizon). `Birthday` itself stays unserved: it is the identifier, and serving it would put
+          the exact date of birth on the row the band exists to generalise.
+      So no age-based figure computable from the served plane is five years stale, and an age-band
+      figure IS computable, which it was not before this step.
+    residual_risk: >
+      THE STALENESS IS CONTAINED, NOT CURED, AND THE CONTAINMENT HAS ITS OWN AS-OF DATE. That is why
+      the resolution map records this as `coverage: partial` rather than `resolved`, and why the
+      status here is `open`:
+
+      1. THE SERVED BAND WILL GO STALE THE SAME WAY. `age_band_5y` is derived as of 2025-12-31 —
+         a constant in the .sql, declared in the rule. When the delivery gains 2026 facts the fact
+         horizon moves, the as-of date no longer matches it, and the band becomes a figure about a
+         year nobody asked about: the identical defect class, one iteration later. NOTHING ENFORCES
+         THE RE-DERIVATION — there is no acceptance property that compares the rule's as-of date to
+         max(order date), and until there is, this is an unpoliced dependency on a hand-typed
+         constant. FOLLOW-UP, named rather than implied: such a property.
+      2. PRECISION IS LOST BY CHOICE. The delivery carries single-year age (wrong); the served plane
+         carries 5-year bands (right, coarser). A question that needs age to the year cannot be
+         answered from the served plane at all. That is the operator's ruling of 2026-09-18 ("age is
+         served as age and rounded to 5 years precision ... it is perfect candidate for some kind of
+         PII handling like anonymization later") and it is a deliberate cost, not an oversight.
+      3. THE RAW COLUMN IS UNTOUCHED UPSTREAM. Nothing this bundle can do repairs `main.customer.Age`,
+         and a reader of the landing still meets a column that is five years wrong with no marker.
+      REVERSED / CLOSABLE WHEN: the delivery starts computing `Age` as-of its own newest fact (then
+      the stored column becomes servable and the derivation is redundant); or an acceptance property
+      re-measures the as-of date against the fact horizon per load, at which point 1 stops being
+      unpoliced and this entry can be dispositioned on evidence rather than on a promise.
+    sme_owner: >
+      operator — NAMED 2026-09-18, and they have already ruled on WHAT is served (age, banded to 5
+      years). What is still theirs to ratify is narrower and is not a modelling question: whether
+      2025-12-31 is the as-of date this delivery wants pinned, and who re-derives the band when the
+      fact horizon moves past it. Recorded as the ROLE rather than a personal name because this
+      bundle is a public example; there is exactly one operator on this estate.
+
+  - id: DQ-CUSTOMER-02
+    title: "the served customer row is a quasi-identifier — ZipCode alone singles out 29 193 of 104 990 customers, and the age band nearly doubles that"
+    # RULED accepted 2026-09-18 by the operator, who also asked the fair question this comment owes an
+    # answer to: "is it not a sintetic data set under MIT license? why hassle?"
+    #
+    # THE ANSWER IS THAT THERE IS NO PRIVACY RISK HERE AND THIS ENTRY DOES NOT CLAIM ONE. Contoso Data
+    # Generator V2 is synthetic; the 104 990 customers do not exist; no person can be re-identified,
+    # and NS-CUSTOMER-01 already records that a privacy claim on this bundle would not be measurable.
+    # If this entry were a privacy finding it would be over-registration and should be deleted.
+    #
+    # WHAT IS WORTH KEEPING IS THE MEASUREMENT, WHICH IS A GRAIN FACT BEFORE IT IS A PRIVACY ONE:
+    # ZipCode alone singles out 29 193 of 104 990 served rows. That says the served customer dimension
+    # sits at roughly HOUSEHOLD grain, not at segment grain — useful to anyone deciding what this
+    # dimension may be grouped by, with no privacy reading at all. The 0 unique at Country + Gender +
+    # band is the same fact from the other side: identifying power is in the PRECISION of the geography
+    # served, not in serving geography.
+    # Registered because the SHAPE travels even though the data does not — this bundle is a worked
+    # example, and a delivery built the same way against real customers inherits the same served
+    # column set and the same 74 617. The operator's own forward note ("perfect candidate for some kind
+    # of PII handling like anonymization later") is what this entry holds the numbers for.
+    severity: low
+    status: accepted
+    ruled_by: operator
+    reason: >
+      Ruled 2026-09-18 by the operator, this source's owner: the measured quasi-identifier shape is
+      accepted as it stands and NO treatment is applied to this bundle. There is nothing to protect —
+      the data is synthetic, MIT-licensed, and about people who do not exist — so suppressing or
+      generalising a served column here would make the served plane answer fewer questions while
+      protecting nobody. Treatment is deferred to a delivery where there IS a data subject
+      ("anonymization later"), and this entry exists to hand that delivery its starting numbers.
+
+      WHEN THAT TREATMENT COMES, THE NUMBERS SAY WHERE TO START AND IT IS NOT THE AGE BAND. ZipCode
+      alone accounts for 29 193 of the 104 990 — 81 % of what ZipCode + Gender achieve together — and
+      rolling geography up to Country takes uniqueness to ZERO. The 5-year age band is an amplifier,
+      not a cause: sound alone (15 bands, smallest cell 1 396, 0 unique) and it takes ZipCode + Gender
+      from 35 894 to 74 617 in combination. Treating the band and leaving ZipCode served would be the
+      visible half of the work with most of the risk untouched.
+
+      `coverage: gap` STAYS, with `resolving_transforms: []`, because deferring is not treating and an
+      empty transform list is the honest record of that rather than an omission.
+    confidence: I
+    finding: >
+      Measured 2026-09-18 over `main.customer` (104 990 rows), counting GROUPS, the SMALLEST group,
+      and the groups of EXACTLY ONE row — the last being the population that a single combination of
+      served values singles out. The age band is the 5-year band derived from `Birthday` as of
+      2025-12-31 that `dim_contoso_customer` now serves as `age_band_5y`:
+
+        quasi-identifier              groups   smallest cell   groups of exactly one row
+        age band alone                    15           1 396                           0
+        ZipCode alone                 40 639               1                      29 193
+        ZipCode + Gender              49 278               1                      35 894
+        ZipCode + Gender + age band   86 052               1                      74 617
+
+      TWO FACTS, AND THEY POINT DIFFERENT WAYS. (a) The age band is a SOUND GENERALISATION ON ITS
+      OWN: 15 bands over 104 990 rows, smallest cell 1 396, and ZERO customers singled out by it.
+      (b) IN COMBINATION IT IS AN AMPLIFIER: adding it to ZipCode + Gender takes the uniquely
+      identifiable population from 35 894 to 74 617 — it more than doubles it (x2.08) and brings it
+      to 71 % of all rows. And the dominant identifier is NEITHER of those: ZIPCODE ALONE, WHICH
+      THIS BUNDLE ALREADY SERVED BEFORE THIS STEP, singles out 29 193 customers by itself — 81 % of
+      what ZipCode + Gender achieves together. The risk was already on the row; the band adds to it.
+    current_handling: >
+      NOTHING IS GENERALISED, SUPPRESSED OR PERTURBED, and no transform rule resolves this entry —
+      data/quality/impurity_resolution_map.yaml records it as `coverage: gap`, which is the honest
+      word for deliberately untreated. `dim_contoso_customer` serves ZipCode (role `value`), Gender
+      (role `discriminator`), City, State/StateFull, Country/CountryFull, Continent, and now
+      `age_band_5y`. `Birthday` and the raw `Age` are both unserved (NS-CUSTOMER-01, DQ-CUSTOMER-01)
+      — one because it is the identifier, the other because it is five years wrong — so the exact
+      date of birth is not on the served row.
+      REGISTERED AS A PATTERN RECORD, NOT AS AN EXPOSURE, and this is stated plainly rather than
+      dressed up: this is the Contoso Data Generator V2 (SQLBI, MIT) — SYNTHETIC data about people
+      who do not exist. There is no data subject here to re-identify. NS-CUSTOMER-01 already says
+      that a privacy claim on this bundle "would not be measurable", and that stands: nothing
+      measured above is evidence about any real person's privacy.
+    residual_risk: >
+      WHAT THIS ENTRY IS ACTUALLY FOR: the SHAPE travels even though the data does not. A bundle
+      built from this one as a worked example — the purpose it serves on this estate — would carry
+      the same served column set against real customers, and then every number above is a live
+      finding rather than an arithmetic curiosity.
+      IF THAT EVER HAPPENS, THE ORDER OF OPERATIONS IS THE FINDING: ZipCode is the dominant
+      identifier and generalising the age band (or dropping it) buys 35 894 -> 74 617 back while
+      leaving 29 193 singled out by ZipCode alone. Treating the band and leaving ZipCode served
+      would be the visible half of the work with most of the risk untouched. The measured candidates,
+      in the order the numbers support them: generalise ZipCode (to a prefix, or to City, which is
+      already served); then reconsider whether Gender and the band are both needed on the same row.
+      NOT DONE HERE, AND NOT PROPOSED AS A RULE: which columns a question may group by is a scope and
+      an ownership decision, not a transform's, and inventing a suppression on synthetic data would
+      make the served plane answer fewer questions while protecting nobody.
+      REVERSED IF: this bundle's data is ever replaced by, or this descriptor set is ever applied to,
+      a delivery describing real people — at which point this stops being a pattern record, the
+      severity is no longer `low`, and the register entry must be re-graded before the plane is
+      served; or the question scope adds a demographic axis that widens the served column set (each
+      added attribute can only increase the numbers above, never reduce them).
+    sme_owner: >
+      operator — NAMED 2026-09-18. What they must ratify is not the arithmetic, which is measured and
+      reproducible from queries/p1_source_profiling.sql: it is whether a served customer row in THIS
+      delivery may carry ZipCode, Gender and an age band at once, and what the rule becomes the day
+      these descriptors are pointed at real customers. Recorded as the ROLE rather than a personal
+      name because this bundle is a public example; there is exactly one operator on this estate.
+      Not yet ruled.

@@ -1,0 +1,116 @@
+# data/quality/impurity_resolution_map.yaml — the CROSS-LINK, register -> the transform that dissolves it.
+#
+# WHY IT EXISTS. A transform rule carrying an `impurity_class` says "I dissolve a kind of dirt", and a
+# register entry says "this dirt was found". Without a link between them the Cleaning tab and the
+# Quality tab tell different stories: a fix nobody registered as a problem, or a problem claimed fixed
+# by nothing. check_dq_resolution_sync reads BOTH directions — a `resolves:` naming an unregistered id
+# is an ERROR, and a rule with an impurity_class and no `resolves:` is a WARN.
+#
+# WHY IT DID NOT EXIST UNTIL 2026-09-18. The bundle had no resolutions at all, and the gate warned on
+# six rules. That was not an oversight for this first entry: `one-delivery-of-the-line` recorded its
+# own reason for withholding the link — the fact-of-record ruling (RUN.md Q8) was open, so which
+# relation the transform should read was not yet decided. The operator ruled on 2026-09-18
+# (decisions/0001-order-line-fact-of-record.md) and the link became true.
+#
+# STILL WARNING, deliberately: FOUR rules in this bundle dissolve an impurity and declare no
+# `resolves` — padded_label on dim_contoso_customer, case_variant_vocabulary and absence_semantics on
+# dim_contoso_product, absence_semantics on dim_contoso_store. Each needs its own registered DQ entry
+# before it can be linked here. They are NOT added silently: registering a finding is the
+# data-quality step's act, not this file's.
+#
+# WAS FIVE UNTIL 2026-09-18. `stale_derived_attribute` on dim_contoso_customer left that list when
+# the data-quality step registered DQ-CUSTOMER-01 and both rules that dissolve it —
+# `exclude-stale-derived-age` (the refusal) and `derive-age-band-as-of` (the replacement) — declared
+# `resolves`. Two rules, one finding, one resolution entry: the map links a finding to TRANSFORM
+# STEMS, not to rules, and both rules live in the same stem.
+
+metadata:
+  schema_version: 0.1.14
+  observed: '2026-09-18'
+  notes: >
+    THREE resolutions, one per coverage term, which is not an accident of counting — it is what an
+    honest map looks like. Opened with ONE (`resolved`) when the order line's fact-of-record ruling
+    closed NS-ORDERS-01; see that entry for the evidence, the reversal condition, and the two
+    snapshot-dependencies the closure rests on (the source declares zero constraints, and the FX join
+    matches on exact date equality). Extended 2026-09-18 by the data-quality step with
+    DQ-CUSTOMER-01 (`partial` — the stale age is contained by a refusal plus a re-derivation whose
+    own as-of date is a hand-typed constant nothing polices) and DQ-CUSTOMER-02 (`gap` — the served
+    row's quasi-identifier shape, measured, deliberately untreated, `resolving_transforms: []`).
+
+resolutions:
+  - finding_id: NS-ORDERS-01
+    resolving_transforms: [v_contoso_order_line]
+    coverage: resolved
+    note: >
+      Dissolved by the rule `one-delivery-of-the-line`, whose guarantee is that every figure on the
+      served line has exactly one home in the served plane — the line is built from
+      main.orderrows x main.orders and no transform in this bundle reads main.sales. What is dissolved
+      is the served-plane ambiguity, not the upstream redundancy: the delivery still ships the line
+      twice and this bundle cannot change that.
+
+      Evidence, measured twice independently. The pipeline measured 0 differences over 223 974 lines
+      across every shared column (P1 R1-R4, P3 S4/S5, T5). A second reader re-derived it on 2026-09-18
+      with different formulations — multiset comparison and a full-outer-join on the key — and
+      reconstructed all 13 of `sales`' columns from orders x orderrows x currencyexchange with 0 rows
+      differing in either direction, confirming both key sets are genuinely unique (223 974 distinct
+      of 223 974 rows on each side, 0 nulls in the key columns) so the comparison means what it
+      appears to mean.
+
+  - finding_id: DQ-CUSTOMER-01
+    resolving_transforms: [dim_contoso_customer]
+    coverage: partial
+    guarantee: >
+      TWO RULES ON ONE TRANSFORM, and neither is sufficient alone. `exclude-stale-derived-age` refuses
+      the stored `Age`, so no age figure computable from the served plane can be five years stale.
+      `derive-age-band-as-of` derives the age from `Birthday` and serves it as the integer
+      `age_band_5y`, banded to 5 years, AS OF 2025-12-31 — so an age-grouped question is answerable
+      at all, which it was not before. Neither input is served: the stored `Age` is five years wrong,
+      and `Birthday` is the exact date of birth, i.e. the identifier the band generalises.
+
+      `partial`, NOT `resolved`, AND THE COST AND THE REVERT CONDITION ARE THE REASON.
+      THE COST: the delivery carries single-year age and the served plane carries 5-year bands, so a
+      question that needs age to the year cannot be answered from the served plane at all. That is
+      the operator's ruling of 2026-09-18 ("rounded to 5 years precision"), a deliberate loss of
+      precision rather than an oversight — but it is a loss, and `resolved` would claim the defect was
+      dissolved losslessly.
+      THE REVERT / RE-DERIVE CONDITION: the as-of date is a CONSTANT in
+      data/transforms/dim_contoso_customer.sql and nothing compares it to the warehouse's newest fact.
+      When the fact horizon moves past 2025-12-31 the served band becomes as-of a year in the past —
+      the identical defect class, one iteration on, and silently. So the containment carries its own
+      staleness clock, which is exactly what `partial` is for. DQ-CUSTOMER-01 residual risk 1 names
+      the acceptance property that would police it; that property does not exist yet.
+      THE RAW COLUMN IS UNTOUCHED UPSTREAM: `main.customer.Age` is still as-of 2020/2021 on 104 990 of
+      104 990 rows and this bundle cannot repair it.
+
+      Evidence, re-measured read-only 2026-09-18 over main.customer with the exact SQL the rule ships:
+      year(Birthday) + Age is 2020 on 94 990 rows and 2021 on 10 000, ZERO rows consistent with
+      2024/2025/2026; `Age` has 67 distinct values from 19 to 85 with only 21 833 of 104 990 a multiple
+      of 5, so it is not the rounded age that was ruled servable either; `Birthday` is non-null on all
+      104 990 rows, so the derivation needs no fallback branch and none is written; and the derived
+      band yields 15 bands (20 … 90), 0 nulls, smallest cell 1 396.
+
+  - finding_id: DQ-CUSTOMER-02
+    resolving_transforms: []
+    coverage: gap
+    guarantee: >
+      NOTHING IS DONE, DELIBERATELY, AND THE EMPTY `resolving_transforms` IS THE HONEST RECORD OF THAT
+      rather than an omission — no rule in this bundle generalises, suppresses or perturbs a served
+      customer column, so there is no transform to name. `gap` is the coverage term for a finding that
+      is documented and untreated.
+
+      WHY LEAVING IT IS SAFE HERE, said plainly and not dressed up: this is the Contoso Data Generator
+      V2 (SQLBI, MIT) — synthetic data about people who do not exist. There is no data subject to
+      re-identify, and NS-CUSTOMER-01 already records that a privacy claim on this bundle "would not
+      be measurable". Nothing measured in DQ-CUSTOMER-02 is evidence about any real person's privacy.
+      It is registered because the SHAPE travels even though the data does not: this bundle is a
+      worked example, and a delivery built from it against real customers inherits the same served
+      column set.
+
+      WHAT A FUTURE TREATMENT MUST GET RIGHT, because the numbers already say it: ZipCode is the
+      DOMINANT identifier — 29 193 of 104 990 customers are singled out by ZipCode alone, which is
+      81 % of what ZipCode + Gender achieves together — and the age band is an AMPLIFIER, taking
+      ZipCode + Gender from 35 894 uniquely identifiable to 74 617. Treating the band and leaving
+      ZipCode served would be the visible half of the work with most of the risk untouched.
+      NOT PROPOSED AS A RULE HERE: which columns a question may group by is a scope and ownership
+      decision, not a transform's, and inventing a suppression on synthetic data would make the served
+      plane answer fewer questions while protecting nobody.

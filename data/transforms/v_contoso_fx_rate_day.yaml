@@ -1,0 +1,70 @@
+# data/transforms/v_contoso_fx_rate_day.yaml — the fx rate grid's transform descriptor.
+#
+# THE ONE RELATION IN THIS BUNDLE WITH NO MEASURED DEFECT. Declared as a 0-rule passthrough, with the
+# measurement that earns that claim (T12) rather than an assumption that a clean-looking relation is
+# clean. Every number was measured read-only over contoso.duckdb by scratchpad/ingest/p4_transforms.py
+# and is written out with its query and answer in queries/p4_transformation_authoring.sql.
+
+metadata:
+  pipeline: v_contoso_fx_rate_day
+  source: contoso
+  layer: data-transformation
+  schema_version: '0.1.14'
+  status: draft
+  confidence: I
+  observed: '2026-09-18'
+  generated_by: scratchpad/ingest/p4_transforms.py wrote the .sql; this descriptor is hand-authored
+  notes: >
+    AUTHORED, NOT DEPLOYED (connection.yaml declares read_only: true): the SELECT body was executed
+    read-only — 4 columns in the order and types the dataset descriptor declares (T1f), 100 450 rows /
+    100 450 distinct (Date, FromCurrency, ToCurrency) / 0 duplicates / 0 null key parts (T2f).
+    WHY NO RULE: measured, not assumed — the grid is COMPLETE (100 450 rows = 4 018 days x 5 x 5), the
+    self-rate is exactly 1 on every self-pair (0 exceptions), no rate is <= 0 and none is null (T12).
+    There is nothing to repair, rename, cast or filter, so `transforms` is empty and `open_transforms`
+    is too: this is the one relation where an empty rule list is a finding rather than an omission.
+    Served under `v_` and not `dim_` deliberately: a rate is a measured figure at its own grain.
+
+produces:
+  relation: contoso_served.v_contoso_fx_rate_day
+  sql_file: data/transforms/v_contoso_fx_rate_day.sql
+  grain: "one row per (Date, FromCurrency, ToCurrency) — one daily quote for one ordered currency pair"
+
+inputs:
+  - relation: main.currencyexchange
+    kind: raw_source
+    role: fx_quote_grid
+    descriptor: data/sources/currencyexchange.yaml
+    note: >
+      All 4 columns are carried unchanged and none is consumed by a rule, so the projector reads all 4
+      as passthrough edges from the descriptor. This relation is the reason sales.ExchangeRate is not
+      served on the order line: the rate lives here at its own grain, in every direction a question can
+      ask (all 5 quotes out on 14 106/14 106 order-day x currency combinations, P3 S17), instead of one
+      USD-based column repeated on 223 974 lines (P1 R4).
+
+transforms: []        # no rule: no defect was measured in this relation (T12).
+open_transforms: []   # nothing known-and-unfixed either — the empty list is the claim, and T12 is its evidence.
+
+governance:
+  owner: >
+    UNNAMED — no owner is declared for any relation of this source (RUN.md Q5). Machine-authored and
+    unratified.
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >
+        Created the fx-rate transform as a declared 0-rule passthrough, with the completeness /
+        self-rate / positivity measurements that justify applying no rule.
+      change_type: CREATION
+      by: P4 transformation-authoring (machine-authored, unratified)
+    - date: 2026-09-19
+      change: >
+        Date is served as DATE, cast in the .sql from the landing's TIMESTAMP. OPERATOR RULING
+        2026-09-19: "change the dates from sources to datasets ... all time fields are anyway
+        00000". LOSSLESS, MEASURED NOT ASSUMED: 0 non-midnight values over 100 450 of 100 450
+        rows. main.currencyexchange is UNTOUCHED and keeps TIMESTAMP. THIS COLUMN IS ONE SIDE OF
+        THE CONVERSION JOIN (rules.yaml#order_line_usd_conversion, exact date equality) and the
+        other side was cast in the same change; re-measured identical after: 223 974 join rows
+        over 223 974 lines, 0 lines without a quote, min 1 / max 1 quotes per line, and
+        sum(Quantity * NetPrice * Exchange) = 223 597 710.61 to the cent.
+      change_type: CORRECTION
+      by: operator ruling 2026-09-19, applied by the transform (unratified)

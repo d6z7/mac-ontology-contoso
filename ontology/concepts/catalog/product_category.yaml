@@ -1,0 +1,158 @@
+# CONTOSO > catalog > ProductCategory — the UPPER level of the two-level catalogue hierarchy, a
+# GROUPING over Product. There is no category relation in this delivery: CategoryKey and
+# CategoryName are columns of the product dimension, so the hierarchy is held inside it and this
+# concept grounds on that relation rather than on a table of its own.
+
+metadata:
+  concept: ProductCategory
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: ProductCategory
+  label: Product Category
+  class: grouping
+  identity:
+    kind: fk_name
+    canonical_key: CategoryKey
+    note: >-
+      Keyed on CategoryKey — an integer, 8 measured values, 1:1 with CategoryName (measured). The
+      key and not the name, because the name is what a question says and the key is what a filter
+      may safely use.
+  definition: >-
+    The upper level of the catalogue hierarchy: the eight broad groups every product belongs to —
+    Audio, TV and Video, Computers, Cameras and camcorders, Cell phones, Music Movies and Audio
+    Books, Games and Toys, Home Appliances.
+
+    IT IS NOT THE SUBCATEGORY. The two levels are separate concepts because they are different
+    grains — 8 members against 32 — and someone asking for a category breakdown would be MISLED by
+    a 32-row answer, not merely surprised. The subcategory rolls up into this level, and that
+    roll-up is a function (measured, 0 subcategories with two parents).
+
+    IT IS NOT A BRAND AXIS EITHER. Brand cuts across the hierarchy; the two are orthogonal.
+  semantics:
+    purpose: >-
+      The coarse product axis of the declared question scope — the level a "which product groups
+      sell" question means — and the parent the subcategory level rolls into.
+    null_semantics: >-
+      No absence: CategoryKey and CategoryName are non-null on all 2 517 products, so the 8 members
+      partition the catalogue completely.
+
+members:
+  over: Product
+  member_source:
+    kind: rule
+    rule: >-
+      Membership is the `CategoryKey` column of dim_contoso_product: a product belongs to the one
+      category its row names. Measured 2026-09-18: 8 distinct CategoryKey values, 8 distinct
+      CategoryName values, 0 nulls over 2 517 rows, so the partition is total and disjoint and the
+      8 member counts sum to 2 517.
+  realized_by:
+    udf: mac.canon.grouping_from_register
+    params:
+      register: data/lookups/dim_contoso_product.lookup.csv
+      group_key: category_key
+      member_col: ProductKey
+      carry: [label, search_key]
+  note: >-
+    `definitions:` IS DELIBERATELY OMITTED. The exploded (category, product) register already exists
+    — data/lookups/dim_contoso_product.lookup.csv, 2 517 rows carrying each product's category key —
+    and the 8 per-category labels are in data/lookups/contoso_product_category.lookup.csv. Listing
+    the members here would be a second home for both. The measured shape, for a reader: 8 members,
+    largest 'Home Appliances' at 661 of 2 517 products, then 'Computers' at 606, smallest 'Music,
+    Movies and Audio Books' at 90.
+
+grounding:
+  kind: sql_table
+  sources:
+    - relation: dim_contoso_product
+      key: ProductKey
+      columns: [ProductKey, CategoryKey, CategoryName]
+  serves_from: data/transforms/dim_contoso_product.sql
+  discriminator: CategoryKey
+  field_roles:
+    CategoryKey: contoso.field_role.key
+    CategoryName: contoso.field_role.dimension
+    ProductKey: contoso.field_role.key
+  note: >-
+    A ROLL-UP HELD INSIDE THE PRODUCT DIMENSION. `CategoryName` is `dimension` rather than
+    `attribute` — unlike ProductName — because it is measured 1:1 with its key over all 8 members,
+    so grouping on it cannot split a category; the register still resolves a word to the KEY, and
+    the key is what a filter uses.
+
+contract:
+  default_reading: >-
+    An unqualified "category" means THIS level, the 8-member one, not the 32-member subcategory
+    level. Say which level was used in the answer, because both are called "category" in ordinary
+    speech.
+  no_probe_guarantee: >-
+    All 8 members, their keys, their search keys and their product counts are in
+    data/lookups/contoso_product_category.lookup.csv, cut from the served plane; the exploded
+    membership is in data/lookups/dim_contoso_product.lookup.csv. So a category word resolves
+    offline, membership needs no probe, and a category the delivery does not carry is a refusal
+    derived from a closed 8-member register rather than from an empty query.
+  resolution: >-
+    Resolve a category word through data/lookups/contoso_product_category.lookup.csv on its
+    `search_key` to the `CategoryKey`, then filter on the key.
+  rules:
+    - id: product_category.level.category_is_not_subcategory
+      kind: mac.rule_kind.ambiguity
+      subject: Two levels are both called "category" — resolve to the one asked for and say which
+      when: "a question says category, product group, or product type without naming a level"
+      then: >-
+        resolve to THIS level (`{CategoryKey}`, 8 members) and say so; offer the
+        `{SubCategoryKey}` level (32 members) when the question names a value that only exists
+        there
+      never: >-
+        answering a category question at subcategory grain or the reverse — 8 rows against 32 is a
+        different answer to the same words, with no symptom in the result
+      why: >-
+        the delivery holds two hierarchy levels inside one dimension and ordinary speech does not
+        distinguish them, so the level is a disclosure and not a default
+      binds: [CategoryKey, SubCategoryKey]
+      confidence: P
+
+constraints:
+  - assert: "CategoryKey and CategoryName are 1:1 — the name cannot split a category"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT (SELECT count(DISTINCT CategoryKey) FROM contoso_served.dim_contoso_product)
+           - (SELECT count(DISTINCT CategoryName) FROM contoso_served.dim_contoso_product)
+    notes: >-
+      Measured 8 and 8, difference 0, on 2026-09-18. ERROR because CategoryName is declared a
+      `dimension` role on the strength of this equality; if it breaks, grouping on the name
+      silently splits or merges categories.
+  - assert: "Every product carries a category — the 8 members partition the catalogue"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.dim_contoso_product
+      WHERE CategoryKey IS NULL OR CategoryName IS NULL
+    notes: "Measured 0 of 2 517 rows on 2026-09-18."
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as the upper of two grouping concepts over Product, separate from
+        ProductSubcategory because the two grains answer the same words with different numbers.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: PCT-Q1
+    topic: the missing relation
+    question: >-
+      Should CategoryKey and SubCategoryKey get relations of their own? They have no table in this
+      delivery, so a category attribute other than its name has nowhere to live — the same shape
+      NS-ORDERS-02 records for the order header.
+    status: OPEN
+    owner_for_resolution: operator

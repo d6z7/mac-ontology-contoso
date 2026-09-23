@@ -1,0 +1,230 @@
+# CONTOSO > finance > NetSalesAmount — the DEFAULT reading of "total sales" in this bundle.
+#
+# `additivity:` IS DELIBERATELY ABSENT — derived from mac_vocabulary.yaml#MeasureType.Flow x the axis
+# kinds below, and projected into data/lookups/contoso_measure.lookup.csv.
+
+metadata:
+  concept: NetSalesAmount
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: NetSalesAmount
+  label: Net Sales Amount
+  class: measure
+  identity:
+    kind: code
+    note: >-
+      Identified by its register code rather than by a column: the measure is COMPUTED from two
+      columns of the line and is not stored. Code and search key live in
+      data/lookups/contoso_measure.lookup.csv.
+  definition: >-
+    The money value of sales AFTER discount: per order line, Quantity x NetPrice, summed over the
+    lines in scope. This is what "total sales" means here when the question does not say otherwise.
+
+    IT IS NOT GROSS. NetPrice is measured at or below UnitPrice on every line and strictly below it
+    on 136 913 of 223 974, so the two differ on 61 % of the fact and are not one figure under two
+    names. Gross is a separate concept, asked for explicitly.
+
+    IT IS NOT A MARGIN EITHER. UnitCost is served on the same row and no margin measure is declared
+    over it, so "profit" is not answerable from this bundle today.
+
+    AND IT IS NOT A CROSS-CURRENCY FIGURE without a stated conversion: every amount is in the
+    order's own CurrencyCode.
+  semantics:
+    purpose: >-
+      The headline sales figure and the default resolution of the bundle's contested total — the
+      number a bare "what were our total sales?" is answered with, sliced by brand, geography,
+      currency and period.
+    unit: >-
+      currency, denominated in the order's own CurrencyCode (5 measured values: USD, EUR, CAD, GBP,
+      AUD) — NOT a single reporting currency. Comparison or difference between two NetSalesAmount
+      figures requires both to be in the same currency; a ratio of two is always defined.
+    measure_type: mac.MeasureType.Flow
+    axis_kinds:
+      time: mac.axis_kind.time
+      brand: mac.axis_kind.categorical
+      continent: mac.axis_kind.categorical
+      country: mac.axis_kind.categorical
+      customer: mac.axis_kind.categorical
+      product: mac.axis_kind.categorical
+      product_category: mac.axis_kind.categorical
+      store: mac.axis_kind.categorical
+    null_semantics: >-
+      No absence to interpret: Quantity and NetPrice are measured non-null on all 223 974 lines and
+      a line with no discount carries NetPrice = UnitPrice, which is a real full-price line and not
+      missing data. A scope that returns nothing has no line, which is not a zero amount.
+
+# THE FORMULA HAS ONE HOME AND IT IS NOT THIS FILE (added at P9, cookbook B4 step 5). The extended
+# amount is not a served column, so this measure is COMPUTED; the renderable form lives once, in
+# ontology/rules.yaml#rules.net_sales_amount, and this line names it. What stays here are the two
+# PROHIBITIONS with their measurements attached, below.
+derived_by_rule: net_sales_amount
+
+grounding:
+  kind: sql_table
+  grain: "computed per order line — (OrderKey, RowNumber) — then folded over the axes above"
+  sources:
+    - relation: v_contoso_order_line
+      key: [OrderKey, RowNumber]
+      columns: [OrderKey, RowNumber, Quantity, NetPrice, CurrencyCode, OrderDate]
+  serves_from: data/transforms/v_contoso_order_line.sql
+  discriminator: NetPrice
+  field_roles:
+    OrderKey: contoso.field_role.key
+    RowNumber: contoso.field_role.key
+    Quantity: contoso.field_role.measure
+    NetPrice: contoso.field_role.measure
+    CurrencyCode: contoso.field_role.dimension
+    OrderDate: contoso.field_role.dimension
+  note: >-
+    `discriminator` NAMES THE COLUMN THAT SEPARATES THIS MEASURE FROM ITS SIBLING, not a predicate:
+    this fact is column-per-measure, so NetSalesAmount and GrossSalesAmount are read from the same
+    223 974 rows and differ only in which price column is read. No rows are excluded, so a
+    `value_filter` here would be a fabrication. See the same note on
+    ontology/concepts/finance/gross_sales_amount.yaml.
+
+contract:
+  default_reading: >-
+    THIS IS THE DEFAULT. An unqualified "sales", "revenue" or "total" means NetSalesAmount: after
+    discount, over every line, by OrderDate rather than DeliveryDate, in the order's own currency,
+    including the 93 550 lines placed at the 'Online' sentinel store. Report gross only when the
+    question says gross, list price or before discount. Disclose the currency with the figure.
+  no_probe_guarantee: >-
+    Quantity and NetPrice are columns of v_contoso_order_line, declared above; the fold along each
+    axis resolves from measure_type x axis_kinds; the figure's currency is the row's own
+    CurrencyCode. Axis words resolve through the registers the axis concepts declare — Brand,
+    ProductCategory, ProductSubcategory, Product, Country, Continent, GeoArea, Store, Customer — so
+    no probe is needed to turn a name into a code.
+  rules:
+    - id: net_sales_amount.derivation.quantity_times_net_price
+      kind: mac.rule_kind.aggregation
+      subject: Net is quantity times DISCOUNTED price, per line, then summed
+      when: "computing a net sales figure from `{v_contoso_order_line}`"
+      then: >-
+        render the derivation this concept names at `derived_by_rule` —
+        ontology/rules.yaml#rules.net_sales_amount — which multiplies at the declared line grain
+        BEFORE folding over the scope. The order of the two operations is the whole content of this
+        rule; the arithmetic itself is stated there and not here
+      never: >-
+        using `{UnitPrice}` — that is gross — or SUM(`{NetPrice}`) x SUM(`{Quantity}`), which is not
+        a money figure at any grain
+      why: >-
+        the extended amount is not a served column, so the multiplication happens per row at the
+        declared grain and only then folds
+      binds: [Quantity, NetPrice]
+      confidence: P
+    - id: net_sales_amount.ambiguity.gross_or_net
+      kind: mac.rule_kind.ambiguity
+      subject: A bare total is net, and the reading is disclosed rather than silent
+      when: "a question asks for a sales total without saying gross or net"
+      then: >-
+        answer with NetSalesAmount and SAY SO in the answer, naming the discount as what was
+        subtracted; offer the gross figure from `{UnitPrice}` alongside when the gap matters
+      never: >-
+        choosing between `{NetPrice}` and `{UnitPrice}` silently — the two disagree on 136 913 of
+        223 974 lines, so an undisclosed choice is a different number with the same label
+      why: >-
+        gross-versus-net is one of the four contested readings this bundle exists to settle, and a
+        default that is not disclosed is indistinguishable from a guess
+      binds: [NetPrice, UnitPrice]
+      confidence: P
+    # PROMOTED AT P10 FROM PROSE THAT COULD NOT FAIL. The no-row refusal was declared in exactly two
+    # places, neither of them testable: `semantics.null_semantics` above ("A scope that returns
+    # nothing has no line, which is not a zero amount") and an `edge_cases` line on
+    # ontology/rules.yaml#rules.net_sales_amount. No typed rule carried it, so nothing could cite it
+    # and nothing could fail on it — 0 of 26 rules were covered. This rule is the directive form of
+    # that declaration, bound to the canon so the refusal clauses are RENDERED and a corpus question
+    # is generated from it. The absence semantics themselves stay in null_semantics: the canon READS
+    # them (mac_vocabulary.yaml#canon.members.refuse_measure_no_row.params_from) rather than having
+    # them retyped here.
+    - id: net_sales_amount.evidence.no_line_is_not_a_zero
+      kind: mac.rule_kind.exclusion
+      subject: A scope with no line has no net figure — refuse, never report a zero
+      when: >-
+        a resolved scope has no line at all in `{v_contoso_order_line}` — measured today: 52 801 of
+        104 990 customers, 10 of 74 store versions and 568 of 4 018 calendar days carry no line
+      then: >-
+        REFUSE with an evidence-boundary answer naming the scope that was resolved and found empty —
+        never guess, never estimate, and never substitute the Gross Sales Amount figure for the
+        missing net one
+      never: >-
+        returning 0, or an empty result framed as a real zero: an empty scope has no line, and no
+        line is not an amount. And never reading the absence as a null VALUE — `{Quantity}` and
+        `{NetPrice}` are measured non-null on all 223 974 lines, so no resolved row carries a null
+        to interpret and the only absence available here is the absent ROW
+      why: >-
+        the three measured empty scopes are ordinary questions, not edge cases — a customer who
+        never bought, a store version with no sale, a day with no order — and a 0 returned for any
+        of them is a number a reader cannot distinguish from a real total of zero
+      binds: [Quantity, NetPrice]
+      realized_by:
+        udf: mac.canon.refuse_measure_no_row
+        params:
+          source: CONTOSO
+          confusable: [Gross Sales Amount]
+        note: >-
+          `label` and `null_is_real` are NOT attached: the registry declares they are read from
+          concept.label and concept.semantics.null_semantics. CAUTION, MEASURED 2026-09-18 — the
+          canon treats the PRESENCE of null_semantics as the boolean "a resolved row's null is a
+          real answer", so it renders ". A resolved row whose value is null is an ANSWER … report it
+          as null ('No absence to interpret: Quantity and NetPrice are measured non-null on all
+          223 974 lines …')", quoting a paragraph that DENIES nulls as the explanation of what a
+          null means. the reference bundle's five bound measures declare no null_semantics at all, so the branch has
+          never fired anywhere else. The clause is wrong in the render, not in this rule; the fix is
+          a framework one (a declared flag instead of a paragraph's presence) and is the operator's.
+      confidence: P
+
+constraints:
+  - assert: "Every line carries a positive quantity, so no line contributes a negative net amount"
+    severity: WARNING
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.v_contoso_order_line WHERE Quantity <= 0 OR NetPrice < 0
+    notes: >-
+      Measured 0 of 223 974 rows on 2026-09-18. There is no returns or credit-note relation in this
+      delivery, so a negative sale is not representable — an important limit, not a guarantee of
+      correctness.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as the declared default reading of the contested total. measure_type Flow and
+        the eight axis kinds are the inputs data/lookups/contoso_measure.lookup.csv was projected
+        from; no additivity written.
+      change_type: CREATION
+      by: operator
+    - date: 2026-09-18
+      change: >-
+        P9: `derived_by_rule: net_sales_amount` added and the derivation rule's `then` rewritten to
+        NAME the single home instead of repeating the arithmetic. The extended amount is not served,
+        so the renderable template now exists once, in ontology/rules.yaml. Executed as written on
+        2026-09-18: 218 814 471.66, reproducing queries/p8_measure_semantics.sql#B3 to the cent. The
+        gross-or-net ambiguity rule is untouched — it is a disclosure obligation, not a formula.
+      change_type: REFACTOR
+      by: operator
+
+open_questions:
+  - id: NSA-Q1
+    topic: margin
+    question: >-
+      Should a margin measure be declared over the served UnitCost? Cost is on the row and nothing
+      reads it, so "profit" currently gets no answer and no refusal.
+    status: OPEN
+    owner_for_resolution: operator
+  - id: NSA-Q2
+    topic: date role
+    question: >-
+      Is OrderDate the right default period axis for a sales figure, or should a delivered-basis
+      reading exist alongside it? Both roles are served and 130 424 of 223 974 lines carry the same
+      date, so the choice is invisible on more than half the fact.
+    status: OPEN
+    owner_for_resolution: operator

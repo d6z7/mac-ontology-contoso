@@ -1,0 +1,248 @@
+# data/transforms/dim_contoso_customer.yaml — the customer dimension's transform descriptor.
+#
+# The executable body is the sibling .sql. Every number was measured read-only over contoso.duckdb by
+# scratchpad/ingest/p4_transforms.py and is written out with its query and answer in
+# queries/p4_transformation_authoring.sql.
+#
+# ONE DEFECT HERE WAS MEASURED IN THIS STEP, not in P1: a padded region label. P1's 39-query anomaly
+# pass did not sweep for whitespace, and P4's sweep over all 33 served text columns found it in exactly
+# two (T9/T10) — which is why the sweep is in the query log with its denominator.
+
+metadata:
+  pipeline: dim_contoso_customer
+  source: contoso
+  layer: data-transformation
+  schema_version: '0.1.14'
+  status: draft
+  confidence: I
+  observed: '2026-09-18'
+  generated_by: scratchpad/ingest/p4_transforms.py wrote the .sql; this descriptor is hand-authored
+  notes: >
+    MATERIALISED 2026-09-18 into contoso_served (connection.yaml now declares read_only: false on the
+    operator's authorisation): the view exists in the warehouse and was verified against its declared
+    grain — 104 990 rows / 104 990 distinct CustomerKey / 0 duplicates. 13 columns in the order and
+    types the dataset descriptor declares. The SELECT body had previously been executed read-only at
+    12 columns (T1d, T2d); the thirteenth is `age_band_5y`, added 2026-09-18.
+    A COLUMN PROJECTION, not a filter: 11 of the landing's 24 columns are carried through unchanged or
+    trimmed, 1 is consumed without being served (`Birthday` -> `age_band_5y`) and 12 are refused
+    (register NS-CUSTOMER-01). Every one of the 104 990 rows survives.
+    Rule statuses stay `authored` rather than being promoted on materialisation: `authored` describes
+    who wrote the rule, and this step did not gain a ratification.
+
+produces:
+  relation: contoso_served.dim_contoso_customer
+  sql_file: data/transforms/dim_contoso_customer.sql
+  grain: "one row per CustomerKey — one customer, with one validity window"
+
+inputs:
+  - relation: main.customer
+    kind: raw_source
+    role: customer_master
+    descriptor: data/sources/customer.yaml
+    note: >
+      10 of the 13 served columns are carried unchanged and the projector reads them as passthrough
+      edges from the descriptor: CustomerKey, GeoAreaKey, StartDT, EndDT, Continent, CountryFull,
+      Country, City, ZipCode, Gender. Two more are the trimmed region labels below. The thirteenth is
+      `age_band_5y`, which is DERIVED and shares no name with its input, so it exists only as a
+      consumes edge from `Birthday`.
+
+      THE 12 LANDING COLUMNS THAT ARE NOT SERVED (Title, GivenName, MiddleInitial, Surname,
+      StreetAddress, Birthday, Age, Occupation, Company, Vehicle, Latitude, Longitude) are registered
+      as NS-CUSTOMER-01. Eleven of them appear in no `consumes` map — a column that is not projected
+      must not be given an edge onto a served column that does not exist. `Birthday` IS THE EXCEPTION
+      AND IT IS NOT A CONTRADICTION: it is CONSUMED (it is the only input to `age_band_5y`) and still
+      NOT SERVED (no served column carries a date of birth). That distinction is the whole design of
+      the age handling, and the consumes edge is what makes it visible in lineage instead of leaving
+      `age_band_5y` looking like a column with no upstream.
+    consumes:
+      StateFull: trim-padded-region-label
+      State: trim-padded-region-label
+      Birthday: derive-age-band-as-of
+
+transforms:
+  - id: trim-padded-region-label
+    impurity_class: padded_label
+    raw_defect: >
+      4 of 104 990 rows carry a trailing space in StateFull and the same 4 in State — 'Birmingham ' on 3
+      rows and 'Bradford ' on 1 — and the trimmed form of each already exists as its own value
+      ('Birmingham' 38 rows, 'Bradford' 35). The landing therefore spells two regions two ways: 565
+      State spellings fold to 563 and 610 StateFull spellings to 608 (T13a). It reaches the fact: 13
+      order lines belong to those customers (T13c), so the question scope's 'by region' axis would
+      report Birmingham twice.
+    rule: >
+      Trim both region label columns. The fold is safe to make here because it merges spellings of ONE
+      region rather than two regions: the padded rows carry the identical GeoAreaKey, Country and
+      Continent as their unpadded twins (Birmingham 93/GB/Europe, Bradford 102/GB/Europe — T13b).
+    sql: 'trim(c."StateFull") AS StateFull, trim(c."State") AS State'
+    establishes_guarantee: >
+      One spelling per region label: 608 StateFull and 563 State values served, 104 990 rows in and
+      104 990 out, and the functional dependence P2 measured (StateFull -> State, GeoAreaKey, Country,
+      Continent) still holds with 0 violations after the trim, exactly as it did before (T13c). A
+      GROUP BY on either column cannot split a region into a padded and an unpadded group.
+    status: authored
+
+  - id: exclude-stale-derived-age
+    impurity_class: stale_derived_attribute
+    resolves: [DQ-CUSTOMER-01]
+    raw_defect: >
+      Age is as-of 2020/2021, not as-of now: year(Birthday) + Age is 2020 or 2021 on every one of the
+      104 990 rows (2 distinct as-of years, min 2020, max 2021) while orders run to 2025 (T11e; P1 #8).
+      Re-measured 2026-09-18: 2020 on 94 990 rows, 2021 on 10 000, and ZERO rows consistent with 2024,
+      2025 or 2026. A consumer filtering on it would be answering a question about a year nobody asked
+      about. The column is additionally NOT BANDED as delivered — 67 distinct values from 19 to 85,
+      only 21 833 of 104 990 rows carrying a multiple of 5 — so it is not the rounded age the operator
+      ruled should be served either.
+    rule: >
+      The column is not projected. The fix is an ABSENCE — which is why this rule quotes no SQL
+      fragment and appears in no `consumes` map: there is no served column for it to resolve onto. It is
+      visible in the .sql as the projection list, and the refusal is registered with the other
+      11 unserved columns as NS-CUSTOMER-01. `Birthday` is not projected either, and for a DIFFERENT
+      reason: it is not wrong, it is the identifier — see `derive-age-band-as-of` below, which reads it
+      and serves only a band over it.
+    establishes_guarantee: >
+      No STORED age can reach the served plane, so no age figure computed from it can be silently five
+      years stale. This is HALF of what DQ-CUSTOMER-01 needs and it is the half that is a pure absence;
+      the other half — an age that IS answerable, and correct as-of a declared date — is
+      `derive-age-band-as-of`. Before that rule existed this guarantee read "no age-based figure can be
+      computed from the served plane at all", which was true and is now false: the two rules must be
+      read together or the guarantee overstates the refusal.
+    status: authored
+    note: >
+      Recorded as a rule rather than an open item because the defect IS handled — by refusal, which is
+      one of the two shapes the handling takes here. The 11 other unserved columns are a scope decision,
+      not defects, and are not restated as rules.
+
+  - id: derive-age-band-as-of
+    impurity_class: stale_derived_attribute
+    resolves: [DQ-CUSTOMER-01]
+    raw_defect: >
+      The SAME defect the rule above refuses, seen from the other side: the delivery carries no usable
+      age at all. `Age` is stale by five years on 104 990 of 104 990 rows and unbanded (67 distinct
+      values, 19 to 85), and the only other age-bearing column is `Birthday` — non-null on all 104 990
+      rows, and an exact date of birth, which is an identifier rather than an attribute. So an
+      age-grouped question was unanswerable from the served plane without either serving a wrong number
+      or serving a date of birth.
+    rule: >
+      DERIVE the age from `Birthday` and serve it BANDED TO 5 YEARS, as of a DECLARED as-of date, and
+      serve neither input.
+
+      THE AS-OF DATE IS 2025-12-31, AND IT IS DECLARED HERE BECAUSE IT IS A CHOICE, NOT A FACT. It is
+      the delivery's FACT HORIZON: the newest order date in the warehouse (main.orders DT / orderrows,
+      whose facts run to 2025-12-31). An age is meaningless without an as-of date — that is exactly
+      what is wrong with the stored `Age`, which is as-of 2020/2021 and says so nowhere — so this one
+      travels in three places that must agree: this rule, the `AS OF` comment block in the .sql, and
+      the `notes` on the served column in data/datasets/dim_contoso_customer.yaml.
+
+      THE CONSEQUENCE, STATED RATHER THAN LEFT TO BE DISCOVERED: WHEN THE FACT HORIZON MOVES, THE BAND
+      MUST BE RE-DERIVED. The as-of date is a constant in the .sql and nothing compares it to
+      max(order date). A delivery that gains 2026 facts therefore serves an age band that is as-of a
+      year in the past — the identical defect class, one iteration on — and it will do so silently.
+      Registered as residual risk 1 on DQ-CUSTOMER-01, where the missing acceptance property that
+      would police it is named as a follow-up.
+
+      THE BAND IS THE LOWER BOUND OF A 5-YEAR BUCKET (20, 25, ... 90), per the operator's ruling of
+      2026-09-18: "age is served as age and rounded to 5 years precision. so 40,45,50,55, etc." It is
+      an INTEGER, not a label, so it sorts and compares as an age.
+
+      THE ARITHMETIC IS EXACT, NOT BOUNDARY-COUNTING. `date_diff('year', ...)` counts year boundaries
+      crossed, which equals the true age only when the as-of date falls on or after the birthday in
+      that year. It does today — the as-of date is 31 December — but that is an accident of THIS
+      as-of date, and a re-derivation to a mid-year horizon would silently over-count every customer
+      whose birthday has not yet passed. The month-day correction term is therefore written into the
+      SQL now, while it is a no-op and provably so, rather than after it has become a defect.
+    sql: >
+      CAST(floor((date_diff('year', c."Birthday", DATE '2025-12-31')
+                  - CASE WHEN strftime(DATE '2025-12-31', '%m%d') < strftime(c."Birthday", '%m%d')
+                         THEN 1 ELSE 0 END) / 5) * 5 AS INTEGER) AS age_band_5y
+    establishes_guarantee: >
+      An age-grouped question is answerable from the served plane, and every figure it returns is
+      as-of 2025-12-31 — not as-of 2020. Measured over main.customer on 2026-09-18, read-only, with
+      the exact SQL above: 15 bands, 20 to 90 in steps of 5, 0 nulls over 104 990 rows (Birthday is
+      non-null on all of them, so there is no fallback branch and none is written), and the band
+      population is 1 725 at 20, 1 396 at 90 and between 7 740 and 7 983 in each of the 13 bands
+      between. The smallest cell is 1 396 and NO customer is alone in a band — so the band ALONE is a
+      sound generalisation. In COMBINATION with columns this bundle already serves it is not: see
+      DQ-CUSTOMER-02, which measures that adding it to ZipCode + Gender takes the uniquely
+      identifiable population from 35 894 to 74 617, and that ZipCode alone already singles out
+      29 193. That is registered as a `gap` — this rule does not treat it and does not claim to.
+      NEITHER INPUT IS SERVED: `Birthday` is not projected (it is the identifier the band generalises)
+      and the stored `Age` is not projected (it is five years wrong). A consumer cannot recover a date
+      of birth or a single-year age from the served row.
+    status: authored
+
+open_transforms:
+  - id: zero-length-validity-window
+    impurity_class: degenerate_interval
+    raw_defect: >
+      1 of 104 990 customers has StartDT = EndDT — a validity window of zero length (T11e; P1 #8b).
+      Every other customer has exactly one row and no person repeats (P2 G7), so this is not a
+      restatement artifact.
+    proposed_rule: >
+      NONE. 'Never valid', 'valid for one instant' and 'a data entry error' imply different SQL (drop
+      the row, keep it, or correct a date), and nothing in the data distinguishes them. Dropping one
+      customer to make a window look sensible would be a silent deletion of a real key.
+    needs_ruling: "What does a zero-length validity window mean in this delivery? (RUN.md Q12)"
+    status: PROPOSED
+
+  - id: dimension-over-covers-the-fact
+    impurity_class: over_coverage
+    raw_defect: >
+      52 801 of the 104 990 served customers never appear on an order (T14; P1 O10) — the dimension
+      over-covers its fact by half.
+    proposed_rule: >
+      NONE — DO NOT FILTER. A dimension legitimately over-covers its fact; trimming it would make
+      'customers who never bought' unanswerable and would change the served row count on every reload.
+      Carried as a DISCLOSURE so the number is visible where the transform is read.
+    needs_ruling: "None required — disclosed, not a defect. Recorded so the non-action is deliberate."
+    status: PROPOSED
+
+  - id: geoareakey-resolves-to-nothing
+    impurity_class: orphan_key
+    raw_defect: >
+      GeoAreaKey is shaped like a foreign key and has no referent: 608 distinct values here, 67 in
+      store, 4 store values absent from this relation, and 0 relations in the warehouse whose name
+      contains 'geo' (T11d; P1 O9).
+    proposed_rule: >
+      NONE — there is nothing to resolve it against. The geography a question can actually use is the
+      Continent/Country/State/City columns served on this row; GeoAreaKey is served because it was
+      measured to determine them (P2), not because it can be joined.
+    needs_ruling: "Is a geography dimension expected in this delivery and absent? (RUN.md Q7)"
+    status: PROPOSED
+
+governance:
+  owner: >
+    UNNAMED — no owner is declared for any relation of this source (RUN.md Q5). Machine-authored and
+    unratified.
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >
+        Created the customer transform: the padded region label trim (a defect measured in this step),
+        the 12-column projection that excludes the stale Age, and two open items.
+      change_type: CREATION
+      by: P4 transformation-authoring (machine-authored, unratified)
+    - date: 2026-09-18
+      change: >
+        AGE. Registered the stale derived attribute as DQ-CUSTOMER-01 and cross-linked it, so
+        `exclude-stale-derived-age` stops being one of the gate's `impurity-unregistered` warnings.
+        Added the rule `derive-age-band-as-of`: a 5-year age band derived from `Birthday` as of
+        2025-12-31 (the fact horizon), served as the integer `age_band_5y`, with the as-of date
+        declared in the rule and its re-derivation consequence stated. `Birthday` and the stored `Age`
+        both remain unserved. Also widened `exclude-stale-derived-age`'s guarantee, which had claimed
+        no age figure was computable at all — true before this change, false after it.
+        Operator ruling of 2026-09-18: "age is served as age and rounded to 5 years precision. so
+        40,45,50,55, etc." The quasi-identifier consequence of serving the band beside ZipCode and
+        Gender is measured and registered as DQ-CUSTOMER-02, `coverage: gap` — this transform does
+        not treat it.
+      change_type: ADDITION
+      by: data-quality + transformation authoring (machine-authored, unratified)
+    - date: 2026-09-19
+      change: >
+        StartDT and EndDT are served as DATE, cast in the .sql from the landing's TIMESTAMP. OPERATOR
+        RULING 2026-09-19: "change the dates from sources to datasets ... all time fields are
+        anyway 00000". LOSSLESS, MEASURED NOT ASSUMED: 0 non-midnight values over 104 990 of
+        104 990 rows on each. main.customer is UNTOUCHED and keeps TIMESTAMP. `Birthday` is not
+        cast — it is consumed, not served — and age_band_5y is unchanged by the ruling, re-measured
+        after: 15 bands, 0 nulls over 104 990 rows, smallest cell 1 396.
+      change_type: CORRECTION
+      by: operator ruling 2026-09-19, applied by the transform (unratified)

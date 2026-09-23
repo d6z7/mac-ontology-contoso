@@ -1,0 +1,221 @@
+# data/transforms/v_contoso_order_line.yaml — the transform descriptor for the bundle's single fact.
+#
+# TWO ARTIFACTS, ONE TRANSFORM: the executable body is the sibling .sql (produces.sql_file); this file
+# says, in prose a human can argue with, which measured defect each part of that SQL dissolves and which
+# upstream column each served column descends from.
+#
+# Every number below was measured read-only over contoso.duckdb by scratchpad/ingest/p4_transforms.py;
+# the query that produced it is named after it (T…) and is written out in full, with its answer, in
+# queries/p4_transformation_authoring.sql. Numbers carried from earlier steps keep their own labels
+# (P1 #n, P2 Gn, P3 Sn) and are in those steps' query logs.
+#
+# `resolves:` IS DELIBERATELY ABSENT from every rule below. The cross-link to a DQ id is two-way —
+# check_dq_resolution_sync errors on a `resolves` naming an unregistered id, and errors again if the
+# resolution map does not point back — and both the DQ ids and data/quality/impurity_resolution_map.yaml
+# belong to the data-quality step (ontology-shared-facts, ownership table). Writing one half here would
+# turn that gate red; inventing the ids would write another step's artifact. The gate's own warn-first
+# class (impurity-unregistered, "this SQL is cleaning something; go say what") is exactly this state, and
+# it is owed work recorded in the run record, not a silent omission.
+
+metadata:
+  pipeline: v_contoso_order_line
+  source: contoso                      # the bundle's dataset identity (mac.project.yaml#metadata.dataset);
+                                       # the lineage projection uses it as the flow's system name
+  layer: data-transformation
+  schema_version: '0.1.14'             # what this framework checkout validates (RUN.md Q1)
+  status: draft
+  confidence: I                        # machine-authored content is capped at I; only a human raises it
+  observed: '2026-09-18'
+  generated_by: scratchpad/ingest/p4_transforms.py wrote the .sql; this descriptor is hand-authored
+  notes: >
+    AUTHORED, NOT DEPLOYED. connection.yaml declares read_only: true, so no view was created: the SELECT
+    body was executed read-only (T1a shape, T2a grain) and the CREATE OR REPLACE VIEW wrapper is authored
+    only. Every rule below is therefore status `authored`, never `applied` — nobody can reproduce a
+    guarantee against a live warehouse relation until the materialize step runs, and that step needs the
+    serving schema cleared first (NS-SERVING-01, RUN.md Q2/Q15).
+
+produces:
+  relation: contoso_served.v_contoso_order_line
+  sql_file: data/transforms/v_contoso_order_line.sql
+  grain: "one row per (OrderKey, RowNumber) — one line of one order"
+
+inputs:
+  # ORDER IS LOAD-BEARING. The lineage projector infers a passthrough edge for a raw column that
+  # survives into the served relation under the same name, and it credits the FIRST input that carries
+  # it (tools/lineage_project.py#build_flow). The detail is listed first because it sets the grain and
+  # because the served OrderKey is projected from it.
+  - relation: main.orderrows
+    kind: raw_source
+    role: order_line_detail
+    descriptor: data/sources/orderrows.yaml
+    note: >
+      The grain-setting parent. All 7 of its columns are carried unchanged and none is consumed by a
+      rule, so the projector reads them as passthrough edges from the descriptor: OrderKey, RowNumber,
+      ProductKey, Quantity, UnitPrice, NetPrice, UnitCost.
+  - relation: main.orders
+    kind: raw_source
+    role: order_header
+    descriptor: data/sources/orders.yaml
+    note: >
+      orders.OrderKey is read as the JOIN PREDICATE and is deliberately NOT listed in `consumes`: the
+      served OrderKey descends from the detail side, and claiming a second edge for it would state that
+      one served column descends from two places. The two are equal on every row by the predicate itself
+      — 0 orphan lines over 223 974, orders.OrderKey unique 93 470/93 470 (T3).
+    consumes:
+      DT: rename-dt-to-orderdate
+      CustomerKey: attach-order-header
+      StoreKey: attach-order-header
+      DeliveryDate: attach-order-header
+      CurrencyCode: attach-order-header
+
+transforms:
+  - id: one-delivery-of-the-line
+    impurity_class: duplicate_delivery
+    raw_defect: >
+      The delivery ships the same order line twice. main.sales (223 974 rows) carries the same line
+      population at the same key and, joined line-for-line to orderrows x orders, differs on NOTHING:
+      223 974 matched lines and 0 differences across ProductKey, Quantity, UnitPrice, NetPrice,
+      UnitCost, CustomerKey, StoreKey, OrderDate, DeliveryDate and CurrencyCode; its one extra column,
+      ExchangeRate, reproduces the currencyexchange USD->CurrencyCode quote for the row's day with 0
+      differences on all 223 974 rows (T5; P1 R1-R4, P3 S4/S5 measured the same over the same
+      denominator). Serving both would give every figure in this bundle two defensible answers.
+    rule: >
+      Build the line from the header/detail pair and do not read main.sales in any transform of this
+      bundle. The rate is served at its own grain in v_contoso_fx_rate_day, where the whole grid exists
+      (T12), instead of being repeated on the line as sales does.
+    sql: "FROM main.orderrows r JOIN main.orders o ON o.\"OrderKey\" = r.\"OrderKey\"   -- and main.sales is not read"
+    establishes_guarantee: >
+      Every figure on this relation has exactly one home in the served plane: a consumer summing
+      Quantity x NetPrice over this view counts the delivery's 223 974 lines once, and there is no
+      second served relation it could have summed instead. No conversion rate is carried on the line,
+      so a currency question must join the rate grid deliberately rather than inherit a single
+      USD-based direction by accident.
+    status: authored
+    # THE CROSS-LINK, DECLARED 2026-09-18. It was withheld until now for the one reason the note below
+    # recorded — the fact-of-record ruling (RUN.md Q8) was open — and the dq-resolution-sync gate
+    # warned about the missing link on every run: "dissolves impurity_class 'duplicate_delivery' but
+    # declares no `resolves`". The operator ruled on 2026-09-18 that this relation IS the order line's
+    # fact of record (decisions/0001-order-line-fact-of-record.md), so the link is now true and
+    # declarable, and NS-ORDERS-01 closes as `resolved` on structural evidence rather than on a claim
+    # that somebody looked. The guarantee above is what dissolves the impurity: one home, not two.
+    resolves: [NS-ORDERS-01]
+    note: >
+      RULED 2026-09-18 (operator, decisions/0001-order-line-fact-of-record.md): this relation is the
+      order line's FACT OF RECORD; `main.sales` is measured, described and not served. That closes
+      RUN.md Q8, which this rule previously recorded as the open question blocking its `resolves`.
+
+      Registered as a deliberate non-promotion rather than as a repair of the incoming data — the
+      delivery still ships the line twice upstream and this bundle cannot change that. What is
+      dissolved is the SERVED-PLANE ambiguity: one home for every figure instead of two.
+      data/quality/data_quality_register.yaml NS-ORDERS-01 holds the evidence, the reversal condition,
+      and the two snapshot-dependencies the closure rests on (no declared constraints in the source;
+      the FX grid's exact-date join). An independent re-derivation on 2026-09-18 reconstructed all 13
+      of sales' columns from this pair plus currencyexchange with 0 differences either way.
+
+  - id: rename-dt-to-orderdate
+    # No `impurity_class`: a rename is not a registrable defect (the DQ step's own rule — "do not
+    # register cosmetics"), and declaring a class here would manufacture a finding and pull a WARN out
+    # of check_dq_resolution_sync for a defect that does not exist. The kit's P4 instructions list
+    # impurity_class on every rule; that collision is recorded in the run record rather than resolved
+    # by inventing a defect.
+    rule: >
+      Project orders.DT under the name the same value carries in the sales delivery, OrderDate. It is
+      the only renamed column in this bundle; every other served column keeps its landing name.
+    sql: 'o."DT" AS OrderDate'
+    establishes_guarantee: >
+      The order event date is addressable under one name across the delivery. Measured identical to
+      sales.OrderDate on 223 974/223 974 lines with 0 differing values and 0 nulls either side (T4), so
+      the rename carries no value change — only the name.
+    status: authored
+
+  - id: attach-order-header
+    # No `impurity_class` either: a join that carries an attribute to the grain that needs it is the
+    # COMBINE promotion (P3), not an impurity.
+    rule: >
+      Carry the five header attributes onto each line of the order. All five are functionally determined
+      by OrderKey (measured, P2), so the line grain loses nothing by holding them and the order header is
+      not served as a relation of its own (NS-ORDERS-02); OrderKey is then a degenerate dimension on
+      this fact.
+    # The fragment carries NO trailing SQL comment on purpose: the projector scans each top-level
+    # expression for its `AS <alias>` tail, so a comment mentioning another column's alias would
+    # fabricate an edge onto that alias.
+    sql: 'o."DeliveryDate", o."CustomerKey", o."StoreKey", o."CurrencyCode"'
+    establishes_guarantee: >
+      A line can be grouped by customer, store, currency, order date and delivery date without a second
+      join, and the join can neither fan out nor drop a line: orders.OrderKey is unique 93 470/93 470,
+      0 of 223 974 lines are orphaned, 0 of 93 470 headers have no line, and the served relation is
+      unique at its declared key — 223 974 rows / 223 974 distinct / 0 duplicates / 0 null key parts
+      (T2a, T3).
+    status: authored
+
+open_transforms:
+  # KNOWN, MEASURED, NOT FIXED. Each names the ruling it waits on; none is silently dropped.
+  - id: dense-line-index
+    impurity_class: sequence_gaps
+    raw_defect: >
+      RowNumber starts at 0 on every order (0 of 93 470 orders start elsewhere) but 1 448 orders have a
+      gap — max(RowNumber) + 1 <> count(*) (T11a). A consumer cannot treat the line index as dense, and
+      max(RowNumber) is not a line count.
+    proposed_rule: >
+      NONE a transform may apply. Renumbering would rewrite half of the cell key the fact is identified
+      by, and the gaps may be cancelled or deleted lines that are legitimately absent. If a human rules
+      that they are deletions, the honest fix is a declared note on the served column, not a renumbering.
+    needs_ruling: "Are the 1 448 gaps cancelled/deleted lines, or numbering the source never made dense?"
+    status: PROPOSED
+
+  - id: indistinguishable-line-pairs
+    impurity_class: duplicate_row_candidate
+    raw_defect: >
+      8 pairs of lines — 16 rows of 223 974 — agree on the order, the product and all four figures
+      (Quantity, UnitPrice, NetPrice, UnitCost) and are distinguishable only by RowNumber (T11b, every
+      such group holding exactly 2 rows). NOTE the divergence from P2, recorded rather than smoothed
+      over: P2's G14 counted 7 groups / 14 rows, which is the count of (OrderKey, ProductKey) groups in
+      which EVERY row agrees; one colliding group holds 3 rows (T11b2: 260 colliding key groups, 1 of
+      size 3), so a group with two identical rows and a third that differs fails P2's test and is found
+      by T11b's. The question this step needs is the row-pair count, so 8/16 is the number used here.
+    proposed_rule: >
+      NO de-duplication. The other 252 colliding key groups differ on at least one figure and are
+      genuinely distinct lines; collapsing on equality would delete 8 rows that may be real repeated
+      lines, and the only thing that separates them is the key column itself.
+    needs_ruling: "Are the 8 pairs two lines each, or one line delivered twice? (RUN.md Q14)"
+    status: PROPOSED
+
+  - id: sentinel-store-on-the-fact
+    impurity_class: sentinel_key
+    raw_defect: >
+      93 550 of 223 974 lines (41.8 %) carry StoreKey 999999, whose store row is the sentinel
+      (StoreCode -1, GeoAreaKey -1, CountryCode '--', CountryName and State 'Online') — T11c.
+    proposed_rule: >
+      NOTHING on the fact. Filtering the sentinel would silently delete 41.8 % of the delivery, and
+      rewriting 'Online' to a country would invent a market for it. If a human rules that Online is a
+      channel rather than a store, the fix belongs on the store dimension as a declared channel
+      attribute (see dim_contoso_store.yaml#open_transforms/sentinel-store-row), not here.
+    needs_ruling: "Is StoreKey 999999 ('Online') a store or a channel? (RUN.md Q7)"
+    status: PROPOSED
+
+governance:
+  owner: >
+    UNNAMED — no owner is declared for any relation of this source (RUN.md Q5). This descriptor is
+    machine-authored and unratified; the guarantees above are measurements, not promises anyone has
+    signed.
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >
+        Created the order-line transform: the header/detail pair (not sales) as inputs, one rename, one
+        header attach, and three measured defects carried as open_transforms.
+      change_type: CREATION
+      by: P4 transformation-authoring (machine-authored, unratified)
+    - date: 2026-09-19
+      change: >
+        OrderDate (from orders.DT) and DeliveryDate are served as DATE, cast in the .sql from the
+        landing's TIMESTAMP. OPERATOR RULING 2026-09-19: "change the dates from sources to
+        datasets ... all time fields are anyway 00000". LOSSLESS, MEASURED NOT ASSUMED: 0
+        non-midnight values over 223 974 of 223 974 rows on each. main.orders is UNTOUCHED and
+        keeps TIMESTAMP, as does the unread main.sales. All three joins that cross these columns
+        had both sides cast in the same change and were re-measured identical after: the
+        conversion join (223 974 rows, 0 lines without a quote, min 1 / max 1 per line,
+        sum(Quantity * NetPrice * Exchange) = 223 597 710.61) and the two calendar roles (3 450
+        of 4 018 ordered days, 3 498 of 4 018 delivered days, inclusion 1.0, 0 orphans).
+      change_type: CORRECTION
+      by: operator ruling 2026-09-19, applied by the transform (unratified)

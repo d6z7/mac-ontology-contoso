@@ -1,0 +1,21 @@
+---
+type: Reference
+title: NS-CUSTOMER-01 — 12 of the 24 customer columns measured, deliberately not served
+tags: [reference, guardrail]
+---
+
+# NS-CUSTOMER-01
+
+*low · confidence I*
+
+**Finding.** Measured 2026-09-18. `main.customer` has 24 columns over 104 990 rows. The question scope this bundle declares (README: the contested total, by brand, by region country -> continent, by currency, gross vs net, by period) names geography and nothing else about a customer. 12 columns are served — CustomerKey, GeoAreaKey, StartDT, EndDT, Continent, CountryFull, Country, StateFull, State, City, ZipCode, Gender — including the only continent column in the whole delivery (`store` has none: 0 continent-like columns, S10) whose country -> continent map is a function over 8 countries with 0 countries carrying two continents (S11). The 12 NOT served are Title, GivenName, MiddleInitial, Surname, StreetAddress, Birthday, Age, Occupation, Company, Vehicle, Latitude, Longitude. `Age` is additionally measured STALE: year(Birthday) + Age is 2020 or 2021 on every row while the facts run to 2025-12-31 (P1 #8), so it answers as-of a year nobody asked about.
+
+
+**Current handling.** NOT PROMOTED. dim_contoso_customer serves the 12 columns above at one row per CustomerKey; the other 12 stay in the landing and in data/sources/customer.yaml, measured, unserved and unreferenced. Nothing is filtered: 104 990 rows in, 104 990 rows out (52 189 of them appear on an order, S13 — a dimension over-covering its fact is disclosed, not trimmed).
+
+
+**Residual risk.** A question that needs a customer attribute cannot be answered until the column is promoted; the refusal is not destructive and the fix is one line in the transform's projection. REVERSED IF: a question in scope names a demographic attribute (then the column is added, and `Age` only with a ruling on its as-of year); or the declared question scope changes. Deliberately NOT a privacy claim: this is MIT-licensed synthetic data and no such claim would be measurable.
+
+
+**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+

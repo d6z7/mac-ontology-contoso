@@ -1,0 +1,18 @@
+---
+type: Lookup
+title: contoso_currency.lookup
+source_yaml: data/lookups/contoso_currency.lookup.csv
+tags:
+- CONTOSO
+- lookup
+---
+
+Reference lookup · 5 rows · SSOT: `data/lookups/contoso_currency.lookup.csv` (CSV).
+
+| CurrencyCode | label | search_key | source_view | confidence | note |
+| --- | --- | --- | --- | --- | --- |
+| AUD |  |  | v_contoso_order_line | Q | code measured on 14078 served order lines; no currency NAME exists anywhere in the delivery (L6d/L6d2), so the label is deliberately empty rather than recalled from outside the data |
+| CAD |  |  | v_contoso_order_line | Q | code measured on 24250 served order lines; no currency NAME exists anywhere in the delivery (L6d/L6d2), so the label is deliberately empty rather than recalled from outside the data |
+| EUR |  |  | v_contoso_order_line | Q | code measured on 49203 served order lines; no currency NAME exists anywhere in the delivery (L6d/L6d2), so the label is deliberately empty rather than recalled from outside the data |
+| GBP |  |  | v_contoso_order_line | Q | code measured on 22829 served order lines; no currency NAME exists anywhere in the delivery (L6d/L6d2), so the label is deliberately empty rather than recalled from outside the data |
+| USD |  |  | v_contoso_order_line | Q | code measured on 113614 served order lines; no currency NAME exists anywhere in the delivery (L6d/L6d2), so the label is deliberately empty rather than recalled from outside the data |

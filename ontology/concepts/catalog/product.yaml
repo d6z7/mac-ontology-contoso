@@ -1,50 +1,236 @@
-# CONTOSO (demo) > catalog > Product
-# The dimension that says WHAT was sold. Order lines reference products; products carry a Brand and
-# roll up Category -> SubCategory.
+# CONTOSO > catalog > Product — the leaf of the catalogue. The brand and the two-level category
+# hierarchy live IN this dimension (there is no category relation), so they are separate grouping
+# concepts grounded on this same relation rather than tables of their own.
 
 metadata:
   concept: Product
   source: CONTOSO
-  version: '0.1'
-  schema_version: '0.1.9'
+  version: '1.0'
+  schema_version: 0.1.14
   status: draft
-  owner: demo-team
-  confidence: C
+  owner: operator
+  confidence: I
+  provenance: authored
 
 concept:
   name: Product
   label: Product
-  class: reference                # a dimension entity, identified by a key, that sales point at
+  class: reference
   identity:
     kind: fk_name
     canonical_key: ProductKey
-  definition: >
-    A sellable item in the Contoso catalogue, identified by ProductKey (ProductCode is the business
-    code). Every product belongs to exactly one Brand and one Category -> SubCategory. Order lines
-    reference products so sales can be sliced by product, brand, or category.
+    note: >-
+      One row per ProductKey, inherited from the measured grain of the landing
+      (data/profiles/product.yaml#identity_evidence, key [ProductKey], full_groups 2 517) and
+      re-measured over the served view: 2 517 rows / 2 517 distinct / 0 duplicates. ProductCode and
+      ProductName are ALSO measured unique today (2 517 of 2 517 each) and are deliberately NOT the
+      key — see PRD-Q1.
+  definition: >-
+    A sellable item in the catalogue: one row per product, carrying its code, name, manufacturer,
+    brand, colour, weight, cost, list price and its place in the two-level category hierarchy.
+
+    IT IS NOT A PRODUCT VERSION. This dimension is not versioned — 2 517 rows over 2 517 keys, one
+    row each — so a price on this row is the current list price and there is no history to read. The
+    price actually charged is on the order line, not here.
+
+    IT IS ALSO NOT THE FULL CATALOGUE OF WHAT SOLD. Every ProductKey on the fact resolves here
+    (0 orphans measured over 223 974 lines), but this dimension may carry products with no sale.
   semantics:
-    purpose: >
-      The join from an order line to a name, brand, price and category — the axis that lets revenue be
-      sliced by product or rolled up by brand/category.
+    purpose: >-
+      The product axis of every breakdown in the bundle, and the relation that carries the brand and
+      category hierarchies the declared question scope groups by.
+    scope: "All 2 517 delivered products, unfiltered."
+    null_semantics: >-
+      Two columns carry real absences and they mean different things. `Weight` is NULL on 284 of
+      2 517 rows — no weight recorded. `WeightUnit` is NULL on 222 rows, conformed from an empty
+      string by the transform; and 62 rows name a unit for a weight that is not there, so unit and
+      weight do not imply each other. Whether a missing weight means "not recorded" or "not
+      applicable" is an open ruling, so neither is treated as zero.
 
 properties:
-  - { name: ProductKey,      type: integer, required: true,  doc: "identity key" }
-  - { name: ProductCode,     type: string,  required: false, doc: "business product code" }
-  - { name: ProductName,     type: string,  required: true,  doc: "display name" }
-  - { name: Brand,           type: string,  required: true,  doc: "brand — see the Brand enumeration" }
-  - { name: CategoryName,    type: string,  required: false, doc: "category" }
-  - { name: SubCategoryName, type: string,  required: false, doc: "subcategory" }
-  - { name: Price,           type: number,  required: false, doc: "list price per unit" }
+  - name: productKey
+    type: integer
+    required: true
+    doc: "ProductKey — the identity, and the column the fact joins on."
+  - name: productCode
+    type: string
+    required: true
+    doc: >-
+      ProductCode — the delivery's own code. Measured unique today; served as a value, not as the
+      key, because whether it is the product's business identity is unruled (PRD-Q1).
+  - name: productName
+    type: string
+    required: true
+    doc: "ProductName — the display name; measured unique today, almost certainly by convention."
+  - name: manufacturer
+    type: string
+    required: true
+    doc: "Manufacturer — 1:1 with Brand today (measured 0 brands with two manufacturers)."
+  - name: color
+    type: string
+    required: true
+    doc: >-
+      Color — CLEANSED by the transform: the landing carries 17 spellings that fold to 16 (Blue 197
+      rows, blue 3). 16 served values, 0 nulls.
+  - name: weight
+    type: number
+    required: false
+    doc: "Weight — NULL on 284 of 2 517 rows."
+  - name: weightUnit
+    type: string
+    required: false
+    doc: >-
+      WeightUnit — CLEANSED: '' on 222 landing rows becomes NULL. Served values: pounds (1 867),
+      ounces (418), grams (10), NULL (222).
+  - name: cost
+    type: number
+    required: true
+    doc: "Cost — the catalogue cost. The cost actually booked is UnitCost on the order line."
+  - name: price
+    type: number
+    required: true
+    doc: >-
+      Price — the catalogue list price. NOT the price a line sold at: the line carries its own
+      UnitPrice and NetPrice, and a sales figure is computed from those, never from here.
 
 grounding:
+  kind: sql_table
+  grain: "one row = one product — ProductKey"
   sources:
-    - relation: product
+    - relation: dim_contoso_product
       key: ProductKey
-      columns: [ProductCode, ProductName, Brand, CategoryName, SubCategoryName, Price]
-  grain: "one row per product"
+      columns: [ProductKey, ProductCode, ProductName, Manufacturer, Brand, Color, WeightUnit,
+                Weight, Cost, Price, CategoryKey, CategoryName, SubCategoryKey, SubCategoryName]
+  serves_from: data/transforms/dim_contoso_product.sql
+  field_roles:
+    ProductKey: contoso.field_role.key
+    ProductCode: contoso.field_role.dimension
+    ProductName: contoso.field_role.attribute
+    Brand: contoso.field_role.dimension
+    Manufacturer: contoso.field_role.attribute
+    Color: contoso.field_role.dimension
+    WeightUnit: contoso.field_role.dimension
+    Weight: contoso.field_role.measure
+    Cost: contoso.field_role.measure
+    Price: contoso.field_role.measure
+    CategoryKey: contoso.field_role.key
+    CategoryName: contoso.field_role.dimension
+    SubCategoryKey: contoso.field_role.key
+    SubCategoryName: contoso.field_role.dimension
+  note: >-
+    `ProductName` IS `attribute` AND `ProductCode` IS `dimension`, even though both are measured
+    unique today: the name is what a question says and the code is what a filter may safely use, so
+    the name is resolved through the register and then never matched on again. The register
+    data/lookups/dim_contoso_product.lookup.csv holds 2 517 rows keyed by ProductKey, with both the
+    name and the code as search keys, which is what makes that split answerable.
+
+    `Cost` and `Price` are `measure` roles on a DIMENSION row, which is deliberate: they are numeric
+    payloads that may be read and averaged over products, but they are catalogue values and are NOT
+    the source of any sales figure — the line's own prices are. No measure concept is declared over
+    them.
+
+    `Color`, `WeightUnit`, `CategoryName` and `SubCategoryName` are `dimension` and each has its own
+    register; none is a concept of its own, because each is a value set on this row with no roll-up
+    of products beneath it other than the two the grouping concepts already declare.
+
+contract:
+  default_reading: >-
+    A product named in words resolves through the register to a ProductKey and is then filtered on
+    the key. A "price" question about a product means the catalogue `Price` on this row; a "price"
+    question about a sale means the line's UnitPrice or NetPrice — say which was used.
+  no_probe_guarantee: >-
+    All 2 517 products are in data/lookups/dim_contoso_product.lookup.csv, cut from the served
+    plane, with a search key, the product code, the brand and both hierarchy keys — so a product
+    word resolves offline and so does its brand and category. The colour, weight-unit, category and
+    subcategory value sets are in data/lookups/contoso_color.lookup.csv,
+    data/lookups/contoso_weight_unit.lookup.csv, data/lookups/contoso_product_category.lookup.csv
+    and data/lookups/contoso_product_subcategory.lookup.csv. Nothing here needs a probe, and a
+    product name that does not resolve is a refusal derived from a complete register.
+  resolution: >-
+    Resolve a product word through data/lookups/dim_contoso_product.lookup.csv on its `search_key`
+    (which covers both the name and the product code) to the `ProductKey`, then filter on the key.
+  rules:
+    - id: product.price.catalogue_is_not_the_sale
+      kind: mac.rule_kind.exclusion
+      subject: The catalogue price is not the sold price — sales figures come from the line
+      when: "computing any sales, revenue or discount figure"
+      then: >-
+        read `{UnitPrice}` and `{NetPrice}` from `{v_contoso_order_line}`, which are the prices the
+        line actually carried
+      never: >-
+        multiplying `{Price}` or `{Cost}` from `{dim_contoso_product}` by a quantity: these are
+        current catalogue values on an unversioned dimension, so using them re-prices ten years of
+        history at today's list
+      why: >-
+        the dimension is not versioned (2 517 rows over 2 517 keys, measured), so it carries no
+        history and cannot answer what anything cost at the time
+      binds: [Price, Cost]
+      confidence: P
+    - id: product.weight.unit_and_weight_are_independent
+      kind: mac.rule_kind.guarantee
+      subject: A weight unit does not imply a weight, and neither absence is a zero
+      when: "reading, filtering or aggregating `{Weight}` or `{WeightUnit}`"
+      then: >-
+        treat each absence as UNKNOWN and report the denominator — `{Weight}` is null on 284 of
+        2 517 rows, `{WeightUnit}` on 222 — and never compare weights across units without
+        converting
+      never: >-
+        reading a null `{Weight}` as 0, or inferring a weight exists because `{WeightUnit}` is
+        present: 62 rows name a unit for a weight that is not there
+      why: >-
+        the two nulls are independent and the transform conformed an empty string into one of them,
+        so "missing" versus "not applicable" is still an open ruling and must not be decided by an
+        aggregate
+      binds: [Weight, WeightUnit]
+      confidence: P
+
+constraints:
+  - assert: "Every ProductKey on the fact resolves to a product"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM contoso_served.v_contoso_order_line l
+      WHERE NOT EXISTS (SELECT 1 FROM contoso_served.dim_contoso_product p
+                        WHERE p.ProductKey = l.ProductKey)
+    notes: >-
+      Measured 0 of 223 974 lines on 2026-09-18. ERROR because this database declares no foreign
+      keys at all, so nothing but a check stands behind it.
+  - assert: "The dimension is not versioned — one row per product"
+    severity: WARNING
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) - count(DISTINCT ProductKey) FROM contoso_served.dim_contoso_product
+    notes: >-
+      Measured 0 on 2026-09-18 (2 517 = 2 517). Held because the store dimension in this same
+      delivery IS versioned: if products start keeping history the same way, every join here fans
+      out and this concept needs a snapshot collapse it deliberately does not declare.
 
 governance:
-  owner: demo-team
-  last_reviewed: 2026-07-19
+  owner: operator
+  last_reviewed: 2026-09-18
   change_log:
-    - { date: 2026-07-19, change: "Created for the public MAC/Contoso demo.", change_type: CREATION, by: demo-team }
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as the catalogue leaf, with brand and the two hierarchy levels authored as
+        separate groupings over it rather than as columns of this concept's meaning.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: PRD-Q1
+    topic: business identity
+    question: >-
+      Is ProductCode the product's business identity, or an internal label? Both it and ProductName
+      are measured unique over all 2 517 rows today, which is almost certainly convention rather
+      than law; the answer decides whether a code arriving twice is a duplicate or a legitimate
+      restatement.
+    status: OPEN
+    owner_for_resolution: operator
+  - id: PRD-Q2
+    topic: absence semantics
+    question: >-
+      Does a missing Weight mean "not recorded" or "not applicable"? 284 of 2 517 rows have no
+      weight and 62 name a unit without one, so the two readings give different denominators for
+      every weight figure.
+    status: OPEN
+    owner_for_resolution: operator

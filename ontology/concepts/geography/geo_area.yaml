@@ -1,0 +1,184 @@
+# CONTOSO > geography > GeoArea — the delivery's ONLY region key, and a dimension with no relation
+# of its own. Both the customer and the store dimension carry GeoAreaKey; nothing in the warehouse
+# resolves it (0 geography relations, measured), so the names come from a register cut from the
+# customer dimension and the concept says plainly where that register does NOT reach.
+
+metadata:
+  concept: GeoArea
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: GeoArea
+  label: Region
+  class: reference
+  identity:
+    kind: fk_name
+    canonical_key: GeoAreaKey
+    note: >-
+      An integer key with no relation to resolve it against — the framework's opaque-code shape.
+      Measured 608 distinct values on the customer dimension and 67 on the store dimension (plus the
+      store's -1 sentinel). 1:1 with State on both sides, measured, and each key determines its
+      country.
+  definition: >-
+    A sub-national region — a state, province, territory or county — identified by an integer key
+    the delivery carries on both the customer and the store row. 608 regions across the 8 countries,
+    named from the customer dimension.
+
+    IT HAS NO TABLE. There is no geography relation anywhere in this delivery to join the key to, so
+    the names live in a register cut from the customer dimension rather than in a dimension of their
+    own. A key is never presented bare.
+
+    THE REGISTER DOES NOT COVER THE STORE SIDE COMPLETELY, and this is the sharp edge. Measured
+    2026-09-18: 3 of the 67 store regions have NO customer in them and therefore NO row in the
+    register — GeoAreaKey 79 (GB, Ayrshire), 291 (GB, North Down) and 519 (IT, Pesaro), carrying
+    6 708 of 223 974 lines between them. Those three resolve by the store row's own `State` column
+    and by nothing else.
+
+    IT IS NOT A CONTINENT OR A COUNTRY. This is the leaf below country; the roll-up above it is
+    Country, then Continent.
+  semantics:
+    purpose: >-
+      The finest geography axis the bundle can group by: the "by region" level of the declared
+      question scope, and the only level at which a state or province is addressable.
+    scope: >-
+      608 keys on the customer side over 104 990 rows; 67 on the store side over 74 versions, plus
+      the -1 sentinel on the 'Online' version.
+    null_semantics: >-
+      No nulls on either side. The store side spells the absence of a region as -1 rather than NULL,
+      alongside its '--' country and 'Online' state — a catalogued sentinel with 93 550 of 223 974
+      lines behind it, not missing data.
+
+grounding:
+  kind: sql_table
+  grain: "one row = one region key, in the dimension that carries it"
+  sources:
+    - relation: dim_contoso_customer
+      key: CustomerKey
+      columns: [CustomerKey, GeoAreaKey, State, StateFull, Country]
+    - relation: dim_contoso_store
+      key: StoreKey
+      columns: [StoreKey, GeoAreaKey, State, CountryCode]
+  serves_from:
+    - data/transforms/dim_contoso_customer.sql
+    - data/transforms/dim_contoso_store.sql
+  field_roles:
+    GeoAreaKey: contoso.field_role.key
+    State: contoso.field_role.dimension
+    StateFull: contoso.field_role.attribute
+    Country: contoso.field_role.dimension
+    CountryCode: contoso.field_role.dimension
+    CustomerKey: contoso.field_role.key
+    StoreKey: contoso.field_role.key
+  note: >-
+    `GeoAreaKey` IS THE AXIS, `State` IS THE READABLE SLICE, `StateFull` IS DISPLAY ONLY. The key is
+    1:1 with State on both relations (measured), so grouping on either gives the same partition —
+    but the key is what the register resolves to and the only thing that is stable, so it is the
+    `key` role and the long name is `attribute`.
+
+    NOTE THE ASYMMETRY the two sources make visible: the customer side carries `StateFull` and the
+    store side does not, so a store region has a short name and no long one.
+
+contract:
+  default_reading: >-
+    An unqualified region breakdown means the CUSTOMER's region, for the reason the Customer concept
+    states. A region named in words is resolved to its key and filtered on the key, never matched on
+    the state name.
+  no_probe_guarantee: >-
+    All 608 customer-side regions are in data/lookups/contoso_geo_area.lookup.csv, cut from the
+    served plane, each with a search key, its state abbreviation and its country — so a region word
+    resolves offline and the roll-up to country needs no probe. The 3 store-only regions named in
+    the definition are the register's declared gap, resolvable from the store row's own `State`
+    column, which is declared above. A region word that resolves to neither is a refusal derived
+    from the register plus that declared gap, rather than from an empty query.
+  resolution: >-
+    Resolve a region word through data/lookups/contoso_geo_area.lookup.csv on its `search_key` to
+    the `GeoAreaKey`, then filter on the key. For the 3 store-only regions there is no register row:
+    match the store dimension's `State` and disclose that the resolution came from the store row
+    rather than the register.
+  rules:
+    - id: geo_area.register.declared_gap_on_the_store_side
+      kind: mac.rule_kind.resolution
+      subject: Three store regions have no register row — say so rather than return nothing
+      when: "resolving a region word that the register does not contain"
+      then: >-
+        check the store dimension's `{State}` for the 3 known store-only regions — `{GeoAreaKey}`
+        79, 291 and 519, carrying 6 708 of 223 974 lines — and say the resolution came from there;
+        otherwise refuse
+      never: >-
+        reading the register's silence as "no such region": the register is cut from
+        `{dim_contoso_customer}` and 3 of the 67 store regions have no customer in them, so its
+        coverage of the store side is 64 of 67 and not 67 of 67
+      why: >-
+        a register cut from one side of a two-sided axis has a measurable gap on the other, and an
+        unmeasured gap is exactly where a probe returning nothing gets read as an absence
+      binds: [GeoAreaKey, State]
+      confidence: P
+    - id: geo_area.sentinel.online_has_no_region
+      kind: mac.rule_kind.guarantee
+      subject: Store GeoAreaKey -1 is the online channel, and it is a member
+      when: "reporting a store-side region breakdown"
+      then: >-
+        include `{GeoAreaKey}` = -1 as its own row, labelled as the online channel, with the 93 550
+        of 223 974 lines behind it stated
+      never: >-
+        filtering `{GeoAreaKey}` = -1 out as invalid, or resolving it through the register, which has
+        no row for it
+      why: >-
+        the sentinel carries 41.8 % of the fact; excluding it is the largest silent error available
+        in this bundle
+      binds: [GeoAreaKey]
+      confidence: P
+
+constraints:
+  - assert: "The region key determines its country — the roll-up is a function"
+    severity: ERROR
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT GeoAreaKey FROM contoso_served.dim_contoso_customer
+      GROUP BY 1 HAVING count(DISTINCT Country) > 1)
+    notes: >-
+      Measured 0 of 608 keys on 2026-09-18. ERROR because a region in two countries would make every
+      country total double-count through the region axis.
+  - assert: "The register covers the customer side completely"
+    severity: WARNING
+    machine_executable: false
+    notes: >-
+      608 register rows against 608 distinct customer-side keys, measured 2026-09-18. The store side
+      is covered 64 of 67 by design, not by accident — the three exceptions are named in the
+      definition and handled by a declared rule. Recorded as a WARNING with its denominators rather
+      than as a passing check with one.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as one reference over two served relations, with the register's measured
+        coverage gap on the store side declared rather than discovered at answer time.
+      change_type: CREATION
+      by: operator
+
+open_questions:
+  - id: GA-Q1
+    topic: register coverage
+    question: >-
+      Should data/lookups/contoso_geo_area.lookup.csv be re-cut as the UNION of the customer and
+      store region sets, so the three store-only regions resolve through the register like every
+      other? That is a P6 change, not a concept change, and it would retire the declared-gap rule
+      above.
+    status: OPEN
+    owner_for_resolution: operator
+  - id: GA-Q2
+    topic: what a region is
+    question: >-
+      The 608 keys mix states, provinces, territories and counties across 8 countries. Is "region"
+      one axis, or does a comparison across countries need a level that does not exist here?
+    status: OPEN
+    owner_for_resolution: operator

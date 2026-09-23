@@ -1,0 +1,189 @@
+# CONTOSO > geography > Country — ONE concept over TWO served relations, which spell it two
+# different ways. The customer dimension calls it `Country`; the store dimension calls it
+# `CountryCode`. A concept written against one spelling and grounded on the other looks right to
+# every human reader, which is what check_concept_columns_exist exists to catch — so both spellings
+# are declared here, per relation.
+
+metadata:
+  concept: Country
+  source: CONTOSO
+  version: '1.0'
+  schema_version: 0.1.14
+  status: draft
+  owner: operator
+  confidence: I
+  provenance: authored
+
+concept:
+  name: Country
+  label: Country
+  class: reference
+  identity:
+    kind: iso
+    canonical_key: Country
+    note: >-
+      Two-letter codes, ISO 3166-1 alpha-2 in shape. `canonical_key` names the CUSTOMER dimension's
+      spelling because that relation is sources[0] and is the one the register is cut from; the
+      store dimension carries the same values under `CountryCode`. Measured 8 distinct customer
+      countries, 1:1 with their long names, and 9 distinct store country codes — the ninth being a
+      sentinel that is not a country.
+  definition: >-
+    A national market, identified by its two-letter code, in either of the two roles a line carries
+    it in: the country of the CUSTOMER who bought, and the country of the STORE that sold. Eight
+    real countries: AU, CA, DE, FR, GB, IT, NL, US.
+
+    THE NINTH STORE VALUE IS NOT A COUNTRY. The 'Online' store version carries CountryCode '--'
+    with CountryName and State both 'Online' — a sales channel sitting in a country column. It is
+    kept as a catalogued member so a store row always resolves, and 93 550 of 223 974 lines point at
+    it, so dropping it would silently remove 41.8 % of the fact. It has no continent because the
+    data states none.
+
+    CUSTOMER COUNTRY AND STORE COUNTRY ARE NOT THE SAME AXIS. They are two roles of this one
+    concept and they do not agree: the store side has no continent column at all, and it carries the
+    '--' sentinel the customer side does not. A country breakdown must say whose country it means.
+  semantics:
+    purpose: >-
+      The leaf of the bundle's declared "by region" roll-up — country, then continent — and the
+      coarsest geography at which the customer and store sides can be compared at all.
+    scope: >-
+      The 8 countries the 104 990 served customers live in, plus the 1 store-side sentinel. Every
+      store country except the sentinel is covered by the customer set, measured.
+    null_semantics: >-
+      No nulls on either side. The store-side absence of geography is spelled '--' rather than NULL,
+      which is why it is a MEMBER here and not a missing value: a member whose label reads like an
+      absence is still a real value with rows behind it.
+
+grounding:
+  kind: sql_table
+  grain: "one row = one country code, in the dimension that carries it"
+  sources:
+    - relation: dim_contoso_customer
+      key: CustomerKey
+      columns: [Country, CountryFull, Continent]
+    - relation: dim_contoso_store
+      key: StoreKey
+      columns: [CountryCode, CountryName]
+  serves_from:
+    - data/transforms/dim_contoso_customer.sql
+    - data/transforms/dim_contoso_store.sql
+  discriminator: Country
+  field_roles:
+    Country: contoso.field_role.dimension
+    CountryFull: contoso.field_role.attribute
+    CountryCode: contoso.field_role.dimension
+    CountryName: contoso.field_role.attribute
+  note: >-
+    THE TWO SPELLINGS ARE DECLARED, NOT RECONCILED. `Country` (customer) and `CountryCode` (store)
+    carry the same values; `CountryFull` and `CountryName` are their long-name twins and are
+    `attribute` — display only — so that grouping never happens on a name while a code is available,
+    and so the same geography cannot be split two ways by which relation a query happened to reach.
+
+    `Continent` is listed as a column of sources[0] because the customer relation is the ONLY place
+    in the whole delivery that carries one; the roll-up itself is the Continent concept, not a
+    column of this one.
+
+contract:
+  default_reading: >-
+    An unqualified country breakdown means the CUSTOMER's country, for the reason the Customer
+    concept states: the store side stops at country, has no continent, and puts 41.8 % of the fact
+    in a non-country sentinel. Say which side was used in the answer.
+  no_probe_guarantee: >-
+    All nine members and their continents are in data/lookups/contoso_country.lookup.csv, cut from
+    the served plane, carrying both the code and a search key — so a country word resolves offline
+    and the country-to-continent roll-up needs no probe. The long names are in the relations as
+    display columns. A name that does not resolve to one of the nine is a refusal derived from the
+    register, not an empty query.
+  resolution: >-
+    Resolve a country word through data/lookups/contoso_country.lookup.csv on its `search_key` to
+    the code, then filter on `Country` (customer side) or `CountryCode` (store side). Never match
+    on `CountryFull` or `CountryName`.
+  rules:
+    - id: country.roles.customer_or_store_never_both
+      kind: mac.rule_kind.ambiguity
+      subject: Country is carried in two roles that do not agree — name the one you mean
+      when: "a question breaks a figure down by country without saying whose"
+      then: >-
+        use the CUSTOMER role (`{Country}` on `{dim_contoso_customer}`) and say so; offer the STORE
+        role (`{CountryCode}` on `{dim_contoso_store}`) when the question is about where the sale
+        was made rather than who bought
+      never: >-
+        mixing the two in one breakdown, or silently substituting one for the other: the store side
+        carries the '--' sentinel on 93 550 of 223 974 lines and has no continent column, so the two
+        roles give different rows and different totals
+      why: >-
+        role-playing geography is invisible in a result set — both roles produce a column called
+        "country" — so the choice has to be disclosed rather than defaulted in silence
+      binds: [Country, CountryCode]
+      confidence: P
+    - id: country.sentinel.online_is_a_member
+      kind: mac.rule_kind.guarantee
+      subject: The '--' store country is a channel, not missing geography
+      when: "reporting a store-side country breakdown"
+      then: >-
+        include `{CountryCode}` = '--' as its own row and label it as the online channel, naming
+        the 93 550 of 223 974 lines behind it
+      never: >-
+        correcting `{CountryCode}` = '--' to a real country, which invents a market for 41.8 % of
+        the fact; and never reading `{CountryName}` = 'Online' as a country name
+      why: >-
+        the delivery puts a channel in a country column; the honest model keeps it as a catalogued
+        member with its numbers disclosed rather than cleaning it into a market it never had
+      binds: [CountryCode, CountryName]
+      confidence: P
+    - id: country.resolution.by_register
+      kind: mac.rule_kind.resolution
+      subject: Resolve a country word through the offline register
+      when: "a question names a country"
+      then: >-
+        resolve through data/lookups/contoso_country.lookup.csv on search_key to the Country code;
+        filter on `{Country}` (customer side) or `{CountryCode}` (store side)
+      never: >-
+        matching on `{CountryFull}` or `{CountryName}` — those are display labels, not identities
+      binds: [Country, CountryCode]
+      confidence: P
+      realized_by:
+        udf: mac.canon.resolve_by_register
+        params:
+          thing: country
+          code: Country
+          register: data/lookups/contoso_country.lookup.csv
+          search: search_key / Country
+          display_label: label
+          fact_join: Country
+
+constraints:
+  - assert: "Every store country except the sentinel is a country the customer dimension knows"
+    severity: WARNING
+    machine_executable: true
+    sql_assertion: >-
+      SELECT count(*) FROM (SELECT DISTINCT CountryCode FROM contoso_served.dim_contoso_store
+      WHERE CountryCode <> '--'
+      EXCEPT SELECT DISTINCT Country FROM contoso_served.dim_contoso_customer)
+    notes: >-
+      Measured 0 on 2026-09-18. This is what lets the two roles be compared at country level at
+      all, and what makes the '--' sentinel the single exception rather than one of several.
+
+governance:
+  owner: operator
+  last_reviewed: 2026-09-18
+  change_log:
+    - date: 2026-09-18
+      change: >-
+        Created at P7 as ONE concept over two served relations with two column spellings, rather
+        than as a customer-country and a store-country concept.
+      change_type: CREATION
+      by: operator
+      rationale: >-
+        The register data/lookups/contoso_country.lookup.csv is already one register over both
+        relations (8 customer rows plus the store sentinel), so two concepts would have split a
+        value set the data plane serves as one.
+
+open_questions:
+  - id: CTY-Q1
+    topic: the sentinel
+    question: >-
+      Does store CountryCode '--' mean "no geography" or "global"? The register records the question
+      and the data cannot settle it; the answer decides whether an online line belongs in a
+      continent total or outside every one of them.
+    status: OPEN
+    owner_for_resolution: operator

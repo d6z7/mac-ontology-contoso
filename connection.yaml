@@ -12,7 +12,54 @@ label: Contoso (local DuckDB)
 # (sdk/connector/schemas/duckdb.1.json). MAC never learns what a `database` is.
 config:
   database: contoso.duckdb
-  read_only: true
+  # READ-WRITE SINCE 2026-09-18, AUTHORISED BY THE OPERATOR — "i am fine with read write for
+  # connection" — AND FOR EXACTLY ONE PURPOSE: this pipeline materialises ITS OWN declared views into
+  # ITS OWN `view_schema` below. All six transforms are `CREATE OR REPLACE VIEW contoso_served.<name>`
+  # and every dataset descriptor's `produces.relation` names `contoso_served.<name>`, so the write
+  # surface is the six relations this bundle declares and the schema it declares them in. Nothing here
+  # writes `main`, which holds the 8 landing tables setup.sh builds from data/*.parquet.
+  #
+  # WHAT CHANGED BECAUSE OF IT, stated so the flag is not read as cosmetic: the transforms were
+  # `AUTHORED, NOT DEPLOYED` and said so in their own headers — the warehouse held ZERO of the six,
+  # because `read_only: true` made materialising impossible and the operator had dropped the previous
+  # run's schemas. With the flag open the views exist, which is also what makes the SERVED plane
+  # measurable at all: `tools/mac_references.py` measures references through the connector against
+  # relations the catalog actually has, so an unmaterialised served plane cannot be measured, only
+  # asserted.
+  #
+  # THE COST OF THE FLAG, NOT ARGUED AWAY: a read-only connection is an enforced guarantee, and this
+  # is now a declaration instead. Any tool this bundle hands the connection to CAN write `main`,
+  # including dropping it. Nothing in the connector narrows the grant to `view_schema` — that
+  # narrowing is a property of what the pipeline's SQL says, which is reviewable in
+  # data/transforms/*.sql and is not enforced by the engine.
+  read_only: false
+
+# WHERE THIS BUNDLE'S OWN SERVED RELATIONS LIVE. Read by tools/check_schema_isolation.py, which
+# without it cannot judge isolation at all and skips. The estate invariant it enforces: a source's
+# serving relations live in the source's OWN dedicated schema, never in another source's. The value
+# is this bundle's own dataset identity (mac.project.yaml#metadata.dataset = contoso) plus the
+# serving marker.
+#
+# MEASURED STATE OF THE WAREHOUSE, 2026-09-18, after the operator dropped the deleted run's two
+# schemas and before this bundle materialised: `information_schema.tables` held 8 BASE TABLEs in
+# `main` AND NOTHING ELSE — no `contoso_raw`, no `contoso_served`, zero views. The 15 leftovers this
+# comment used to warn about are gone (register NS-SERVING-01, now `accepted`), so the precondition
+# every transform .sql states is met by absence rather than by a drop.
+# Then `contoso_served` was created and this bundle's 6 declared views were materialised into it from
+# data/transforms/*.sql verbatim. Every relation in the schema is now a result of THIS run.
+#
+# THE ONE THING THAT IS NOT DIFFABLE, DISCLOSED RATHER THAN LEFT TO BE DISCOVERED. `contoso.duckdb`
+# is GITIGNORED (heavy, regenerable) so the six views are WAREHOUSE STATE, not committed content.
+# Their DDL is committed — data/transforms/*.sql, one statement each — but `setup.sh` REBUILDS ONLY
+# `main`: it creates the 8 base tables from data/*.parquet and creates no schema and no view. So a
+# fresh checkout plus setup.sh has an EMPTY `contoso_served` while `data/references_served/` still
+# holds six artifacts measured against it, and the served ER diagram would then draw from a
+# measurement of relations that no longer exist. That is the staleness hazard this note exists to
+# name. FOLLOW-UP, not done here because it changes the reproduction path rather than the
+# connection: either setup.sh materialises the six views after loading the tables, or the served
+# reference artifacts are re-derived as part of rebuilding. Until one of those exists,
+# materialisation is a manual step and this comment is the only record that it is.
+view_schema: contoso_served
 
 # No `credentials:` block. The grammar makes it optional precisely so a source that needs none can
 # say so by omission, rather than by declaring an empty mode nobody honours.
