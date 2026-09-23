@@ -34,13 +34,13 @@
 #   it returns is right. The corpus still carries no oracles.
 #
 run:
-  planner: mac-platform fix/meaning-plane-resolver @ 759b3b6
-  bundle: example/contoso @ product__has__brand
-  captured: '2026-09-23'
+  planner: mac-platform develop @ ratio refuses
+  bundle: example/contoso
+  captured: '2026-09-24'
   counts:
-    PLANS from a hand-written intent: 55
+    C. Intent-model gap (new grammar needed): 5
     A. bundle declaration gap (planner correct): 7
-    C. Intent-model gap (new grammar needed): 1
+    PLANS from a hand-written intent: 51
     B. framework gap in the generated meaning plane: 3
     D. correctly refused: 2
     A2. SME modelling question (no concept for the grain asked): 2
@@ -48,11 +48,9 @@ run:
 questions:
 - id: ADV-01
   question: Compare gross vs net revenue by brand in 2024
-  outcome: PLAN
-  detail: SELECT dim_contoso_product.Brand, SUM(f."Quantity" * f."UnitPrice")    AS gross_sales_amount
-    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_product ON f.ProductKey
-    = dim_contoso_product.ProductKey WHERE f.OrderDate >= :period_start AND f.OrderDate < :period_end
-    GROUP BY d
+  outcome: REFUSAL
+  cause: model:ratio-not-built
+  detail: 'unsupported_intent: [''ratio: GrossSalesAmount / NetSalesAmount'']'
   intent:
     measure: GrossSalesAmount
     operation: compare
@@ -66,7 +64,7 @@ questions:
   question: Which brand has the highest margin (gross minus net) in Europe?
   outcome: REFUSAL
   cause: decl:no-register-for-continent
-  detail: 'ontology_gap: [''Continent: resolve_by_register'']'
+  detail: 'unsupported_intent: [''ratio: GrossSalesAmount / NetSalesAmount'']'
   intent:
     measure: GrossSalesAmount
     operation: rank
@@ -83,10 +81,9 @@ questions:
     limit: 1
 - id: ADV-03
   question: Revenue per customer by country
-  outcome: PLAN
-  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
-    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
-    = dim_contoso_customer.CustomerKey GROUP BY dim_contoso_customer.Country
+  outcome: REFUSAL
+  cause: model:ratio-not-built
+  detail: 'unsupported_intent: [''ratio: NetSalesAmount / Customer'']'
   intent:
     measure: NetSalesAmount
     operation: ratio
@@ -163,10 +160,9 @@ questions:
       - 2023-Q1
 - id: ADV-08
   question: Average order value by country
-  outcome: PLAN
-  detail: SELECT dim_contoso_customer.Country, SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
-    FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer ON f.CustomerKey
-    = dim_contoso_customer.CustomerKey GROUP BY dim_contoso_customer.Country
+  outcome: REFUSAL
+  cause: model:ratio-not-built
+  detail: 'unsupported_intent: [''ratio: NetSalesAmount / OrderLine'']'
   intent:
     measure: NetSalesAmount
     operation: ratio
@@ -177,7 +173,7 @@ questions:
   question: Countries where average order value exceeds 500
   outcome: REFUSAL
   cause: model:no-having-clause
-  detail: 'unresolved_term: [''NetSalesAmount'']'
+  detail: 'unsupported_intent: [''ratio: NetSalesAmount / OrderLine'']'
   intent:
     measure: NetSalesAmount
     operation: ratio
@@ -558,9 +554,9 @@ questions:
       value: Germany
 - id: AGG-13
   question: What is the ratio of gross revenue to net revenue?
-  outcome: PLAN
-  detail: SELECT SUM(f."Quantity" * f."UnitPrice")    AS gross_sales_amount FROM contoso_served.v_contoso_order_line
-    f
+  outcome: REFUSAL
+  cause: model:ratio-not-built
+  detail: 'unsupported_intent: [''ratio: GrossSalesAmount / NetSalesAmount'']'
   intent:
     measure: GrossSalesAmount
     operation: ratio
@@ -638,8 +634,7 @@ questions:
 - id: MQ-05
   question: Which concepts have open questions?
   outcome: PLAN
-  detail: SELECT DISTINCT meta_open_question.concept_id, meta_open_question.concept_id AS openquestion
-    FROM contoso_served.meta_open_question
+  detail: SELECT DISTINCT meta_open_question.concept_id FROM contoso_served.meta_open_question
   intent:
     measure: OpenQuestion
     operation: list
