@@ -15,20 +15,36 @@ GATE = {"REFUSE", "DECLINE", "ASK", "CLARIFY", "BLOCK", "REJECT"}
 ACTIVITY_RE = re.compile(
     r"\b(sold|sell|sells|bought|buy|buys|placed|order|orders|ordered|revenue|sales|quantity|"
     r"spent|purchase[ds]?|trend|growth|value)\b", re.I)
+WHEN_RE = re.compile(r"^\s*when\b", re.I)
 PERIOD_RE = re.compile(r"\b(20\d\d|q[1-4]\s*20\d\d|last \d+ years?|january|february|march|april|"
                        r"may|june|july|august|september|october|november|december|monthly|"
                        r"year-over-year|quarter)\b", re.I)
 
 
 def value_index(registers) -> dict[str, list[tuple[str, str]]]:
-    """search term -> [(concept, code)] from the DECLARED registers only."""
+    """search term -> [(concept, column)] from the DECLARED SEARCH COLUMNS only.
+
+    NOT EVERY CELL, and the difference is a false assertion. The first version indexed every
+    column of every register row, so a three-digit numeral in a question matched a SURROGATE
+    KEY: "Countries where average order value exceeds 500" resolved `500` to StoreKey 500
+    (Contoso Store Kansas) and asserted the SQL must constrain a store. A correct answer would
+    have failed the pin.
+
+    A register DECLARES which of its columns a word is looked up through — `search`, with
+    `display_label` as what a reader is shown — and those are the only columns a question can
+    legitimately be matched against. The surrogate, `source_view`, `confidence` and `note` are
+    provenance: nobody names a store by its surrogate, and no question resolves through them.
+    Reading the declaration instead of every cell is the same discipline `period_column` and
+    `pin_column` below already follow.
+    """
     out: dict[str, list[tuple[str, str]]] = {}
     for reg in registers.loaded:
-        concept = reg.declaration.concept
+        decl = reg.declaration
+        lookupable = {c.lower() for c in (*decl.search, *decl.display_label)}
         for row in reg.rows:
             for col, cell in row.cells.items():
-                if cell and len(cell) > 2:
-                    out.setdefault(cell.strip().lower(), []).append((concept, col))
+                if cell and len(cell) > 2 and col.lower() in lookupable:
+                    out.setdefault(cell.strip().lower(), []).append((decl.concept, col))
     return out
 
 
@@ -100,6 +116,15 @@ def derive(q: dict, idx, registers, vidx) -> dict:
         if follower and follower in dim_words and follower != concept.lower():
             review.append(f"{term!r} resolves through the {concept} register but is followed by "
                           f"{follower!r} — ambiguous, so no pin was asserted")
+            continue
+        # "WHEN was the first store CLOSED" — the state word names the EVENT BEING DATED, not a
+        # filter on it. A correct answer reads the date column (min of the closure date) and
+        # carries no status predicate at all, so a pin here would fail a right answer. Same
+        # principle as the guard above, applied to the question's tense rather than its nouns.
+        if WHEN_RE.match(low):
+            review.append(f"{term!r} resolves through the {concept} register, but the question "
+                          f"asks WHEN — the word names the event being dated, not a filter on it, "
+                          f"so no pin was asserted")
             continue
         col = pin_column(concept, idx)
         if col and col.lower() not in pins:
