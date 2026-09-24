@@ -1,25 +1,120 @@
 id: AGG-14
-captured_at: '2026-09-23T22:53:10+00:00'
-ontology_fingerprint: b6a1acf2f00b6890
-acceptance_fingerprint: 7f4740ee6869c3e0
+captured_at: '2026-09-24T13:45:19+00:00'
+ontology_fingerprint: 5c82498fd3364ee9
+acceptance_fingerprint: e3d6dc948ecf430b
 engine:
-  provider: bedrock
-  model: global.anthropic.claude-opus-4-6-v1
+  provider: claude_code
+  model: sonnet
   effort: max
-  mode: llm-execute
-  athena: true
-route: refusal
-answer: I'm not confident I understood the question 'What is the total net revenue
-  converted to USD?' (self-score 0.30 is below the 0.50 threshold). Could you rephrase
-  it, naming the measure and any slice/filter/period you want?
-sql: []
+  mode: llm-answer
+  athena: false
+route: wiki-only
+answer: 'Net Sales Amount: 111862187.56017 in currency.'
+answer_parts:
+  value: 111862187.56017
+  unit: 'currency, denominated in the order''s own CurrencyCode (5 measured values:
+    USD, EUR, CAD, GBP, AUD) — NOT a single reporting currency. Comparison or difference
+    between two NetSalesAmount figures requires both to be in the same currency; a
+    ratio of two is always defined.'
+  measure: NetSalesAmount
+  reading: 'THIS IS THE DEFAULT. An unqualified "sales", "revenue" or "total" means
+    NetSalesAmount: after discount, over every line, by OrderDate rather than DeliveryDate,
+    in the order''s own currency, including the 93 550 lines placed at the ''Online''
+    sentinel store. Report gross only when the question says gross, list price or
+    before discount. Disclose the currency with the figure.'
+  table: null
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: dq
+    text: Every line carries a positive quantity, so no line contributes a negative
+      net amount (Measured 0 of 223 974 rows on 2026-09-18. There is no returns or
+      credit-note relation in this delivery, so a negative sale is not representable
+      — an important limit, not a guarantee of correctness.)
+    ref: concept://example/contoso/NetSalesAmount
+  - kind: dq
+    text: The fact's currency codes and the fx grid's code columns are the same closed
+      set of 5 (Measured 0 on 2026-09-18. ERROR because a currency on the fact with
+      no quote makes its amounts unconvertible, and the equality join would return
+      nothing rather than say so.)
+    ref: concept://example/contoso/Currency
+  concepts:
+  - concept: NetSalesAmount
+    label: Net Sales Amount
+    ref: concept://example/contoso/NetSalesAmount
+  - concept: OrderLine
+    label: Order Line
+    ref: concept://example/contoso/OrderLine
+  - concept: Currency
+    label: Currency
+    ref: concept://example/contoso/Currency
+  rules:
+  - net_sales_amount
+  edges: []
+  intent:
+    subject: NetSalesAmount
+    operation: sum
+    slices: []
+    filters:
+    - term: Currency
+      op: eq
+      value: USD
+      utterance: converted to USD
+    join_filters: []
+    period: null
+    ordering: null
+    limit: null
+    denominator: null
+    stage: null
+    confidence: 0.85
+  raw: 'answer_id=UUID(''9951621e-725f-4cbf-aa77-d7621aed5cff'') pack=PackIdentifier(name=''example/contoso'',
+    version=''live'') question=''What is the total net revenue converted to USD?''
+    intent=Intent(subject=''NetSalesAmount'', operation=<OperationKind.SUM: ''sum''>,
+    slices=[], filters=[FilterRef(term=''Currency'', op=<FilterOp.EQ: ''eq''>, value=''USD'',
+    utterance=''converted to USD'')], join_filters=[], period=None, ordering=None,
+    limit=None, denominator=None, stage=None, confidence=0.85) status=''ok'' value=111862187.56017
+    unit="currency, denominated in the order''s own CurrencyCode (5 measured values:
+    USD, EUR, CAD, GBP, AUD) — NOT a single reporting currency. Comparison or difference
+    between two NetSalesAmount figures requires both to be in the same currency; a
+    ratio of two is always defined." semantics_applied=SemanticsApplied(measure=''NetSalesAmount'',
+    reading=''THIS IS THE DEFAULT. An unqualified "sales", "revenue" or "total" means
+    NetSalesAmount: after discount, over every line, by OrderDate rather than DeliveryDate,
+    in the order\''s own currency, including the 93 550 lines placed at the \''Online\''
+    sentinel store. Report gross only when the question says gross, list price or
+    before discount. Disclose the currency with the figure.'', definitions=[DefinitionRef(concept=''NetSalesAmount'',
+    ref=''concept://example/contoso/NetSalesAmount''), DefinitionRef(concept=''OrderLine'',
+    ref=''concept://example/contoso/OrderLine''), DefinitionRef(concept=''Currency'',
+    ref=''concept://example/contoso/Currency'')], rules=[''net_sales_amount''], edges=[])
+    caveats=[Caveat(kind=<CaveatKind.DQ: ''dq''>, note=''Every line carries a positive
+    quantity, so no line contributes a negative net amount (Measured 0 of 223 974
+    rows on 2026-09-18. There is no returns or credit-note relation in this delivery,
+    so a negative sale is not representable — an important limit, not a guarantee
+    of correctness.)'', ref=''concept://example/contoso/NetSalesAmount''), Caveat(kind=<CaveatKind.DQ:
+    ''dq''>, note="The fact''s currency codes and the fx grid''s code columns are
+    the same closed set of 5 (Measured 0 on 2026-09-18. ERROR because a currency on
+    the fact with no quote makes its amounts unconvertible, and the equality join
+    would return nothing rather than say so.)", ref=''concept://example/contoso/Currency'')]
+    confidence=<ConfidenceTier.INFERRED: ''I''> provenance=Provenance(sql=''SELECT
+    SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount\nFROM contoso_served.v_contoso_order_line
+    f\nWHERE f.CurrencyCode = :currency'', params={''currency'': ''USD''}, adapter=AdapterProvenance(kind=''duckdb'',
+    engine_query_id=''duckdb-26'', bytes_scanned=0), views=[''contoso_served.v_contoso_order_line''],
+    executed_at=datetime.datetime(2026, 9, 24, 13, 22, 55, 777484, tzinfo=datetime.timezone.utc),
+    runtime_version=''0.1.0'')'
+sql:
+- 'SELECT SUM(f."Quantity" * f."NetPrice")     AS net_sales_amount
+
+  FROM contoso_served.v_contoso_order_line f
+
+  WHERE f.CurrencyCode = :currency'
 sql_valid: null
 sql_errors: []
 disclosures: []
 result:
-  value: null
-  cols: []
-  rows: 0
-  sample_rows: []
-  status: no_sql
+  value: 111862187.56017
+  cols:
+  - NetSalesAmount
+  rows: 1
+  sample_rows:
+  - - 111862187.56017
+  status: ok
 error: null
