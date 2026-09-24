@@ -1,0 +1,31 @@
+id: ANCHOR_17
+question: How many of our stores have closed? (STORE-07)
+family: store_versioning
+derivation:
+  sql: SELECT count(*) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM contoso_served.dim_contoso_store) t WHERE r = 1) WHERE Status = 'Closed'
+  raw_value: 8
+  cross_check_sql: SELECT count(*) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM main.store) t WHERE r = 1) WHERE Status = 'Closed'
+  cross_check_value: 8
+  agree: true
+  comparison: values normalised to date/float before comparison, so a relation type difference is not read as a disagreement
+expected:
+  shape: scalar
+  value: 8
+  tolerance: 0
+  pinned:
+    grain: one row per StoreCode - the CURRENT version
+    closed: Status = 'Closed' - the declared reading, NOT 'Closed' plus 'Restructured'
+assumptions: >-
+  8, AND THE DATE READING IS 9. The exact complement of STORE-02 (59 + 8 = 67), and the deliberate
+  counterpart to it: this pins the bundle's DECLARED reading, StoreStatus.default_reading, "Closed
+  stores means Status = 'Closed' - NOT 'Closed' plus 'Restructured'". Counting closures by date
+  instead gives 9, because store 63 closed on 2019-11-03 carrying a NULL Status. Both numbers are
+  in the data and only one is what the bundle says the words mean.
+authority: derived
+authority_note: >-
+  DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine, both executed read-only on
+  2026-09-24. Route 1 is the SERVED view contoso_served.dim_contoso_store; route 2 is the raw
+  landing main.store the view projects from. Different relation, same 74 rows. An anchor can say
+  the ENGINE's number is right or wrong against the data; it CANNOT say the ontology's MEANING is
+  right - where a reading is mistaken both routes agree and both are wrong. STORE-01/02/07 are
+  exactly that hazard and each names its rival reading.
