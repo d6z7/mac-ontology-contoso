@@ -237,10 +237,24 @@ It does **not** license the `entity_key` / `versioned_by` redesign. The operator
 pending more samples than one, and `counts_as` was named a hack by the same ruling; nothing here
 changes the evidence base for a general pattern (*n* = 1 bundle).
 
-It licenses exactly one thing: **`_partition` should read `params.natural_key` when the bundle
+It licenses exactly one thing: **the collapse should read `params.natural_key` when the bundle
 declares it.** That is wiring an existing declaration, which is what §1 says this estate should be
 doing instead of designing new ones, and it is independent of what the field ends up being called.
 The seven questions above are the check that fails today and will say when it stops.
+
+> **DONE 2026-09-24, and the site was not the one this section named.** An earlier revision said
+> `snapshot.py#_SlotResolver._partition`. That is the FRAGMENT path, no fragment binds
+> `dim_contoso_store`, and it never runs for this bundle — a fix was written there first and
+> reverted, having changed nothing. The live path is
+> `grounded_columns.py#reporting_cycle()`, which returned `partition=grounding.cell_key`; it now
+> prefers the declared `natural_key`. A plausible fix in a plausible place that changes nothing is
+> its own hazard, and it is recorded because §1's whole subject is declarations nobody traced to
+> the code that reads them.
+>
+> Measured after, against the anchors: **STORE-02 6 → 59, STORE-03 6 → 0**, RC05 and STORE-07
+> unchanged and correct. `FilterOp.NE` was fixed in the same pass — it rendered `<>`, which drops
+> NULLs — and that is what moved STORE-02. Both are guarded by
+> `meaning-as-code/invariants/planner_invariants.py`: 151 checks, 0 red.
 
 A second, smaller item: the `SST-Q3` ruling. STORE-01 and STORE-02 are 58 and 59 and a business
 reader hears one question. Both numbers are faithful to declarations this bundle already carries —
