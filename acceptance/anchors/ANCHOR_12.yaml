@@ -1,0 +1,35 @@
+id: ANCHOR_12
+question: How many stores are not closed? (STORE-02)
+family: store_versioning
+derivation:
+  sql: SELECT count(*) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM contoso_served.dim_contoso_store) t WHERE r = 1) WHERE Status IS DISTINCT FROM 'Closed'
+  raw_value: 59
+  cross_check_sql: SELECT count(*) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM main.store) t WHERE r = 1) WHERE Status IS DISTINCT FROM 'Closed'
+  cross_check_value: 59
+  agree: true
+  comparison: values normalised to date/float before comparison, so a relation type difference is not read as a disagreement
+expected:
+  shape: scalar
+  value: 59
+  tolerance: 0
+  pinned:
+    grain: one row per StoreCode - the CURRENT version
+    not_closed: NOT (Status = 'Closed') - the declared closed reading, negated
+assumptions: >-
+  59, AND STORE-01 IS 58. THE TWO QUESTIONS SOUND IDENTICAL AND THE BUNDLE ANSWERS THEM
+  DIFFERENTLY - deliberately, and this is the reason the question is in the corpus.
+  StoreStatus.default_reading declares "Closed stores" = Status = 'Closed', so NOT closed is its
+  complement: 59. The same concept declares OPEN = CloseDate IS NULL: 58. Both readings are
+  applied faithfully and they disagree on exactly one store - 63, closed 2019-11-03 carrying a
+  NULL Status. The bundle already MEASURES this gap as an INFORMATIONAL constraint (59 - 58 = 1)
+  and has no question that asks for it. This is that question. An engine answering 58 here is not
+  wrong about the data; it has silently chosen the date reading for a question phrased on the
+  status one, and nothing in the result would say so. Recorded as SST-Q3 on the StoreStatus concept.
+authority: derived
+authority_note: >-
+  DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine, both executed read-only on
+  2026-09-24. Route 1 is the SERVED view contoso_served.dim_contoso_store; route 2 is the raw
+  landing main.store the view projects from. Different relation, same 74 rows. An anchor can say
+  the ENGINE's number is right or wrong against the data; it CANNOT say the ontology's MEANING is
+  right - where a reading is mistaken both routes agree and both are wrong. STORE-01/02/07 are
+  exactly that hazard and each names its rival reading.

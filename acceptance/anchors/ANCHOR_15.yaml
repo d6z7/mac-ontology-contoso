@@ -1,0 +1,30 @@
+id: ANCHOR_15
+question: What is the total floor space of our stores in square meters? (STORE-05)
+family: store_versioning
+derivation:
+  sql: SELECT sum(SquareMeters) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM contoso_served.dim_contoso_store) t WHERE r = 1)
+  raw_value: 99300
+  cross_check_sql: SELECT sum(SquareMeters) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM main.store) t WHERE r = 1)
+  cross_check_value: 99300
+  agree: true
+  comparison: values normalised to date/float before comparison, so a relation type difference is not read as a disagreement
+expected:
+  shape: scalar
+  value: 99300
+  tolerance: 0
+  pinned:
+    grain: one row per StoreCode - the CURRENT version
+    measure: SquareMeters
+assumptions: >-
+  99 300 over 67 stores. Summing the 74 version rows instead double-counts the six codes with two
+  versions and the one with three - and the figure looks entirely plausible either way.
+  `counts_as` cannot reach this: only COUNT was ever routed through it, so a SUM still reads every
+  version.
+authority: derived
+authority_note: >-
+  DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine, both executed read-only on
+  2026-09-24. Route 1 is the SERVED view contoso_served.dim_contoso_store; route 2 is the raw
+  landing main.store the view projects from. Different relation, same 74 rows. An anchor can say
+  the ENGINE's number is right or wrong against the data; it CANNOT say the ontology's MEANING is
+  right - where a reading is mistaken both routes agree and both are wrong. STORE-01/02/07 are
+  exactly that hazard and each names its rival reading.

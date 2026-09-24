@@ -1,0 +1,30 @@
+id: ANCHOR_11
+question: How many stores are still open? (STORE-01)
+family: store_versioning
+derivation:
+  sql: SELECT count(*) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM contoso_served.dim_contoso_store) t WHERE r = 1) WHERE CloseDate IS NULL
+  raw_value: 58
+  cross_check_sql: SELECT count(*) FROM (SELECT * FROM (SELECT *, row_number() OVER (PARTITION BY StoreCode ORDER BY OpenDate DESC) r FROM main.store) t WHERE r = 1) WHERE CloseDate IS NULL
+  cross_check_value: 58
+  agree: true
+  comparison: values normalised to date/float before comparison, so a relation type difference is not read as a disagreement
+expected:
+  shape: scalar
+  value: 58
+  tolerance: 0
+  pinned:
+    grain: one row per StoreCode - the CURRENT version
+    open: CloseDate IS NULL - the declared operating test
+assumptions: >-
+  58 of 67. OPEN IS A DATE, NOT A STATUS, and the bundle rules on it:
+  store_status.absence.operating_has_no_code says answer from CloseDate IS NULL "because no status
+  code says so", and never read Status IS NULL as operating. THIS NUMBER AND STORE-02's DIFFER BY
+  ONE AND BOTH ARE FAITHFUL - see that anchor.
+authority: derived
+authority_note: >-
+  DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine, both executed read-only on
+  2026-09-24. Route 1 is the SERVED view contoso_served.dim_contoso_store; route 2 is the raw
+  landing main.store the view projects from. Different relation, same 74 rows. An anchor can say
+  the ENGINE's number is right or wrong against the data; it CANNOT say the ontology's MEANING is
+  right - where a reading is mistaken both routes agree and both are wrong. STORE-01/02/07 are
+  exactly that hazard and each names its rival reading.
