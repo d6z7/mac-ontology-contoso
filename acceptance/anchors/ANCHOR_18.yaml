@@ -1,0 +1,31 @@
+id: ANCHOR_18
+question: What is the average store size in square meters? (MQ-06)
+family: gated_by_confidence
+derivation:
+  sql: SELECT round(avg(SquareMeters),2) FROM (select * from (select *, row_number() over (partition by StoreCode order by OpenDate desc) r from contoso_served.dim_contoso_store) t where r=1)
+  raw_value: 1504.55
+  cross_check_sql: SELECT round(avg(SquareMeters),2) FROM (select * from (select *, row_number() over (partition by StoreCode order by OpenDate desc) r from main.store) t where r=1)
+  cross_check_value: 1504.55
+  agree: true
+  comparison: numeric, tolerance 0.01 — the two routes read different relations
+expected:
+  shape: scalar
+  value: 1504.55
+  tolerance: 0
+  pinned:
+    grain: one row per StoreCode - the CURRENT version
+    measure: SquareMeters
+assumptions: >-
+  1504.55, NOT 1494.79. Averaging the 74 version rows instead of the 67 current ones gives 1494.79
+  — a 0.65% difference that no reader could spot. This is the same collapse STORE-05 tests as a
+  SUM; recorded separately because an AVERAGE hides the error better than a total does.
+authority: derived
+authority_note: >-
+  DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine, both executed read-only on
+  2026-09-24. Route 1 is the SERVED plane; route 2 rebuilds the same figure from the RAW landing
+  (main.orders JOIN main.orderrows, main.product, main.customer, main.store), which shares no view
+  definition with route 1. An anchor can say the ENGINE's number is wrong against the data; it
+  cannot say the ontology's READING is right. Each note names its rival reading where one exists.
+  WRITTEN FOR A QUESTION THE CONFIDENCE GATE BLOCKS: the corpus had 16 anchors and every one sat
+  on a question the interpreter was already sure about, so calibration could not be measured at
+  all.

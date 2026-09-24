@@ -148,8 +148,17 @@ def derive(q: dict, idx, registers, vidx) -> dict:
 
     # 3. outcome — from the corpus's OWN tag, and then from the ONTOLOGY, which overrules it
     reg = (q.get("regression") or "")
+    tags = {str(t).strip().lower() for t in (q.get("tags") or [])}
     surface: list[str] = []
-    if "unanswerable" in reg:
+    # `tags` WAS DECLARED AND UNREAD, and it cost a false expectation. This block read only
+    # `regression`, so ADV-23 "Sales in Turkey" — tagged `nonexistent-value` AND `refusal`, on a
+    # bundle whose data contains no Turkey at all — was given `expected.outcome: ANSWER`. A
+    # correct refusal would have been graded a failure. The tags say exactly what is needed and
+    # nothing looked at them; this estate is named after that defect.
+    if tags & {"refusal", "nonexistent-value", "unanswerable"}:
+        named = ", ".join(sorted(tags & {"refusal", "nonexistent-value", "unanswerable"}))
+        outcome, o_why = "REFUSE", f"the corpus TAGS this {named} — a tag the outcome must honour"
+    elif "unanswerable" in reg:
         outcome, o_why = "REFUSE", f"the corpus tags this {reg!r}"
     elif "ambiguity" in reg:
         # A TAG SAYS THE QUESTION IS AMBIGUOUS. IT DOES NOT SAY THE ONTOLOGY IS.

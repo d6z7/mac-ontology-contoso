@@ -1,0 +1,32 @@
+id: ANCHOR_21
+question: Stores that sell more than the average store (ADV-13)
+family: gated_by_confidence
+derivation:
+  sql: SELECT count(*) FROM (SELECT f.StoreKey k, sum(f.Quantity*f.NetPrice) s FROM contoso_served.v_contoso_order_line f GROUP BY 1) WHERE s > (SELECT avg(s) FROM (SELECT sum(f.Quantity*f.NetPrice) s FROM contoso_served.v_contoso_order_line f GROUP BY f.StoreKey))
+  raw_value: 8
+  cross_check_sql: SELECT count(*) FROM (SELECT f.StoreKey k, sum(f.Quantity*f.NetPrice) s FROM (select o.OrderKey, o.CustomerKey, o.StoreKey, o.DT as OrderDate, o.CurrencyCode, r.ProductKey, r.Quantity, r.UnitPrice, r.NetPrice from main.orders o join main.orderrows r on o.OrderKey=r.OrderKey) f GROUP BY 1) WHERE s > (SELECT avg(s) FROM (SELECT sum(f.Quantity*f.NetPrice) s FROM (select o.OrderKey, o.CustomerKey, o.StoreKey, o.DT as OrderDate, o.CurrencyCode, r.ProductKey, r.Quantity, r.UnitPrice, r.NetPrice from main.orders o join main.orderrows r on o.OrderKey=r.OrderKey) f GROUP BY f.StoreKey))
+  cross_check_value: 8
+  agree: true
+  comparison: numeric, tolerance 0.01 — the two routes read different relations
+expected:
+  shape: scalar
+  value: 8
+  tolerance: 0
+  pinned:
+    denominator: the 64 stores that sold anything, not all 67
+    measure: net sales = Quantity * NetPrice
+assumptions: >-
+  8 of the 64 stores that sold anything beat the mean of 3,418,976.12 — a long tail, which is why
+  the MEAN and not the median. THIS IS A HAVING QUESTION: a predicate on an aggregate, the largest
+  single gap in the grammar (460 of 9568 third-party questions blocked by it alone). Unreachable
+  today by construction.
+authority: derived
+authority_note: >-
+  DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine, both executed read-only on
+  2026-09-24. Route 1 is the SERVED plane; route 2 rebuilds the same figure from the RAW landing
+  (main.orders JOIN main.orderrows, main.product, main.customer, main.store), which shares no view
+  definition with route 1. An anchor can say the ENGINE's number is wrong against the data; it
+  cannot say the ontology's READING is right. Each note names its rival reading where one exists.
+  WRITTEN FOR A QUESTION THE CONFIDENCE GATE BLOCKS: the corpus had 16 anchors and every one sat
+  on a question the interpreter was already sure about, so calibration could not be measured at
+  all.

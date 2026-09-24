@@ -1,0 +1,33 @@
+id: ANCHOR_20
+question: Products sold in both Germany and France (ADV-16)
+family: gated_by_confidence
+derivation:
+  sql: SELECT count(*) FROM (SELECT f.ProductKey FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer c ON f.CustomerKey=c.CustomerKey WHERE c.Country='DE' INTERSECT SELECT f.ProductKey FROM contoso_served.v_contoso_order_line f JOIN contoso_served.dim_contoso_customer c ON f.CustomerKey=c.CustomerKey WHERE c.Country='FR')
+  raw_value: 1840
+  cross_check_sql: SELECT count(*) FROM (SELECT f.ProductKey FROM (select o.OrderKey, o.CustomerKey, o.StoreKey, o.DT as OrderDate, o.CurrencyCode, r.ProductKey, r.Quantity, r.UnitPrice, r.NetPrice from main.orders o join main.orderrows r on o.OrderKey=r.OrderKey) f JOIN main.customer c ON f.CustomerKey=c.CustomerKey WHERE c.Country='DE' INTERSECT SELECT f.ProductKey FROM (select o.OrderKey, o.CustomerKey, o.StoreKey, o.DT as OrderDate, o.CurrencyCode, r.ProductKey, r.Quantity, r.UnitPrice, r.NetPrice from main.orders o join main.orderrows r on o.OrderKey=r.OrderKey) f JOIN main.customer c ON f.CustomerKey=c.CustomerKey WHERE c.Country='FR')
+  cross_check_value: 1840
+  agree: true
+  comparison: numeric, tolerance 0.01 — the two routes read different relations
+expected:
+  shape: scalar
+  value: 1840
+  tolerance: 0
+  pinned:
+    reading: customer country, not store country
+    set: INTERSECT of the two
+assumptions: >-
+  1840 products. THE INTENT CANNOT EXPRESS THIS and the grammar says so: `set_operation` in
+  query_grammar.yaml#not_expressible, measured as the second largest gap over 9568 third-party
+  questions. Two independent row-sets combined on a key is not one Intent. The anchor exists so
+  the day it becomes expressible there is a number waiting. BOTH countries are read from the
+  CUSTOMER, not the store; the rival reading is named here and not graded.
+authority: derived
+authority_note: >-
+  DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine, both executed read-only on
+  2026-09-24. Route 1 is the SERVED plane; route 2 rebuilds the same figure from the RAW landing
+  (main.orders JOIN main.orderrows, main.product, main.customer, main.store), which shares no view
+  definition with route 1. An anchor can say the ENGINE's number is wrong against the data; it
+  cannot say the ontology's READING is right. Each note names its rival reading where one exists.
+  WRITTEN FOR A QUESTION THE CONFIDENCE GATE BLOCKS: the corpus had 16 anchors and every one sat
+  on a question the interpreter was already sure about, so calibration could not be measured at
+  all.
