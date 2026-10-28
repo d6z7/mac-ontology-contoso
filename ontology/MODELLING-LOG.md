@@ -606,3 +606,27 @@ ontology declaration that served or bound that column was rewritten to the new n
 `contoso5:column/dim_store.store_code`, and retired-forms now refuses new authored uses of the old
 name on `dim_store`.
 
+
+## Entry 19 — the pricing rulebook, and one home for every price and cost word
+
+**Operator ruling, 2026-10-26 (the "rulebook"), confirmed 2026-10-28 as the valid one.** The four
+source fields carry everything: `UnitPrice` = the regular/list price per unit, `NetPrice` = the
+actual selling price per unit after discount, `UnitCost` = the cost per unit, `Quantity` = units.
+The amounts derive from them: gross = quantity × unit_price, net = quantity × net_price,
+cost = quantity × unit_cost, discount = quantity × (unit_price − net_price), margin = net − cost,
+and gross − discount = net, net − cost = margin. Measured on all 223,974 lines: 0 violations.
+
+**And, 2026-10-28: "from the shop perspective cost is procurement cost. The rest is revenue or
+income."** So `cost` names only what the goods cost Contoso to buy.
+
+**What moved, word by word:**
+- `unit price` left the price ratio and joined `unit_price`: under the rulebook it is the
+  REGULAR price, not what was paid.
+- `price`, `average price`, `price per unit`, `price per article` stay on the ratio
+  revenue ÷ units (310.98, the 2026-09-30 reading). That is the quantity-weighted average of the
+  actual selling price, which the rulebook names `NetPrice`, so the two rulings agree.
+- `net_price` gained `selling price`, `actual price` and `price paid`, and lost `what one costs`:
+  "cost" is procurement only.
+- `cost_amount` gained the bare `cost`, `procurement cost`, `purchase cost` and `cost of sales`;
+  `unit_cost` gained `procurement cost per unit`.
+- `net_amount` gained `income`.
