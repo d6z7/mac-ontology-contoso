@@ -1,15 +1,14 @@
 id: RC09
-captured_at: '2026-10-24T21:44:55+00:00'
-ontology_fingerprint: 0d005cb5612ea9b3
-acceptance_fingerprint: 2ec94494afcc4218
-projection_fingerprint: 4702762cd1902fc3
+captured_at: '2026-10-28T23:42:11+00:00'
+ontology_fingerprint: 9455837fe192e4d8
+acceptance_fingerprint: 324b16c41efe7a45
 engine:
   interpret: live
   provider: v3-walk
   model: claude-opus-5
   mode: llm-execute
   athena: false
-  run_file: full_rerun.json
+  run_file: 20261028T232903Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
 connection:
@@ -23,34 +22,35 @@ intent:
   operation: aggregate
   qdmr_simplified: "  1       FROM       products                    “products”\n  2  ← 1  WHERE     \
     \ brand = 'Contoso'           “the Contoso brand”\n  3  ← 2  AGGREGATE  count distinct of products\
-    \  “How many products does the Contoso brand have?”\n  answer: step 3   confidence: 0.86\n  UNDERSTOOD\
-    \ AS: A count of how many products carry the brand \"Contoso\" — one single number covering every\
-    \ product listed under that brand, with no time period or other restriction (so discontinued or out-of-stock\
-    \ products are counted too unless you tell me otherwise).\n  AMBIGUOUS 'products' — ASKS: Should I\
-    \ count each individual product item (every size, colour or SKU separately), or each distinct product\
-    \ model/name once?\n      could mean: every individual product entry / SKU\n      could mean: each\
-    \ distinct product model or name, counted once\n      took: every individual product entry, counted\
-    \ once each\n  AMBIGUOUS 'the Contoso brand' — ASKS: Does \"Contoso\" mean only the brand named exactly\
-    \ \"Contoso\", or should related brand names such as \"Contoso, Ltd\" also count?\n      could mean:\
-    \ only the brand whose name is exactly \"Contoso\"\n      could mean: any brand whose name contains\
-    \ \"Contoso\"\n      took: only the brand named exactly \"Contoso\"\n  AMBIGUOUS 'have' — ASKS: Should\
-    \ discontinued or no-longer-sold Contoso products be included in the count, or only ones currently\
-    \ available?\n      could mean: all Contoso products ever listed, including discontinued ones\n  \
-    \    could mean: only Contoso products currently active or available for sale\n      took: all Contoso\
-    \ products, with no availability restriction\n  OUTPUT SHAPE: one figure · one row(s) · carrying how\
-    \ many products"
-  understood_as_in_human_words: A count of how many products carry the brand "Contoso" — one single number
-    covering every product listed under that brand, with no time period or other restriction (so discontinued
-    or out-of-stock products are counted too unless you tell me otherwise).
-  population_actually_answered: 'All 710 rows of contoso_served.dim_product whose `brand` is exactly ''Contoso'',
-    out of the 2,517 products the bundle holds. I applied exactly one restriction — brand = ''Contoso'',
-    which is the question''s own filter — and nothing else. No channel predicate: the physical/online
-    default in store.resolution.the_channel_is_the_location_sentinel binds `location_code` on Store and
-    cannot reach a product row. No trading-state predicate: store.resolution.active_is_the_absent_close_date
-    binds `close_date` and `status_annotation`, which exist only on dim_store. No period predicate: order.default.an_unscoped_question_covers_all_time
-    governs `order_date` on the sales line, and a product row carries no date, so there is no window to
-    widen or narrow. The figure is over dim_product alone — products LISTED under the brand, which is
-    not the same set as products that ever sold, since nothing here joins to v_contoso5_sales_line.'
+    \  “How many products does the Contoso brand have”\n  answer: step 3   confidence: 0.9\n  UNDERSTOOD\
+    \ AS: How many products belong to the brand \"Contoso\" — a single count of products whose brand is\
+    \ Contoso, across the whole product catalogue with no date limit and no restriction on whether they\
+    \ are currently sold or discontinued.\n  AMBIGUOUS 'products' — ASKS: Should each individually sold\
+    \ item count as one product, or should variants of the same model (different colours or sizes) be\
+    \ counted together as one product?\n      could mean: every individual sellable item counts separately\n\
+    \      could mean: each distinct product model counts once, however many variants it has\n      took:\
+    \ every individual product counts separately\n  AMBIGUOUS 'does ... have' — ASKS: Do you want all\
+    \ Contoso products that have ever existed in the catalogue, or only the ones currently active and\
+    \ still being sold?\n      could mean: all Contoso products ever in the catalogue, including discontinued\
+    \ ones\n      could mean: only Contoso products that are currently active or available\n      took:\
+    \ all Contoso products in the catalogue, with no active/discontinued filter\n  AMBIGUOUS 'the Contoso\
+    \ brand' — ASKS: Is \"Contoso\" the brand name exactly, or should sub-brands and variants of the name\
+    \ (like \"Contoso Ltd\") be included too?\n      could mean: only the brand named exactly Contoso\n\
+    \      could mean: Contoso and any sub-brand or name variant containing Contoso\n      took: only\
+    \ the brand named exactly Contoso\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many products"
+  understood_as_in_human_words: How many products belong to the brand "Contoso" — a single count of products
+    whose brand is Contoso, across the whole product catalogue with no date limit and no restriction on
+    whether they are currently sold or discontinued.
+  population_actually_answered: 'The 710 rows of contoso_served.dim_product whose brand is exactly ''Contoso'',
+    out of 2,517 product rows in total. ONE restriction applied, the one the question named: brand = ''Contoso''.
+    No period predicate, because dim_product carries no date column. No active/discontinued predicate,
+    because dim_product carries no status column, discontinued flag or validity dates — this bundle holds
+    no such axis for Product, so the 710 is the whole Contoso catalogue and not a default-selected subset.
+    Store''s active-by-default rule was NOT borrowed: it binds dim_store.close_date and has no counterpart
+    on Product. Grain is one row per product_key, the declared SKU, so colour variants of one model count
+    separately as the Color concept declares; COUNT(*) and COUNT(DISTINCT product_key) both give 710.
+    NOT a count of products that ever sold — this reads the product register alone and never joins v_contoso5_sales_line,
+    so any Contoso SKU with no sales line is included.'
   how_the_result_must_be_presented:
     shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
@@ -58,12 +58,12 @@ intent:
     - count distinct of products
     answer_step: '3'
     verb: aggregate
-    said: How many products does the Contoso brand have?
-    stage1_confidence: 0.86
+    said: How many products does the Contoso brand have
+    stage1_confidence: 0.9
   canonical_question: &id001
-    understood_as: A count of how many products carry the brand "Contoso" — one single number covering
-      every product listed under that brand, with no time period or other restriction (so discontinued
-      or out-of-stock products are counted too unless you tell me otherwise).
+    understood_as: How many products belong to the brand "Contoso" — a single count of products whose
+      brand is Contoso, across the whole product catalogue with no date limit and no restriction on whether
+      they are currently sold or discontinued.
     steps:
     - id: '1'
       do: from
@@ -83,39 +83,38 @@ intent:
       - how: count distinct
         of: products
         said: How many products
-      said: How many products does the Contoso brand have?
+      said: How many products does the Contoso brand have
     answer: '3'
     output_shape: &id003
       shape: one figure
-      said: How many products does the Contoso brand have?
+      said: How many products
+      rows: one
       key_columns: &id005 []
       figure_columns: &id006
       - how many products
-      rows: one
     ambiguities:
     - words: products
-      question: Should I count each individual product item (every size, colour or SKU separately), or
-        each distinct product model/name once?
+      question: Should each individually sold item count as one product, or should variants of the same
+        model (different colours or sizes) be counted together as one product?
       readings:
-      - every individual product entry / SKU
-      - each distinct product model or name, counted once
-      assumed: every individual product entry, counted once each
+      - every individual sellable item counts separately
+      - each distinct product model counts once, however many variants it has
+      assumed: every individual product counts separately
+    - words: does ... have
+      question: Do you want all Contoso products that have ever existed in the catalogue, or only the
+        ones currently active and still being sold?
+      readings:
+      - all Contoso products ever in the catalogue, including discontinued ones
+      - only Contoso products that are currently active or available
+      assumed: all Contoso products in the catalogue, with no active/discontinued filter
     - words: the Contoso brand
-      question: Does "Contoso" mean only the brand named exactly "Contoso", or should related brand names
-        such as "Contoso, Ltd" also count?
+      question: Is "Contoso" the brand name exactly, or should sub-brands and variants of the name (like
+        "Contoso Ltd") be included too?
       readings:
-      - only the brand whose name is exactly "Contoso"
-      - any brand whose name contains "Contoso"
-      assumed: only the brand named exactly "Contoso"
-    - words: have
-      question: Should discontinued or no-longer-sold Contoso products be included in the count, or only
-        ones currently available?
-      readings:
-      - all Contoso products ever listed, including discontinued ones
-      - only Contoso products currently active or available for sale
-      assumed: all Contoso products, with no availability restriction
-    cannot_express: []
-    confidence: 0.86
+      - only the brand named exactly Contoso
+      - Contoso and any sub-brand or name variant containing Contoso
+      assumed: only the brand named exactly Contoso
+    confidence: 0.9
   steps: 3
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
@@ -132,210 +131,107 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "products → one row of dim_product = one product (a SKU), 2,517 of them\n        could also\
-      \ mean: each distinct product model or name, counted once"
-    ref: 'Product is declared as "a thing Contoso sells, at the level the shelf knows it: a SKU", and
-      Color is declared as "the one attribute that on its own makes a new SKU". MEASURED: product_rows
-      2517 = distinct product_key 2517 = distinct product_name 2517, so the two readings cannot differ
-      — every product name is carried by exactly one row. The fork is priced and immaterial; no question
-      needed.'
+    text: "products → one row per product_key — the SKU, 2,517 of them, each colour variant counting as\
+      \ its own product\n        could also mean: collapsing colour variants of one model into a single\
+      \ product"
+    ref: The Color concept declares colour 'is the one attribute that on its own makes a new SKU — "E400
+      Green" and "E400 Orange" are two products', so the declared product grain is the SKU; no fork remains
+      and no variant-model column exists to collapse on.
   - kind: ''
-    text: "the Contoso brand → the brand whose value is exactly 'Contoso'\n        could also mean: any\
-      \ brand whose name contains \"Contoso\""
-    ref: 'MEASURED on dim_product.brand: the 11 declared brands are ''A. Datum'', ''Adventure Works'',
-      ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge Video'',
-      ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''. Exactly one contains the string
-      "Contoso" and it is ''Contoso'' itself — there is no ''Contoso, Ltd'' in this bundle. Exact-match
-      and contains select the identical rows, so the fork is priced and immaterial; no question needed.'
+    text: "does ... have → the whole catalogue, with no active/discontinued filter\n        could also\
+      \ mean: only products currently active or still being sold"
+    ref: 'Not a choice I made: dim_product serves only product_key, product_code, product_name, manufacturer,
+      brand, color, category_name, sub_category_name — no status flag, no discontinued marker, no valid_from/valid_to.
+      The bundle holds no active/discontinued axis for Product, so there is one population only. Store''s
+      active-by-default rule does not transfer; it is bound to dim_store.close_date, which has no counterpart
+      here.'
   - kind: ''
-    text: "have → no availability restriction — every catalogue row, discontinued or not\n        could\
-      \ also mean: only products currently active or available for sale"
-    ref: dim_product carries no status, close-date or availability column at all (product_key, product_code,
-      product_name, manufacturer, brand, color, category_name, sub_category_name, list_cost, list_price).
-      The trading-state default store.resolution.active_is_the_absent_close_date binds close_date/status_annotation
-      on Store, not on Product, so it does not reach here. This reading is not a choice I am making —
-      the data holds nothing to restrict on.
+    text: "the Contoso brand → brand = 'Contoso' exactly\n        could also mean: Contoso plus any sub-brand\
+      \ or name variant containing 'Contoso'"
+    ref: 'Measured, not assumed: brand holds exactly 11 values — A. Datum, Adventure Works, Contoso, Fabrikam,
+      Litware, Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The Phone Company, Wide
+      World Importers. Only one contains ''Contoso'', so exact-match and contains-match return the same
+      set. The fork is priced at zero.'
   - kind: ''
-    text: "the Contoso brand → brand exactly equal to 'Contoso' — 710 products\n        could also mean:\
-      \ any brand whose name contains \"Contoso\" — also 710 products"
-    ref: 'MEASURED, not assumed: exact_contoso_rows 710 and contains_contoso_rows 710 are the same rows.
-      Of the 11 declared brands only ''Contoso'' contains the string, so there is no ''Contoso, Ltd''
-      for a wider reading to pick up. The readings are identical; asking would cost the reader a question
-      with no figure behind it.'
+    text: "the Contoso brand → brand = 'Contoso' exactly — 710 products\n        could also mean: Contoso\
+      \ plus any sub-brand or name variant containing 'Contoso'"
+    ref: 'Both readings measured in one query and they are IDENTICAL: exact match 710, LIKE ''%Contoso%''
+      710. No sub-brand or name variant exists in the column''s 11 values, so the fork moves nothing and
+      is not worth asking about.'
   - kind: ''
-    text: "products → one dim_product row = one product (a SKU) — 710 of them\n        could also mean:\
-      \ each distinct product model or name counted once"
-    ref: 'MEASURED inside the slice: distinct_keys 710 and distinct_names 710 equal the 710 rows, so no
-      product name is shared by two rows and the SKU reading cannot differ from the model reading. Product
-      is in any case declared as "a thing Contoso sells, at the level the shelf knows it: a SKU".'
+    text: "products → one row per product_key; COUNT(*) and COUNT(DISTINCT product_key) both 710, so the\
+      \ grain is clean\n        could also mean: colour variants of one model collapsed to a single product"
+    ref: The Color concept declares colour alone makes a new SKU ('E400 Green' and 'E400 Orange' are two
+      products), so the SKU is the declared product grain.
   - kind: ''
-    text: "products → one dim_product row = one product (a SKU) — 710\n        could also mean: each distinct\
-      \ product model or name counted once — also 710"
-    ref: 'MEASURED both ways: within the Contoso slice, distinct product_key 710 = distinct product_name
-      710 = 710 rows (and across the catalogue 2,517 = 2,517 = 2,517). No name is shared by two rows,
-      so the SKU reading and the model reading are the same number. Product is separately declared as
-      "a thing Contoso sells, at the level the shelf knows it: a SKU".'
+    text: "does ... have → all 710 Contoso products in the catalogue, no active/discontinued filter\n\
+      \        could also mean: only Contoso products still being sold"
+    ref: dim_product carries no status, discontinued flag or validity dates, so the bundle holds no active/discontinued
+      axis for Product and there is one population only. Store's active-by-default rule is bound to dim_store.close_date
+      and has no counterpart here.
   - kind: ''
-    text: "the Contoso brand → brand exactly equal to 'Contoso' — 710\n        could also mean: any brand\
-      \ whose name contains \"Contoso\", such as a \"Contoso, Ltd\" — also 710"
-    ref: 'MEASURED: exact match 710, contains-match 710, the identical rows. dim_product.brand holds 11
-      values and only one contains the string; there is no ''Contoso, Ltd'' here for a wider reading to
-      pick up, and contoso5_brand IS the declared value set, so a value absent there is one the warehouse
-      does not hold.'
+    text: "the Contoso brand → brand = 'Contoso' exactly — 710 products\n        could also mean: Contoso\
+      \ plus any sub-brand or name variant containing 'Contoso' — also 710 products"
+    ref: 'Both readings measured in one query and IDENTICAL: exact 710, LIKE ''%Contoso%'' 710. None of
+      the brand column''s 11 values is a Contoso variant, so the fork moves nothing and was not worth
+      asking about. Zero null brands, so the predicate strands no row.'
   - kind: ''
-    text: "have → no availability restriction — every product listed under the brand, discontinued included\n\
-      \        could also mean: only products currently active or available for sale"
-    ref: 'Not my choice: dim_product serves product_key, product_code, product_name, manufacturer, brand,
-      color, category_name, sub_category_name, list_cost, list_price — no status, close date or availability
-      flag. The bundle''s trading-state default binds Store, not Product. The narrower reading is unmeasurable
-      here, which I state rather than presenting the wide one as the only reading.'
+    text: "products → count distinct product_key — the SKU, so each colour variant is its own product\n\
+      \        could also mean: each distinct product model counted once however many colour variants\
+      \ it has, which would give a smaller figure"
+    ref: Settled by the Color concept, which declares colour 'is the one attribute that on its own makes
+      a new SKU — "E400 Green" and "E400 Orange" are two products'. The SKU is the declared product grain
+      and the bundle carries no model-level column to collapse on.
   - kind: ''
-    text: "products the brand HAS → products listed in the catalogue under that brand — 710\n        could\
-      \ also mean: products the brand actually sold over the ten years of sales, which would need a join\
-      \ to v_contoso5_sales_line and could be fewer"
-    ref: Taken from the question's grain — it asks what the brand HAS, and Brand is declared as "carried
-      as a column on the product row with no table and no key of their own" (edge product__sold_under__brand).
-      I did not measure the sold-ever reading because the question named no sales, no period and no measure;
-      if that is the one wanted, it is one join away.
+    text: "does ... have → all 710 Contoso products in the catalogue, with no active/discontinued filter\n\
+      \        could also mean: only Contoso products currently active or still being sold"
+    ref: 'Not a choice I made: dim_product serves product_key, product_code, product_name, manufacturer,
+      brand, color, category_name, sub_category_name and nothing else — no status, no discontinued marker,
+      no valid_from/valid_to. There is no active/discontinued axis for Product in this bundle, so one
+      population exists and the currently-sold reading is unanswerable here rather than declined.'
   concepts: []
   rules:
-  - id: Product is declared as "a thing Contoso sells
-    why: '''products'' = one row of dim_product = one product (a SKU), 2,517 of them'
-  - id: 'at the level the shelf knows it: a SKU"'
-    why: '''products'' = one row of dim_product = one product (a SKU), 2,517 of them'
-  - id: 'and Color is declared as "the one attribute that on its own makes a new SKU". MEASURED: product_rows
-      2517 = distinct product_key 2517 = distinct product_name 2517'
-    why: '''products'' = one row of dim_product = one product (a SKU), 2,517 of them'
-  - id: so the two readings cannot differ — every product name is carried by exactly one row. The fork
-      is priced and immaterial
-    why: '''products'' = one row of dim_product = one product (a SKU), 2,517 of them'
-  - id: no question needed.
-    why: '''products'' = one row of dim_product = one product (a SKU), 2,517 of them'
-  - id: 'MEASURED on dim_product.brand: the 11 declared brands are ''A. Datum'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Adventure Works'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Contoso'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Fabrikam'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Litware'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Northwind Traders'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Proseware'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Southridge Video'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Tailspin Toys'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''The Phone Company'''
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: '''Wide World Importers''. Exactly one contains the string "Contoso" and it is ''Contoso'' itself
-      — there is no ''Contoso'
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: Ltd' in this bundle. Exact-match and contains select the identical rows
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: so the fork is priced and immaterial
-    why: '''the Contoso brand'' = the brand whose value is exactly ''Contoso'''
-  - id: dim_product carries no status
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: close-date or availability column at all (product_key
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: product_code
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: product_name
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: manufacturer
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: brand
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: color
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: category_name
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: sub_category_name
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: list_cost
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: list_price). The trading-state default store.resolution.active_is_the_absent_close_date binds
-      close_date/status_annotation on Store
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: not on Product
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: so it does not reach here. This reading is not a choice I am making — the data holds nothing to
-      restrict on.
-    why: '''have'' = no availability restriction — every catalogue row, discontinued or not'
-  - id: MEASURED
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710 products'
-  - id: 'not assumed: exact_contoso_rows 710 and contains_contoso_rows 710 are the same rows. Of the 11
-      declared brands only ''Contoso'' contains the string'
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710 products'
-  - id: so there is no 'Contoso
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710 products'
-  - id: Ltd' for a wider reading to pick up. The readings are identical
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710 products'
-  - id: asking would cost the reader a question with no figure behind it.
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710 products'
-  - id: 'MEASURED inside the slice: distinct_keys 710 and distinct_names 710 equal the 710 rows'
-    why: '''products'' = one dim_product row = one product (a SKU) — 710 of them'
-  - id: so no product name is shared by two rows and the SKU reading cannot differ from the model reading.
-      Product is in any case declared as "a thing Contoso sells
-    why: '''products'' = one dim_product row = one product (a SKU) — 710 of them'
-  - id: 'at the level the shelf knows it: a SKU".'
-    why: '''products'' = one dim_product row = one product (a SKU) — 710 of them'
-  - id: 'MEASURED both ways: within the Contoso slice'
-    why: '''products'' = one dim_product row = one product (a SKU) — 710'
-  - id: distinct product_key 710 = distinct product_name 710 = 710 rows (and across the catalogue 2
-    why: '''products'' = one dim_product row = one product (a SKU) — 710'
-  - id: 517 = 2
-    why: '''products'' = one dim_product row = one product (a SKU) — 710'
-  - id: 517). No name is shared by two rows
-    why: '''products'' = one dim_product row = one product (a SKU) — 710'
-  - id: so the SKU reading and the model reading are the same number. Product is separately declared as
-      "a thing Contoso sells
-    why: '''products'' = one dim_product row = one product (a SKU) — 710'
-  - id: 'MEASURED: exact match 710'
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710'
-  - id: contains-match 710
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710'
-  - id: the identical rows. dim_product.brand holds 11 values and only one contains the string
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710'
-  - id: there is no 'Contoso
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710'
-  - id: Ltd' here for a wider reading to pick up
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710'
-  - id: and contoso5_brand IS the declared value set
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710'
-  - id: so a value absent there is one the warehouse does not hold.
-    why: '''the Contoso brand'' = brand exactly equal to ''Contoso'' — 710'
-  - id: 'Not my choice: dim_product serves product_key'
-    why: '''have'' = no availability restriction — every product listed under the brand, discontinued
-      included'
-  - id: list_price — no status
-    why: '''have'' = no availability restriction — every product listed under the brand, discontinued
-      included'
-  - id: close date or availability flag. The bundle's trading-state default binds Store
-    why: '''have'' = no availability restriction — every product listed under the brand, discontinued
-      included'
-  - id: not Product. The narrower reading is unmeasurable here
-    why: '''have'' = no availability restriction — every product listed under the brand, discontinued
-      included'
-  - id: which I state rather than presenting the wide one as the only reading.
-    why: '''have'' = no availability restriction — every product listed under the brand, discontinued
-      included'
-  - id: Taken from the question's grain — it asks what the brand HAS
-    why: '''products the brand HAS'' = products listed in the catalogue under that brand — 710'
-  - id: and Brand is declared as "carried as a column on the product row with no table and no key of their
-      own" (edge product__sold_under__brand). I did not measure the sold-ever reading because the question
-      named no sales
-    why: '''products the brand HAS'' = products listed in the catalogue under that brand — 710'
-  - id: no period and no measure
-    why: '''products the brand HAS'' = products listed in the catalogue under that brand — 710'
-  - id: if that is the one wanted
-    why: '''products the brand HAS'' = products listed in the catalogue under that brand — 710'
-  - id: it is one join away.
-    why: '''products the brand HAS'' = products listed in the catalogue under that brand — 710'
+  - id: The Color concept declares colour 'is the one attribute that on its own makes a new SKU — "E400
+      Green" and "E400 Orange" are two products', so the declared product grain is the SKU; no fork remains
+      and no variant-model column exists to collapse on.
+    why: '''products'' = one row per product_key — the SKU, 2,517 of them, each colour variant counting
+      as its own product'
+  - id: 'Not a choice I made: dim_product serves only product_key, product_code, product_name, manufacturer,
+      brand, color, category_name, sub_category_name — no status flag, no discontinued marker, no valid_from/valid_to.
+      The bundle holds no active/discontinued axis for Product, so there is one population only. Store''s
+      active-by-default rule does not transfer; it is bound to dim_store.close_date, which has no counterpart
+      here.'
+    why: '''does ... have'' = the whole catalogue, with no active/discontinued filter'
+  - id: 'Measured, not assumed: brand holds exactly 11 values — A. Datum, Adventure Works, Contoso, Fabrikam,
+      Litware, Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The Phone Company, Wide
+      World Importers. Only one contains ''Contoso'', so exact-match and contains-match return the same
+      set. The fork is priced at zero.'
+    why: '''the Contoso brand'' = brand = ''Contoso'' exactly'
+  - id: 'Both readings measured in one query and they are IDENTICAL: exact match 710, LIKE ''%Contoso%''
+      710. No sub-brand or name variant exists in the column''s 11 values, so the fork moves nothing and
+      is not worth asking about.'
+    why: '''the Contoso brand'' = brand = ''Contoso'' exactly — 710 products'
+  - id: The Color concept declares colour alone makes a new SKU ('E400 Green' and 'E400 Orange' are two
+      products), so the SKU is the declared product grain.
+    why: '''products'' = one row per product_key; COUNT(*) and COUNT(DISTINCT product_key) both 710, so
+      the grain is clean'
+  - id: dim_product carries no status, discontinued flag or validity dates, so the bundle holds no active/discontinued
+      axis for Product and there is one population only. Store's active-by-default rule is bound to dim_store.close_date
+      and has no counterpart here.
+    why: '''does ... have'' = all 710 Contoso products in the catalogue, no active/discontinued filter'
+  - id: 'Both readings measured in one query and IDENTICAL: exact 710, LIKE ''%Contoso%'' 710. None of
+      the brand column''s 11 values is a Contoso variant, so the fork moves nothing and was not worth
+      asking about. Zero null brands, so the predicate strands no row.'
+    why: '''the Contoso brand'' = brand = ''Contoso'' exactly — 710 products'
+  - id: Settled by the Color concept, which declares colour 'is the one attribute that on its own makes
+      a new SKU — "E400 Green" and "E400 Orange" are two products'. The SKU is the declared product grain
+      and the bundle carries no model-level column to collapse on.
+    why: '''products'' = count distinct product_key — the SKU, so each colour variant is its own product'
+  - id: 'Not a choice I made: dim_product serves product_key, product_code, product_name, manufacturer,
+      brand, color, category_name, sub_category_name and nothing else — no status, no discontinued marker,
+      no valid_from/valid_to. There is no active/discontinued axis for Product in this bundle, so one
+      population exists and the currently-sold reading is unanswerable here rather than declined.'
+    why: '''does ... have'' = all 710 Contoso products in the catalogue, with no active/discontinued filter'
   edges: []
 sql:
 - "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\nWHERE\n\
@@ -355,14 +251,14 @@ result:
   - - 710
   capped: false
 prompt:
-  chars: 84131
-  lines: 1027
+  chars: 73996
+  lines: 842
   sections:
   - STAGE 1 — question to canonical question (QDMR)
   - STAGE 2 — system prompt for walking one step
   - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/465e28b73001.txt
-  sha: 465e28b73001
+  file: acceptance/prompts/44362d9332a0.txt
+  sha: 44362d9332a0
   reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
     the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
     it is now.'
@@ -371,47 +267,47 @@ v3_report:
   canonical_question_json: *id001
   canonical_question_simplified: "  1       FROM       products                    “products”\n  2  ←\
     \ 1  WHERE      brand = 'Contoso'           “the Contoso brand”\n  3  ← 2  AGGREGATE  count distinct\
-    \ of products  “How many products does the Contoso brand have?”\n  answer: step 3   confidence: 0.86\n\
-    \  UNDERSTOOD AS: A count of how many products carry the brand \"Contoso\" — one single number covering\
-    \ every product listed under that brand, with no time period or other restriction (so discontinued\
-    \ or out-of-stock products are counted too unless you tell me otherwise).\n  AMBIGUOUS 'products'\
-    \ — ASKS: Should I count each individual product item (every size, colour or SKU separately), or each\
-    \ distinct product model/name once?\n      could mean: every individual product entry / SKU\n    \
-    \  could mean: each distinct product model or name, counted once\n      took: every individual product\
-    \ entry, counted once each\n  AMBIGUOUS 'the Contoso brand' — ASKS: Does \"Contoso\" mean only the\
-    \ brand named exactly \"Contoso\", or should related brand names such as \"Contoso, Ltd\" also count?\n\
-    \      could mean: only the brand whose name is exactly \"Contoso\"\n      could mean: any brand whose\
-    \ name contains \"Contoso\"\n      took: only the brand named exactly \"Contoso\"\n  AMBIGUOUS 'have'\
-    \ — ASKS: Should discontinued or no-longer-sold Contoso products be included in the count, or only\
-    \ ones currently available?\n      could mean: all Contoso products ever listed, including discontinued\
-    \ ones\n      could mean: only Contoso products currently active or available for sale\n      took:\
-    \ all Contoso products, with no availability restriction\n  OUTPUT SHAPE: one figure · one row(s)\
-    \ · carrying how many products"
-  understood_as: A count of how many products carry the brand "Contoso" — one single number covering every
-    product listed under that brand, with no time period or other restriction (so discontinued or out-of-stock
-    products are counted too unless you tell me otherwise).
+    \ of products  “How many products does the Contoso brand have”\n  answer: step 3   confidence: 0.9\n\
+    \  UNDERSTOOD AS: How many products belong to the brand \"Contoso\" — a single count of products whose\
+    \ brand is Contoso, across the whole product catalogue with no date limit and no restriction on whether\
+    \ they are currently sold or discontinued.\n  AMBIGUOUS 'products' — ASKS: Should each individually\
+    \ sold item count as one product, or should variants of the same model (different colours or sizes)\
+    \ be counted together as one product?\n      could mean: every individual sellable item counts separately\n\
+    \      could mean: each distinct product model counts once, however many variants it has\n      took:\
+    \ every individual product counts separately\n  AMBIGUOUS 'does ... have' — ASKS: Do you want all\
+    \ Contoso products that have ever existed in the catalogue, or only the ones currently active and\
+    \ still being sold?\n      could mean: all Contoso products ever in the catalogue, including discontinued\
+    \ ones\n      could mean: only Contoso products that are currently active or available\n      took:\
+    \ all Contoso products in the catalogue, with no active/discontinued filter\n  AMBIGUOUS 'the Contoso\
+    \ brand' — ASKS: Is \"Contoso\" the brand name exactly, or should sub-brands and variants of the name\
+    \ (like \"Contoso Ltd\") be included too?\n      could mean: only the brand named exactly Contoso\n\
+    \      could mean: Contoso and any sub-brand or name variant containing Contoso\n      took: only\
+    \ the brand named exactly Contoso\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many products"
+  understood_as: How many products belong to the brand "Contoso" — a single count of products whose brand
+    is Contoso, across the whole product catalogue with no date limit and no restriction on whether they
+    are currently sold or discontinued.
   ambiguities_it_saw:
   - words: products
-    asks: Should I count each individual product item (every size, colour or SKU separately), or each
-      distinct product model/name once?
+    asks: Should each individually sold item count as one product, or should variants of the same model
+      (different colours or sizes) be counted together as one product?
     readings:
-    - every individual product entry / SKU
-    - each distinct product model or name, counted once
-    took: every individual product entry, counted once each
+    - every individual sellable item counts separately
+    - each distinct product model counts once, however many variants it has
+    took: every individual product counts separately
+  - words: does ... have
+    asks: Do you want all Contoso products that have ever existed in the catalogue, or only the ones currently
+      active and still being sold?
+    readings:
+    - all Contoso products ever in the catalogue, including discontinued ones
+    - only Contoso products that are currently active or available
+    took: all Contoso products in the catalogue, with no active/discontinued filter
   - words: the Contoso brand
-    asks: Does "Contoso" mean only the brand named exactly "Contoso", or should related brand names such
-      as "Contoso, Ltd" also count?
+    asks: Is "Contoso" the brand name exactly, or should sub-brands and variants of the name (like "Contoso
+      Ltd") be included too?
     readings:
-    - only the brand whose name is exactly "Contoso"
-    - any brand whose name contains "Contoso"
-    took: only the brand named exactly "Contoso"
-  - words: have
-    asks: Should discontinued or no-longer-sold Contoso products be included in the count, or only ones
-      currently available?
-    readings:
-    - all Contoso products ever listed, including discontinued ones
-    - only Contoso products currently active or available for sale
-    took: all Contoso products, with no availability restriction
+    - only the brand named exactly Contoso
+    - Contoso and any sub-brand or name variant containing Contoso
+    took: only the brand named exactly Contoso
   presentation:
     claimed_answer_is: one figure
     answer_step: '3'
@@ -419,8 +315,8 @@ v3_report:
       do: aggregate
       of: '2'
       figures: *id002
-      said: How many products does the Contoso brand have?
-    confidence_stage1: 0.86
+      said: How many products does the Contoso brand have
+    confidence_stage1: 0.9
   sql_by_step:
   - step: '1'
     sql: "SELECT\n  product_key,\n  product_name,\n  brand\nFROM contoso_served.dim_product"
@@ -433,122 +329,109 @@ v3_report:
     sql: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
       WHERE\n  brand = 'Contoso'"
     params: {}
-  what_it_calculated: '710 is how many distinct products carry the brand Contoso in this bundle''s catalogue,
-    counted at the grain dim_product is keyed on: one product per SKU, so "E400 Green" and "E400 Orange"
-    are two products — which the Color concept declares is right, colour being "the one attribute that
-    on its own makes a new SKU". That is 710 of the 2,517 products across all 11 brands. WHAT I DID NOT
-    INCLUDE: no restriction to products still sold or in stock, because dim_product carries no status,
-    discontinuation or availability column — that distinction cannot be drawn in this data at all; and
-    no restriction to products that actually sold, because this counts the catalogue listing rather than
-    sales activity, so a Contoso product that never reached an order is inside the 710. No other brand
-    contributes, and no variant spelling of the name exists to have excluded.'
+  what_it_calculated: 'One row, one figure: how many distinct products carry the Contoso brand in the
+    product catalogue — 710 SKUs out of the 2,517 products the catalogue holds in total. Each colour variant
+    is its own product, and the count covers catalogue entries whether or not they have ever appeared
+    on a sale.'
   rows_returned: &id004
   - how_many_products: 710
   synthesis:
     claimed: '710'
     shape: one figure
-    answered_population: 'All 710 rows of contoso_served.dim_product whose `brand` is exactly ''Contoso'',
-      out of the 2,517 products the bundle holds. I applied exactly one restriction — brand = ''Contoso'',
-      which is the question''s own filter — and nothing else. No channel predicate: the physical/online
-      default in store.resolution.the_channel_is_the_location_sentinel binds `location_code` on Store
-      and cannot reach a product row. No trading-state predicate: store.resolution.active_is_the_absent_close_date
-      binds `close_date` and `status_annotation`, which exist only on dim_store. No period predicate:
-      order.default.an_unscoped_question_covers_all_time governs `order_date` on the sales line, and a
-      product row carries no date, so there is no window to widen or narrow. The figure is over dim_product
-      alone — products LISTED under the brand, which is not the same set as products that ever sold, since
-      nothing here joins to v_contoso5_sales_line.'
+    answered_population: 'The 710 rows of contoso_served.dim_product whose brand is exactly ''Contoso'',
+      out of 2,517 product rows in total. ONE restriction applied, the one the question named: brand =
+      ''Contoso''. No period predicate, because dim_product carries no date column. No active/discontinued
+      predicate, because dim_product carries no status column, discontinued flag or validity dates — this
+      bundle holds no such axis for Product, so the 710 is the whole Contoso catalogue and not a default-selected
+      subset. Store''s active-by-default rule was NOT borrowed: it binds dim_store.close_date and has
+      no counterpart on Product. Grain is one row per product_key, the declared SKU, so colour variants
+      of one model count separately as the Color concept declares; COUNT(*) and COUNT(DISTINCT product_key)
+      both give 710. NOT a count of products that ever sold — this reads the product register alone and
+      never joins v_contoso5_sales_line, so any Contoso SKU with no sales line is included.'
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
     step_asks: products
     turns:
-    - why: Establish the product base relation for step 1 and see the actual brand values, since "Contoso"
-        may or may not be stored exactly.
-      did: 'probe ''dim_product.brand'' AND ALSO: SELECT count(*) AS product_rows, count(DISTINCT product_key)
-        AS distinct_product_keys, count(DISTINCT product_name) AS distinct_product_names FROM contoso_served.dim_product'
+    - why: Establish the product catalogue as the starting relation, and look at the actual brand values
+        so the next step's "Contoso" filter matches something real.
+      did: 'probe ''dim_product.brand'' AND ALSO: SELECT COUNT(*) AS product_rows, COUNT(DISTINCT product_key)
+        AS distinct_products, COUNT(DISTINCT brand) AS distinct_brands FROM contoso_served.dim_product'
       came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure Works'',
         ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge Video'',
         ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s): [{"product_rows":
-        2517, "distinct_product_keys": 2517, "distinct_product_names": 2517}]'
+        2517, "distinct_products": 2517, "distinct_brands": 11}]'
     settled_on: "SELECT\n  product_key,\n  product_name,\n  brand\nFROM contoso_served.dim_product"
-    means: 'The whole product catalogue as this bundle holds it: 2,517 rows, one per product as the shelf
-      knows it — one SKU, so a colour variant like "E400 Green" is its own row. No brand restriction and
-      no availability restriction applied yet; this is the unfiltered starting set that step 2 will narrow
-      to Contoso. There is no date on a product row, so "all time" is not a window here, it is simply
-      the catalogue as recorded.'
+    means: Every product in Contoso's catalogue at the SKU grain — 2,517 rows, one row per product_key,
+      each a distinct sellable article including separate rows for each colour variant. No period restriction
+      and no sold/discontinued restriction, because this relation carries no date and no status column
+      on which either could be applied.
     readings_taken:
     - word: products
-      took: one row of dim_product = one product (a SKU), 2,517 of them
-      could_also_mean: each distinct product model or name, counted once
-      declaration: 'Product is declared as "a thing Contoso sells, at the level the shelf knows it: a
-        SKU", and Color is declared as "the one attribute that on its own makes a new SKU". MEASURED:
-        product_rows 2517 = distinct product_key 2517 = distinct product_name 2517, so the two readings
-        cannot differ — every product name is carried by exactly one row. The fork is priced and immaterial;
-        no question needed.'
+      took: one row per product_key — the SKU, 2,517 of them, each colour variant counting as its own
+        product
+      could_also_mean: collapsing colour variants of one model into a single product
+      declaration: The Color concept declares colour 'is the one attribute that on its own makes a new
+        SKU — "E400 Green" and "E400 Orange" are two products', so the declared product grain is the SKU;
+        no fork remains and no variant-model column exists to collapse on.
+    - word: does ... have
+      took: the whole catalogue, with no active/discontinued filter
+      could_also_mean: only products currently active or still being sold
+      declaration: 'Not a choice I made: dim_product serves only product_key, product_code, product_name,
+        manufacturer, brand, color, category_name, sub_category_name — no status flag, no discontinued
+        marker, no valid_from/valid_to. The bundle holds no active/discontinued axis for Product, so there
+        is one population only. Store''s active-by-default rule does not transfer; it is bound to dim_store.close_date,
+        which has no counterpart here.'
     - word: the Contoso brand
-      took: the brand whose value is exactly 'Contoso'
-      could_also_mean: any brand whose name contains "Contoso"
-      declaration: 'MEASURED on dim_product.brand: the 11 declared brands are ''A. Datum'', ''Adventure
-        Works'', ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge
-        Video'', ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''. Exactly one contains
-        the string "Contoso" and it is ''Contoso'' itself — there is no ''Contoso, Ltd'' in this bundle.
-        Exact-match and contains select the identical rows, so the fork is priced and immaterial; no question
-        needed.'
-    - word: have
-      took: no availability restriction — every catalogue row, discontinued or not
-      could_also_mean: only products currently active or available for sale
-      declaration: dim_product carries no status, close-date or availability column at all (product_key,
-        product_code, product_name, manufacturer, brand, color, category_name, sub_category_name, list_cost,
-        list_price). The trading-state default store.resolution.active_is_the_absent_close_date binds
-        close_date/status_annotation on Store, not on Product, so it does not reach here. This reading
-        is not a choice I am making — the data holds nothing to restrict on.
+      took: brand = 'Contoso' exactly
+      could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso'
+      declaration: 'Measured, not assumed: brand holds exactly 11 values — A. Datum, Adventure Works,
+        Contoso, Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The
+        Phone Company, Wide World Importers. Only one contains ''Contoso'', so exact-match and contains-match
+        return the same set. The fork is priced at zero.'
     blocked_by: []
   - step: '2'
     step_asks: the Contoso brand
     turns:
-    - why: Apply the brand filter and size the resulting population, pricing the exact-vs-contains reading
-        in the same query so the fork is measured rather than asserted.
-      did: "SELECT\n  COUNT(*) FILTER(WHERE\n    brand = 'Contoso') AS exact_contoso_rows,\n  COUNT(*)\
-        \ FILTER(WHERE\n    brand LIKE '%Contoso%') AS contains_contoso_rows,\n  COUNT(DISTINCT product_key)\
-        \ FILTER(WHERE\n    brand = 'Contoso') AS distinct_keys,\n  COUNT(DISTINCT product_name) FILTER(WHERE\n\
-        \    brand = 'Contoso') AS distinct_names\nFROM contoso_served.dim_product"
-      came_back: '1 row(s): [{"exact_contoso_rows": 710, "contains_contoso_rows": 710, "distinct_keys":
-        710, "distinct_names": 710}]'
+    - why: Apply the brand filter to the catalogue, measuring the exact-match and contains-match readings
+        side by side so the fork is proven equal rather than taken on the value list alone.
+      did: "SELECT\n  COUNT(*) FILTER(WHERE\n    brand = 'Contoso') AS exact_match,\n  COUNT(*) FILTER(WHERE\n\
+        \    brand LIKE '%Contoso%') AS contains_match,\n  COUNT(DISTINCT product_key) FILTER(WHERE\n\
+        \    brand = 'Contoso') AS distinct_products_exact,\n  COUNT(*) FILTER(WHERE\n    brand IS NULL)\
+        \ AS brand_null\nFROM contoso_served.dim_product"
+      came_back: '1 row(s): [{"exact_match": 710, "contains_match": 710, "distinct_products_exact": 710,
+        "brand_null": 0}]'
     settled_on: "SELECT\n  product_key,\n  product_name,\n  brand\nFROM contoso_served.dim_product\nWHERE\n\
       \  brand = 'Contoso'"
-    means: 'The Contoso slice of the product catalogue: 710 rows, one per product as the shelf knows it
-      (a SKU, so each colour variant is its own row), out of the 2,517 products in the bundle. These are
-      every product ever listed under the brand ''Contoso'' — no availability, discontinuation or date
-      restriction is applied, because a product row carries no such column. Each row stands for one sellable
-      article, and within this slice rows, product keys and product names are all 710, so the grain is
-      unambiguous.'
+    means: 'The Contoso-branded part of the product catalogue: 710 products, one row per product_key,
+      each a distinct SKU with colour variants as their own rows. No period and no sold/discontinued restriction,
+      because dim_product carries no column on which either could be applied.'
     readings_taken:
     - word: the Contoso brand
-      took: brand exactly equal to 'Contoso' — 710 products
-      could_also_mean: any brand whose name contains "Contoso" — also 710 products
-      declaration: 'MEASURED, not assumed: exact_contoso_rows 710 and contains_contoso_rows 710 are the
-        same rows. Of the 11 declared brands only ''Contoso'' contains the string, so there is no ''Contoso,
-        Ltd'' for a wider reading to pick up. The readings are identical; asking would cost the reader
-        a question with no figure behind it.'
+      took: brand = 'Contoso' exactly — 710 products
+      could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso'
+      declaration: 'Both readings measured in one query and they are IDENTICAL: exact match 710, LIKE
+        ''%Contoso%'' 710. No sub-brand or name variant exists in the column''s 11 values, so the fork
+        moves nothing and is not worth asking about.'
     - word: products
-      took: one dim_product row = one product (a SKU) — 710 of them
-      could_also_mean: each distinct product model or name counted once
-      declaration: 'MEASURED inside the slice: distinct_keys 710 and distinct_names 710 equal the 710
-        rows, so no product name is shared by two rows and the SKU reading cannot differ from the model
-        reading. Product is in any case declared as "a thing Contoso sells, at the level the shelf knows
-        it: a SKU".'
+      took: one row per product_key; COUNT(*) and COUNT(DISTINCT product_key) both 710, so the grain is
+        clean
+      could_also_mean: colour variants of one model collapsed to a single product
+      declaration: The Color concept declares colour alone makes a new SKU ('E400 Green' and 'E400 Orange'
+        are two products), so the SKU is the declared product grain.
+    - word: does ... have
+      took: all 710 Contoso products in the catalogue, no active/discontinued filter
+      could_also_mean: only Contoso products still being sold
+      declaration: dim_product carries no status, discontinued flag or validity dates, so the bundle holds
+        no active/discontinued axis for Product and there is one population only. Store's active-by-default
+        rule is bound to dim_store.close_date and has no counterpart here.
     blocked_by: []
   - step: '3'
-    step_asks: How many products does the Contoso brand have?
+    step_asks: How many products does the Contoso brand have
     turns:
-    - why: Read the answer figure in its own shape — one row, one column — before claiming it, rather
-        than lifting it from a diagnostic column on the previous step.
-      did: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
-        WHERE\n  brand = 'Contoso'"
-      came_back: '1 row(s): [{"how_many_products": 710}]'
-    - why: The answer is read in its own shape — one row, one figure, 710 — and every reading the question
-        left open was measured to the same number, so there is nothing left to ask.
+    - why: Settle the answer at 710 Contoso products, the count distinct already measured over the step-2
+        predicate, with no further query needed.
       did: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
         WHERE\n  brand = 'Contoso'"
       came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
@@ -557,60 +440,45 @@ v3_report:
         rows settle the question, do not decline.'
     settled_on: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
       WHERE\n  brand = 'Contoso'"
-    means: '710 is how many distinct products carry the brand Contoso in this bundle''s catalogue, counted
-      at the grain dim_product is keyed on: one product per SKU, so "E400 Green" and "E400 Orange" are
-      two products — which the Color concept declares is right, colour being "the one attribute that on
-      its own makes a new SKU". That is 710 of the 2,517 products across all 11 brands. WHAT I DID NOT
-      INCLUDE: no restriction to products still sold or in stock, because dim_product carries no status,
-      discontinuation or availability column — that distinction cannot be drawn in this data at all; and
-      no restriction to products that actually sold, because this counts the catalogue listing rather
-      than sales activity, so a Contoso product that never reached an order is inside the 710. No other
-      brand contributes, and no variant spelling of the name exists to have excluded.'
+    means: 'One row, one figure: how many distinct products carry the Contoso brand in the product catalogue
+      — 710 SKUs out of the 2,517 products the catalogue holds in total. Each colour variant is its own
+      product, and the count covers catalogue entries whether or not they have ever appeared on a sale.'
     readings_taken:
-    - word: products
-      took: one dim_product row = one product (a SKU) — 710
-      could_also_mean: each distinct product model or name counted once — also 710
-      declaration: 'MEASURED both ways: within the Contoso slice, distinct product_key 710 = distinct
-        product_name 710 = 710 rows (and across the catalogue 2,517 = 2,517 = 2,517). No name is shared
-        by two rows, so the SKU reading and the model reading are the same number. Product is separately
-        declared as "a thing Contoso sells, at the level the shelf knows it: a SKU".'
     - word: the Contoso brand
-      took: brand exactly equal to 'Contoso' — 710
-      could_also_mean: any brand whose name contains "Contoso", such as a "Contoso, Ltd" — also 710
-      declaration: 'MEASURED: exact match 710, contains-match 710, the identical rows. dim_product.brand
-        holds 11 values and only one contains the string; there is no ''Contoso, Ltd'' here for a wider
-        reading to pick up, and contoso5_brand IS the declared value set, so a value absent there is one
-        the warehouse does not hold.'
-    - word: have
-      took: no availability restriction — every product listed under the brand, discontinued included
-      could_also_mean: only products currently active or available for sale
-      declaration: 'Not my choice: dim_product serves product_key, product_code, product_name, manufacturer,
-        brand, color, category_name, sub_category_name, list_cost, list_price — no status, close date
-        or availability flag. The bundle''s trading-state default binds Store, not Product. The narrower
-        reading is unmeasurable here, which I state rather than presenting the wide one as the only reading.'
-    - word: products the brand HAS
-      took: products listed in the catalogue under that brand — 710
-      could_also_mean: products the brand actually sold over the ten years of sales, which would need
-        a join to v_contoso5_sales_line and could be fewer
-      declaration: Taken from the question's grain — it asks what the brand HAS, and Brand is declared
-        as "carried as a column on the product row with no table and no key of their own" (edge product__sold_under__brand).
-        I did not measure the sold-ever reading because the question named no sales, no period and no
-        measure; if that is the one wanted, it is one join away.
+      took: brand = 'Contoso' exactly — 710 products
+      could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso' — also 710 products
+      declaration: 'Both readings measured in one query and IDENTICAL: exact 710, LIKE ''%Contoso%'' 710.
+        None of the brand column''s 11 values is a Contoso variant, so the fork moves nothing and was
+        not worth asking about. Zero null brands, so the predicate strands no row.'
+    - word: products
+      took: count distinct product_key — the SKU, so each colour variant is its own product
+      could_also_mean: each distinct product model counted once however many colour variants it has, which
+        would give a smaller figure
+      declaration: Settled by the Color concept, which declares colour 'is the one attribute that on its
+        own makes a new SKU — "E400 Green" and "E400 Orange" are two products'. The SKU is the declared
+        product grain and the bundle carries no model-level column to collapse on.
+    - word: does ... have
+      took: all 710 Contoso products in the catalogue, with no active/discontinued filter
+      could_also_mean: only Contoso products currently active or still being sold
+      declaration: 'Not a choice I made: dim_product serves product_key, product_code, product_name, manufacturer,
+        brand, color, category_name, sub_category_name and nothing else — no status, no discontinued marker,
+        no valid_from/valid_to. There is no active/discontinued axis for Product in this bundle, so one
+        population exists and the currently-sold reading is unanswerable here rather than declined.'
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  summary: 73,996 chars · 842 lines  [44362d9332a0]
   detail:
-    chars: 84131
-    lines: 1027
+    chars: 73996
+    lines: 842
     sections:
     - STAGE 1 — question to canonical question (QDMR)
     - STAGE 2 — system prompt for walking one step
     - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/465e28b73001.txt
-    sha: 465e28b73001
+    file: acceptance/prompts/44362d9332a0.txt
+    sha: 44362d9332a0
     reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
       the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
       as it is now.'
@@ -619,27 +487,29 @@ stages:
   ms: 0
   summary: ''
   detail:
-    prose: A count of how many products carry the brand "Contoso" — one single number covering every product
-      listed under that brand, with no time period or other restriction (so discontinued or out-of-stock
-      products are counted too unless you tell me otherwise).
-    population: 'All 710 rows of contoso_served.dim_product whose `brand` is exactly ''Contoso'', out
-      of the 2,517 products the bundle holds. I applied exactly one restriction — brand = ''Contoso'',
-      which is the question''s own filter — and nothing else. No channel predicate: the physical/online
-      default in store.resolution.the_channel_is_the_location_sentinel binds `location_code` on Store
-      and cannot reach a product row. No trading-state predicate: store.resolution.active_is_the_absent_close_date
-      binds `close_date` and `status_annotation`, which exist only on dim_store. No period predicate:
-      order.default.an_unscoped_question_covers_all_time governs `order_date` on the sales line, and a
-      product row carries no date, so there is no window to widen or narrow. The figure is over dim_product
-      alone — products LISTED under the brand, which is not the same set as products that ever sold, since
-      nothing here joins to v_contoso5_sales_line.'
+    prose: How many products belong to the brand "Contoso" — a single count of products whose brand is
+      Contoso, across the whole product catalogue with no date limit and no restriction on whether they
+      are currently sold or discontinued.
+    population: 'The 710 rows of contoso_served.dim_product whose brand is exactly ''Contoso'', out of
+      2,517 product rows in total. ONE restriction applied, the one the question named: brand = ''Contoso''.
+      No period predicate, because dim_product carries no date column. No active/discontinued predicate,
+      because dim_product carries no status column, discontinued flag or validity dates — this bundle
+      holds no such axis for Product, so the 710 is the whole Contoso catalogue and not a default-selected
+      subset. Store''s active-by-default rule was NOT borrowed: it binds dim_store.close_date and has
+      no counterpart on Product. Grain is one row per product_key, the declared SKU, so colour variants
+      of one model count separately as the Color concept declares; COUNT(*) and COUNT(DISTINCT product_key)
+      both give 710. NOT a count of products that ever sold — this reads the product register alone and
+      never joins v_contoso5_sales_line, so any Contoso SKU with no sales line is included.'
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
-    steps_readable: "  1       FROM       products                    “products”\n  2  ← 1  WHERE    \
-      \  brand = 'Contoso'           “the Contoso brand”\n  3  ← 2  AGGREGATE  count distinct of products\
-      \  “How many products does the Contoso brand have?”\n  answer: step 3   confidence: 0.86"
+    steps_readable:
+    - '  1       FROM       products                    “products”'
+    - '  2  ← 1  WHERE      brand = ''Contoso''           “the Contoso brand”'
+    - '  3  ← 2  AGGREGATE  count distinct of products  “How many products does the Contoso brand have”'
+    - '  answer: step 3   confidence: 0.9'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -647,26 +517,26 @@ stages:
   detail:
     ambiguities:
     - words: products
-      asks: Should I count each individual product item (every size, colour or SKU separately), or each
-        distinct product model/name once?
+      asks: Should each individually sold item count as one product, or should variants of the same model
+        (different colours or sizes) be counted together as one product?
       readings:
-      - every individual product entry / SKU
-      - each distinct product model or name, counted once
-      took: every individual product entry, counted once each
+      - every individual sellable item counts separately
+      - each distinct product model counts once, however many variants it has
+      took: every individual product counts separately
+    - words: does ... have
+      asks: Do you want all Contoso products that have ever existed in the catalogue, or only the ones
+        currently active and still being sold?
+      readings:
+      - all Contoso products ever in the catalogue, including discontinued ones
+      - only Contoso products that are currently active or available
+      took: all Contoso products in the catalogue, with no active/discontinued filter
     - words: the Contoso brand
-      asks: Does "Contoso" mean only the brand named exactly "Contoso", or should related brand names
-        such as "Contoso, Ltd" also count?
+      asks: Is "Contoso" the brand name exactly, or should sub-brands and variants of the name (like "Contoso
+        Ltd") be included too?
       readings:
-      - only the brand whose name is exactly "Contoso"
-      - any brand whose name contains "Contoso"
-      took: only the brand named exactly "Contoso"
-    - words: have
-      asks: Should discontinued or no-longer-sold Contoso products be included in the count, or only ones
-        currently available?
-      readings:
-      - all Contoso products ever listed, including discontinued ones
-      - only Contoso products currently active or available for sale
-      took: all Contoso products, with no availability restriction
+      - only the brand named exactly Contoso
+      - Contoso and any sub-brand or name variant containing Contoso
+      took: only the brand named exactly Contoso
 - stage: cannot_express
   status: skipped
   ms: 0
@@ -682,7 +552,7 @@ stages:
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.86 — stage 1's own confidence in this decomposition
+  summary: 0.9 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -697,73 +567,65 @@ stages:
   detail:
     readings:
     - word: products
-      took: one row of dim_product = one product (a SKU), 2,517 of them
-      could_also_mean: each distinct product model or name, counted once
-      declaration: 'Product is declared as "a thing Contoso sells, at the level the shelf knows it: a
-        SKU", and Color is declared as "the one attribute that on its own makes a new SKU". MEASURED:
-        product_rows 2517 = distinct product_key 2517 = distinct product_name 2517, so the two readings
-        cannot differ — every product name is carried by exactly one row. The fork is priced and immaterial;
-        no question needed.'
+      took: one row per product_key — the SKU, 2,517 of them, each colour variant counting as its own
+        product
+      could_also_mean: collapsing colour variants of one model into a single product
+      declaration: The Color concept declares colour 'is the one attribute that on its own makes a new
+        SKU — "E400 Green" and "E400 Orange" are two products', so the declared product grain is the SKU;
+        no fork remains and no variant-model column exists to collapse on.
+    - word: does ... have
+      took: the whole catalogue, with no active/discontinued filter
+      could_also_mean: only products currently active or still being sold
+      declaration: 'Not a choice I made: dim_product serves only product_key, product_code, product_name,
+        manufacturer, brand, color, category_name, sub_category_name — no status flag, no discontinued
+        marker, no valid_from/valid_to. The bundle holds no active/discontinued axis for Product, so there
+        is one population only. Store''s active-by-default rule does not transfer; it is bound to dim_store.close_date,
+        which has no counterpart here.'
     - word: the Contoso brand
-      took: the brand whose value is exactly 'Contoso'
-      could_also_mean: any brand whose name contains "Contoso"
-      declaration: 'MEASURED on dim_product.brand: the 11 declared brands are ''A. Datum'', ''Adventure
-        Works'', ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge
-        Video'', ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''. Exactly one contains
-        the string "Contoso" and it is ''Contoso'' itself — there is no ''Contoso, Ltd'' in this bundle.
-        Exact-match and contains select the identical rows, so the fork is priced and immaterial; no question
-        needed.'
-    - word: have
-      took: no availability restriction — every catalogue row, discontinued or not
-      could_also_mean: only products currently active or available for sale
-      declaration: dim_product carries no status, close-date or availability column at all (product_key,
-        product_code, product_name, manufacturer, brand, color, category_name, sub_category_name, list_cost,
-        list_price). The trading-state default store.resolution.active_is_the_absent_close_date binds
-        close_date/status_annotation on Store, not on Product, so it does not reach here. This reading
-        is not a choice I am making — the data holds nothing to restrict on.
+      took: brand = 'Contoso' exactly
+      could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso'
+      declaration: 'Measured, not assumed: brand holds exactly 11 values — A. Datum, Adventure Works,
+        Contoso, Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The
+        Phone Company, Wide World Importers. Only one contains ''Contoso'', so exact-match and contains-match
+        return the same set. The fork is priced at zero.'
     - word: the Contoso brand
-      took: brand exactly equal to 'Contoso' — 710 products
-      could_also_mean: any brand whose name contains "Contoso" — also 710 products
-      declaration: 'MEASURED, not assumed: exact_contoso_rows 710 and contains_contoso_rows 710 are the
-        same rows. Of the 11 declared brands only ''Contoso'' contains the string, so there is no ''Contoso,
-        Ltd'' for a wider reading to pick up. The readings are identical; asking would cost the reader
-        a question with no figure behind it.'
+      took: brand = 'Contoso' exactly — 710 products
+      could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso'
+      declaration: 'Both readings measured in one query and they are IDENTICAL: exact match 710, LIKE
+        ''%Contoso%'' 710. No sub-brand or name variant exists in the column''s 11 values, so the fork
+        moves nothing and is not worth asking about.'
     - word: products
-      took: one dim_product row = one product (a SKU) — 710 of them
-      could_also_mean: each distinct product model or name counted once
-      declaration: 'MEASURED inside the slice: distinct_keys 710 and distinct_names 710 equal the 710
-        rows, so no product name is shared by two rows and the SKU reading cannot differ from the model
-        reading. Product is in any case declared as "a thing Contoso sells, at the level the shelf knows
-        it: a SKU".'
-    - word: products
-      took: one dim_product row = one product (a SKU) — 710
-      could_also_mean: each distinct product model or name counted once — also 710
-      declaration: 'MEASURED both ways: within the Contoso slice, distinct product_key 710 = distinct
-        product_name 710 = 710 rows (and across the catalogue 2,517 = 2,517 = 2,517). No name is shared
-        by two rows, so the SKU reading and the model reading are the same number. Product is separately
-        declared as "a thing Contoso sells, at the level the shelf knows it: a SKU".'
+      took: one row per product_key; COUNT(*) and COUNT(DISTINCT product_key) both 710, so the grain is
+        clean
+      could_also_mean: colour variants of one model collapsed to a single product
+      declaration: The Color concept declares colour alone makes a new SKU ('E400 Green' and 'E400 Orange'
+        are two products), so the SKU is the declared product grain.
+    - word: does ... have
+      took: all 710 Contoso products in the catalogue, no active/discontinued filter
+      could_also_mean: only Contoso products still being sold
+      declaration: dim_product carries no status, discontinued flag or validity dates, so the bundle holds
+        no active/discontinued axis for Product and there is one population only. Store's active-by-default
+        rule is bound to dim_store.close_date and has no counterpart here.
     - word: the Contoso brand
-      took: brand exactly equal to 'Contoso' — 710
-      could_also_mean: any brand whose name contains "Contoso", such as a "Contoso, Ltd" — also 710
-      declaration: 'MEASURED: exact match 710, contains-match 710, the identical rows. dim_product.brand
-        holds 11 values and only one contains the string; there is no ''Contoso, Ltd'' here for a wider
-        reading to pick up, and contoso5_brand IS the declared value set, so a value absent there is one
-        the warehouse does not hold.'
-    - word: have
-      took: no availability restriction — every product listed under the brand, discontinued included
-      could_also_mean: only products currently active or available for sale
-      declaration: 'Not my choice: dim_product serves product_key, product_code, product_name, manufacturer,
-        brand, color, category_name, sub_category_name, list_cost, list_price — no status, close date
-        or availability flag. The bundle''s trading-state default binds Store, not Product. The narrower
-        reading is unmeasurable here, which I state rather than presenting the wide one as the only reading.'
-    - word: products the brand HAS
-      took: products listed in the catalogue under that brand — 710
-      could_also_mean: products the brand actually sold over the ten years of sales, which would need
-        a join to v_contoso5_sales_line and could be fewer
-      declaration: Taken from the question's grain — it asks what the brand HAS, and Brand is declared
-        as "carried as a column on the product row with no table and no key of their own" (edge product__sold_under__brand).
-        I did not measure the sold-ever reading because the question named no sales, no period and no
-        measure; if that is the one wanted, it is one join away.
+      took: brand = 'Contoso' exactly — 710 products
+      could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso' — also 710 products
+      declaration: 'Both readings measured in one query and IDENTICAL: exact 710, LIKE ''%Contoso%'' 710.
+        None of the brand column''s 11 values is a Contoso variant, so the fork moves nothing and was
+        not worth asking about. Zero null brands, so the predicate strands no row.'
+    - word: products
+      took: count distinct product_key — the SKU, so each colour variant is its own product
+      could_also_mean: each distinct product model counted once however many colour variants it has, which
+        would give a smaller figure
+      declaration: Settled by the Color concept, which declares colour 'is the one attribute that on its
+        own makes a new SKU — "E400 Green" and "E400 Orange" are two products'. The SKU is the declared
+        product grain and the bundle carries no model-level column to collapse on.
+    - word: does ... have
+      took: all 710 Contoso products in the catalogue, with no active/discontinued filter
+      could_also_mean: only Contoso products currently active or still being sold
+      declaration: 'Not a choice I made: dim_product serves product_key, product_code, product_name, manufacturer,
+        brand, color, category_name, sub_category_name and nothing else — no status, no discontinued marker,
+        no valid_from/valid_to. There is no active/discontinued axis for Product in this bundle, so one
+        population exists and the currently-sold reading is unanswerable here rather than declined.'
 - stage: plan
   status: ok
   ms: 0
@@ -788,15 +650,10 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: '710 is how many distinct products carry the brand Contoso in this bundle''s catalogue,
-      counted at the grain dim_product is keyed on: one product per SKU, so "E400 Green" and "E400 Orange"
-      are two products — which the Color concept declares is right, colour being "the one attribute that
-      on its own makes a new SKU". That is 710 of the 2,517 products across all 11 brands. WHAT I DID
-      NOT INCLUDE: no restriction to products still sold or in stock, because dim_product carries no status,
-      discontinuation or availability column — that distinction cannot be drawn in this data at all; and
-      no restriction to products that actually sold, because this counts the catalogue listing rather
-      than sales activity, so a Contoso product that never reached an order is inside the 710. No other
-      brand contributes, and no variant spelling of the name exists to have excluded.'
+    what_it_calculated: 'One row, one figure: how many distinct products carry the Contoso brand in the
+      product catalogue — 710 SKUs out of the 2,517 products the catalogue holds in total. Each colour
+      variant is its own product, and the count covers catalogue entries whether or not they have ever
+      appeared on a sale.'
 - stage: evaluate
   status: ok
   ms: 0
@@ -821,21 +678,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 84,131 chars · 1027 lines
+      - 73,996 chars · 842 lines
     - - sections
       - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
         STAGE 2 — the declarations, sent once
     - - digest
-      - 465e28b73001
+      - 44362d9332a0
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: A count of how many products carry the brand "Contoso" — one single number covering every product
-      listed under that brand, with no time period or other restriction (so discontinued or out-of-stock
-      products are counted too unless you tell me otherwise).
+    value: How many products belong to the brand "Contoso" — a single count of products whose brand is
+      Contoso, across the whole product catalogue with no date limit and no restriction on whether they
+      are currently sold or discontinued.
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -845,27 +702,8 @@ sections:
     value:
     - '  1       FROM       products                    “products”'
     - '  2  ← 1  WHERE      brand = ''Contoso''           “the Contoso brand”'
-    - '  3  ← 2  AGGREGATE  count distinct of products  “How many products does the Contoso brand have?”'
-    - '  answer: step 3   confidence: 0.86'
-    - '  UNDERSTOOD AS: A count of how many products carry the brand "Contoso" — one single number covering
-      every product listed under that brand, with no time period or other restriction (so discontinued
-      or out-of-stock products are counted too unless you tell me otherwise).'
-    - '  AMBIGUOUS ''products'' — ASKS: Should I count each individual product item (every size, colour
-      or SKU separately), or each distinct product model/name once?'
-    - '      could mean: every individual product entry / SKU'
-    - '      could mean: each distinct product model or name, counted once'
-    - '      took: every individual product entry, counted once each'
-    - '  AMBIGUOUS ''the Contoso brand'' — ASKS: Does "Contoso" mean only the brand named exactly "Contoso",
-      or should related brand names such as "Contoso, Ltd" also count?'
-    - '      could mean: only the brand whose name is exactly "Contoso"'
-    - '      could mean: any brand whose name contains "Contoso"'
-    - '      took: only the brand named exactly "Contoso"'
-    - '  AMBIGUOUS ''have'' — ASKS: Should discontinued or no-longer-sold Contoso products be included
-      in the count, or only ones currently available?'
-    - '      could mean: all Contoso products ever listed, including discontinued ones'
-    - '      could mean: only Contoso products currently active or available for sale'
-    - '      took: all Contoso products, with no availability restriction'
-    - '  OUTPUT SHAPE: one figure · one row(s) · carrying how many products'
+    - '  3  ← 2  AGGREGATE  count distinct of products  “How many products does the Contoso brand have”'
+    - '  answer: step 3   confidence: 0.9'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -876,41 +714,50 @@ sections:
     - - shape
       - one figure
     - - said
-      - How many products does the Contoso brand have?
+      - How many products
+    - - rows
+      - one
     - - key_columns
       - *id005
     - - figure_columns
       - *id006
-    - - rows
-      - one
 - id: ambiguities
   title: What it saw more than one reading of
-  subtitle: each with the reading it took and the declaration that settled it
+  subtitle: one frame per ambiguity — the reading it took, and what settled it
   status: ok
   body:
-    kind: table
+    kind: records
     value:
-    - words: products
-      asks: Should I count each individual product item (every size, colour or SKU separately), or each
-        distinct product model/name once?
-      readings:
-      - every individual product entry / SKU
-      - each distinct product model or name, counted once
-      took: every individual product entry, counted once each
-    - words: the Contoso brand
-      asks: Does "Contoso" mean only the brand named exactly "Contoso", or should related brand names
-        such as "Contoso, Ltd" also count?
-      readings:
-      - only the brand whose name is exactly "Contoso"
-      - any brand whose name contains "Contoso"
-      took: only the brand named exactly "Contoso"
-    - words: have
-      asks: Should discontinued or no-longer-sold Contoso products be included in the count, or only ones
-        currently available?
-      readings:
-      - all Contoso products ever listed, including discontinued ones
-      - only Contoso products currently active or available for sale
-      took: all Contoso products, with no availability restriction
+    - - - the words
+        - products
+      - - what it would ask
+        - Should each individually sold item count as one product, or should variants of the same model
+          (different colours or sizes) be counted together as one product?
+      - - could mean
+        - - every individual sellable item counts separately
+          - each distinct product model counts once, however many variants it has
+      - - took
+        - every individual product counts separately
+    - - - the words
+        - does ... have
+      - - what it would ask
+        - Do you want all Contoso products that have ever existed in the catalogue, or only the ones currently
+          active and still being sold?
+      - - could mean
+        - - all Contoso products ever in the catalogue, including discontinued ones
+          - only Contoso products that are currently active or available
+      - - took
+        - all Contoso products in the catalogue, with no active/discontinued filter
+    - - - the words
+        - the Contoso brand
+      - - what it would ask
+        - Is "Contoso" the brand name exactly, or should sub-brands and variants of the name (like "Contoso
+          Ltd") be included too?
+      - - could mean
+        - - only the brand named exactly Contoso
+          - Contoso and any sub-brand or name variant containing Contoso
+      - - took
+        - only the brand named exactly Contoso
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -935,15 +782,77 @@ sections:
   status: ok
   body:
     kind: prose
-    value: '710 is how many distinct products carry the brand Contoso in this bundle''s catalogue, counted
-      at the grain dim_product is keyed on: one product per SKU, so "E400 Green" and "E400 Orange" are
-      two products — which the Color concept declares is right, colour being "the one attribute that on
-      its own makes a new SKU". That is 710 of the 2,517 products across all 11 brands. WHAT I DID NOT
-      INCLUDE: no restriction to products still sold or in stock, because dim_product carries no status,
-      discontinuation or availability column — that distinction cannot be drawn in this data at all; and
-      no restriction to products that actually sold, because this counts the catalogue listing rather
-      than sales activity, so a Contoso product that never reached an order is inside the 710. No other
-      brand contributes, and no variant spelling of the name exists to have excluded.'
+    value: 'One row, one figure: how many distinct products carry the Contoso brand in the product catalogue
+      — 710 SKUs out of the 2,517 products the catalogue holds in total. Each colour variant is its own
+      product, and the count covers catalogue entries whether or not they have ever appeared on a sale.'
+- id: declarations
+  title: Which declarations it read, and what each settled
+  subtitle: the path the decision took through the ontology — read off the walk's own citations, never
+    inferred from what it could have read
+  status: ok
+  body:
+    kind: records
+    value:
+    - - - declaration
+        - The Color concept declares colour 'is the one attribute that on its own makes a new SKU — "E400
+          Green" and "E400 Orange" are two products', so the declared product grain is the SKU; no fork
+          remains and no variant-model column exists to collapse on.
+      - - what it settled
+        - '''products'' = one row per product_key — the SKU, 2,517 of them, each colour variant counting
+          as its own product'
+    - - - declaration
+        - 'Not a choice I made: dim_product serves only product_key, product_code, product_name, manufacturer,
+          brand, color, category_name, sub_category_name — no status flag, no discontinued marker, no
+          valid_from/valid_to. The bundle holds no active/discontinued axis for Product, so there is one
+          population only. Store''s active-by-default rule does not transfer; it is bound to dim_store.close_date,
+          which has no counterpart here.'
+      - - what it settled
+        - '''does ... have'' = the whole catalogue, with no active/discontinued filter'
+    - - - declaration
+        - 'Measured, not assumed: brand holds exactly 11 values — A. Datum, Adventure Works, Contoso,
+          Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The Phone
+          Company, Wide World Importers. Only one contains ''Contoso'', so exact-match and contains-match
+          return the same set. The fork is priced at zero.'
+      - - what it settled
+        - '''the Contoso brand'' = brand = ''Contoso'' exactly'
+    - - - declaration
+        - 'Both readings measured in one query and they are IDENTICAL: exact match 710, LIKE ''%Contoso%''
+          710. No sub-brand or name variant exists in the column''s 11 values, so the fork moves nothing
+          and is not worth asking about.'
+      - - what it settled
+        - '''the Contoso brand'' = brand = ''Contoso'' exactly — 710 products'
+    - - - declaration
+        - The Color concept declares colour alone makes a new SKU ('E400 Green' and 'E400 Orange' are
+          two products), so the SKU is the declared product grain.
+      - - what it settled
+        - '''products'' = one row per product_key; COUNT(*) and COUNT(DISTINCT product_key) both 710,
+          so the grain is clean'
+    - - - declaration
+        - dim_product carries no status, discontinued flag or validity dates, so the bundle holds no active/discontinued
+          axis for Product and there is one population only. Store's active-by-default rule is bound to
+          dim_store.close_date and has no counterpart here.
+      - - what it settled
+        - '''does ... have'' = all 710 Contoso products in the catalogue, no active/discontinued filter'
+    - - - declaration
+        - 'Both readings measured in one query and IDENTICAL: exact 710, LIKE ''%Contoso%'' 710. None
+          of the brand column''s 11 values is a Contoso variant, so the fork moves nothing and was not
+          worth asking about. Zero null brands, so the predicate strands no row.'
+      - - what it settled
+        - '''the Contoso brand'' = brand = ''Contoso'' exactly — 710 products'
+    - - - declaration
+        - Settled by the Color concept, which declares colour 'is the one attribute that on its own makes
+          a new SKU — "E400 Green" and "E400 Orange" are two products'. The SKU is the declared product
+          grain and the bundle carries no model-level column to collapse on.
+      - - what it settled
+        - '''products'' = count distinct product_key — the SKU, so each colour variant is its own product'
+    - - - declaration
+        - 'Not a choice I made: dim_product serves product_key, product_code, product_name, manufacturer,
+          brand, color, category_name, sub_category_name and nothing else — no status, no discontinued
+          marker, no valid_from/valid_to. There is no active/discontinued axis for Product in this bundle,
+          so one population exists and the currently-sold reading is unanswerable here rather than declined.'
+      - - what it settled
+        - '''does ... have'' = all 710 Contoso products in the catalogue, with no active/discontinued
+          filter'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -967,161 +876,140 @@ sections:
     - - shape
       - one figure
     - - population it answered over
-      - 'All 710 rows of contoso_served.dim_product whose `brand` is exactly ''Contoso'', out of the 2,517
-        products the bundle holds. I applied exactly one restriction — brand = ''Contoso'', which is the
-        question''s own filter — and nothing else. No channel predicate: the physical/online default in
-        store.resolution.the_channel_is_the_location_sentinel binds `location_code` on Store and cannot
-        reach a product row. No trading-state predicate: store.resolution.active_is_the_absent_close_date
-        binds `close_date` and `status_annotation`, which exist only on dim_store. No period predicate:
-        order.default.an_unscoped_question_covers_all_time governs `order_date` on the sales line, and
-        a product row carries no date, so there is no window to widen or narrow. The figure is over dim_product
-        alone — products LISTED under the brand, which is not the same set as products that ever sold,
-        since nothing here joins to v_contoso5_sales_line.'
+      - 'The 710 rows of contoso_served.dim_product whose brand is exactly ''Contoso'', out of 2,517 product
+        rows in total. ONE restriction applied, the one the question named: brand = ''Contoso''. No period
+        predicate, because dim_product carries no date column. No active/discontinued predicate, because
+        dim_product carries no status column, discontinued flag or validity dates — this bundle holds
+        no such axis for Product, so the 710 is the whole Contoso catalogue and not a default-selected
+        subset. Store''s active-by-default rule was NOT borrowed: it binds dim_store.close_date and has
+        no counterpart on Product. Grain is one row per product_key, the declared SKU, so colour variants
+        of one model count separately as the Color concept declares; COUNT(*) and COUNT(DISTINCT product_key)
+        both give 710. NOT a count of products that ever sold — this reads the product register alone
+        and never joins v_contoso5_sales_line, so any Contoso SKU with no sales line is included.'
 - id: thinking
-  title: Every turn it took, and what came back
-  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  title: How it got there, step by step
+  subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
+    reasoning a verdict can be re-examined from, with no model call.
   status: ok
   body:
-    kind: table
+    kind: steps
     value:
     - step: '1'
-      step_asks: products
+      asks: products
+      sql: "SELECT\n  product_key,\n  product_name,\n  brand\nFROM contoso_served.dim_product"
+      means: Every product in Contoso's catalogue at the SKU grain — 2,517 rows, one row per product_key,
+        each a distinct sellable article including separate rows for each colour variant. No period restriction
+        and no sold/discontinued restriction, because this relation carries no date and no status column
+        on which either could be applied.
+      readings:
+      - word: products
+        took: one row per product_key — the SKU, 2,517 of them, each colour variant counting as its own
+          product
+        could_also_mean: collapsing colour variants of one model into a single product
+        declaration: The Color concept declares colour 'is the one attribute that on its own makes a new
+          SKU — "E400 Green" and "E400 Orange" are two products', so the declared product grain is the
+          SKU; no fork remains and no variant-model column exists to collapse on.
+      - word: does ... have
+        took: the whole catalogue, with no active/discontinued filter
+        could_also_mean: only products currently active or still being sold
+        declaration: 'Not a choice I made: dim_product serves only product_key, product_code, product_name,
+          manufacturer, brand, color, category_name, sub_category_name — no status flag, no discontinued
+          marker, no valid_from/valid_to. The bundle holds no active/discontinued axis for Product, so
+          there is one population only. Store''s active-by-default rule does not transfer; it is bound
+          to dim_store.close_date, which has no counterpart here.'
+      - word: the Contoso brand
+        took: brand = 'Contoso' exactly
+        could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso'
+        declaration: 'Measured, not assumed: brand holds exactly 11 values — A. Datum, Adventure Works,
+          Contoso, Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The
+          Phone Company, Wide World Importers. Only one contains ''Contoso'', so exact-match and contains-match
+          return the same set. The fork is priced at zero.'
       turns:
-      - why: Establish the product base relation for step 1 and see the actual brand values, since "Contoso"
-          may or may not be stored exactly.
-        did: 'probe ''dim_product.brand'' AND ALSO: SELECT count(*) AS product_rows, count(DISTINCT product_key)
-          AS distinct_product_keys, count(DISTINCT product_name) AS distinct_product_names FROM contoso_served.dim_product'
+      - why: Establish the product catalogue as the starting relation, and look at the actual brand values
+          so the next step's "Contoso" filter matches something real.
+        did: 'probe ''dim_product.brand'' AND ALSO: SELECT COUNT(*) AS product_rows, COUNT(DISTINCT product_key)
+          AS distinct_products, COUNT(DISTINCT brand) AS distinct_brands FROM contoso_served.dim_product'
         came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure
           Works'', ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge
           Video'', ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s):
-          [{"product_rows": 2517, "distinct_product_keys": 2517, "distinct_product_names": 2517}]'
-      settled_on: "SELECT\n  product_key,\n  product_name,\n  brand\nFROM contoso_served.dim_product"
-      means: 'The whole product catalogue as this bundle holds it: 2,517 rows, one per product as the
-        shelf knows it — one SKU, so a colour variant like "E400 Green" is its own row. No brand restriction
-        and no availability restriction applied yet; this is the unfiltered starting set that step 2 will
-        narrow to Contoso. There is no date on a product row, so "all time" is not a window here, it is
-        simply the catalogue as recorded.'
-      readings_taken:
-      - word: products
-        took: one row of dim_product = one product (a SKU), 2,517 of them
-        could_also_mean: each distinct product model or name, counted once
-        declaration: 'Product is declared as "a thing Contoso sells, at the level the shelf knows it:
-          a SKU", and Color is declared as "the one attribute that on its own makes a new SKU". MEASURED:
-          product_rows 2517 = distinct product_key 2517 = distinct product_name 2517, so the two readings
-          cannot differ — every product name is carried by exactly one row. The fork is priced and immaterial;
-          no question needed.'
-      - word: the Contoso brand
-        took: the brand whose value is exactly 'Contoso'
-        could_also_mean: any brand whose name contains "Contoso"
-        declaration: 'MEASURED on dim_product.brand: the 11 declared brands are ''A. Datum'', ''Adventure
-          Works'', ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge
-          Video'', ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''. Exactly one contains
-          the string "Contoso" and it is ''Contoso'' itself — there is no ''Contoso, Ltd'' in this bundle.
-          Exact-match and contains select the identical rows, so the fork is priced and immaterial; no
-          question needed.'
-      - word: have
-        took: no availability restriction — every catalogue row, discontinued or not
-        could_also_mean: only products currently active or available for sale
-        declaration: dim_product carries no status, close-date or availability column at all (product_key,
-          product_code, product_name, manufacturer, brand, color, category_name, sub_category_name, list_cost,
-          list_price). The trading-state default store.resolution.active_is_the_absent_close_date binds
-          close_date/status_annotation on Store, not on Product, so it does not reach here. This reading
-          is not a choice I am making — the data holds nothing to restrict on.
-      blocked_by: []
+          [{"product_rows": 2517, "distinct_products": 2517, "distinct_brands": 11}]'
+      blocked: []
     - step: '2'
-      step_asks: the Contoso brand
-      turns:
-      - why: Apply the brand filter and size the resulting population, pricing the exact-vs-contains reading
-          in the same query so the fork is measured rather than asserted.
-        did: "SELECT\n  COUNT(*) FILTER(WHERE\n    brand = 'Contoso') AS exact_contoso_rows,\n  COUNT(*)\
-          \ FILTER(WHERE\n    brand LIKE '%Contoso%') AS contains_contoso_rows,\n  COUNT(DISTINCT product_key)\
-          \ FILTER(WHERE\n    brand = 'Contoso') AS distinct_keys,\n  COUNT(DISTINCT product_name) FILTER(WHERE\n\
-          \    brand = 'Contoso') AS distinct_names\nFROM contoso_served.dim_product"
-        came_back: '1 row(s): [{"exact_contoso_rows": 710, "contains_contoso_rows": 710, "distinct_keys":
-          710, "distinct_names": 710}]'
-      settled_on: "SELECT\n  product_key,\n  product_name,\n  brand\nFROM contoso_served.dim_product\n\
-        WHERE\n  brand = 'Contoso'"
-      means: 'The Contoso slice of the product catalogue: 710 rows, one per product as the shelf knows
-        it (a SKU, so each colour variant is its own row), out of the 2,517 products in the bundle. These
-        are every product ever listed under the brand ''Contoso'' — no availability, discontinuation or
-        date restriction is applied, because a product row carries no such column. Each row stands for
-        one sellable article, and within this slice rows, product keys and product names are all 710,
-        so the grain is unambiguous.'
-      readings_taken:
+      asks: the Contoso brand
+      sql: "SELECT\n  product_key,\n  product_name,\n  brand\nFROM contoso_served.dim_product\nWHERE\n\
+        \  brand = 'Contoso'"
+      means: 'The Contoso-branded part of the product catalogue: 710 products, one row per product_key,
+        each a distinct SKU with colour variants as their own rows. No period and no sold/discontinued
+        restriction, because dim_product carries no column on which either could be applied.'
+      readings:
       - word: the Contoso brand
-        took: brand exactly equal to 'Contoso' — 710 products
-        could_also_mean: any brand whose name contains "Contoso" — also 710 products
-        declaration: 'MEASURED, not assumed: exact_contoso_rows 710 and contains_contoso_rows 710 are
-          the same rows. Of the 11 declared brands only ''Contoso'' contains the string, so there is no
-          ''Contoso, Ltd'' for a wider reading to pick up. The readings are identical; asking would cost
-          the reader a question with no figure behind it.'
+        took: brand = 'Contoso' exactly — 710 products
+        could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso'
+        declaration: 'Both readings measured in one query and they are IDENTICAL: exact match 710, LIKE
+          ''%Contoso%'' 710. No sub-brand or name variant exists in the column''s 11 values, so the fork
+          moves nothing and is not worth asking about.'
       - word: products
-        took: one dim_product row = one product (a SKU) — 710 of them
-        could_also_mean: each distinct product model or name counted once
-        declaration: 'MEASURED inside the slice: distinct_keys 710 and distinct_names 710 equal the 710
-          rows, so no product name is shared by two rows and the SKU reading cannot differ from the model
-          reading. Product is in any case declared as "a thing Contoso sells, at the level the shelf knows
-          it: a SKU".'
-      blocked_by: []
-    - step: '3'
-      step_asks: How many products does the Contoso brand have?
+        took: one row per product_key; COUNT(*) and COUNT(DISTINCT product_key) both 710, so the grain
+          is clean
+        could_also_mean: colour variants of one model collapsed to a single product
+        declaration: The Color concept declares colour alone makes a new SKU ('E400 Green' and 'E400 Orange'
+          are two products), so the SKU is the declared product grain.
+      - word: does ... have
+        took: all 710 Contoso products in the catalogue, no active/discontinued filter
+        could_also_mean: only Contoso products still being sold
+        declaration: dim_product carries no status, discontinued flag or validity dates, so the bundle
+          holds no active/discontinued axis for Product and there is one population only. Store's active-by-default
+          rule is bound to dim_store.close_date and has no counterpart here.
       turns:
-      - why: Read the answer figure in its own shape — one row, one column — before claiming it, rather
-          than lifting it from a diagnostic column on the previous step.
-        did: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
-          WHERE\n  brand = 'Contoso'"
-        came_back: '1 row(s): [{"how_many_products": 710}]'
-      - why: The answer is read in its own shape — one row, one figure, 710 — and every reading the question
-          left open was measured to the same number, so there is nothing left to ask.
+      - why: Apply the brand filter to the catalogue, measuring the exact-match and contains-match readings
+          side by side so the fork is proven equal rather than taken on the value list alone.
+        did: "SELECT\n  COUNT(*) FILTER(WHERE\n    brand = 'Contoso') AS exact_match,\n  COUNT(*) FILTER(WHERE\n\
+          \    brand LIKE '%Contoso%') AS contains_match,\n  COUNT(DISTINCT product_key) FILTER(WHERE\n\
+          \    brand = 'Contoso') AS distinct_products_exact,\n  COUNT(*) FILTER(WHERE\n    brand IS NULL)\
+          \ AS brand_null\nFROM contoso_served.dim_product"
+        came_back: '1 row(s): [{"exact_match": 710, "contains_match": 710, "distinct_products_exact":
+          710, "brand_null": 0}]'
+      blocked: []
+    - step: '3'
+      asks: How many products does the Contoso brand have
+      sql: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
+        WHERE\n  brand = 'Contoso'"
+      means: 'One row, one figure: how many distinct products carry the Contoso brand in the product catalogue
+        — 710 SKUs out of the 2,517 products the catalogue holds in total. Each colour variant is its
+        own product, and the count covers catalogue entries whether or not they have ever appeared on
+        a sale.'
+      readings:
+      - word: the Contoso brand
+        took: brand = 'Contoso' exactly — 710 products
+        could_also_mean: Contoso plus any sub-brand or name variant containing 'Contoso' — also 710 products
+        declaration: 'Both readings measured in one query and IDENTICAL: exact 710, LIKE ''%Contoso%''
+          710. None of the brand column''s 11 values is a Contoso variant, so the fork moves nothing and
+          was not worth asking about. Zero null brands, so the predicate strands no row.'
+      - word: products
+        took: count distinct product_key — the SKU, so each colour variant is its own product
+        could_also_mean: each distinct product model counted once however many colour variants it has,
+          which would give a smaller figure
+        declaration: Settled by the Color concept, which declares colour 'is the one attribute that on
+          its own makes a new SKU — "E400 Green" and "E400 Orange" are two products'. The SKU is the declared
+          product grain and the bundle carries no model-level column to collapse on.
+      - word: does ... have
+        took: all 710 Contoso products in the catalogue, with no active/discontinued filter
+        could_also_mean: only Contoso products currently active or still being sold
+        declaration: 'Not a choice I made: dim_product serves product_key, product_code, product_name,
+          manufacturer, brand, color, category_name, sub_category_name and nothing else — no status, no
+          discontinued marker, no valid_from/valid_to. There is no active/discontinued axis for Product
+          in this bundle, so one population exists and the currently-sold reading is unanswerable here
+          rather than declined.'
+      turns:
+      - why: Settle the answer at 710 Contoso products, the count distinct already measured over the step-2
+          predicate, with no further query needed.
         did: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
           WHERE\n  brand = 'Contoso'"
         came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
           claim, so state the answer now from these rows: 1 row(s): [{"how_many_products": 710}]  Give
           `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from the closed
           list. If these rows settle the question, do not decline.'
-      settled_on: "SELECT\n  COUNT(DISTINCT product_key) AS how_many_products\nFROM contoso_served.dim_product\n\
-        WHERE\n  brand = 'Contoso'"
-      means: '710 is how many distinct products carry the brand Contoso in this bundle''s catalogue, counted
-        at the grain dim_product is keyed on: one product per SKU, so "E400 Green" and "E400 Orange" are
-        two products — which the Color concept declares is right, colour being "the one attribute that
-        on its own makes a new SKU". That is 710 of the 2,517 products across all 11 brands. WHAT I DID
-        NOT INCLUDE: no restriction to products still sold or in stock, because dim_product carries no
-        status, discontinuation or availability column — that distinction cannot be drawn in this data
-        at all; and no restriction to products that actually sold, because this counts the catalogue listing
-        rather than sales activity, so a Contoso product that never reached an order is inside the 710.
-        No other brand contributes, and no variant spelling of the name exists to have excluded.'
-      readings_taken:
-      - word: products
-        took: one dim_product row = one product (a SKU) — 710
-        could_also_mean: each distinct product model or name counted once — also 710
-        declaration: 'MEASURED both ways: within the Contoso slice, distinct product_key 710 = distinct
-          product_name 710 = 710 rows (and across the catalogue 2,517 = 2,517 = 2,517). No name is shared
-          by two rows, so the SKU reading and the model reading are the same number. Product is separately
-          declared as "a thing Contoso sells, at the level the shelf knows it: a SKU".'
-      - word: the Contoso brand
-        took: brand exactly equal to 'Contoso' — 710
-        could_also_mean: any brand whose name contains "Contoso", such as a "Contoso, Ltd" — also 710
-        declaration: 'MEASURED: exact match 710, contains-match 710, the identical rows. dim_product.brand
-          holds 11 values and only one contains the string; there is no ''Contoso, Ltd'' here for a wider
-          reading to pick up, and contoso5_brand IS the declared value set, so a value absent there is
-          one the warehouse does not hold.'
-      - word: have
-        took: no availability restriction — every product listed under the brand, discontinued included
-        could_also_mean: only products currently active or available for sale
-        declaration: 'Not my choice: dim_product serves product_key, product_code, product_name, manufacturer,
-          brand, color, category_name, sub_category_name, list_cost, list_price — no status, close date
-          or availability flag. The bundle''s trading-state default binds Store, not Product. The narrower
-          reading is unmeasurable here, which I state rather than presenting the wide one as the only
-          reading.'
-      - word: products the brand HAS
-        took: products listed in the catalogue under that brand — 710
-        could_also_mean: products the brand actually sold over the ten years of sales, which would need
-          a join to v_contoso5_sales_line and could be fewer
-        declaration: Taken from the question's grain — it asks what the brand HAS, and Brand is declared
-          as "carried as a column on the product row with no table and no key of their own" (edge product__sold_under__brand).
-          I did not measure the sold-ever reading because the question named no sales, no period and no
-          measure; if that is the one wanted, it is one join away.
-      blocked_by: []
+      blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
   subtitle: ''
@@ -1137,4 +1025,4 @@ v3_answer_step: '3'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: '''710'''
-v3_seconds: 143.3
+v3_seconds: 121.3

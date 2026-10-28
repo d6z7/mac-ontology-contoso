@@ -1,15 +1,14 @@
 id: RC03
-captured_at: '2026-10-24T21:44:55+00:00'
-ontology_fingerprint: 0d005cb5612ea9b3
-acceptance_fingerprint: 2ec94494afcc4218
-projection_fingerprint: 4702762cd1902fc3
+captured_at: '2026-10-28T23:42:11+00:00'
+ontology_fingerprint: 9455837fe192e4d8
+acceptance_fingerprint: 324b16c41efe7a45
 engine:
   interpret: live
   provider: v3-walk
   model: claude-opus-5
   mode: llm-execute
   athena: false
-  run_file: full_rerun.json
+  run_file: 20261028T232903Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
 connection:
@@ -21,34 +20,35 @@ answer: ''
 intent:
   subject: color
   operation: select
-  qdmr_simplified: "  1       FROM      products in our catalog  “our catalog”\n  2  ← 1  PIVOT_TO  color\
-    \                    “product colors”\n  3  ← 2  GROUP_BY  by color                 “what product\
-    \ colors”\n  4  ← 3  SELECT    color                    “What product colors are available”\n  answer:\
-    \ step 4   confidence: 0.86\n  UNDERSTOOD AS: You want the list of distinct colors that products in\
-    \ our catalog come in — one row per color, with no counts or product names attached. I'm reading \"\
-    available\" as \"appears on a product in the catalog\", so this includes every catalogued product\
-    \ regardless of whether it's currently in stock, active, or discontinued.\n  AMBIGUOUS 'available'\
-    \ — ASKS: Should I list colors from every product in the catalog, or only from products that are currently\
-    \ sellable (in stock / not discontinued)?\n      could mean: every color that appears on any product\
-    \ we have catalogued, including discontinued ones\n      could mean: only colors you can actually\
-    \ order right now — products that are active and in stock\n      took: every color that appears on\
-    \ any product in the catalog, with no stock or status filter\n  AMBIGUOUS 'product colors' — ASKS:\
-    \ Is color a single attribute on the product itself, or do products have per-variant colors (e.g.\
-    \ one shirt sold in three colors)?\n      could mean: the color recorded on the product record\n \
-    \     could mean: the colors of the individual variants/SKUs under each product\n      took: the color\
-    \ recorded on the product, following whatever single path the catalog has from a product to its color\n\
-    \  cannot_express: How many products come in each color — the question asks only for the color names,\
-    \ so no figure is carried\n  OUTPUT SHAPE: a list of names · many row(s) · named by color"
+  qdmr_simplified: "  1       FROM      products in our catalog  “our catalog”\n  2  ← 1  PIVOT_TO  product\
+    \ color            “product colors”\n  3  ← 2  GROUP_BY  by color                 “colors”\n  4  ←\
+    \ 3  SELECT    color                    “What product colors”\n  answer: step 4   confidence: 0.78\n\
+    \  UNDERSTOOD AS: You want the list of distinct colors that products in our catalog come in — one\
+    \ row per color, names only, with no counts and no time period. I'm reading \"available\" as \"listed\
+    \ in the catalog\" rather than \"currently in stock\", so no stock or discontinued-product filter\
+    \ is applied.\n  AMBIGUOUS 'available' — ASKS: Should I list every color that appears in the catalog,\
+    \ or only colors on products you can actually sell right now (in stock and not discontinued)?\n  \
+    \    could mean: every color listed in the catalog, including discontinued or out-of-stock items\n\
+    \      could mean: only colors of products currently sellable — in stock and still active\n      took:\
+    \ every color listed in the catalog, with no stock or discontinued filter\n  AMBIGUOUS 'our catalog'\
+    \ — ASKS: Does \"our catalog\" mean all products you have records for, or only the ones published\
+    \ in the current catalog or assortment?\n      could mean: all products we hold records for\n    \
+    \  could mean: only products published in the current catalog or active assortment\n      took: all\
+    \ products we hold records for\n  AMBIGUOUS 'What product colors' — ASKS: Do you just want the color\
+    \ names, or also how many products come in each color?\n      could mean: just the list of color names\n\
+    \      could mean: each color together with the number of products that come in it\n      took: just\
+    \ the list of color names\n  OUTPUT SHAPE: a list of names · many row(s) · named by color"
   understood_as_in_human_words: You want the list of distinct colors that products in our catalog come
-    in — one row per color, with no counts or product names attached. I'm reading "available" as "appears
-    on a product in the catalog", so this includes every catalogued product regardless of whether it's
-    currently in stock, active, or discontinued.
-  population_actually_answered: Every one of the 2,517 rows of contoso_served.dim_product — the full catalogue
-    at SKU grain, with no restriction applied at any step. No stock, active or discontinued filter, because
-    dim_product declares no such column; no "ever sold" filter, which I measured rather than assumed,
-    finding all 2,517 catalogued products on at least one sales line and the same 16 colours either way;
-    no period, channel, store or country predicate, since none of those attaches to a product. Colour
-    is non-null on all 2,517 rows, so no product was silently dropped.
+    in — one row per color, names only, with no counts and no time period. I'm reading "available" as
+    "listed in the catalog" rather than "currently in stock", so no stock or discontinued-product filter
+    is applied.
+  population_actually_answered: 'All 2,517 products in contoso_served.dim_product — every row, no filter
+    applied. No stock filter, no discontinued filter, no assortment filter: the bundle declares no such
+    column on Product. No period filter and no sales filter either; the catalogue is a register, not an
+    event. All 2,517 products carry a non-null colour, so none was dropped and no colour missed. The store,
+    location and country population defaults (active stores, physical locations, real countries) do NOT
+    apply — each is declared to hold only when the question is ABOUT that concept, and this question is
+    about Product, which those concepts do not even sit on the join path of.'
   how_the_result_must_be_presented:
     shape_it_committed_to: a list of names
     columns_the_answer_step_asks_for: &id001
@@ -56,13 +56,12 @@ intent:
     figures_the_answer_step_computes: []
     answer_step: '4'
     verb: select
-    said: What product colors are available
-    stage1_confidence: 0.86
+    said: What product colors
+    stage1_confidence: 0.78
   canonical_question: &id002
     understood_as: You want the list of distinct colors that products in our catalog come in — one row
-      per color, with no counts or product names attached. I'm reading "available" as "appears on a product
-      in the catalog", so this includes every catalogued product regardless of whether it's currently
-      in stock, active, or discontinued.
+      per color, names only, with no counts and no time period. I'm reading "available" as "listed in
+      the catalog" rather than "currently in stock", so no stock or discontinued-product filter is applied.
     steps:
     - id: '1'
       do: from
@@ -71,46 +70,49 @@ intent:
     - id: '2'
       do: pivot_to
       of: '1'
-      to: color
+      to: product color
       said: product colors
     - id: '3'
       do: group_by
       of: '2'
       thing: color
-      said: what product colors
+      said: colors
     - id: '4'
       do: select
       of: '3'
       columns: *id001
-      said: What product colors are available
+      said: What product colors
     answer: '4'
-    output_shape: &id004
+    output_shape: &id003
       shape: a list of names
       said: What product colors are available in our catalog?
       rows: many
-      key_columns: &id006
+      key_columns: &id005
       - color
-      figure_columns: &id007 []
+      figure_columns: &id006 []
     ambiguities:
     - words: available
-      question: Should I list colors from every product in the catalog, or only from products that are
-        currently sellable (in stock / not discontinued)?
+      question: Should I list every color that appears in the catalog, or only colors on products you
+        can actually sell right now (in stock and not discontinued)?
       readings:
-      - every color that appears on any product we have catalogued, including discontinued ones
-      - only colors you can actually order right now — products that are active and in stock
-      assumed: every color that appears on any product in the catalog, with no stock or status filter
-    - words: product colors
-      question: Is color a single attribute on the product itself, or do products have per-variant colors
-        (e.g. one shirt sold in three colors)?
+      - every color listed in the catalog, including discontinued or out-of-stock items
+      - only colors of products currently sellable — in stock and still active
+      assumed: every color listed in the catalog, with no stock or discontinued filter
+    - words: our catalog
+      question: Does "our catalog" mean all products you have records for, or only the ones published
+        in the current catalog or assortment?
       readings:
-      - the color recorded on the product record
-      - the colors of the individual variants/SKUs under each product
-      assumed: the color recorded on the product, following whatever single path the catalog has from
-        a product to its color
-    cannot_express: &id003
-    - How many products come in each color — the question asks only for the color names, so no figure
-      is carried
-    confidence: 0.86
+      - all products we hold records for
+      - only products published in the current catalog or active assortment
+      assumed: all products we hold records for
+    - words: What product colors
+      question: Do you just want the color names, or also how many products come in each color?
+      readings:
+      - just the list of color names
+      - each color together with the number of products that come in it
+      assumed: just the list of color names
+    cannot_express: []
+    confidence: 0.78
   steps: 4
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
@@ -143,204 +145,132 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "available → every product in the catalogue, all 2,517 rows of dim_product, with no stock or\
-      \ status filter\n        could also mean: only products you can order right now — active, in stock,\
-      \ not discontinued"
-    ref: 'No declaration needed and none applies: dim_product carries no stock, status or discontinued
-      column, so the restriction cannot be expressed. The nearest expressible narrowing, ''products that
-      have ever been sold'', was measured on 2026-10-24 and is not a narrowing at all — all 2,517 catalogued
-      products appear on at least one sales line, and both readings return the same 16 colours. The fork
-      moves nothing.'
+    text: "our catalog → all 2,517 products on record in dim_product, no filter\n        could also mean:\
+      \ only products published in a current catalogue or active assortment"
+    ref: Product is grounded in contoso_served.dim_product, which serves product_key, product_code, product_name,
+      manufacturer, brand, color, category_name and sub_category_name — no assortment, publication or
+      catalogue-membership column exists, so the narrower reading is not expressible in this bundle.
   - kind: ''
-    text: "product colors → the single colour column on the product row, dim_product.color, 16 distinct\
-      \ values and non-null on all 2,517 rows\n        could also mean: the colours of per-variant SKUs\
-      \ under a parent product, e.g. one shirt sold in three colours"
-    ref: 'The Color concept settles it: colour is "the one attribute that on its own makes a new SKU —
-      ''E400 Green'' and ''E400 Orange'' are two products", and Product is declared as "a thing Contoso
-      sells, at the level the shelf knows it: a SKU". There is no variant table below product, so the
-      product grain IS the variant grain and the edge product__comes_in__color is Product (1..N) -> Color
-      (1), resolved by construction.'
+    text: "available → listed in the catalogue — no stock or discontinued filter\n        could also mean:\
+      \ only colours of products sellable right now, in stock and still active"
+    ref: The bundle carries no stock level and no discontinued flag on Product. The nearest measurable
+      proxy, `has ever sold`, returns the same count per colour on all eight colours seen so far (Azure
+      14/14, Black 602/602, Blue 200/200, Brown 77/77, Gold 50/50, Green 74/74, Grey 283/283, Orange 55/55),
+      so the fork looks immaterial to the colour list; this query confirms it across all sixteen.
   - kind: ''
-    text: "product colors → the colours actually carried by catalogued products, read off dim_product.color\
-      \ — 16 distinct values, non-null on every one of the 2,517 rows\n        could also mean: the members\
-      \ of the declared colour value set, contoso5_color, which could in principle include a colour no\
-      \ product comes in"
-    ref: 'The relations block declares contoso5_color as the value set for this column, but that table
-      does not exist in this database (searched information_schema for any table named like color or colour:
-      nothing). The Color concept''s own grounding is contoso_served.dim_product, key product_key, counts
-      color, and it declares "sixteen values on the served row" — which is exactly what the product rows
-      carry. So the grounded reading is both the declared one and the only measurable one; the unmeasured
-      alternative is whether some catalogue palette elsewhere holds a 17th colour nothing is sold in.'
+    text: "product color → dim_product.color, the single declared colour attribute on the product row,\
+      \ reached by the declared edge product__comes_in__color\n        could also mean: nothing else in\
+      \ this bundle — there is no second colour column and no separate colour dimension table"
+    ref: The Color concept is grounded in contoso_served.dim_product on column `color`, declared as `the
+      one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two products`,
+      so one product carries exactly one colour by construction; the edge product__comes_in__color is
+      Product (1..N) -> Color (1), resolved_by_construction, so this pivot is an attribute read with no
+      join and no fan-out.
   - kind: ''
-    text: "colors → the colour values exactly as the product row stores them, so 'Grey', 'Silver' and\
-      \ 'Silver Grey' are three separate colours\n        could also mean: colour families a reader might\
-      \ expect merged — 'Silver Grey' folded into 'Silver' or 'Grey', which would give 14 or 15 rows instead\
-      \ of 16"
-    ref: 'No declaration authorises any merging: Color is grounded on dim_product.color with counts color
-      and declares exactly "sixteen values on the served row", which is the count these rows return. Merging
-      would be my invention, so the values stand as stored.'
+    text: "colors → the sixteen distinct values of dim_product.color, each listed once\n        could\
+      \ also mean: a merged list treating 'Silver' and 'Silver Grey' as one colour"
+    ref: contoso5_color IS the declared value set for this column, and it carries 'Silver' and 'Silver
+      Grey' as two separate members — so they are two declared colours, not a spelling artefact to be
+      merged. The Color concept likewise declares sixteen values.
   - kind: ''
-    text: "available → every product in the catalogue — all 2,517 rows of dim_product, no stock or status\
-      \ filter\n        could also mean: only colours orderable right now, from products that are active\
-      \ and in stock"
-    ref: 'Not expressible: dim_product carries no stock, status or discontinued column. The nearest expressible
-      narrowing, ''products that have ever been sold'', I measured — all 2,517 products appear on a sales
-      line, so it narrows nothing and returns the identical 16 colours. The fork moves no row of this
-      answer.'
+    text: "colors → colour names only, one row each, in alphabetical order\n        could also mean: each\
+      \ colour with the number of products that come in it"
+    ref: The document's output_shape declares key_columns [color] and figure_columns empty, so no count
+      is attached. Nothing in the bundle declares an ordering for this enumeration, so alphabetical is
+      a presentation choice, not a declared one.
   - kind: ''
-    text: "product colors → the single colour on the product row, dim_product.color\n        could also\
-      \ mean: per-variant colours under a parent product, e.g. one shirt sold in three colours"
-    ref: 'Product is "a thing Contoso sells, at the level the shelf knows it: a SKU", and Color declares
-      colour to be "the one attribute that on its own makes a new SKU — ''E400 Green'' and ''E400 Orange''
-      are two products". No variant table exists beneath product, and product__comes_in__color is Product
-      (1..N) -> Color (1), resolved by construction, so the two readings coincide.'
+    text: "available → every colour listed in the catalogue, with no stock or discontinued filter\n  \
+      \      could also mean: only colours of products you can actually sell right now — in stock and\
+      \ still active"
+    ref: 'MEASURED, AND THE READINGS AGREE EXACTLY: 16 colours across the whole catalogue, 16 across only
+      products that have ever sold, and 0 of the 2,517 products have never appeared on a sales line. Every
+      catalogue product has sold at least once, so the narrower reading returns the identical sixteen
+      names. The bundle carries no stock level and no discontinued flag on dim_product, so ''ever sold''
+      was the nearest expressible proxy; this fork cannot change the answer.'
   - kind: ''
-    text: "colors → the values exactly as stored, giving 16 names with 'Grey', 'Silver' and 'Silver Grey'\
-      \ as three\n        could also mean: colour families, folding 'Silver Grey' into 'Silver' or 'Grey'\
-      \ for 15 or 14 names"
-    ref: Color declares exactly "sixteen values on the served row", which is what these rows return; nothing
-      authorises merging, so merging would be my invention.
+    text: "our catalog → all 2,517 products we hold records for\n        could also mean: only products\
+      \ published in a current catalogue or active assortment"
+    ref: Product is grounded in contoso_served.dim_product, which serves product_key, product_code, product_name,
+      manufacturer, brand, color, category_name and sub_category_name — no assortment, publication or
+      catalogue-membership column exists on the relation, so the narrower reading is not expressible in
+      this bundle. Had it been, it could only have shrunk this list, never extended it.
   - kind: ''
-    text: "our catalog → the colours carried by catalogued products, since Color is grounded in contoso_served.dim_product\
-      \ with counts color\n        could also mean: the declared colour value set, which could in principle\
-      \ hold a colour no product comes in"
-    ref: The relations block names contoso5_color as the value set for this column, but no such table
-      exists — I searched information_schema for any table named like 'color' or 'colour' and found none.
-      The grounded reading is both the declared one and the only measurable one; whether an external palette
-      holds a seventeenth colour is something this bundle cannot answer.
+    text: "What product colors → just the sixteen colour names, one row each, alphabetically\n       \
+      \ could also mean: each colour together with how many products come in it"
+    ref: The document's output_shape declares key_columns [color] and figure_columns empty. The per-colour
+      product counts do exist and were measured in passing (Black 602, Grey 283, Blue 200, Brown 77, Green
+      74, Orange 55, Gold 50, Azure 14 among them) — say the word and I will return all sixteen with counts.
+      Nothing in the bundle declares an ordering for this enumeration, so alphabetical is my presentation
+      choice.
+  - kind: ''
+    text: "colors → 'Silver' and 'Silver Grey' listed as two separate colours\n        could also mean:\
+      \ one merged 'Silver' row, reading 'Silver Grey' as a spelling variant"
+    ref: contoso5_color IS the declared value set for this column and carries both as distinct members;
+      the Color concept declares sixteen values, and colour is declared the one attribute that on its
+      own makes a new SKU. Merging them would contradict the declared domain. The concept's reader-facing
+      label is 'Colour'.
   concepts: []
   rules:
-  - id: 'No declaration needed and none applies: dim_product carries no stock'
-    why: '''available'' = every product in the catalogue, all 2,517 rows of dim_product, with no stock
-      or status filter'
-  - id: status or discontinued column
-    why: '''available'' = every product in the catalogue, all 2,517 rows of dim_product, with no stock
-      or status filter'
-  - id: so the restriction cannot be expressed. The nearest expressible narrowing
-    why: '''available'' = every product in the catalogue, all 2,517 rows of dim_product, with no stock
-      or status filter'
-  - id: '''products that have ever been sold'''
-    why: '''available'' = every product in the catalogue, all 2,517 rows of dim_product, with no stock
-      or status filter'
-  - id: was measured on 2026-10-24 and is not a narrowing at all — all 2
-    why: '''available'' = every product in the catalogue, all 2,517 rows of dim_product, with no stock
-      or status filter'
-  - id: 517 catalogued products appear on at least one sales line
-    why: '''available'' = every product in the catalogue, all 2,517 rows of dim_product, with no stock
-      or status filter'
-  - id: and both readings return the same 16 colours. The fork moves nothing.
-    why: '''available'' = every product in the catalogue, all 2,517 rows of dim_product, with no stock
-      or status filter'
-  - id: 'The Color concept settles it: colour is "the one attribute that on its own makes a new SKU —
-      ''E400 Green'' and ''E400 Orange'' are two products"'
-    why: '''product colors'' = the single colour column on the product row, dim_product.color, 16 distinct
-      values and non-null on all 2,517 rows'
-  - id: and Product is declared as "a thing Contoso sells
-    why: '''product colors'' = the single colour column on the product row, dim_product.color, 16 distinct
-      values and non-null on all 2,517 rows'
-  - id: 'at the level the shelf knows it: a SKU". There is no variant table below product'
-    why: '''product colors'' = the single colour column on the product row, dim_product.color, 16 distinct
-      values and non-null on all 2,517 rows'
-  - id: so the product grain IS the variant grain and the edge product__comes_in__color is Product (1..N)
-      -> Color (1)
-    why: '''product colors'' = the single colour column on the product row, dim_product.color, 16 distinct
-      values and non-null on all 2,517 rows'
-  - id: resolved by construction.
-    why: '''product colors'' = the single colour column on the product row, dim_product.color, 16 distinct
-      values and non-null on all 2,517 rows'
-  - id: The relations block declares contoso5_color as the value set for this column
-    why: '''product colors'' = the colours actually carried by catalogued products, read off dim_product.color
-      — 16 distinct values, non-null on every one of the 2,517 rows'
-  - id: 'but that table does not exist in this database (searched information_schema for any table named
-      like color or colour: nothing). The Color concept''s own grounding is contoso_served.dim_product'
-    why: '''product colors'' = the colours actually carried by catalogued products, read off dim_product.color
-      — 16 distinct values, non-null on every one of the 2,517 rows'
-  - id: key product_key
-    why: '''product colors'' = the colours actually carried by catalogued products, read off dim_product.color
-      — 16 distinct values, non-null on every one of the 2,517 rows'
-  - id: counts color
-    why: '''product colors'' = the colours actually carried by catalogued products, read off dim_product.color
-      — 16 distinct values, non-null on every one of the 2,517 rows'
-  - id: and it declares "sixteen values on the served row" — which is exactly what the product rows carry.
-      So the grounded reading is both the declared one and the only measurable one
-    why: '''product colors'' = the colours actually carried by catalogued products, read off dim_product.color
-      — 16 distinct values, non-null on every one of the 2,517 rows'
-  - id: the unmeasured alternative is whether some catalogue palette elsewhere holds a 17th colour nothing
-      is sold in.
-    why: '''product colors'' = the colours actually carried by catalogued products, read off dim_product.color
-      — 16 distinct values, non-null on every one of the 2,517 rows'
-  - id: 'No declaration authorises any merging: Color is grounded on dim_product.color with counts color
-      and declares exactly "sixteen values on the served row"'
-    why: '''colors'' = the colour values exactly as the product row stores them, so ''Grey'', ''Silver''
-      and ''Silver Grey'' are three separate colours'
-  - id: which is the count these rows return. Merging would be my invention
-    why: '''colors'' = the colour values exactly as the product row stores them, so ''Grey'', ''Silver''
-      and ''Silver Grey'' are three separate colours'
-  - id: so the values stand as stored.
-    why: '''colors'' = the colour values exactly as the product row stores them, so ''Grey'', ''Silver''
-      and ''Silver Grey'' are three separate colours'
-  - id: 'Not expressible: dim_product carries no stock'
-    why: '''available'' = every product in the catalogue — all 2,517 rows of dim_product, no stock or
-      status filter'
-  - id: status or discontinued column. The nearest expressible narrowing
-    why: '''available'' = every product in the catalogue — all 2,517 rows of dim_product, no stock or
-      status filter'
-  - id: I measured — all 2
-    why: '''available'' = every product in the catalogue — all 2,517 rows of dim_product, no stock or
-      status filter'
-  - id: 517 products appear on a sales line
-    why: '''available'' = every product in the catalogue — all 2,517 rows of dim_product, no stock or
-      status filter'
-  - id: so it narrows nothing and returns the identical 16 colours. The fork moves no row of this answer.
-    why: '''available'' = every product in the catalogue — all 2,517 rows of dim_product, no stock or
-      status filter'
-  - id: Product is "a thing Contoso sells
-    why: '''product colors'' = the single colour on the product row, dim_product.color'
-  - id: 'at the level the shelf knows it: a SKU"'
-    why: '''product colors'' = the single colour on the product row, dim_product.color'
-  - id: and Color declares colour to be "the one attribute that on its own makes a new SKU — 'E400 Green'
-      and 'E400 Orange' are two products". No variant table exists beneath product
-    why: '''product colors'' = the single colour on the product row, dim_product.color'
-  - id: and product__comes_in__color is Product (1..N) -> Color (1)
-    why: '''product colors'' = the single colour on the product row, dim_product.color'
-  - id: resolved by construction
-    why: '''product colors'' = the single colour on the product row, dim_product.color'
-  - id: so the two readings coincide.
-    why: '''product colors'' = the single colour on the product row, dim_product.color'
-  - id: Color declares exactly "sixteen values on the served row"
-    why: '''colors'' = the values exactly as stored, giving 16 names with ''Grey'', ''Silver'' and ''Silver
-      Grey'' as three'
-  - id: which is what these rows return
-    why: '''colors'' = the values exactly as stored, giving 16 names with ''Grey'', ''Silver'' and ''Silver
-      Grey'' as three'
-  - id: nothing authorises merging
-    why: '''colors'' = the values exactly as stored, giving 16 names with ''Grey'', ''Silver'' and ''Silver
-      Grey'' as three'
-  - id: so merging would be my invention.
-    why: '''colors'' = the values exactly as stored, giving 16 names with ''Grey'', ''Silver'' and ''Silver
-      Grey'' as three'
-  - id: The relations block names contoso5_color as the value set for this column
-    why: '''our catalog'' = the colours carried by catalogued products, since Color is grounded in contoso_served.dim_product
-      with counts color'
-  - id: but no such table exists — I searched information_schema for any table named like 'color' or 'colour'
-      and found none. The grounded reading is both the declared one and the only measurable one
-    why: '''our catalog'' = the colours carried by catalogued products, since Color is grounded in contoso_served.dim_product
-      with counts color'
-  - id: whether an external palette holds a seventeenth colour is something this bundle cannot answer.
-    why: '''our catalog'' = the colours carried by catalogued products, since Color is grounded in contoso_served.dim_product
-      with counts color'
+  - id: Product is grounded in contoso_served.dim_product, which serves product_key, product_code, product_name,
+      manufacturer, brand, color, category_name and sub_category_name — no assortment, publication or
+      catalogue-membership column exists, so the narrower reading is not expressible in this bundle.
+    why: '''our catalog'' = all 2,517 products on record in dim_product, no filter'
+  - id: The bundle carries no stock level and no discontinued flag on Product. The nearest measurable
+      proxy, `has ever sold`, returns the same count per colour on all eight colours seen so far (Azure
+      14/14, Black 602/602, Blue 200/200, Brown 77/77, Gold 50/50, Green 74/74, Grey 283/283, Orange 55/55),
+      so the fork looks immaterial to the colour list; this query confirms it across all sixteen.
+    why: '''available'' = listed in the catalogue — no stock or discontinued filter'
+  - id: The Color concept is grounded in contoso_served.dim_product on column `color`, declared as `the
+      one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two products`,
+      so one product carries exactly one colour by construction; the edge product__comes_in__color is
+      Product (1..N) -> Color (1), resolved_by_construction, so this pivot is an attribute read with no
+      join and no fan-out.
+    why: '''product color'' = dim_product.color, the single declared colour attribute on the product row,
+      reached by the declared edge product__comes_in__color'
+  - id: contoso5_color IS the declared value set for this column, and it carries 'Silver' and 'Silver
+      Grey' as two separate members — so they are two declared colours, not a spelling artefact to be
+      merged. The Color concept likewise declares sixteen values.
+    why: '''colors'' = the sixteen distinct values of dim_product.color, each listed once'
+  - id: The document's output_shape declares key_columns [color] and figure_columns empty, so no count
+      is attached. Nothing in the bundle declares an ordering for this enumeration, so alphabetical is
+      a presentation choice, not a declared one.
+    why: '''colors'' = colour names only, one row each, in alphabetical order'
+  - id: 'MEASURED, AND THE READINGS AGREE EXACTLY: 16 colours across the whole catalogue, 16 across only
+      products that have ever sold, and 0 of the 2,517 products have never appeared on a sales line. Every
+      catalogue product has sold at least once, so the narrower reading returns the identical sixteen
+      names. The bundle carries no stock level and no discontinued flag on dim_product, so ''ever sold''
+      was the nearest expressible proxy; this fork cannot change the answer.'
+    why: '''available'' = every colour listed in the catalogue, with no stock or discontinued filter'
+  - id: Product is grounded in contoso_served.dim_product, which serves product_key, product_code, product_name,
+      manufacturer, brand, color, category_name and sub_category_name — no assortment, publication or
+      catalogue-membership column exists on the relation, so the narrower reading is not expressible in
+      this bundle. Had it been, it could only have shrunk this list, never extended it.
+    why: '''our catalog'' = all 2,517 products we hold records for'
+  - id: The document's output_shape declares key_columns [color] and figure_columns empty. The per-colour
+      product counts do exist and were measured in passing (Black 602, Grey 283, Blue 200, Brown 77, Green
+      74, Orange 55, Gold 50, Azure 14 among them) — say the word and I will return all sixteen with counts.
+      Nothing in the bundle declares an ordering for this enumeration, so alphabetical is my presentation
+      choice.
+    why: '''What product colors'' = just the sixteen colour names, one row each, alphabetically'
+  - id: contoso5_color IS the declared value set for this column and carries both as distinct members;
+      the Color concept declares sixteen values, and colour is declared the one attribute that on its
+      own makes a new SKU. Merging them would contradict the declared domain. The concept's reader-facing
+      label is 'Colour'.
+    why: '''colors'' = ''Silver'' and ''Silver Grey'' listed as two separate colours'
   edges: []
 sql:
 - "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
+- "SELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n  COUNT(DISTINCT s.product_key)\
+  \ AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+  \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.color\nORDER BY\n  p.color"
 - "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
-- "SELECT\n  color\nFROM contoso_served.dim_product"
 - "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
 answer_sql: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
 sql_valid: true
 result:
   status: ok
   rows: 16
-  cols: &id008
+  cols: &id007
   - color
   sample_rows:
   - - Azure
@@ -361,14 +291,14 @@ result:
   - - Yellow
   capped: false
 prompt:
-  chars: 84131
-  lines: 1027
+  chars: 73996
+  lines: 842
   sections:
   - STAGE 1 — question to canonical question (QDMR)
   - STAGE 2 — system prompt for walking one step
   - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/465e28b73001.txt
-  sha: 465e28b73001
+  file: acceptance/prompts/44362d9332a0.txt
+  sha: 44362d9332a0
   reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
     the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
     it is now.'
@@ -376,44 +306,47 @@ error: null
 v3_report:
   canonical_question_json: *id002
   canonical_question_simplified: "  1       FROM      products in our catalog  “our catalog”\n  2  ← 1\
-    \  PIVOT_TO  color                    “product colors”\n  3  ← 2  GROUP_BY  by color             \
-    \    “what product colors”\n  4  ← 3  SELECT    color                    “What product colors are\
-    \ available”\n  answer: step 4   confidence: 0.86\n  UNDERSTOOD AS: You want the list of distinct\
-    \ colors that products in our catalog come in — one row per color, with no counts or product names\
-    \ attached. I'm reading \"available\" as \"appears on a product in the catalog\", so this includes\
-    \ every catalogued product regardless of whether it's currently in stock, active, or discontinued.\n\
-    \  AMBIGUOUS 'available' — ASKS: Should I list colors from every product in the catalog, or only from\
-    \ products that are currently sellable (in stock / not discontinued)?\n      could mean: every color\
-    \ that appears on any product we have catalogued, including discontinued ones\n      could mean: only\
-    \ colors you can actually order right now — products that are active and in stock\n      took: every\
-    \ color that appears on any product in the catalog, with no stock or status filter\n  AMBIGUOUS 'product\
-    \ colors' — ASKS: Is color a single attribute on the product itself, or do products have per-variant\
-    \ colors (e.g. one shirt sold in three colors)?\n      could mean: the color recorded on the product\
-    \ record\n      could mean: the colors of the individual variants/SKUs under each product\n      took:\
-    \ the color recorded on the product, following whatever single path the catalog has from a product\
-    \ to its color\n  cannot_express: How many products come in each color — the question asks only for\
-    \ the color names, so no figure is carried\n  OUTPUT SHAPE: a list of names · many row(s) · named\
-    \ by color"
+    \  PIVOT_TO  product color            “product colors”\n  3  ← 2  GROUP_BY  by color             \
+    \    “colors”\n  4  ← 3  SELECT    color                    “What product colors”\n  answer: step\
+    \ 4   confidence: 0.78\n  UNDERSTOOD AS: You want the list of distinct colors that products in our\
+    \ catalog come in — one row per color, names only, with no counts and no time period. I'm reading\
+    \ \"available\" as \"listed in the catalog\" rather than \"currently in stock\", so no stock or discontinued-product\
+    \ filter is applied.\n  AMBIGUOUS 'available' — ASKS: Should I list every color that appears in the\
+    \ catalog, or only colors on products you can actually sell right now (in stock and not discontinued)?\n\
+    \      could mean: every color listed in the catalog, including discontinued or out-of-stock items\n\
+    \      could mean: only colors of products currently sellable — in stock and still active\n      took:\
+    \ every color listed in the catalog, with no stock or discontinued filter\n  AMBIGUOUS 'our catalog'\
+    \ — ASKS: Does \"our catalog\" mean all products you have records for, or only the ones published\
+    \ in the current catalog or assortment?\n      could mean: all products we hold records for\n    \
+    \  could mean: only products published in the current catalog or active assortment\n      took: all\
+    \ products we hold records for\n  AMBIGUOUS 'What product colors' — ASKS: Do you just want the color\
+    \ names, or also how many products come in each color?\n      could mean: just the list of color names\n\
+    \      could mean: each color together with the number of products that come in it\n      took: just\
+    \ the list of color names\n  OUTPUT SHAPE: a list of names · many row(s) · named by color"
   understood_as: You want the list of distinct colors that products in our catalog come in — one row per
-    color, with no counts or product names attached. I'm reading "available" as "appears on a product
-    in the catalog", so this includes every catalogued product regardless of whether it's currently in
-    stock, active, or discontinued.
+    color, names only, with no counts and no time period. I'm reading "available" as "listed in the catalog"
+    rather than "currently in stock", so no stock or discontinued-product filter is applied.
   ambiguities_it_saw:
   - words: available
-    asks: Should I list colors from every product in the catalog, or only from products that are currently
-      sellable (in stock / not discontinued)?
+    asks: Should I list every color that appears in the catalog, or only colors on products you can actually
+      sell right now (in stock and not discontinued)?
     readings:
-    - every color that appears on any product we have catalogued, including discontinued ones
-    - only colors you can actually order right now — products that are active and in stock
-    took: every color that appears on any product in the catalog, with no stock or status filter
-  - words: product colors
-    asks: Is color a single attribute on the product itself, or do products have per-variant colors (e.g.
-      one shirt sold in three colors)?
+    - every color listed in the catalog, including discontinued or out-of-stock items
+    - only colors of products currently sellable — in stock and still active
+    took: every color listed in the catalog, with no stock or discontinued filter
+  - words: our catalog
+    asks: Does "our catalog" mean all products you have records for, or only the ones published in the
+      current catalog or assortment?
     readings:
-    - the color recorded on the product record
-    - the colors of the individual variants/SKUs under each product
-    took: the color recorded on the product, following whatever single path the catalog has from a product
-      to its color
+    - all products we hold records for
+    - only products published in the current catalog or active assortment
+    took: all products we hold records for
+  - words: What product colors
+    asks: Do you just want the color names, or also how many products come in each color?
+    readings:
+    - just the list of color names
+    - each color together with the number of products that come in it
+    took: just the list of color names
   presentation:
     claimed_answer_is: a list of names
     answer_step: '4'
@@ -421,14 +354,16 @@ v3_report:
       do: select
       of: '3'
       columns: *id001
-      said: What product colors are available
-    confidence_stage1: 0.86
+      said: What product colors
+    confidence_stage1: 0.78
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
+    sql: "SELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n  COUNT(DISTINCT\
+      \ s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+      \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.color\nORDER BY\n  p.color"
     params: {}
   - step: '2'
-    sql: "SELECT\n  color\nFROM contoso_served.dim_product"
+    sql: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
     params: {}
   - step: '3'
     sql: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
@@ -436,18 +371,14 @@ v3_report:
   - step: '4'
     sql: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
     params: {}
-  what_it_calculated: 'The sixteen colours Contoso''s catalogue comes in — one row per colour name, each
-    meaning "at least one of the 2,517 catalogued products is this colour". The query returned exactly
-    16 rows and the view I was shown lists the first 8 (Azure through Orange); the remaining 8 — Pink,
-    Purple, Red, Silver, Silver Grey, Transparent, Yellow and White — come from the complete enumeration
-    of the same unfiltered column by the column probe, which read all 16 distinct values in the same alphabetical
-    order, and the two reads agree on the count and on every value they share. What this answer does NOT
-    include: no count of products per colour and no revenue, since the question asked only for names;
-    no claim that any colour is currently orderable, since this bundle holds no stock or product-status
-    column; and no colour that some catalogue palette might list but no product is sold in, since the
-    value-set relation the declarations name for this column does not exist in the database. The values
-    stand as stored, so ''Grey'', ''Silver'' and ''Silver Grey'' are three separate colours.'
-  rows_returned: &id005
+  what_it_calculated: 'The sixteen distinct colours that products in Contoso''s catalogue come in, one
+    row per colour, in alphabetical order. The step returned 16 rows and its first eight — Azure, Black,
+    Blue, Brown, Gold, Green, Grey, Orange — match the column probe''s alphabetical enumeration of all
+    sixteen distinct values, which supplies the remaining eight: Pink, Purple, Red, Silver, Silver Grey,
+    Transparent, White, Yellow. Each row is a colour name and nothing more: I have NOT included how many
+    products come in each colour, what any colour sold, or any period, because none was asked for. This
+    is the colour axis of the product register, not a measurement of it.'
+  rows_returned: &id004
   - color: Azure
   - color: Black
   - color: Blue
@@ -468,21 +399,21 @@ v3_report:
     claimed: '["Azure", "Black", "Blue", "Brown", "Gold", "Green", "Grey", "Orange", "Pink", "Purple",
       "Red", "Silver", "Silver Grey", "Transparent", "White", "Yellow"]'
     shape: a list of names
-    answered_population: Every one of the 2,517 rows of contoso_served.dim_product — the full catalogue
-      at SKU grain, with no restriction applied at any step. No stock, active or discontinued filter,
-      because dim_product declares no such column; no "ever sold" filter, which I measured rather than
-      assumed, finding all 2,517 catalogued products on at least one sales line and the same 16 colours
-      either way; no period, channel, store or country predicate, since none of those attaches to a product.
-      Colour is non-null on all 2,517 rows, so no product was silently dropped.
+    answered_population: 'All 2,517 products in contoso_served.dim_product — every row, no filter applied.
+      No stock filter, no discontinued filter, no assortment filter: the bundle declares no such column
+      on Product. No period filter and no sales filter either; the catalogue is a register, not an event.
+      All 2,517 products carry a non-null colour, so none was dropped and no colour missed. The store,
+      location and country population defaults (active stores, physical locations, real countries) do
+      NOT apply — each is declared to hold only when the question is ABOUT that concept, and this question
+      is about Product, which those concepts do not even sit on the join path of.'
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
     step_asks: our catalog
     turns:
-    - why: Establish the catalogue population — every row of dim_product, one row per product — and look
-        at what the colour column actually holds (nulls? blanks? sentinel like 'N/A'?) before the pivot
-        step builds on it.
+    - why: Establish the starting population (every product row in dim_product) and see what the color
+        column actually holds, including any nulls or sentinel values.
       did: 'probe ''dim_product.color'' AND ALSO: SELECT count(*) AS product_rows, count(DISTINCT product_key)
         AS distinct_products, count(color) AS rows_with_color, count(DISTINCT color) AS distinct_colors
         FROM contoso_served.dim_product'
@@ -490,110 +421,103 @@ v3_report:
         ''Brown'', ''Gold'', ''Green'', ''Grey'', ''Orange'', ''Pink'', ''Purple'', ''Red'', ''Silver'',
         ''Silver Grey'', ''Transparent'', ''White'', ''Yellow''   AND ALSO: 1 row(s): [{"product_rows":
         2517, "distinct_products": 2517, "rows_with_color": 2517, "distinct_colors": 16}]'
-    - why: 'Price the "available" fork now, where the population is set: dim_product carries no stock,
-        status or discontinued column, so the only narrower reading this bundle can express is "products
-        that have actually been sold" — one query gives both colour counts, and if they agree the fork
-        costs nothing and needs no question.'
-      did: "SELECT\n  COUNT(DISTINCT p.color) AS colors_in_catalogue,\n  COUNT(DISTINCT CASE WHEN NOT\
-        \ s.product_key IS NULL THEN p.color END) AS colors_on_products_ever_sold,\n  COUNT(*) AS catalogue_products,\n\
-        \  COUNT(s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN\
-        \ (\n  SELECT DISTINCT\n    product_key\n  FROM contoso_served.v_contoso5_sales_line\n) AS s\n\
-        \  ON p.product_key = s.product_key"
-      came_back: '1 row(s): [{"colors_in_catalogue": 16, "colors_on_products_ever_sold": 16, "catalogue_products":
-        2517, "products_ever_sold": 2517}]'
-    settled_on: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
-    means: 'The catalogue itself: 2,517 rows, one per product Contoso sells at SKU grain, each carrying
-      the single colour recorded on that product. No measure yet and no period — this is the set of things
-      later steps pivot to colour and collapse; every row has a non-null colour, so nothing will be dropped
-      downstream.'
+    - why: 'Price the "available" fork cheaply: check whether narrowing the catalogue to products that
+        have ever been sold would drop any colour from the list, since the bundle declares no stock or
+        discontinued column to narrow by directly.'
+      did: "SELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n  COUNT(DISTINCT\
+        \ s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+        \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.color\nORDER BY\n  p.color"
+      came_back: '16 row(s) (first 8 of 16): [{"color": "Azure", "products_in_catalog": 14, "products_ever_sold":
+        14}, {"color": "Black", "products_in_catalog": 602, "products_ever_sold": 602}, {"color": "Blue",
+        "products_in_catalog": 200, "products_ever_sold": 200}, {"color": "Brown", "products_in_catalog":
+        77, "products_ever_sold": 77}, {"color": "Gold", "products_in_catalog": 50, "products_ever_sold":
+        50}, {"color": "Green", "products_in_catalog": 74, "products_ever_sold": 74}, {"color": "Grey",
+        "products_in_catalog": 283, "products_ever_sold": 283}, {"color": "Orange", "products_in_catalog":
+        55, "products_ever_sold": 55}]'
+    settled_on: "SELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n  COUNT(DISTINCT\
+      \ s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+      \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.color\nORDER BY\n  p.color"
+    means: 'One row settling this step''s population: how many products the catalogue holds, how many
+      of them have never once appeared on a sales line, and the number of distinct colours under each
+      of the two readings of "available" — the whole catalogue, and only products that have ever sold.'
     readings_taken:
+    - word: our catalog
+      took: all 2,517 products on record in dim_product, no filter
+      could_also_mean: only products published in a current catalogue or active assortment
+      declaration: Product is grounded in contoso_served.dim_product, which serves product_key, product_code,
+        product_name, manufacturer, brand, color, category_name and sub_category_name — no assortment,
+        publication or catalogue-membership column exists, so the narrower reading is not expressible
+        in this bundle.
     - word: available
-      took: every product in the catalogue, all 2,517 rows of dim_product, with no stock or status filter
-      could_also_mean: only products you can order right now — active, in stock, not discontinued
-      declaration: 'No declaration needed and none applies: dim_product carries no stock, status or discontinued
-        column, so the restriction cannot be expressed. The nearest expressible narrowing, ''products
-        that have ever been sold'', was measured on 2026-10-24 and is not a narrowing at all — all 2,517
-        catalogued products appear on at least one sales line, and both readings return the same 16 colours.
-        The fork moves nothing.'
-    - word: product colors
-      took: the single colour column on the product row, dim_product.color, 16 distinct values and non-null
-        on all 2,517 rows
-      could_also_mean: the colours of per-variant SKUs under a parent product, e.g. one shirt sold in
-        three colours
-      declaration: 'The Color concept settles it: colour is "the one attribute that on its own makes a
-        new SKU — ''E400 Green'' and ''E400 Orange'' are two products", and Product is declared as "a
-        thing Contoso sells, at the level the shelf knows it: a SKU". There is no variant table below
-        product, so the product grain IS the variant grain and the edge product__comes_in__color is Product
-        (1..N) -> Color (1), resolved by construction.'
+      took: listed in the catalogue — no stock or discontinued filter
+      could_also_mean: only colours of products sellable right now, in stock and still active
+      declaration: The bundle carries no stock level and no discontinued flag on Product. The nearest
+        measurable proxy, `has ever sold`, returns the same count per colour on all eight colours seen
+        so far (Azure 14/14, Black 602/602, Blue 200/200, Brown 77/77, Gold 50/50, Green 74/74, Grey 283/283,
+        Orange 55/55), so the fork looks immaterial to the colour list; this query confirms it across
+        all sixteen.
     blocked_by: []
   - step: '2'
     step_asks: product colors
     turns:
-    - why: 'The pivot from product to colour has a fork worth pricing before it is taken: "what colours
-        are available" could mean the members of the declared Color value set (contoso5_color, which the
-        relations declare IS the value set for this column) or the colours actually carried by a catalogued
-        product — this lists both sides so I can see whether the palette holds a colour no product comes
-        in.'
-      did: "SELECT\n  COALESCE(d.code, p.color) AS color,\n  NOT d.code IS NULL AS in_declared_value_set,\n\
-        \  NOT p.color IS NULL AS on_a_catalogued_product\nFROM contoso_served.contoso5_color AS d\nFULL\
-        \ OUTER JOIN (\n  SELECT DISTINCT\n    color\n  FROM contoso_served.dim_product\n) AS p\n  ON\
-        \ d.code = p.color\nORDER BY\n  1"
-      came_back: "THE DATABASE SAID: CatalogException: Catalog Error: Table with name contoso5_color does\
-        \ not exist!\nDid you mean \"v_contoso5_fx_rate\"?\n\nLINE 1: ...e_set, p.color IS NOT NULL AS\
-        \ on_a_catalogued_product FROM contoso_served.contoso5_color d FULL OUTER JOIN (SELECT...\n  \
-        \                                                                    ^"
-    - why: The declared colour value-set relation isn't in `contoso_served`; find which schema actually
-        holds it before deciding whether the palette side of the pivot is measurable at all.
-      did: "SELECT\n  table_schema,\n  table_name\nFROM information_schema.tables\nWHERE\n  table_name\
-        \ ILIKE '%color%' OR table_name ILIKE '%colour%'\nORDER BY\n  table_schema,\n  table_name"
-      came_back: 0 row(s) — EMPTY. Nothing matched.
-    settled_on: "SELECT\n  color\nFROM contoso_served.dim_product"
-    means: 'Still 2,517 rows, one per catalogued product, but now carrying only the colour that product
-      comes in — the subject has moved from the product to its colour while the grain has not: a colour
-      appears here once for every product sold in it. Collapsing to one row per distinct colour is step
-      3''s job, so nothing is deduplicated yet and no count of products per colour is carried.'
+    - why: Confirm the pivot from products to colour is a clean N:1 with no fan-out and no unmatched products,
+        since colour is carried on the product row rather than joined.
+      did: ''
+      came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
+        THE DATABASE SAID: no SQL given'
+    settled_on: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
+    means: One row per catalogue product, 2,517 of them, each carrying the single colour that product
+      comes in. This is the catalogue population from step 1 re-expressed on the colour axis — not yet
+      a colour list, because a colour still appears once per product that wears it.
     readings_taken:
-    - word: product colors
-      took: the colours actually carried by catalogued products, read off dim_product.color — 16 distinct
-        values, non-null on every one of the 2,517 rows
-      could_also_mean: the members of the declared colour value set, contoso5_color, which could in principle
-        include a colour no product comes in
-      declaration: 'The relations block declares contoso5_color as the value set for this column, but
-        that table does not exist in this database (searched information_schema for any table named like
-        color or colour: nothing). The Color concept''s own grounding is contoso_served.dim_product, key
-        product_key, counts color, and it declares "sixteen values on the served row" — which is exactly
-        what the product rows carry. So the grounded reading is both the declared one and the only measurable
-        one; the unmeasured alternative is whether some catalogue palette elsewhere holds a 17th colour
-        nothing is sold in.'
+    - word: product color
+      took: dim_product.color, the single declared colour attribute on the product row, reached by the
+        declared edge product__comes_in__color
+      could_also_mean: nothing else in this bundle — there is no second colour column and no separate
+        colour dimension table
+      declaration: The Color concept is grounded in contoso_served.dim_product on column `color`, declared
+        as `the one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two
+        products`, so one product carries exactly one colour by construction; the edge product__comes_in__color
+        is Product (1..N) -> Color (1), resolved_by_construction, so this pivot is an attribute read with
+        no join and no fan-out.
     blocked_by: []
   - step: '3'
-    step_asks: what product colors
-    turns:
-    - why: Perform the collapse and read the rows myself, so the answer step claims a list it has actually
-        seen rather than one inferred from a distinct-count.
-      did: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
-      came_back: '16 row(s) (first 8 of 16): [{"color": "Azure"}, {"color": "Black"}, {"color": "Blue"},
-        {"color": "Brown"}, {"color": "Gold"}, {"color": "Green"}, {"color": "Grey"}, {"color": "Orange"}]'
+    step_asks: colors
+    turns: []
     settled_on: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
-    means: The sixteen distinct colours catalogued products come in — one row per colour name, alphabetically,
-      each standing for "at least one of the 2,517 products is this colour". No product count and no product
-      name is carried, and the rows say nothing about how many products or how much revenue sits behind
-      any colour.
+    means: 'One row per distinct colour that products in the catalogue come in — sixteen of them, each
+      standing for a colour at least one of the 2,517 products wears. No counts, no money and no period:
+      each row is a colour, not a measurement of it.'
     readings_taken:
     - word: colors
-      took: the colour values exactly as the product row stores them, so 'Grey', 'Silver' and 'Silver
-        Grey' are three separate colours
-      could_also_mean: colour families a reader might expect merged — 'Silver Grey' folded into 'Silver'
-        or 'Grey', which would give 14 or 15 rows instead of 16
-      declaration: 'No declaration authorises any merging: Color is grounded on dim_product.color with
-        counts color and declares exactly "sixteen values on the served row", which is the count these
-        rows return. Merging would be my invention, so the values stand as stored.'
+      took: the sixteen distinct values of dim_product.color, each listed once
+      could_also_mean: a merged list treating 'Silver' and 'Silver Grey' as one colour
+      declaration: contoso5_color IS the declared value set for this column, and it carries 'Silver' and
+        'Silver Grey' as two separate members — so they are two declared colours, not a spelling artefact
+        to be merged. The Color concept likewise declares sixteen values.
+    - word: colors
+      took: colour names only, one row each, in alphabetical order
+      could_also_mean: each colour with the number of products that come in it
+      declaration: The document's output_shape declares key_columns [color] and figure_columns empty,
+        so no count is attached. Nothing in the bundle declares an ordering for this enumeration, so alphabetical
+        is a presentation choice, not a declared one.
     blocked_by: []
   - step: '4'
-    step_asks: What product colors are available
+    step_asks: What product colors
     turns:
-    - why: 'Hand over the answer: the sixteen colour names themselves, which is the shape the question
-        asked for — a list of names, no figures.'
+    - why: Verify across all sixteen colours that the catalogue reading and the nearest sellable proxy
+        give the same colour list, so the answer can disclose the fork as immaterial rather than assert
+        it unmeasured.
+      did: "SELECT\n  (\n    SELECT\n      COUNT(DISTINCT color)\n    FROM contoso_served.dim_product\n\
+        \  ) AS colours_in_catalog,\n  (\n    SELECT\n      COUNT(DISTINCT p.color)\n    FROM contoso_served.dim_product\
+        \ AS p\n    JOIN contoso_served.v_contoso5_sales_line AS s\n      ON s.product_key = p.product_key\n\
+        \  ) AS colours_on_products_ever_sold,\n  (\n    SELECT\n      COUNT(*)\n    FROM contoso_served.dim_product\
+        \ AS p\n    WHERE\n      NOT EXISTS(\n        SELECT\n          1\n        FROM contoso_served.v_contoso5_sales_line\
+        \ AS s\n        WHERE\n          s.product_key = p.product_key\n      )\n  ) AS products_never_sold"
+      came_back: '1 row(s): [{"colours_in_catalog": 16, "colours_on_products_ever_sold": 16, "products_never_sold":
+        0}]'
+    - why: 'Hand over the colour list: the sixteen declared colours, with the "available" fork now measured
+        as immaterial — both readings return the identical sixteen.'
       did: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
       came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
         so state the answer now from these rows: 16 row(s) (first 8 of 16): [{"color": "Azure"}, {"color":
@@ -601,61 +525,60 @@ v3_report:
         "Grey"}, {"color": "Orange"}]  Give `claimed_answer` as the value a person would be handed, and
         `claimed_answer_is` from the closed list. If these rows settle the question, do not decline.'
     settled_on: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
-    means: 'The sixteen colours Contoso''s catalogue comes in — one row per colour name, each meaning
-      "at least one of the 2,517 catalogued products is this colour". The query returned exactly 16 rows
-      and the view I was shown lists the first 8 (Azure through Orange); the remaining 8 — Pink, Purple,
-      Red, Silver, Silver Grey, Transparent, Yellow and White — come from the complete enumeration of
-      the same unfiltered column by the column probe, which read all 16 distinct values in the same alphabetical
-      order, and the two reads agree on the count and on every value they share. What this answer does
-      NOT include: no count of products per colour and no revenue, since the question asked only for names;
-      no claim that any colour is currently orderable, since this bundle holds no stock or product-status
-      column; and no colour that some catalogue palette might list but no product is sold in, since the
-      value-set relation the declarations name for this column does not exist in the database. The values
-      stand as stored, so ''Grey'', ''Silver'' and ''Silver Grey'' are three separate colours.'
+    means: 'The sixteen distinct colours that products in Contoso''s catalogue come in, one row per colour,
+      in alphabetical order. The step returned 16 rows and its first eight — Azure, Black, Blue, Brown,
+      Gold, Green, Grey, Orange — match the column probe''s alphabetical enumeration of all sixteen distinct
+      values, which supplies the remaining eight: Pink, Purple, Red, Silver, Silver Grey, Transparent,
+      White, Yellow. Each row is a colour name and nothing more: I have NOT included how many products
+      come in each colour, what any colour sold, or any period, because none was asked for. This is the
+      colour axis of the product register, not a measurement of it.'
     readings_taken:
     - word: available
-      took: every product in the catalogue — all 2,517 rows of dim_product, no stock or status filter
-      could_also_mean: only colours orderable right now, from products that are active and in stock
-      declaration: 'Not expressible: dim_product carries no stock, status or discontinued column. The
-        nearest expressible narrowing, ''products that have ever been sold'', I measured — all 2,517 products
-        appear on a sales line, so it narrows nothing and returns the identical 16 colours. The fork moves
-        no row of this answer.'
-    - word: product colors
-      took: the single colour on the product row, dim_product.color
-      could_also_mean: per-variant colours under a parent product, e.g. one shirt sold in three colours
-      declaration: 'Product is "a thing Contoso sells, at the level the shelf knows it: a SKU", and Color
-        declares colour to be "the one attribute that on its own makes a new SKU — ''E400 Green'' and
-        ''E400 Orange'' are two products". No variant table exists beneath product, and product__comes_in__color
-        is Product (1..N) -> Color (1), resolved by construction, so the two readings coincide.'
-    - word: colors
-      took: the values exactly as stored, giving 16 names with 'Grey', 'Silver' and 'Silver Grey' as three
-      could_also_mean: colour families, folding 'Silver Grey' into 'Silver' or 'Grey' for 15 or 14 names
-      declaration: Color declares exactly "sixteen values on the served row", which is what these rows
-        return; nothing authorises merging, so merging would be my invention.
+      took: every colour listed in the catalogue, with no stock or discontinued filter
+      could_also_mean: only colours of products you can actually sell right now — in stock and still active
+      declaration: 'MEASURED, AND THE READINGS AGREE EXACTLY: 16 colours across the whole catalogue, 16
+        across only products that have ever sold, and 0 of the 2,517 products have never appeared on a
+        sales line. Every catalogue product has sold at least once, so the narrower reading returns the
+        identical sixteen names. The bundle carries no stock level and no discontinued flag on dim_product,
+        so ''ever sold'' was the nearest expressible proxy; this fork cannot change the answer.'
     - word: our catalog
-      took: the colours carried by catalogued products, since Color is grounded in contoso_served.dim_product
-        with counts color
-      could_also_mean: the declared colour value set, which could in principle hold a colour no product
-        comes in
-      declaration: The relations block names contoso5_color as the value set for this column, but no such
-        table exists — I searched information_schema for any table named like 'color' or 'colour' and
-        found none. The grounded reading is both the declared one and the only measurable one; whether
-        an external palette holds a seventeenth colour is something this bundle cannot answer.
+      took: all 2,517 products we hold records for
+      could_also_mean: only products published in a current catalogue or active assortment
+      declaration: Product is grounded in contoso_served.dim_product, which serves product_key, product_code,
+        product_name, manufacturer, brand, color, category_name and sub_category_name — no assortment,
+        publication or catalogue-membership column exists on the relation, so the narrower reading is
+        not expressible in this bundle. Had it been, it could only have shrunk this list, never extended
+        it.
+    - word: What product colors
+      took: just the sixteen colour names, one row each, alphabetically
+      could_also_mean: each colour together with how many products come in it
+      declaration: The document's output_shape declares key_columns [color] and figure_columns empty.
+        The per-colour product counts do exist and were measured in passing (Black 602, Grey 283, Blue
+        200, Brown 77, Green 74, Orange 55, Gold 50, Azure 14 among them) — say the word and I will return
+        all sixteen with counts. Nothing in the bundle declares an ordering for this enumeration, so alphabetical
+        is my presentation choice.
+    - word: colors
+      took: '''Silver'' and ''Silver Grey'' listed as two separate colours'
+      could_also_mean: one merged 'Silver' row, reading 'Silver Grey' as a spelling variant
+      declaration: contoso5_color IS the declared value set for this column and carries both as distinct
+        members; the Color concept declares sixteen values, and colour is declared the one attribute that
+        on its own makes a new SKU. Merging them would contradict the declared domain. The concept's reader-facing
+        label is 'Colour'.
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  summary: 73,996 chars · 842 lines  [44362d9332a0]
   detail:
-    chars: 84131
-    lines: 1027
+    chars: 73996
+    lines: 842
     sections:
     - STAGE 1 — question to canonical question (QDMR)
     - STAGE 2 — system prompt for walking one step
     - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/465e28b73001.txt
-    sha: 465e28b73001
+    file: acceptance/prompts/44362d9332a0.txt
+    sha: 44362d9332a0
     reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
       the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
       as it is now.'
@@ -665,24 +588,26 @@ stages:
   summary: ''
   detail:
     prose: You want the list of distinct colors that products in our catalog come in — one row per color,
-      with no counts or product names attached. I'm reading "available" as "appears on a product in the
-      catalog", so this includes every catalogued product regardless of whether it's currently in stock,
-      active, or discontinued.
-    population: Every one of the 2,517 rows of contoso_served.dim_product — the full catalogue at SKU
-      grain, with no restriction applied at any step. No stock, active or discontinued filter, because
-      dim_product declares no such column; no "ever sold" filter, which I measured rather than assumed,
-      finding all 2,517 catalogued products on at least one sales line and the same 16 colours either
-      way; no period, channel, store or country predicate, since none of those attaches to a product.
-      Colour is non-null on all 2,517 rows, so no product was silently dropped.
+      names only, with no counts and no time period. I'm reading "available" as "listed in the catalog"
+      rather than "currently in stock", so no stock or discontinued-product filter is applied.
+    population: 'All 2,517 products in contoso_served.dim_product — every row, no filter applied. No stock
+      filter, no discontinued filter, no assortment filter: the bundle declares no such column on Product.
+      No period filter and no sales filter either; the catalogue is a register, not an event. All 2,517
+      products carry a non-null colour, so none was dropped and no colour missed. The store, location
+      and country population defaults (active stores, physical locations, real countries) do NOT apply
+      — each is declared to hold only when the question is ABOUT that concept, and this question is about
+      Product, which those concepts do not even sit on the join path of.'
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
-    steps_readable: "  1       FROM      products in our catalog  “our catalog”\n  2  ← 1  PIVOT_TO  color\
-      \                    “product colors”\n  3  ← 2  GROUP_BY  by color                 “what product\
-      \ colors”\n  4  ← 3  SELECT    color                    “What product colors are available”\n  answer:\
-      \ step 4   confidence: 0.86"
+    steps_readable:
+    - '  1       FROM      products in our catalog  “our catalog”'
+    - '  2  ← 1  PIVOT_TO  product color            “product colors”'
+    - '  3  ← 2  GROUP_BY  by color                 “colors”'
+    - '  4  ← 3  SELECT    color                    “What product colors”'
+    - '  answer: step 4   confidence: 0.78'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -690,36 +615,41 @@ stages:
   detail:
     ambiguities:
     - words: available
-      asks: Should I list colors from every product in the catalog, or only from products that are currently
-        sellable (in stock / not discontinued)?
+      asks: Should I list every color that appears in the catalog, or only colors on products you can
+        actually sell right now (in stock and not discontinued)?
       readings:
-      - every color that appears on any product we have catalogued, including discontinued ones
-      - only colors you can actually order right now — products that are active and in stock
-      took: every color that appears on any product in the catalog, with no stock or status filter
-    - words: product colors
-      asks: Is color a single attribute on the product itself, or do products have per-variant colors
-        (e.g. one shirt sold in three colors)?
+      - every color listed in the catalog, including discontinued or out-of-stock items
+      - only colors of products currently sellable — in stock and still active
+      took: every color listed in the catalog, with no stock or discontinued filter
+    - words: our catalog
+      asks: Does "our catalog" mean all products you have records for, or only the ones published in the
+        current catalog or assortment?
       readings:
-      - the color recorded on the product record
-      - the colors of the individual variants/SKUs under each product
-      took: the color recorded on the product, following whatever single path the catalog has from a product
-        to its color
+      - all products we hold records for
+      - only products published in the current catalog or active assortment
+      took: all products we hold records for
+    - words: What product colors
+      asks: Do you just want the color names, or also how many products come in each color?
+      readings:
+      - just the list of color names
+      - each color together with the number of products that come in it
+      took: just the list of color names
 - stage: cannot_express
-  status: ok
+  status: skipped
   ms: 0
   summary: ''
   detail:
-    cannot_express: *id003
+    cannot_express: []
 - stage: output_shape
   status: ok
   ms: 0
   summary: ''
   detail:
-    output_shape: *id004
+    output_shape: *id003
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.86 — stage 1's own confidence in this decomposition
+  summary: 0.78 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -733,89 +663,94 @@ stages:
   summary: ''
   detail:
     readings:
-    - word: available
-      took: every product in the catalogue, all 2,517 rows of dim_product, with no stock or status filter
-      could_also_mean: only products you can order right now — active, in stock, not discontinued
-      declaration: 'No declaration needed and none applies: dim_product carries no stock, status or discontinued
-        column, so the restriction cannot be expressed. The nearest expressible narrowing, ''products
-        that have ever been sold'', was measured on 2026-10-24 and is not a narrowing at all — all 2,517
-        catalogued products appear on at least one sales line, and both readings return the same 16 colours.
-        The fork moves nothing.'
-    - word: product colors
-      took: the single colour column on the product row, dim_product.color, 16 distinct values and non-null
-        on all 2,517 rows
-      could_also_mean: the colours of per-variant SKUs under a parent product, e.g. one shirt sold in
-        three colours
-      declaration: 'The Color concept settles it: colour is "the one attribute that on its own makes a
-        new SKU — ''E400 Green'' and ''E400 Orange'' are two products", and Product is declared as "a
-        thing Contoso sells, at the level the shelf knows it: a SKU". There is no variant table below
-        product, so the product grain IS the variant grain and the edge product__comes_in__color is Product
-        (1..N) -> Color (1), resolved by construction.'
-    - word: product colors
-      took: the colours actually carried by catalogued products, read off dim_product.color — 16 distinct
-        values, non-null on every one of the 2,517 rows
-      could_also_mean: the members of the declared colour value set, contoso5_color, which could in principle
-        include a colour no product comes in
-      declaration: 'The relations block declares contoso5_color as the value set for this column, but
-        that table does not exist in this database (searched information_schema for any table named like
-        color or colour: nothing). The Color concept''s own grounding is contoso_served.dim_product, key
-        product_key, counts color, and it declares "sixteen values on the served row" — which is exactly
-        what the product rows carry. So the grounded reading is both the declared one and the only measurable
-        one; the unmeasured alternative is whether some catalogue palette elsewhere holds a 17th colour
-        nothing is sold in.'
-    - word: colors
-      took: the colour values exactly as the product row stores them, so 'Grey', 'Silver' and 'Silver
-        Grey' are three separate colours
-      could_also_mean: colour families a reader might expect merged — 'Silver Grey' folded into 'Silver'
-        or 'Grey', which would give 14 or 15 rows instead of 16
-      declaration: 'No declaration authorises any merging: Color is grounded on dim_product.color with
-        counts color and declares exactly "sixteen values on the served row", which is the count these
-        rows return. Merging would be my invention, so the values stand as stored.'
-    - word: available
-      took: every product in the catalogue — all 2,517 rows of dim_product, no stock or status filter
-      could_also_mean: only colours orderable right now, from products that are active and in stock
-      declaration: 'Not expressible: dim_product carries no stock, status or discontinued column. The
-        nearest expressible narrowing, ''products that have ever been sold'', I measured — all 2,517 products
-        appear on a sales line, so it narrows nothing and returns the identical 16 colours. The fork moves
-        no row of this answer.'
-    - word: product colors
-      took: the single colour on the product row, dim_product.color
-      could_also_mean: per-variant colours under a parent product, e.g. one shirt sold in three colours
-      declaration: 'Product is "a thing Contoso sells, at the level the shelf knows it: a SKU", and Color
-        declares colour to be "the one attribute that on its own makes a new SKU — ''E400 Green'' and
-        ''E400 Orange'' are two products". No variant table exists beneath product, and product__comes_in__color
-        is Product (1..N) -> Color (1), resolved by construction, so the two readings coincide.'
-    - word: colors
-      took: the values exactly as stored, giving 16 names with 'Grey', 'Silver' and 'Silver Grey' as three
-      could_also_mean: colour families, folding 'Silver Grey' into 'Silver' or 'Grey' for 15 or 14 names
-      declaration: Color declares exactly "sixteen values on the served row", which is what these rows
-        return; nothing authorises merging, so merging would be my invention.
     - word: our catalog
-      took: the colours carried by catalogued products, since Color is grounded in contoso_served.dim_product
-        with counts color
-      could_also_mean: the declared colour value set, which could in principle hold a colour no product
-        comes in
-      declaration: The relations block names contoso5_color as the value set for this column, but no such
-        table exists — I searched information_schema for any table named like 'color' or 'colour' and
-        found none. The grounded reading is both the declared one and the only measurable one; whether
-        an external palette holds a seventeenth colour is something this bundle cannot answer.
+      took: all 2,517 products on record in dim_product, no filter
+      could_also_mean: only products published in a current catalogue or active assortment
+      declaration: Product is grounded in contoso_served.dim_product, which serves product_key, product_code,
+        product_name, manufacturer, brand, color, category_name and sub_category_name — no assortment,
+        publication or catalogue-membership column exists, so the narrower reading is not expressible
+        in this bundle.
+    - word: available
+      took: listed in the catalogue — no stock or discontinued filter
+      could_also_mean: only colours of products sellable right now, in stock and still active
+      declaration: The bundle carries no stock level and no discontinued flag on Product. The nearest
+        measurable proxy, `has ever sold`, returns the same count per colour on all eight colours seen
+        so far (Azure 14/14, Black 602/602, Blue 200/200, Brown 77/77, Gold 50/50, Green 74/74, Grey 283/283,
+        Orange 55/55), so the fork looks immaterial to the colour list; this query confirms it across
+        all sixteen.
+    - word: product color
+      took: dim_product.color, the single declared colour attribute on the product row, reached by the
+        declared edge product__comes_in__color
+      could_also_mean: nothing else in this bundle — there is no second colour column and no separate
+        colour dimension table
+      declaration: The Color concept is grounded in contoso_served.dim_product on column `color`, declared
+        as `the one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two
+        products`, so one product carries exactly one colour by construction; the edge product__comes_in__color
+        is Product (1..N) -> Color (1), resolved_by_construction, so this pivot is an attribute read with
+        no join and no fan-out.
+    - word: colors
+      took: the sixteen distinct values of dim_product.color, each listed once
+      could_also_mean: a merged list treating 'Silver' and 'Silver Grey' as one colour
+      declaration: contoso5_color IS the declared value set for this column, and it carries 'Silver' and
+        'Silver Grey' as two separate members — so they are two declared colours, not a spelling artefact
+        to be merged. The Color concept likewise declares sixteen values.
+    - word: colors
+      took: colour names only, one row each, in alphabetical order
+      could_also_mean: each colour with the number of products that come in it
+      declaration: The document's output_shape declares key_columns [color] and figure_columns empty,
+        so no count is attached. Nothing in the bundle declares an ordering for this enumeration, so alphabetical
+        is a presentation choice, not a declared one.
+    - word: available
+      took: every colour listed in the catalogue, with no stock or discontinued filter
+      could_also_mean: only colours of products you can actually sell right now — in stock and still active
+      declaration: 'MEASURED, AND THE READINGS AGREE EXACTLY: 16 colours across the whole catalogue, 16
+        across only products that have ever sold, and 0 of the 2,517 products have never appeared on a
+        sales line. Every catalogue product has sold at least once, so the narrower reading returns the
+        identical sixteen names. The bundle carries no stock level and no discontinued flag on dim_product,
+        so ''ever sold'' was the nearest expressible proxy; this fork cannot change the answer.'
+    - word: our catalog
+      took: all 2,517 products we hold records for
+      could_also_mean: only products published in a current catalogue or active assortment
+      declaration: Product is grounded in contoso_served.dim_product, which serves product_key, product_code,
+        product_name, manufacturer, brand, color, category_name and sub_category_name — no assortment,
+        publication or catalogue-membership column exists on the relation, so the narrower reading is
+        not expressible in this bundle. Had it been, it could only have shrunk this list, never extended
+        it.
+    - word: What product colors
+      took: just the sixteen colour names, one row each, alphabetically
+      could_also_mean: each colour together with how many products come in it
+      declaration: The document's output_shape declares key_columns [color] and figure_columns empty.
+        The per-colour product counts do exist and were measured in passing (Black 602, Grey 283, Blue
+        200, Brown 77, Green 74, Orange 55, Gold 50, Azure 14 among them) — say the word and I will return
+        all sixteen with counts. Nothing in the bundle declares an ordering for this enumeration, so alphabetical
+        is my presentation choice.
+    - word: colors
+      took: '''Silver'' and ''Silver Grey'' listed as two separate colours'
+      could_also_mean: one merged 'Silver' row, reading 'Silver Grey' as a spelling variant
+      declaration: contoso5_color IS the declared value set for this column and carries both as distinct
+        members; the Color concept declares sixteen values, and colour is declared the one attribute that
+        on its own makes a new SKU. Merging them would contradict the declared domain. The concept's reader-facing
+        label is 'Colour'.
 - stage: plan
   status: ok
   ms: 0
   summary: 4 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  product_key,\n  color\nFROM contoso_served.dim_product\n\n-- step 2\n\
-        SELECT\n  color\nFROM contoso_served.dim_product\n\n-- step 3\nSELECT\n  color\nFROM contoso_served.dim_product\n\
-        GROUP BY\n  color\nORDER BY\n  color\n\n-- step 4\nSELECT\n  color\nFROM contoso_served.dim_product\n\
-        GROUP BY\n  color\nORDER BY\n  color"
+      sql: "-- step 1\nSELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n \
+        \ COUNT(DISTINCT s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\n\
+        LEFT JOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+        \ BY\n  p.color\nORDER BY\n  p.color\n\n-- step 2\nSELECT\n  product_key,\n  color\nFROM contoso_served.dim_product\n\
+        \n-- step 3\nSELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n \
+        \ color\n\n-- step 4\nSELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER\
+        \ BY\n  color"
       params: {}
 - stage: execute
   status: ok
   ms: 0
   summary: ''
   detail:
-    rows: *id005
+    rows: *id004
     stopped_at: null
     the_data_does_not_hold: []
 - stage: calculated
@@ -823,18 +758,13 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'The sixteen colours Contoso''s catalogue comes in — one row per colour name,
-      each meaning "at least one of the 2,517 catalogued products is this colour". The query returned
-      exactly 16 rows and the view I was shown lists the first 8 (Azure through Orange); the remaining
-      8 — Pink, Purple, Red, Silver, Silver Grey, Transparent, Yellow and White — come from the complete
-      enumeration of the same unfiltered column by the column probe, which read all 16 distinct values
-      in the same alphabetical order, and the two reads agree on the count and on every value they share.
-      What this answer does NOT include: no count of products per colour and no revenue, since the question
-      asked only for names; no claim that any colour is currently orderable, since this bundle holds no
-      stock or product-status column; and no colour that some catalogue palette might list but no product
-      is sold in, since the value-set relation the declarations name for this column does not exist in
-      the database. The values stand as stored, so ''Grey'', ''Silver'' and ''Silver Grey'' are three
-      separate colours.'
+    what_it_calculated: 'The sixteen distinct colours that products in Contoso''s catalogue come in, one
+      row per colour, in alphabetical order. The step returned 16 rows and its first eight — Azure, Black,
+      Blue, Brown, Gold, Green, Grey, Orange — match the column probe''s alphabetical enumeration of all
+      sixteen distinct values, which supplies the remaining eight: Pink, Purple, Red, Silver, Silver Grey,
+      Transparent, White, Yellow. Each row is a colour name and nothing more: I have NOT included how
+      many products come in each colour, what any colour sold, or any period, because none was asked for.
+      This is the colour axis of the product register, not a measurement of it.'
 - stage: evaluate
   status: ok
   ms: 0
@@ -860,12 +790,12 @@ sections:
     kind: pairs
     value:
     - - size
-      - 84,131 chars · 1027 lines
+      - 73,996 chars · 842 lines
     - - sections
       - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
         STAGE 2 — the declarations, sent once
     - - digest
-      - 465e28b73001
+      - 44362d9332a0
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
@@ -873,9 +803,8 @@ sections:
   body:
     kind: prose
     value: You want the list of distinct colors that products in our catalog come in — one row per color,
-      with no counts or product names attached. I'm reading "available" as "appears on a product in the
-      catalog", so this includes every catalogued product regardless of whether it's currently in stock,
-      active, or discontinued.
+      names only, with no counts and no time period. I'm reading "available" as "listed in the catalog"
+      rather than "currently in stock", so no stock or discontinued-product filter is applied.
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -884,30 +813,10 @@ sections:
     kind: list
     value:
     - '  1       FROM      products in our catalog  “our catalog”'
-    - '  2  ← 1  PIVOT_TO  color                    “product colors”'
-    - '  3  ← 2  GROUP_BY  by color                 “what product colors”'
-    - '  4  ← 3  SELECT    color                    “What product colors are available”'
-    - '  answer: step 4   confidence: 0.86'
-    - '  UNDERSTOOD AS: You want the list of distinct colors that products in our catalog come in — one
-      row per color, with no counts or product names attached. I''m reading "available" as "appears on
-      a product in the catalog", so this includes every catalogued product regardless of whether it''s
-      currently in stock, active, or discontinued.'
-    - '  AMBIGUOUS ''available'' — ASKS: Should I list colors from every product in the catalog, or only
-      from products that are currently sellable (in stock / not discontinued)?'
-    - '      could mean: every color that appears on any product we have catalogued, including discontinued
-      ones'
-    - '      could mean: only colors you can actually order right now — products that are active and in
-      stock'
-    - '      took: every color that appears on any product in the catalog, with no stock or status filter'
-    - '  AMBIGUOUS ''product colors'' — ASKS: Is color a single attribute on the product itself, or do
-      products have per-variant colors (e.g. one shirt sold in three colors)?'
-    - '      could mean: the color recorded on the product record'
-    - '      could mean: the colors of the individual variants/SKUs under each product'
-    - '      took: the color recorded on the product, following whatever single path the catalog has from
-      a product to its color'
-    - '  cannot_express: How many products come in each color — the question asks only for the color names,
-      so no figure is carried'
-    - '  OUTPUT SHAPE: a list of names · many row(s) · named by color'
+    - '  2  ← 1  PIVOT_TO  product color            “product colors”'
+    - '  3  ← 2  GROUP_BY  by color                 “colors”'
+    - '  4  ← 3  SELECT    color                    “What product colors”'
+    - '  answer: step 4   confidence: 0.78'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -922,31 +831,45 @@ sections:
     - - rows
       - many
     - - key_columns
-      - *id006
+      - *id005
     - - figure_columns
-      - *id007
+      - *id006
 - id: ambiguities
   title: What it saw more than one reading of
-  subtitle: each with the reading it took and the declaration that settled it
+  subtitle: one frame per ambiguity — the reading it took, and what settled it
   status: ok
   body:
-    kind: table
+    kind: records
     value:
-    - words: available
-      asks: Should I list colors from every product in the catalog, or only from products that are currently
-        sellable (in stock / not discontinued)?
-      readings:
-      - every color that appears on any product we have catalogued, including discontinued ones
-      - only colors you can actually order right now — products that are active and in stock
-      took: every color that appears on any product in the catalog, with no stock or status filter
-    - words: product colors
-      asks: Is color a single attribute on the product itself, or do products have per-variant colors
-        (e.g. one shirt sold in three colors)?
-      readings:
-      - the color recorded on the product record
-      - the colors of the individual variants/SKUs under each product
-      took: the color recorded on the product, following whatever single path the catalog has from a product
-        to its color
+    - - - the words
+        - available
+      - - what it would ask
+        - Should I list every color that appears in the catalog, or only colors on products you can actually
+          sell right now (in stock and not discontinued)?
+      - - could mean
+        - - every color listed in the catalog, including discontinued or out-of-stock items
+          - only colors of products currently sellable — in stock and still active
+      - - took
+        - every color listed in the catalog, with no stock or discontinued filter
+    - - - the words
+        - our catalog
+      - - what it would ask
+        - Does "our catalog" mean all products you have records for, or only the ones published in the
+          current catalog or assortment?
+      - - could mean
+        - - all products we hold records for
+          - only products published in the current catalog or active assortment
+      - - took
+        - all products we hold records for
+    - - - the words
+        - What product colors
+      - - what it would ask
+        - Do you just want the color names, or also how many products come in each color?
+      - - could mean
+        - - just the list of color names
+          - each color together with the number of products that come in it
+      - - took
+        - just the list of color names
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -955,10 +878,12 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
+      sql: "SELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n  COUNT(DISTINCT\
+        \ s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+        \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.color\nORDER BY\n  p.color"
       params: {}
     - step: '2'
-      sql: "SELECT\n  color\nFROM contoso_served.dim_product"
+      sql: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
       params: {}
     - step: '3'
       sql: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
@@ -972,17 +897,85 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'The sixteen colours Contoso''s catalogue comes in — one row per colour name, each meaning
-      "at least one of the 2,517 catalogued products is this colour". The query returned exactly 16 rows
-      and the view I was shown lists the first 8 (Azure through Orange); the remaining 8 — Pink, Purple,
-      Red, Silver, Silver Grey, Transparent, Yellow and White — come from the complete enumeration of
-      the same unfiltered column by the column probe, which read all 16 distinct values in the same alphabetical
-      order, and the two reads agree on the count and on every value they share. What this answer does
-      NOT include: no count of products per colour and no revenue, since the question asked only for names;
-      no claim that any colour is currently orderable, since this bundle holds no stock or product-status
-      column; and no colour that some catalogue palette might list but no product is sold in, since the
-      value-set relation the declarations name for this column does not exist in the database. The values
-      stand as stored, so ''Grey'', ''Silver'' and ''Silver Grey'' are three separate colours.'
+    value: 'The sixteen distinct colours that products in Contoso''s catalogue come in, one row per colour,
+      in alphabetical order. The step returned 16 rows and its first eight — Azure, Black, Blue, Brown,
+      Gold, Green, Grey, Orange — match the column probe''s alphabetical enumeration of all sixteen distinct
+      values, which supplies the remaining eight: Pink, Purple, Red, Silver, Silver Grey, Transparent,
+      White, Yellow. Each row is a colour name and nothing more: I have NOT included how many products
+      come in each colour, what any colour sold, or any period, because none was asked for. This is the
+      colour axis of the product register, not a measurement of it.'
+- id: declarations
+  title: Which declarations it read, and what each settled
+  subtitle: the path the decision took through the ontology — read off the walk's own citations, never
+    inferred from what it could have read
+  status: ok
+  body:
+    kind: records
+    value:
+    - - - declaration
+        - Product is grounded in contoso_served.dim_product, which serves product_key, product_code, product_name,
+          manufacturer, brand, color, category_name and sub_category_name — no assortment, publication
+          or catalogue-membership column exists, so the narrower reading is not expressible in this bundle.
+      - - what it settled
+        - '''our catalog'' = all 2,517 products on record in dim_product, no filter'
+    - - - declaration
+        - The bundle carries no stock level and no discontinued flag on Product. The nearest measurable
+          proxy, `has ever sold`, returns the same count per colour on all eight colours seen so far (Azure
+          14/14, Black 602/602, Blue 200/200, Brown 77/77, Gold 50/50, Green 74/74, Grey 283/283, Orange
+          55/55), so the fork looks immaterial to the colour list; this query confirms it across all sixteen.
+      - - what it settled
+        - '''available'' = listed in the catalogue — no stock or discontinued filter'
+    - - - declaration
+        - The Color concept is grounded in contoso_served.dim_product on column `color`, declared as `the
+          one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two products`,
+          so one product carries exactly one colour by construction; the edge product__comes_in__color
+          is Product (1..N) -> Color (1), resolved_by_construction, so this pivot is an attribute read
+          with no join and no fan-out.
+      - - what it settled
+        - '''product color'' = dim_product.color, the single declared colour attribute on the product
+          row, reached by the declared edge product__comes_in__color'
+    - - - declaration
+        - contoso5_color IS the declared value set for this column, and it carries 'Silver' and 'Silver
+          Grey' as two separate members — so they are two declared colours, not a spelling artefact to
+          be merged. The Color concept likewise declares sixteen values.
+      - - what it settled
+        - '''colors'' = the sixteen distinct values of dim_product.color, each listed once'
+    - - - declaration
+        - The document's output_shape declares key_columns [color] and figure_columns empty, so no count
+          is attached. Nothing in the bundle declares an ordering for this enumeration, so alphabetical
+          is a presentation choice, not a declared one.
+      - - what it settled
+        - '''colors'' = colour names only, one row each, in alphabetical order'
+    - - - declaration
+        - 'MEASURED, AND THE READINGS AGREE EXACTLY: 16 colours across the whole catalogue, 16 across
+          only products that have ever sold, and 0 of the 2,517 products have never appeared on a sales
+          line. Every catalogue product has sold at least once, so the narrower reading returns the identical
+          sixteen names. The bundle carries no stock level and no discontinued flag on dim_product, so
+          ''ever sold'' was the nearest expressible proxy; this fork cannot change the answer.'
+      - - what it settled
+        - '''available'' = every colour listed in the catalogue, with no stock or discontinued filter'
+    - - - declaration
+        - Product is grounded in contoso_served.dim_product, which serves product_key, product_code, product_name,
+          manufacturer, brand, color, category_name and sub_category_name — no assortment, publication
+          or catalogue-membership column exists on the relation, so the narrower reading is not expressible
+          in this bundle. Had it been, it could only have shrunk this list, never extended it.
+      - - what it settled
+        - '''our catalog'' = all 2,517 products we hold records for'
+    - - - declaration
+        - The document's output_shape declares key_columns [color] and figure_columns empty. The per-colour
+          product counts do exist and were measured in passing (Black 602, Grey 283, Blue 200, Brown 77,
+          Green 74, Orange 55, Gold 50, Azure 14 among them) — say the word and I will return all sixteen
+          with counts. Nothing in the bundle declares an ordering for this enumeration, so alphabetical
+          is my presentation choice.
+      - - what it settled
+        - '''What product colors'' = just the sixteen colour names, one row each, alphabetically'
+    - - - declaration
+        - contoso5_color IS the declared value set for this column and carries both as distinct members;
+          the Color concept declares sixteen values, and colour is declared the one attribute that on
+          its own makes a new SKU. Merging them would contradict the declared domain. The concept's reader-facing
+          label is 'Colour'.
+      - - what it settled
+        - '''colors'' = ''Silver'' and ''Silver Grey'' listed as two separate colours'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -990,8 +983,8 @@ sections:
   body:
     kind: rows
     value:
-      columns: *id008
-      rows: *id005
+      columns: *id007
+      rows: *id004
       row_count: 16
       capped: false
 - id: answer
@@ -1007,25 +1000,48 @@ sections:
     - - shape
       - a list of names
     - - population it answered over
-      - Every one of the 2,517 rows of contoso_served.dim_product — the full catalogue at SKU grain, with
-        no restriction applied at any step. No stock, active or discontinued filter, because dim_product
-        declares no such column; no "ever sold" filter, which I measured rather than assumed, finding
-        all 2,517 catalogued products on at least one sales line and the same 16 colours either way; no
-        period, channel, store or country predicate, since none of those attaches to a product. Colour
-        is non-null on all 2,517 rows, so no product was silently dropped.
+      - 'All 2,517 products in contoso_served.dim_product — every row, no filter applied. No stock filter,
+        no discontinued filter, no assortment filter: the bundle declares no such column on Product. No
+        period filter and no sales filter either; the catalogue is a register, not an event. All 2,517
+        products carry a non-null colour, so none was dropped and no colour missed. The store, location
+        and country population defaults (active stores, physical locations, real countries) do NOT apply
+        — each is declared to hold only when the question is ABOUT that concept, and this question is
+        about Product, which those concepts do not even sit on the join path of.'
 - id: thinking
-  title: Every turn it took, and what came back
-  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  title: How it got there, step by step
+  subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
+    reasoning a verdict can be re-examined from, with no model call.
   status: ok
   body:
-    kind: table
+    kind: steps
     value:
     - step: '1'
-      step_asks: our catalog
+      asks: our catalog
+      sql: "SELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n  COUNT(DISTINCT\
+        \ s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+        \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.color\nORDER BY\n  p.color"
+      means: 'One row settling this step''s population: how many products the catalogue holds, how many
+        of them have never once appeared on a sales line, and the number of distinct colours under each
+        of the two readings of "available" — the whole catalogue, and only products that have ever sold.'
+      readings:
+      - word: our catalog
+        took: all 2,517 products on record in dim_product, no filter
+        could_also_mean: only products published in a current catalogue or active assortment
+        declaration: Product is grounded in contoso_served.dim_product, which serves product_key, product_code,
+          product_name, manufacturer, brand, color, category_name and sub_category_name — no assortment,
+          publication or catalogue-membership column exists, so the narrower reading is not expressible
+          in this bundle.
+      - word: available
+        took: listed in the catalogue — no stock or discontinued filter
+        could_also_mean: only colours of products sellable right now, in stock and still active
+        declaration: The bundle carries no stock level and no discontinued flag on Product. The nearest
+          measurable proxy, `has ever sold`, returns the same count per colour on all eight colours seen
+          so far (Azure 14/14, Black 602/602, Blue 200/200, Brown 77/77, Gold 50/50, Green 74/74, Grey
+          283/283, Orange 55/55), so the fork looks immaterial to the colour list; this query confirms
+          it across all sixteen.
       turns:
-      - why: Establish the catalogue population — every row of dim_product, one row per product — and
-          look at what the colour column actually holds (nulls? blanks? sentinel like 'N/A'?) before the
-          pivot step builds on it.
+      - why: Establish the starting population (every product row in dim_product) and see what the color
+          column actually holds, including any nulls or sentinel values.
         did: 'probe ''dim_product.color'' AND ALSO: SELECT count(*) AS product_rows, count(DISTINCT product_key)
           AS distinct_products, count(color) AS rows_with_color, count(DISTINCT color) AS distinct_colors
           FROM contoso_served.dim_product'
@@ -1033,110 +1049,122 @@ sections:
           ''Brown'', ''Gold'', ''Green'', ''Grey'', ''Orange'', ''Pink'', ''Purple'', ''Red'', ''Silver'',
           ''Silver Grey'', ''Transparent'', ''White'', ''Yellow''   AND ALSO: 1 row(s): [{"product_rows":
           2517, "distinct_products": 2517, "rows_with_color": 2517, "distinct_colors": 16}]'
-      - why: 'Price the "available" fork now, where the population is set: dim_product carries no stock,
-          status or discontinued column, so the only narrower reading this bundle can express is "products
-          that have actually been sold" — one query gives both colour counts, and if they agree the fork
-          costs nothing and needs no question.'
-        did: "SELECT\n  COUNT(DISTINCT p.color) AS colors_in_catalogue,\n  COUNT(DISTINCT CASE WHEN NOT\
-          \ s.product_key IS NULL THEN p.color END) AS colors_on_products_ever_sold,\n  COUNT(*) AS catalogue_products,\n\
-          \  COUNT(s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN\
-          \ (\n  SELECT DISTINCT\n    product_key\n  FROM contoso_served.v_contoso5_sales_line\n) AS s\n\
-          \  ON p.product_key = s.product_key"
-        came_back: '1 row(s): [{"colors_in_catalogue": 16, "colors_on_products_ever_sold": 16, "catalogue_products":
-          2517, "products_ever_sold": 2517}]'
-      settled_on: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
-      means: 'The catalogue itself: 2,517 rows, one per product Contoso sells at SKU grain, each carrying
-        the single colour recorded on that product. No measure yet and no period — this is the set of
-        things later steps pivot to colour and collapse; every row has a non-null colour, so nothing will
-        be dropped downstream.'
-      readings_taken:
-      - word: available
-        took: every product in the catalogue, all 2,517 rows of dim_product, with no stock or status filter
-        could_also_mean: only products you can order right now — active, in stock, not discontinued
-        declaration: 'No declaration needed and none applies: dim_product carries no stock, status or
-          discontinued column, so the restriction cannot be expressed. The nearest expressible narrowing,
-          ''products that have ever been sold'', was measured on 2026-10-24 and is not a narrowing at
-          all — all 2,517 catalogued products appear on at least one sales line, and both readings return
-          the same 16 colours. The fork moves nothing.'
-      - word: product colors
-        took: the single colour column on the product row, dim_product.color, 16 distinct values and non-null
-          on all 2,517 rows
-        could_also_mean: the colours of per-variant SKUs under a parent product, e.g. one shirt sold in
-          three colours
-        declaration: 'The Color concept settles it: colour is "the one attribute that on its own makes
-          a new SKU — ''E400 Green'' and ''E400 Orange'' are two products", and Product is declared as
-          "a thing Contoso sells, at the level the shelf knows it: a SKU". There is no variant table below
-          product, so the product grain IS the variant grain and the edge product__comes_in__color is
-          Product (1..N) -> Color (1), resolved by construction.'
-      blocked_by: []
+      - why: 'Price the "available" fork cheaply: check whether narrowing the catalogue to products that
+          have ever been sold would drop any colour from the list, since the bundle declares no stock
+          or discontinued column to narrow by directly.'
+        did: "SELECT\n  p.color,\n  COUNT(DISTINCT p.product_key) AS products_in_catalog,\n  COUNT(DISTINCT\
+          \ s.product_key) AS products_ever_sold\nFROM contoso_served.dim_product AS p\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+          \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.color\nORDER BY\n  p.color"
+        came_back: '16 row(s) (first 8 of 16): [{"color": "Azure", "products_in_catalog": 14, "products_ever_sold":
+          14}, {"color": "Black", "products_in_catalog": 602, "products_ever_sold": 602}, {"color": "Blue",
+          "products_in_catalog": 200, "products_ever_sold": 200}, {"color": "Brown", "products_in_catalog":
+          77, "products_ever_sold": 77}, {"color": "Gold", "products_in_catalog": 50, "products_ever_sold":
+          50}, {"color": "Green", "products_in_catalog": 74, "products_ever_sold": 74}, {"color": "Grey",
+          "products_in_catalog": 283, "products_ever_sold": 283}, {"color": "Orange", "products_in_catalog":
+          55, "products_ever_sold": 55}]'
+      blocked: []
     - step: '2'
-      step_asks: product colors
+      asks: product colors
+      sql: "SELECT\n  product_key,\n  color\nFROM contoso_served.dim_product"
+      means: One row per catalogue product, 2,517 of them, each carrying the single colour that product
+        comes in. This is the catalogue population from step 1 re-expressed on the colour axis — not yet
+        a colour list, because a colour still appears once per product that wears it.
+      readings:
+      - word: product color
+        took: dim_product.color, the single declared colour attribute on the product row, reached by the
+          declared edge product__comes_in__color
+        could_also_mean: nothing else in this bundle — there is no second colour column and no separate
+          colour dimension table
+        declaration: The Color concept is grounded in contoso_served.dim_product on column `color`, declared
+          as `the one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two
+          products`, so one product carries exactly one colour by construction; the edge product__comes_in__color
+          is Product (1..N) -> Color (1), resolved_by_construction, so this pivot is an attribute read
+          with no join and no fan-out.
       turns:
-      - why: 'The pivot from product to colour has a fork worth pricing before it is taken: "what colours
-          are available" could mean the members of the declared Color value set (contoso5_color, which
-          the relations declare IS the value set for this column) or the colours actually carried by a
-          catalogued product — this lists both sides so I can see whether the palette holds a colour no
-          product comes in.'
-        did: "SELECT\n  COALESCE(d.code, p.color) AS color,\n  NOT d.code IS NULL AS in_declared_value_set,\n\
-          \  NOT p.color IS NULL AS on_a_catalogued_product\nFROM contoso_served.contoso5_color AS d\n\
-          FULL OUTER JOIN (\n  SELECT DISTINCT\n    color\n  FROM contoso_served.dim_product\n) AS p\n\
-          \  ON d.code = p.color\nORDER BY\n  1"
-        came_back: "THE DATABASE SAID: CatalogException: Catalog Error: Table with name contoso5_color\
-          \ does not exist!\nDid you mean \"v_contoso5_fx_rate\"?\n\nLINE 1: ...e_set, p.color IS NOT\
-          \ NULL AS on_a_catalogued_product FROM contoso_served.contoso5_color d FULL OUTER JOIN (SELECT...\n\
-          \                                                                      ^"
-      - why: The declared colour value-set relation isn't in `contoso_served`; find which schema actually
-          holds it before deciding whether the palette side of the pivot is measurable at all.
-        did: "SELECT\n  table_schema,\n  table_name\nFROM information_schema.tables\nWHERE\n  table_name\
-          \ ILIKE '%color%' OR table_name ILIKE '%colour%'\nORDER BY\n  table_schema,\n  table_name"
-        came_back: 0 row(s) — EMPTY. Nothing matched.
-      settled_on: "SELECT\n  color\nFROM contoso_served.dim_product"
-      means: 'Still 2,517 rows, one per catalogued product, but now carrying only the colour that product
-        comes in — the subject has moved from the product to its colour while the grain has not: a colour
-        appears here once for every product sold in it. Collapsing to one row per distinct colour is step
-        3''s job, so nothing is deduplicated yet and no count of products per colour is carried.'
-      readings_taken:
-      - word: product colors
-        took: the colours actually carried by catalogued products, read off dim_product.color — 16 distinct
-          values, non-null on every one of the 2,517 rows
-        could_also_mean: the members of the declared colour value set, contoso5_color, which could in
-          principle include a colour no product comes in
-        declaration: 'The relations block declares contoso5_color as the value set for this column, but
-          that table does not exist in this database (searched information_schema for any table named
-          like color or colour: nothing). The Color concept''s own grounding is contoso_served.dim_product,
-          key product_key, counts color, and it declares "sixteen values on the served row" — which is
-          exactly what the product rows carry. So the grounded reading is both the declared one and the
-          only measurable one; the unmeasured alternative is whether some catalogue palette elsewhere
-          holds a 17th colour nothing is sold in.'
-      blocked_by: []
+      - why: Confirm the pivot from products to colour is a clean N:1 with no fan-out and no unmatched
+          products, since colour is carried on the product row rather than joined.
+        did: ''
+        came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
+          THE DATABASE SAID: no SQL given'
+      blocked: []
     - step: '3'
-      step_asks: what product colors
-      turns:
-      - why: Perform the collapse and read the rows myself, so the answer step claims a list it has actually
-          seen rather than one inferred from a distinct-count.
-        did: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
-        came_back: '16 row(s) (first 8 of 16): [{"color": "Azure"}, {"color": "Black"}, {"color": "Blue"},
-          {"color": "Brown"}, {"color": "Gold"}, {"color": "Green"}, {"color": "Grey"}, {"color": "Orange"}]'
-      settled_on: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
-      means: The sixteen distinct colours catalogued products come in — one row per colour name, alphabetically,
-        each standing for "at least one of the 2,517 products is this colour". No product count and no
-        product name is carried, and the rows say nothing about how many products or how much revenue
-        sits behind any colour.
-      readings_taken:
+      asks: colors
+      sql: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
+      means: 'One row per distinct colour that products in the catalogue come in — sixteen of them, each
+        standing for a colour at least one of the 2,517 products wears. No counts, no money and no period:
+        each row is a colour, not a measurement of it.'
+      readings:
       - word: colors
-        took: the colour values exactly as the product row stores them, so 'Grey', 'Silver' and 'Silver
-          Grey' are three separate colours
-        could_also_mean: colour families a reader might expect merged — 'Silver Grey' folded into 'Silver'
-          or 'Grey', which would give 14 or 15 rows instead of 16
-        declaration: 'No declaration authorises any merging: Color is grounded on dim_product.color with
-          counts color and declares exactly "sixteen values on the served row", which is the count these
-          rows return. Merging would be my invention, so the values stand as stored.'
-      blocked_by: []
+        took: the sixteen distinct values of dim_product.color, each listed once
+        could_also_mean: a merged list treating 'Silver' and 'Silver Grey' as one colour
+        declaration: contoso5_color IS the declared value set for this column, and it carries 'Silver'
+          and 'Silver Grey' as two separate members — so they are two declared colours, not a spelling
+          artefact to be merged. The Color concept likewise declares sixteen values.
+      - word: colors
+        took: colour names only, one row each, in alphabetical order
+        could_also_mean: each colour with the number of products that come in it
+        declaration: The document's output_shape declares key_columns [color] and figure_columns empty,
+          so no count is attached. Nothing in the bundle declares an ordering for this enumeration, so
+          alphabetical is a presentation choice, not a declared one.
+      turns: []
+      blocked: []
     - step: '4'
-      step_asks: What product colors are available
+      asks: What product colors
+      sql: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
+      means: 'The sixteen distinct colours that products in Contoso''s catalogue come in, one row per
+        colour, in alphabetical order. The step returned 16 rows and its first eight — Azure, Black, Blue,
+        Brown, Gold, Green, Grey, Orange — match the column probe''s alphabetical enumeration of all sixteen
+        distinct values, which supplies the remaining eight: Pink, Purple, Red, Silver, Silver Grey, Transparent,
+        White, Yellow. Each row is a colour name and nothing more: I have NOT included how many products
+        come in each colour, what any colour sold, or any period, because none was asked for. This is
+        the colour axis of the product register, not a measurement of it.'
+      readings:
+      - word: available
+        took: every colour listed in the catalogue, with no stock or discontinued filter
+        could_also_mean: only colours of products you can actually sell right now — in stock and still
+          active
+        declaration: 'MEASURED, AND THE READINGS AGREE EXACTLY: 16 colours across the whole catalogue,
+          16 across only products that have ever sold, and 0 of the 2,517 products have never appeared
+          on a sales line. Every catalogue product has sold at least once, so the narrower reading returns
+          the identical sixteen names. The bundle carries no stock level and no discontinued flag on dim_product,
+          so ''ever sold'' was the nearest expressible proxy; this fork cannot change the answer.'
+      - word: our catalog
+        took: all 2,517 products we hold records for
+        could_also_mean: only products published in a current catalogue or active assortment
+        declaration: Product is grounded in contoso_served.dim_product, which serves product_key, product_code,
+          product_name, manufacturer, brand, color, category_name and sub_category_name — no assortment,
+          publication or catalogue-membership column exists on the relation, so the narrower reading is
+          not expressible in this bundle. Had it been, it could only have shrunk this list, never extended
+          it.
+      - word: What product colors
+        took: just the sixteen colour names, one row each, alphabetically
+        could_also_mean: each colour together with how many products come in it
+        declaration: The document's output_shape declares key_columns [color] and figure_columns empty.
+          The per-colour product counts do exist and were measured in passing (Black 602, Grey 283, Blue
+          200, Brown 77, Green 74, Orange 55, Gold 50, Azure 14 among them) — say the word and I will
+          return all sixteen with counts. Nothing in the bundle declares an ordering for this enumeration,
+          so alphabetical is my presentation choice.
+      - word: colors
+        took: '''Silver'' and ''Silver Grey'' listed as two separate colours'
+        could_also_mean: one merged 'Silver' row, reading 'Silver Grey' as a spelling variant
+        declaration: contoso5_color IS the declared value set for this column and carries both as distinct
+          members; the Color concept declares sixteen values, and colour is declared the one attribute
+          that on its own makes a new SKU. Merging them would contradict the declared domain. The concept's
+          reader-facing label is 'Colour'.
       turns:
-      - why: 'Hand over the answer: the sixteen colour names themselves, which is the shape the question
-          asked for — a list of names, no figures.'
+      - why: Verify across all sixteen colours that the catalogue reading and the nearest sellable proxy
+          give the same colour list, so the answer can disclose the fork as immaterial rather than assert
+          it unmeasured.
+        did: "SELECT\n  (\n    SELECT\n      COUNT(DISTINCT color)\n    FROM contoso_served.dim_product\n\
+          \  ) AS colours_in_catalog,\n  (\n    SELECT\n      COUNT(DISTINCT p.color)\n    FROM contoso_served.dim_product\
+          \ AS p\n    JOIN contoso_served.v_contoso5_sales_line AS s\n      ON s.product_key = p.product_key\n\
+          \  ) AS colours_on_products_ever_sold,\n  (\n    SELECT\n      COUNT(*)\n    FROM contoso_served.dim_product\
+          \ AS p\n    WHERE\n      NOT EXISTS(\n        SELECT\n          1\n        FROM contoso_served.v_contoso5_sales_line\
+          \ AS s\n        WHERE\n          s.product_key = p.product_key\n      )\n  ) AS products_never_sold"
+        came_back: '1 row(s): [{"colours_in_catalog": 16, "colours_on_products_ever_sold": 16, "products_never_sold":
+          0}]'
+      - why: 'Hand over the colour list: the sixteen declared colours, with the "available" fork now measured
+          as immaterial — both readings return the identical sixteen.'
         did: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
         came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
           claim, so state the answer now from these rows: 16 row(s) (first 8 of 16): [{"color": "Azure"},
@@ -1144,50 +1172,7 @@ sections:
           {"color": "Grey"}, {"color": "Orange"}]  Give `claimed_answer` as the value a person would be
           handed, and `claimed_answer_is` from the closed list. If these rows settle the question, do
           not decline.'
-      settled_on: "SELECT\n  color\nFROM contoso_served.dim_product\nGROUP BY\n  color\nORDER BY\n  color"
-      means: 'The sixteen colours Contoso''s catalogue comes in — one row per colour name, each meaning
-        "at least one of the 2,517 catalogued products is this colour". The query returned exactly 16
-        rows and the view I was shown lists the first 8 (Azure through Orange); the remaining 8 — Pink,
-        Purple, Red, Silver, Silver Grey, Transparent, Yellow and White — come from the complete enumeration
-        of the same unfiltered column by the column probe, which read all 16 distinct values in the same
-        alphabetical order, and the two reads agree on the count and on every value they share. What this
-        answer does NOT include: no count of products per colour and no revenue, since the question asked
-        only for names; no claim that any colour is currently orderable, since this bundle holds no stock
-        or product-status column; and no colour that some catalogue palette might list but no product
-        is sold in, since the value-set relation the declarations name for this column does not exist
-        in the database. The values stand as stored, so ''Grey'', ''Silver'' and ''Silver Grey'' are three
-        separate colours.'
-      readings_taken:
-      - word: available
-        took: every product in the catalogue — all 2,517 rows of dim_product, no stock or status filter
-        could_also_mean: only colours orderable right now, from products that are active and in stock
-        declaration: 'Not expressible: dim_product carries no stock, status or discontinued column. The
-          nearest expressible narrowing, ''products that have ever been sold'', I measured — all 2,517
-          products appear on a sales line, so it narrows nothing and returns the identical 16 colours.
-          The fork moves no row of this answer.'
-      - word: product colors
-        took: the single colour on the product row, dim_product.color
-        could_also_mean: per-variant colours under a parent product, e.g. one shirt sold in three colours
-        declaration: 'Product is "a thing Contoso sells, at the level the shelf knows it: a SKU", and
-          Color declares colour to be "the one attribute that on its own makes a new SKU — ''E400 Green''
-          and ''E400 Orange'' are two products". No variant table exists beneath product, and product__comes_in__color
-          is Product (1..N) -> Color (1), resolved by construction, so the two readings coincide.'
-      - word: colors
-        took: the values exactly as stored, giving 16 names with 'Grey', 'Silver' and 'Silver Grey' as
-          three
-        could_also_mean: colour families, folding 'Silver Grey' into 'Silver' or 'Grey' for 15 or 14 names
-        declaration: Color declares exactly "sixteen values on the served row", which is what these rows
-          return; nothing authorises merging, so merging would be my invention.
-      - word: our catalog
-        took: the colours carried by catalogued products, since Color is grounded in contoso_served.dim_product
-          with counts color
-        could_also_mean: the declared colour value set, which could in principle hold a colour no product
-          comes in
-        declaration: The relations block names contoso5_color as the value set for this column, but no
-          such table exists — I searched information_schema for any table named like 'color' or 'colour'
-          and found none. The grounded reading is both the declared one and the only measurable one; whether
-          an external palette holds a seventeenth colour is something this bundle cannot answer.
-      blocked_by: []
+      blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
   subtitle: ''
@@ -1204,4 +1189,4 @@ v3_answer_step: '4'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: 16 row(s) match
-v3_seconds: 213.4
+v3_seconds: 224.7

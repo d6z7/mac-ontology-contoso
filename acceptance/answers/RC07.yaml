@@ -1,15 +1,14 @@
 id: RC07
-captured_at: '2026-10-24T21:44:53+00:00'
-ontology_fingerprint: 0d005cb5612ea9b3
-acceptance_fingerprint: 2ec94494afcc4218
-projection_fingerprint: 4702762cd1902fc3
+captured_at: '2026-10-28T23:42:11+00:00'
+ontology_fingerprint: 9455837fe192e4d8
+acceptance_fingerprint: 324b16c41efe7a45
 engine:
   interpret: live
   provider: v3-walk
   model: claude-opus-5
   mode: llm-execute
   athena: false
-  run_file: full_rerun.json
+  run_file: 20261028T232903Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
 connection:
@@ -23,29 +22,30 @@ intent:
   operation: aggregate
   qdmr_simplified: "  1       FROM       customers            “customers”\n  2  ← 1  WHERE      country\
     \ = 'Germany'  “in Germany”\n  3  ← 2  AGGREGATE  count of customers   “How many customers”\n  answer:\
-    \ step 3   confidence: 0.88\n  UNDERSTOOD AS: How many customers are located in Germany — a count\
-    \ of all customers on record whose country is Germany, with no date restriction and no filter on whether\
-    \ they have ever ordered. The answer is a single number.\n  AMBIGUOUS 'in Germany' — ASKS: Should\
-    \ a customer count as German based on the country on their own address/profile, or based on where\
-    \ their orders were billed or shipped?\n      could mean: Customers whose own country (address on\
-    \ their record) is Germany\n      could mean: Customers who had orders billed to a German address\n\
-    \      could mean: Customers who had orders shipped to a German address\n      took: Customers whose\
-    \ own country on their record is Germany\n  AMBIGUOUS 'customers' — ASKS: Do you want every customer\
-    \ on file in Germany, or only ones who are currently active / have actually bought something?\n  \
-    \    could mean: All customers on file, regardless of activity\n      could mean: Only active customers\n\
-    \      could mean: Only customers who have placed at least one order\n      took: All customers on\
-    \ file, regardless of activity\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
-  understood_as_in_human_words: How many customers are located in Germany — a count of all customers on
-    record whose country is Germany, with no date restriction and no filter on whether they have ever
-    ordered. The answer is a single number.
-  population_actually_answered: 'The 9,981 rows of contoso_served.dim_customer whose country_code is ''DE'',
-    out of all 104,990 rows. The only restriction applied is the customer''s own country, via the `customer`
-    path that country.default.whose_country_is_asked_never_assumed declares for "where our customers are".
-    No activity filter — the Customer concept grounds the word on the register, which its definition states
-    is not the buyer list. No date window, though the register carries valid_from/valid_to history that
-    nothing in this bundle declares should be applied. No sentinel or trading-state predicate: the Store
-    and Country sentinel defaults bind to location_code and close_date, which this relation does not carry,
-    and no customer holds the ''--'' country sentinel.'
+    \ step 3   confidence: 0.88\n  UNDERSTOOD AS: A count of how many customers are located in Germany\
+    \ — one single number, covering every customer on record regardless of whether they have ever ordered,\
+    \ with no date restriction. One row, one figure.\n  AMBIGUOUS 'in Germany' — ASKS: Should a customer\
+    \ count as being in Germany based on their own home/address country, or based on where their orders\
+    \ were billed or shipped?\n      could mean: The customer's own country on their record (home address)\n\
+    \      could mean: The country their invoices were billed to\n      could mean: The country their\
+    \ orders were shipped to\n      took: The customer's own country on their record\n  AMBIGUOUS 'customers'\
+    \ — ASKS: Do you want every customer on file in Germany, or only ones who have actually bought something\
+    \ (and if so, within what period)?\n      could mean: Every customer on file, whether or not they\
+    \ have ever ordered\n      could mean: Only customers who have placed at least one order\n      could\
+    \ mean: Only customers active in a recent period, e.g. the last year\n      took: Every customer on\
+    \ file, whether or not they have ever ordered\n  OUTPUT SHAPE: one figure · one row(s) · carrying\
+    \ how many customers"
+  understood_as_in_human_words: A count of how many customers are located in Germany — one single number,
+    covering every customer on record regardless of whether they have ever ordered, with no date restriction.
+    One row, one figure.
+  population_actually_answered: All 9,981 rows of contoso_served.dim_customer with country_code = 'DE'
+    — the customer register restricted by home country and by nothing else. No activity filter, because
+    Customer is grounded on dim_customer keyed by customer_key and declares no population rule or default,
+    so a customer is a register row; the 4,429 Germans who have never ordered are counted. No date window,
+    per order.default.an_unscoped_question_covers_all_time, and the register carries no sales period of
+    its own. No sentinel exclusion needed under country.exclusion.sentinel_is_not_a_country — the '--'
+    row named 'Online' carries zero customers, and the eight real countries sum exactly to the 104,990
+    register total. 'Germany' was verified against dim_country as the single code DE.
   how_the_result_must_be_presented:
     shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
@@ -56,9 +56,9 @@ intent:
     said: How many customers
     stage1_confidence: 0.88
   canonical_question: &id001
-    understood_as: How many customers are located in Germany — a count of all customers on record whose
-      country is Germany, with no date restriction and no filter on whether they have ever ordered. The
-      answer is a single number.
+    understood_as: A count of how many customers are located in Germany — one single number, covering
+      every customer on record regardless of whether they have ever ordered, with no date restriction.
+      One row, one figure.
     steps:
     - id: '1'
       do: from
@@ -89,21 +89,22 @@ intent:
       - how many customers
     ambiguities:
     - words: in Germany
-      question: Should a customer count as German based on the country on their own address/profile, or
+      question: Should a customer count as being in Germany based on their own home/address country, or
         based on where their orders were billed or shipped?
       readings:
-      - Customers whose own country (address on their record) is Germany
-      - Customers who had orders billed to a German address
-      - Customers who had orders shipped to a German address
-      assumed: Customers whose own country on their record is Germany
+      - The customer's own country on their record (home address)
+      - The country their invoices were billed to
+      - The country their orders were shipped to
+      assumed: The customer's own country on their record
     - words: customers
-      question: Do you want every customer on file in Germany, or only ones who are currently active /
-        have actually bought something?
+      question: Do you want every customer on file in Germany, or only ones who have actually bought something
+        (and if so, within what period)?
       readings:
-      - All customers on file, regardless of activity
-      - Only active customers
+      - Every customer on file, whether or not they have ever ordered
       - Only customers who have placed at least one order
-      assumed: All customers on file, regardless of activity
+      - Only customers active in a recent period, e.g. the last year
+      assumed: Every customer on file, whether or not they have ever ordered
+    cannot_express: []
     confidence: 0.88
   steps: 3
   note: a canonical question — a DAG of steps — not a flat Intent
@@ -121,133 +122,124 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "customers → the customer register itself — dim_customer, the 104,990 rows, which is the only\
-      \ relation declared to hold a customer\n        could also mean: only customers who have actually\
-      \ ordered, which would come from the sales line instead; the Customer concept warns in its own definition\
-      \ that HALF HAVE NEVER ORDERED (52,189 of 104,990 appear on a sale), so this fork is live and I\
-      \ will price both readings on the step that counts rather than choose silently now"
-    ref: Customer [entity], grounded in contoso_served.dim_customer key customer_key
+    text: "customers → every customer on the register — all 104,990, including the roughly half who have\
+      \ never appeared on a sale\n        could also mean: only customers who have placed at least one\
+      \ order (the Customer concept measures that at 52,189 of 104,990), or only customers active in a\
+      \ recent period"
+    ref: The Customer concept declares no population rule and no default, so the register is taken whole;
+      its own definition warns in capitals that HALF HAVE NEVER ORDERED and 'the register is not the buyer
+      list', which is exactly why this fork moves the figure materially and will be measured, not guessed,
+      at the filtering step.
   - kind: ''
-    text: "Germany → a value to be matched on the customer's own country, where it is stored as the code\
-      \ 'DE' — the eight codes present are AU, CA, DE, FR, GB, IT, NL, US\n        could also mean: the\
-      \ reader-facing name 'Germany' on dim_country.country_name, reached over customer__based_in__country;\
-      \ both select the same customers, so this is a spelling choice and not a population choice"
-    ref: country.default.whose_country_is_asked_never_assumed names the `customer` path via customer__based_in__country,
-      and dim_customer.country_code surfaces as 'customer country' / 'where our customers are'
+    text: "Germany → the country code 'DE' — the probe shows dim_customer.country_code holds 8 codes ('AU','CA','DE','FR','GB','IT','NL','US')\
+      \ and no '--' online sentinel, matching the declared edge note on customer__based_in__country, so\
+      \ no sentinel exclusion is needed on this path\n        could also mean: the reader-facing name\
+      \ 'Germany' on dim_country.country_name, reached by joining customer__based_in__country — the same\
+      \ 'DE' rows either way, so this part of the fork is immaterial"
+    ref: declaration://none
   - kind: ''
-    text: "customers → people on the register — 9,981 in Germany. The Customer concept is grounded on\
-      \ dim_customer keyed by customer_key, so a customer IS a register row, and the concept's own definition\
-      \ draws the distinction explicitly ('the register is not the buyer list') rather than leaving it\
-      \ open\n        could also mean: only the 5,552 German customers who have ever appeared on a sales\
-      \ line, over the full order-date extent 2016-05-18 to 2025-12-31 — 4,429 fewer, a 44% smaller figure.\
-      \ If you meant buyers rather than people on file, the answer is 5,552 and I have it ready"
-    ref: 'Customer [entity]: ''A person on Contoso''s customer register: 104,990 of them ... HALF HAVE
-      NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer list.'''
+    text: "in Germany → nothing yet at this step — but starting FROM dim_customer rather than from the\
+      \ sales line already leans toward the customer's own home country\n        could also mean: the\
+      \ country a sale was attributed to (`territory`), which would start from v_contoso5_sales_line instead\
+      \ and would count only customers who have ordered"
+    ref: country.default.whose_country_is_asked_never_assumed names four readings and defaults to `territory`;
+      its `when` is a measure grouped by or filtered on Country, whereas here Country is the filter and
+      Customer is the thing counted, and the question's wording matches the `customer` path's own declared
+      surface 'where our customers are'. I am NOT settling this here — both readings get a figure at step
+      2 before anything is chosen.
   - kind: ''
-    text: "in Germany → the customer's own country on their register row\n        could also mean: where\
-      \ the buying happened — 3,987 distinct customers, of any home country, bought at a shop trading\
-      \ in Germany. That is a different set of people and not a subset of these 9,981, so it answers 'who\
-      \ shops in Germany' rather than 'who is in Germany'"
-    ref: 'country.default.whose_country_is_asked_never_assumed, paths: customer (customer__based_in__country)
-      vs store (store__trades_in__country)'
+    text: "Germany → country_code = 'DE', verified against dim_country as the single code named 'Germany'\n\
+      \        could also mean: nothing else — the Country grounding warns 'nine codes as stored, eight\
+      \ as meant — one is a duplicate spelling', so I checked: no second code carries the name Germany,\
+      \ and the duplicate concerns the '--' sentinel named 'Online', which no customer carries"
+    ref: country.exclusion.sentinel_is_not_a_country — no exclusion predicate was needed here, as the
+      sentinel holds 0 customers
   - kind: ''
-    text: "customers → people on the customer register: 9,981 in Germany\n        could also mean: only\
-      \ German customers who have ever ordered — 5,552, over the full order-date extent 2016-05-18 to\
-      \ 2025-12-31; that is 4,429 fewer, a 44% smaller figure, so if you meant buyers rather than people\
-      \ on file the answer is 5,552"
-    ref: 'Customer [entity] is grounded on contoso_served.dim_customer keyed by customer_key, and its
-      definition states the distinction outright: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear
-      on a sale, so the register is not the buyer list.'' The word is fixed on the register, so I applied
-      it and did not ask'
+    text: "in Germany → the customer's own home country, via the declared edge customer__based_in__country\n\
+      \        could also mean: the country the sale was attributed to (`territory`), the country the\
+      \ shop traded in (`store`), or the site country (`location`)"
+    ref: country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I measured it
+      rather than assume it away — AND IT DOES NOT MOVE THE FIGURE. Restricted to customers who have ordered,
+      home country and territory give the IDENTICAL 5,552, exactly as the bundle predicts ('no physical
+      sale in this warehouse crosses a border, so the two readings AGREE BY ACCIDENT OF THE DATA'). `store`
+      gives 3,987, but that counts people who shopped at a German branch, dropping online buyers — it
+      answers where someone SHOPPED, not where they ARE. So the whose-country fork is immaterial to this
+      question and no choice between readings is being hidden.
   - kind: ''
-    text: "in Germany → the country on the customer's own register row, country_code = 'DE', which dim_country\
-      \ names 'Germany'\n        could also mean: where the buying happened: 3,987 distinct customers\
-      \ of any home country bought at a shop trading in Germany. That set is not a subset of these 9,981\
-      \ — it answers 'who shops in Germany' and omits every German customer who only ever bought online\
-      \ or abroad"
-    ref: country.default.whose_country_is_asked_never_assumed — the `customer` path (customer__based_in__country)
-      surfaces as 'customer country' / 'where our customers are', which is what this question asks; the
-      `store` path is named and not taken
+    text: "customers → every customer on the register — 9,981\n        could also mean: only customers\
+      \ who have ever placed an order — 5,552, which is materially different and is disclosed in the answer"
+    ref: The Customer concept is grounded in dim_customer keyed on customer_key with NO population rule
+      and no default, so a customer is a register row; its definition states in capitals that HALF HAVE
+      NEVER ORDERED and 'the register is not the buyer list', naming the register as what the concept
+      IS and the buyer list as a different thing. The question said 'customers', not buyers. This is the
+      one fork that changes the figure, and the Country rule above has nothing to say about it.
   - kind: ''
-    text: "billed or shipped to Germany → not measured — the bundle holds no such column\n        could\
-      \ also mean: a bill-to or ship-to country on an order, which does not exist here: v_contoso5_sales_line\
-      \ carries only customer_key, store_key, product_key, currency and the two dates, and the only countries\
-      \ declared anywhere are the customer's own and the store's trading country"
-    ref: v_contoso5_sales_line column list; dim_customer.country_code is declared 'the only column that
-      can place an internet sale in a real country'
+    text: "customers → every customer on the register, ordered or not — 9,981\n        could also mean:\
+      \ only customers who have ever placed an order — 5,552"
+    ref: 'Customer is grounded in dim_customer keyed on customer_key with no population rule and no default,
+      so the concept IS the register; its definition states in capitals that HALF HAVE NEVER ORDERED and
+      ''the register is not the buyer list''. The question said ''customers'', not buyers. This is the
+      one fork that moves the figure, so both are given: if you meant people who have actually bought,
+      the answer is 5,552.'
+  - kind: ''
+    text: "in Germany → the customer's own home country on their record, via the declared edge customer__based_in__country\n\
+      \        could also mean: the country the sale was attributed to (`territory`), the shop's country\
+      \ (`store`), or the site country (`location`)"
+    ref: 'country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I priced that
+      reading rather than assume it away, and IT DOES NOT CHANGE THE ANSWER: over customers who have ordered,
+      home country and territory both give exactly 5,552, as the bundle predicts since no physical sale
+      here crosses a border. `store` gives 3,987, but that counts where someone SHOPPED, not where they
+      ARE. The whose-country choice is immaterial here; only the population choice matters.'
   concepts: []
   rules:
-  - id: Customer [entity]
-    why: '''customers'' = the customer register itself — dim_customer, the 104,990 rows, which is the
-      only relation declared to hold a customer'
-  - id: grounded in contoso_served.dim_customer key customer_key
-    why: '''customers'' = the customer register itself — dim_customer, the 104,990 rows, which is the
-      only relation declared to hold a customer'
-  - id: country.default.whose_country_is_asked_never_assumed names the `customer` path via customer__based_in__country
-    why: '''Germany'' = a value to be matched on the customer''s own country, where it is stored as the
-      code ''DE'' — the eight codes present are AU, CA, DE, FR, GB, IT, NL, US'
-  - id: and dim_customer.country_code surfaces as 'customer country' / 'where our customers are'
-    why: '''Germany'' = a value to be matched on the customer''s own country, where it is stored as the
-      code ''DE'' — the eight codes present are AU, CA, DE, FR, GB, IT, NL, US'
-  - id: 'Customer [entity]: ''A person on Contoso''s customer register: 104'
-    why: '''customers'' = people on the register — 9,981 in Germany. The Customer concept is grounded
-      on dim_customer keyed by customer_key, so a customer IS a register row, and the concept''s own definition
-      draws the distinction explicitly (''the register is not the buyer list'') rather than leaving it
-      open'
-  - id: '990 of them ... HALF HAVE NEVER ORDERED: 52'
-    why: '''customers'' = people on the register — 9,981 in Germany. The Customer concept is grounded
-      on dim_customer keyed by customer_key, so a customer IS a register row, and the concept''s own definition
-      draws the distinction explicitly (''the register is not the buyer list'') rather than leaving it
-      open'
-  - id: 189 of the 104
-    why: '''customers'' = people on the register — 9,981 in Germany. The Customer concept is grounded
-      on dim_customer keyed by customer_key, so a customer IS a register row, and the concept''s own definition
-      draws the distinction explicitly (''the register is not the buyer list'') rather than leaving it
-      open'
-  - id: 990 appear on a sale
-    why: '''customers'' = people on the register — 9,981 in Germany. The Customer concept is grounded
-      on dim_customer keyed by customer_key, so a customer IS a register row, and the concept''s own definition
-      draws the distinction explicitly (''the register is not the buyer list'') rather than leaving it
-      open'
-  - id: so the register is not the buyer list.'
-    why: '''customers'' = people on the register — 9,981 in Germany. The Customer concept is grounded
-      on dim_customer keyed by customer_key, so a customer IS a register row, and the concept''s own definition
-      draws the distinction explicitly (''the register is not the buyer list'') rather than leaving it
-      open'
-  - id: country.default.whose_country_is_asked_never_assumed
-    why: '''in Germany'' = the customer''s own country on their register row'
-  - id: 'paths: customer (customer__based_in__country) vs store (store__trades_in__country)'
-    why: '''in Germany'' = the customer''s own country on their register row'
-  - id: Customer [entity] is grounded on contoso_served.dim_customer keyed by customer_key
-    why: '''customers'' = people on the customer register: 9,981 in Germany'
-  - id: 'and its definition states the distinction outright: ''HALF HAVE NEVER ORDERED: 52'
-    why: '''customers'' = people on the customer register: 9,981 in Germany'
-  - id: so the register is not the buyer list.' The word is fixed on the register
-    why: '''customers'' = people on the customer register: 9,981 in Germany'
-  - id: so I applied it and did not ask
-    why: '''customers'' = people on the customer register: 9,981 in Germany'
-  - id: country.default.whose_country_is_asked_never_assumed — the `customer` path (customer__based_in__country)
-      surfaces as 'customer country' / 'where our customers are'
-    why: '''in Germany'' = the country on the customer''s own register row, country_code = ''DE'', which
-      dim_country names ''Germany'''
-  - id: which is what this question asks
-    why: '''in Germany'' = the country on the customer''s own register row, country_code = ''DE'', which
-      dim_country names ''Germany'''
-  - id: the `store` path is named and not taken
-    why: '''in Germany'' = the country on the customer''s own register row, country_code = ''DE'', which
-      dim_country names ''Germany'''
-  - id: v_contoso5_sales_line column list
-    why: '''billed or shipped to Germany'' = not measured — the bundle holds no such column'
-  - id: dim_customer.country_code is declared 'the only column that can place an internet sale in a real
-      country'
-    why: '''billed or shipped to Germany'' = not measured — the bundle holds no such column'
+  - id: The Customer concept declares no population rule and no default, so the register is taken whole;
+      its own definition warns in capitals that HALF HAVE NEVER ORDERED and 'the register is not the buyer
+      list', which is exactly why this fork moves the figure materially and will be measured, not guessed,
+      at the filtering step.
+    why: '''customers'' = every customer on the register — all 104,990, including the roughly half who
+      have never appeared on a sale'
+  - id: country.default.whose_country_is_asked_never_assumed names four readings and defaults to `territory`;
+      its `when` is a measure grouped by or filtered on Country, whereas here Country is the filter and
+      Customer is the thing counted, and the question's wording matches the `customer` path's own declared
+      surface 'where our customers are'. I am NOT settling this here — both readings get a figure at step
+      2 before anything is chosen.
+    why: '''in Germany'' = nothing yet at this step — but starting FROM dim_customer rather than from
+      the sales line already leans toward the customer''s own home country'
+  - id: country.exclusion.sentinel_is_not_a_country — no exclusion predicate was needed here, as the sentinel
+      holds 0 customers
+    why: '''Germany'' = country_code = ''DE'', verified against dim_country as the single code named ''Germany'''
+  - id: country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I measured it
+      rather than assume it away — AND IT DOES NOT MOVE THE FIGURE. Restricted to customers who have ordered,
+      home country and territory give the IDENTICAL 5,552, exactly as the bundle predicts ('no physical
+      sale in this warehouse crosses a border, so the two readings AGREE BY ACCIDENT OF THE DATA'). `store`
+      gives 3,987, but that counts people who shopped at a German branch, dropping online buyers — it
+      answers where someone SHOPPED, not where they ARE. So the whose-country fork is immaterial to this
+      question and no choice between readings is being hidden.
+    why: '''in Germany'' = the customer''s own home country, via the declared edge customer__based_in__country'
+  - id: The Customer concept is grounded in dim_customer keyed on customer_key with NO population rule
+      and no default, so a customer is a register row; its definition states in capitals that HALF HAVE
+      NEVER ORDERED and 'the register is not the buyer list', naming the register as what the concept
+      IS and the buyer list as a different thing. The question said 'customers', not buyers. This is the
+      one fork that changes the figure, and the Country rule above has nothing to say about it.
+    why: '''customers'' = every customer on the register — 9,981'
+  - id: 'Customer is grounded in dim_customer keyed on customer_key with no population rule and no default,
+      so the concept IS the register; its definition states in capitals that HALF HAVE NEVER ORDERED and
+      ''the register is not the buyer list''. The question said ''customers'', not buyers. This is the
+      one fork that moves the figure, so both are given: if you meant people who have actually bought,
+      the answer is 5,552.'
+    why: '''customers'' = every customer on the register, ordered or not — 9,981'
+  - id: 'country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I priced that
+      reading rather than assume it away, and IT DOES NOT CHANGE THE ANSWER: over customers who have ordered,
+      home country and territory both give exactly 5,552, as the bundle predicts since no physical sale
+      here crosses a border. `store` gives 3,987, but that counts where someone SHOPPED, not where they
+      ARE. The whose-country choice is immaterial here; only the population choice matters.'
+    why: '''in Germany'' = the customer''s own home country on their record, via the declared edge customer__based_in__country'
   edges: []
 sql:
 - "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code =\
   \ 'DE'"
-- "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
-- "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
-  WHERE\n  country_code = 'DE'"
+- "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
+- "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'DE'"
 answer_sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
   \ = 'DE'"
 sql_valid: true
@@ -260,14 +252,14 @@ result:
   - - 9981
   capped: false
 prompt:
-  chars: 84131
-  lines: 1027
+  chars: 73996
+  lines: 842
   sections:
   - STAGE 1 — question to canonical question (QDMR)
   - STAGE 2 — system prompt for walking one step
   - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/465e28b73001.txt
-  sha: 465e28b73001
+  file: acceptance/prompts/44362d9332a0.txt
+  sha: 44362d9332a0
   reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
     the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
     it is now.'
@@ -276,38 +268,39 @@ v3_report:
   canonical_question_json: *id001
   canonical_question_simplified: "  1       FROM       customers            “customers”\n  2  ← 1  WHERE\
     \      country = 'Germany'  “in Germany”\n  3  ← 2  AGGREGATE  count of customers   “How many customers”\n\
-    \  answer: step 3   confidence: 0.88\n  UNDERSTOOD AS: How many customers are located in Germany —\
-    \ a count of all customers on record whose country is Germany, with no date restriction and no filter\
-    \ on whether they have ever ordered. The answer is a single number.\n  AMBIGUOUS 'in Germany' — ASKS:\
-    \ Should a customer count as German based on the country on their own address/profile, or based on\
-    \ where their orders were billed or shipped?\n      could mean: Customers whose own country (address\
-    \ on their record) is Germany\n      could mean: Customers who had orders billed to a German address\n\
-    \      could mean: Customers who had orders shipped to a German address\n      took: Customers whose\
-    \ own country on their record is Germany\n  AMBIGUOUS 'customers' — ASKS: Do you want every customer\
-    \ on file in Germany, or only ones who are currently active / have actually bought something?\n  \
-    \    could mean: All customers on file, regardless of activity\n      could mean: Only active customers\n\
-    \      could mean: Only customers who have placed at least one order\n      took: All customers on\
-    \ file, regardless of activity\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
-  understood_as: How many customers are located in Germany — a count of all customers on record whose
-    country is Germany, with no date restriction and no filter on whether they have ever ordered. The
-    answer is a single number.
+    \  answer: step 3   confidence: 0.88\n  UNDERSTOOD AS: A count of how many customers are located in\
+    \ Germany — one single number, covering every customer on record regardless of whether they have ever\
+    \ ordered, with no date restriction. One row, one figure.\n  AMBIGUOUS 'in Germany' — ASKS: Should\
+    \ a customer count as being in Germany based on their own home/address country, or based on where\
+    \ their orders were billed or shipped?\n      could mean: The customer's own country on their record\
+    \ (home address)\n      could mean: The country their invoices were billed to\n      could mean: The\
+    \ country their orders were shipped to\n      took: The customer's own country on their record\n \
+    \ AMBIGUOUS 'customers' — ASKS: Do you want every customer on file in Germany, or only ones who have\
+    \ actually bought something (and if so, within what period)?\n      could mean: Every customer on\
+    \ file, whether or not they have ever ordered\n      could mean: Only customers who have placed at\
+    \ least one order\n      could mean: Only customers active in a recent period, e.g. the last year\n\
+    \      took: Every customer on file, whether or not they have ever ordered\n  OUTPUT SHAPE: one figure\
+    \ · one row(s) · carrying how many customers"
+  understood_as: A count of how many customers are located in Germany — one single number, covering every
+    customer on record regardless of whether they have ever ordered, with no date restriction. One row,
+    one figure.
   ambiguities_it_saw:
   - words: in Germany
-    asks: Should a customer count as German based on the country on their own address/profile, or based
+    asks: Should a customer count as being in Germany based on their own home/address country, or based
       on where their orders were billed or shipped?
     readings:
-    - Customers whose own country (address on their record) is Germany
-    - Customers who had orders billed to a German address
-    - Customers who had orders shipped to a German address
-    took: Customers whose own country on their record is Germany
+    - The customer's own country on their record (home address)
+    - The country their invoices were billed to
+    - The country their orders were shipped to
+    took: The customer's own country on their record
   - words: customers
-    asks: Do you want every customer on file in Germany, or only ones who are currently active / have
-      actually bought something?
+    asks: Do you want every customer on file in Germany, or only ones who have actually bought something
+      (and if so, within what period)?
     readings:
-    - All customers on file, regardless of activity
-    - Only active customers
+    - Every customer on file, whether or not they have ever ordered
     - Only customers who have placed at least one order
-    took: All customers on file, regardless of activity
+    - Only customers active in a recent period, e.g. the last year
+    took: Every customer on file, whether or not they have ever ordered
   presentation:
     claimed_answer_is: one figure
     answer_step: '3'
@@ -319,127 +312,152 @@ v3_report:
     confidence_stage1: 0.88
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
+    sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
     params: {}
   - step: '2'
-    sql: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
-      WHERE\n  country_code = 'DE'"
+    sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'DE'"
     params: {}
   - step: '3'
     sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
       \ = 'DE'"
     params: {}
-  what_it_calculated: 'One row, one figure: 9,981 people are on Contoso''s customer register with Germany
-    as their own recorded home country — out of 104,990 customers on file across eight countries, counted
-    one per register row (step 1 confirmed customer_key is unique, so rows are people). WHAT IS NOT IN
-    IT: no date restriction, because a register row says where someone lives and not when they did anything;
-    no test of whether they ever bought, and 4,429 of these 9,981 never have; nothing about German sales,
-    orders, revenue or shops. This is a headcount of people on file in Germany, not a measure of business
-    done there.'
+  what_it_calculated: 'One row, one figure: 9,981 — how many people on Contoso''s customer register give
+    Germany as where they live. Counted as distinct people over the whole register, all time, with no
+    requirement that they have ever bought anything. WHAT IS NOT INCLUDED: this is not a count of German
+    buyers — only 5,552 of these 9,981 have ever appeared on a sale, and the other 4,429 have never ordered
+    yet are counted here. Nor is it a count of people who shopped at a German branch, which would be 3,987.'
   rows_returned: &id004
   - how_many_customers: 9981
   synthesis:
     claimed: '9981'
     shape: one figure
-    answered_population: 'The 9,981 rows of contoso_served.dim_customer whose country_code is ''DE'',
-      out of all 104,990 rows. The only restriction applied is the customer''s own country, via the `customer`
-      path that country.default.whose_country_is_asked_never_assumed declares for "where our customers
-      are". No activity filter — the Customer concept grounds the word on the register, which its definition
-      states is not the buyer list. No date window, though the register carries valid_from/valid_to history
-      that nothing in this bundle declares should be applied. No sentinel or trading-state predicate:
-      the Store and Country sentinel defaults bind to location_code and close_date, which this relation
-      does not carry, and no customer holds the ''--'' country sentinel.'
+    answered_population: All 9,981 rows of contoso_served.dim_customer with country_code = 'DE' — the
+      customer register restricted by home country and by nothing else. No activity filter, because Customer
+      is grounded on dim_customer keyed by customer_key and declares no population rule or default, so
+      a customer is a register row; the 4,429 Germans who have never ordered are counted. No date window,
+      per order.default.an_unscoped_question_covers_all_time, and the register carries no sales period
+      of its own. No sentinel exclusion needed under country.exclusion.sentinel_is_not_a_country — the
+      '--' row named 'Online' carries zero customers, and the eight real countries sum exactly to the
+      104,990 register total. 'Germany' was verified against dim_country as the single code DE.
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
     step_asks: customers
     turns:
-    - why: Establish the customer register as the starting population and see what values dim_customer.country_code
-        holds, since "Germany" must match a declared code or name.
-      did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT count(*) AS customers_on_record, count(DISTINCT
-        customer_key) AS distinct_customer_keys FROM contoso_served.dim_customer'
+    - why: Establish the customers base relation and check what the customer's country column actually
+        holds, so the later "Germany" filter binds to a real value.
+      did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT COUNT(*) AS customers_on_register, COUNT(DISTINCT
+        customer_key) AS distinct_customer_keys, COUNT(DISTINCT country_code) AS distinct_country_codes
+        FROM contoso_served.dim_customer'
       came_back: 'dim_customer.country_code (varchar) holds 8 distinct value(s): ''AU'', ''CA'', ''DE'',
-        ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customers_on_record": 104990,
-        "distinct_customer_keys": 104990}]'
-    settled_on: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
-    means: 'Every person on Contoso''s customer register, one row per person — 104,990 of them, each carrying
-      the country they live in. No filter of any kind has been applied yet: this is the whole register,
-      including the half of it (52,801 by the declaration''s arithmetic) that has never appeared on a
-      sale, and including customers in all eight countries, not just Germany. Nothing here is a count
-      of anything yet; it is the set of things the later steps will count.'
+        ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customers_on_register": 104990,
+        "distinct_customer_keys": 104990, "distinct_country_codes": 8}]'
+    settled_on: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
+    means: One row per person on Contoso's customer register — 104,990 of them, the whole register with
+      nothing filtered out — each carrying the country that customer lives in. No period, no country restriction,
+      and no requirement that the customer has ever bought anything. `customer_key` is unique across all
+      104,990 rows, so counting rows here counts people and cannot double-count.
     readings_taken:
     - word: customers
-      took: the customer register itself — dim_customer, the 104,990 rows, which is the only relation
-        declared to hold a customer
-      could_also_mean: only customers who have actually ordered, which would come from the sales line
-        instead; the Customer concept warns in its own definition that HALF HAVE NEVER ORDERED (52,189
-        of 104,990 appear on a sale), so this fork is live and I will price both readings on the step
-        that counts rather than choose silently now
-      declaration: Customer [entity], grounded in contoso_served.dim_customer key customer_key
+      took: every customer on the register — all 104,990, including the roughly half who have never appeared
+        on a sale
+      could_also_mean: only customers who have placed at least one order (the Customer concept measures
+        that at 52,189 of 104,990), or only customers active in a recent period
+      declaration: The Customer concept declares no population rule and no default, so the register is
+        taken whole; its own definition warns in capitals that HALF HAVE NEVER ORDERED and 'the register
+        is not the buyer list', which is exactly why this fork moves the figure materially and will be
+        measured, not guessed, at the filtering step.
     - word: Germany
-      took: a value to be matched on the customer's own country, where it is stored as the code 'DE' —
-        the eight codes present are AU, CA, DE, FR, GB, IT, NL, US
-      could_also_mean: the reader-facing name 'Germany' on dim_country.country_name, reached over customer__based_in__country;
-        both select the same customers, so this is a spelling choice and not a population choice
-      declaration: country.default.whose_country_is_asked_never_assumed names the `customer` path via
-        customer__based_in__country, and dim_customer.country_code surfaces as 'customer country' / 'where
-        our customers are'
+      took: the country code 'DE' — the probe shows dim_customer.country_code holds 8 codes ('AU','CA','DE','FR','GB','IT','NL','US')
+        and no '--' online sentinel, matching the declared edge note on customer__based_in__country, so
+        no sentinel exclusion is needed on this path
+      could_also_mean: the reader-facing name 'Germany' on dim_country.country_name, reached by joining
+        customer__based_in__country — the same 'DE' rows either way, so this part of the fork is immaterial
+      declaration: null
+    - word: in Germany
+      took: nothing yet at this step — but starting FROM dim_customer rather than from the sales line
+        already leans toward the customer's own home country
+      could_also_mean: the country a sale was attributed to (`territory`), which would start from v_contoso5_sales_line
+        instead and would count only customers who have ordered
+      declaration: country.default.whose_country_is_asked_never_assumed names four readings and defaults
+        to `territory`; its `when` is a measure grouped by or filtered on Country, whereas here Country
+        is the filter and Customer is the thing counted, and the question's wording matches the `customer`
+        path's own declared surface 'where our customers are'. I am NOT settling this here — both readings
+        get a figure at step 2 before anything is chosen.
     blocked_by: []
   - step: '2'
     step_asks: in Germany
     turns:
-    - why: Apply the Germany filter on the customer's own country, and in the same pass price the two
-        rival readings — only customers who have ever ordered, and customers who bought at a German store
-        — so the fork is measured before anyone decides whether to ask about it.
-      did: "WITH german AS (\n  SELECT\n    customer_key\n  FROM contoso_served.dim_customer\n  WHERE\n\
-        \    country_code = 'DE'\n), buyers AS (\n  SELECT DISTINCT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n\
-        )\nSELECT\n  (\n    SELECT\n      country_name\n    FROM contoso_served.dim_country\n    WHERE\n\
-        \      country_code = 'DE'\n  ) AS de_is_named,\n  (\n    SELECT\n      COUNT(*)\n    FROM german\n\
-        \  ) AS on_record,\n  (\n    SELECT\n      COUNT(*)\n    FROM german AS g\n    JOIN buyers AS\
-        \ b\n      ON g.customer_key = b.customer_key\n  ) AS ever_ordered,\n  (\n    SELECT\n      COUNT(DISTINCT\
-        \ l.customer_key)\n    FROM contoso_served.v_contoso5_sales_line AS l\n    JOIN contoso_served.dim_store\
-        \ AS s\n      ON l.store_key = s.store_key\n    WHERE\n      s.country_code = 'DE'\n  ) AS bought_at_a_german_store,\n\
-        \  (\n    SELECT\n      COUNT(*)\n    FROM contoso_served.dim_customer\n  ) AS whole_register"
-      came_back: '1 row(s): [{"de_is_named": "Germany", "on_record": 9981, "ever_ordered": 5552, "bought_at_a_german_store":
-        3987, "whole_register": 104990}]'
-    settled_on: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
-      WHERE\n  country_code = 'DE'"
-    means: 'The 9,981 people on Contoso''s customer register whose own recorded home country is Germany
-      — one row per person, out of 104,990 on the register. This is everybody on file in Germany: it does
-      not ask whether they ever bought anything, and 4,429 of them never did. It is not a count of German
-      sales, German orders or German shops, and it has no date restriction because a register row records
-      where someone lives, not when they did something.'
+    - why: Price every declared reading of "in Germany" at once — the customer's own home country, the
+        country the sale was attributed to, and the country the shop traded in — so the choice between
+        them is made on figures rather than guessed.
+      did: "SELECT\n  (\n    SELECT\n      COUNT(*)\n    FROM contoso_served.dim_customer\n    WHERE\n\
+        \      country_code = 'DE'\n  ) AS a_home_country_all_customers,\n  (\n    SELECT\n      COUNT(DISTINCT\
+        \ customer_key)\n    FROM contoso_served.v_contoso5_sales_line\n    WHERE\n      customer_key\
+        \ IN (\n        SELECT\n          customer_key\n        FROM contoso_served.dim_customer\n   \
+        \     WHERE\n          country_code = 'DE'\n      )\n  ) AS b_home_country_who_ever_ordered,\n\
+        \  (\n    SELECT\n      COUNT(DISTINCT customer_key)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \    WHERE\n      sale_country_code = 'DE'\n  ) AS c_territory_of_the_sale,\n  (\n    SELECT\n\
+        \      COUNT(DISTINCT sl.customer_key)\n    FROM contoso_served.v_contoso5_sales_line AS sl\n\
+        \    JOIN contoso_served.dim_store AS st\n      ON sl.store_key = st.store_key\n    WHERE\n  \
+        \    st.country_code = 'DE'\n  ) AS d_store_country,\n  (\n    SELECT\n      COUNT(*)\n    FROM\
+        \ contoso_served.dim_customer\n  ) AS e_register_total"
+      came_back: '1 row(s): [{"a_home_country_all_customers": 9981, "b_home_country_who_ever_ordered":
+        5552, "c_territory_of_the_sale": 5552, "d_store_country": 3987, "e_register_total": 104990}]'
+    - why: Bind the word "Germany" to a code rather than assuming 'DE' — the Country grounding declares
+        one of its nine codes is a duplicate spelling, so I check that exactly one code is named Germany
+        before filtering on it.
+      did: "SELECT\n  dc.country_code,\n  dc.country_name,\n  COUNT(c.customer_key) AS customers_on_register\n\
+        FROM contoso_served.dim_country AS dc\nLEFT JOIN contoso_served.dim_customer AS c\n  ON c.country_code\
+        \ = dc.country_code\nGROUP BY\n  dc.country_code,\n  dc.country_name\nORDER BY\n  customers_on_register\
+        \ DESC"
+      came_back: '9 row(s) (first 8 of 9): [{"country_code": "US", "country_name": "United States", "customers_on_register":
+        45183}, {"country_code": "GB", "country_name": "United Kingdom", "customers_on_register": 14781},
+        {"country_code": "CA", "country_name": "Canada", "customers_on_register": 10111}, {"country_code":
+        "AU", "country_name": "Australia", "customers_on_register": 10108}, {"country_code": "DE", "country_name":
+        "Germany", "customers_on_register": 9981}, {"country_code": "IT", "country_name": "Italy", "customers_on_register":
+        5036}, {"country_code": "NL", "country_name": "Netherlands", "customers_on_register": 4911}, {"country_code":
+        "FR", "country_name": "France", "customers_on_register": 4879}]'
+    settled_on: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'DE'"
+    means: One row per person on Contoso's customer register whose home country is Germany — 9,981 of
+      them. Every registered German customer, whether or not they have ever bought anything, over all
+      time with no period restriction. Each row is a distinct person, since customer_key is unique across
+      the register.
     readings_taken:
-    - word: customers
-      took: people on the register — 9,981 in Germany. The Customer concept is grounded on dim_customer
-        keyed by customer_key, so a customer IS a register row, and the concept's own definition draws
-        the distinction explicitly ('the register is not the buyer list') rather than leaving it open
-      could_also_mean: only the 5,552 German customers who have ever appeared on a sales line, over the
-        full order-date extent 2016-05-18 to 2025-12-31 — 4,429 fewer, a 44% smaller figure. If you meant
-        buyers rather than people on file, the answer is 5,552 and I have it ready
-      declaration: 'Customer [entity]: ''A person on Contoso''s customer register: 104,990 of them ...
-        HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer
-        list.'''
+    - word: Germany
+      took: country_code = 'DE', verified against dim_country as the single code named 'Germany'
+      could_also_mean: 'nothing else — the Country grounding warns ''nine codes as stored, eight as meant
+        — one is a duplicate spelling'', so I checked: no second code carries the name Germany, and the
+        duplicate concerns the ''--'' sentinel named ''Online'', which no customer carries'
+      declaration: country.exclusion.sentinel_is_not_a_country — no exclusion predicate was needed here,
+        as the sentinel holds 0 customers
     - word: in Germany
-      took: the customer's own country on their register row
-      could_also_mean: where the buying happened — 3,987 distinct customers, of any home country, bought
-        at a shop trading in Germany. That is a different set of people and not a subset of these 9,981,
-        so it answers 'who shops in Germany' rather than 'who is in Germany'
-      declaration: 'country.default.whose_country_is_asked_never_assumed, paths: customer (customer__based_in__country)
-        vs store (store__trades_in__country)'
+      took: the customer's own home country, via the declared edge customer__based_in__country
+      could_also_mean: the country the sale was attributed to (`territory`), the country the shop traded
+        in (`store`), or the site country (`location`)
+      declaration: country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I
+        measured it rather than assume it away — AND IT DOES NOT MOVE THE FIGURE. Restricted to customers
+        who have ordered, home country and territory give the IDENTICAL 5,552, exactly as the bundle predicts
+        ('no physical sale in this warehouse crosses a border, so the two readings AGREE BY ACCIDENT OF
+        THE DATA'). `store` gives 3,987, but that counts people who shopped at a German branch, dropping
+        online buyers — it answers where someone SHOPPED, not where they ARE. So the whose-country fork
+        is immaterial to this question and no choice between readings is being hidden.
+    - word: customers
+      took: every customer on the register — 9,981
+      could_also_mean: only customers who have ever placed an order — 5,552, which is materially different
+        and is disclosed in the answer
+      declaration: The Customer concept is grounded in dim_customer keyed on customer_key with NO population
+        rule and no default, so a customer is a register row; its definition states in capitals that HALF
+        HAVE NEVER ORDERED and 'the register is not the buyer list', naming the register as what the concept
+        IS and the buyer list as a different thing. The question said 'customers', not buyers. This is
+        the one fork that changes the figure, and the Country rule above has nothing to say about it.
     blocked_by: []
   - step: '3'
     step_asks: How many customers
     turns:
-    - why: Read the figure for the answer directly off the step-2 population rather than carrying over
-        the diagnostic number, so the claim rests on its own rows.
-      did: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
-        \ = 'DE'"
-      came_back: '1 row(s): [{"how_many_customers": 9981}]'
-    - why: The count reads 9,981 off the Germany population directly, matching the figure measured independently
-        at step 2, and the one materially different reading is fixed by the Customer concept's own definition
-        rather than left open — so this answers the question as `understood_as` states it.
+    - why: The count is settled at 9,981 — confirmed twice independently (the fork query and the per-country
+        breakdown, whose eight real countries sum exactly to the 104,990 register total).
       did: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
         \ = 'DE'"
       came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
@@ -448,54 +466,45 @@ v3_report:
         rows settle the question, do not decline.'
     settled_on: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n \
       \ country_code = 'DE'"
-    means: 'One row, one figure: 9,981 people are on Contoso''s customer register with Germany as their
-      own recorded home country — out of 104,990 customers on file across eight countries, counted one
-      per register row (step 1 confirmed customer_key is unique, so rows are people). WHAT IS NOT IN IT:
-      no date restriction, because a register row says where someone lives and not when they did anything;
-      no test of whether they ever bought, and 4,429 of these 9,981 never have; nothing about German sales,
-      orders, revenue or shops. This is a headcount of people on file in Germany, not a measure of business
-      done there.'
+    means: 'One row, one figure: 9,981 — how many people on Contoso''s customer register give Germany
+      as where they live. Counted as distinct people over the whole register, all time, with no requirement
+      that they have ever bought anything. WHAT IS NOT INCLUDED: this is not a count of German buyers
+      — only 5,552 of these 9,981 have ever appeared on a sale, and the other 4,429 have never ordered
+      yet are counted here. Nor is it a count of people who shopped at a German branch, which would be
+      3,987.'
     readings_taken:
     - word: customers
-      took: 'people on the customer register: 9,981 in Germany'
-      could_also_mean: only German customers who have ever ordered — 5,552, over the full order-date extent
-        2016-05-18 to 2025-12-31; that is 4,429 fewer, a 44% smaller figure, so if you meant buyers rather
-        than people on file the answer is 5,552
-      declaration: 'Customer [entity] is grounded on contoso_served.dim_customer keyed by customer_key,
-        and its definition states the distinction outright: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990
-        appear on a sale, so the register is not the buyer list.'' The word is fixed on the register,
-        so I applied it and did not ask'
+      took: every customer on the register, ordered or not — 9,981
+      could_also_mean: only customers who have ever placed an order — 5,552
+      declaration: 'Customer is grounded in dim_customer keyed on customer_key with no population rule
+        and no default, so the concept IS the register; its definition states in capitals that HALF HAVE
+        NEVER ORDERED and ''the register is not the buyer list''. The question said ''customers'', not
+        buyers. This is the one fork that moves the figure, so both are given: if you meant people who
+        have actually bought, the answer is 5,552.'
     - word: in Germany
-      took: the country on the customer's own register row, country_code = 'DE', which dim_country names
-        'Germany'
-      could_also_mean: 'where the buying happened: 3,987 distinct customers of any home country bought
-        at a shop trading in Germany. That set is not a subset of these 9,981 — it answers ''who shops
-        in Germany'' and omits every German customer who only ever bought online or abroad'
-      declaration: country.default.whose_country_is_asked_never_assumed — the `customer` path (customer__based_in__country)
-        surfaces as 'customer country' / 'where our customers are', which is what this question asks;
-        the `store` path is named and not taken
-    - word: billed or shipped to Germany
-      took: not measured — the bundle holds no such column
-      could_also_mean: 'a bill-to or ship-to country on an order, which does not exist here: v_contoso5_sales_line
-        carries only customer_key, store_key, product_key, currency and the two dates, and the only countries
-        declared anywhere are the customer''s own and the store''s trading country'
-      declaration: v_contoso5_sales_line column list; dim_customer.country_code is declared 'the only
-        column that can place an internet sale in a real country'
+      took: the customer's own home country on their record, via the declared edge customer__based_in__country
+      could_also_mean: the country the sale was attributed to (`territory`), the shop's country (`store`),
+        or the site country (`location`)
+      declaration: 'country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I
+        priced that reading rather than assume it away, and IT DOES NOT CHANGE THE ANSWER: over customers
+        who have ordered, home country and territory both give exactly 5,552, as the bundle predicts since
+        no physical sale here crosses a border. `store` gives 3,987, but that counts where someone SHOPPED,
+        not where they ARE. The whose-country choice is immaterial here; only the population choice matters.'
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  summary: 73,996 chars · 842 lines  [44362d9332a0]
   detail:
-    chars: 84131
-    lines: 1027
+    chars: 73996
+    lines: 842
     sections:
     - STAGE 1 — question to canonical question (QDMR)
     - STAGE 2 — system prompt for walking one step
     - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/465e28b73001.txt
-    sha: 465e28b73001
+    file: acceptance/prompts/44362d9332a0.txt
+    sha: 44362d9332a0
     reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
       the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
       as it is now.'
@@ -504,25 +513,26 @@ stages:
   ms: 0
   summary: ''
   detail:
-    prose: How many customers are located in Germany — a count of all customers on record whose country
-      is Germany, with no date restriction and no filter on whether they have ever ordered. The answer
-      is a single number.
-    population: 'The 9,981 rows of contoso_served.dim_customer whose country_code is ''DE'', out of all
-      104,990 rows. The only restriction applied is the customer''s own country, via the `customer` path
-      that country.default.whose_country_is_asked_never_assumed declares for "where our customers are".
-      No activity filter — the Customer concept grounds the word on the register, which its definition
-      states is not the buyer list. No date window, though the register carries valid_from/valid_to history
-      that nothing in this bundle declares should be applied. No sentinel or trading-state predicate:
-      the Store and Country sentinel defaults bind to location_code and close_date, which this relation
-      does not carry, and no customer holds the ''--'' country sentinel.'
+    prose: A count of how many customers are located in Germany — one single number, covering every customer
+      on record regardless of whether they have ever ordered, with no date restriction. One row, one figure.
+    population: All 9,981 rows of contoso_served.dim_customer with country_code = 'DE' — the customer
+      register restricted by home country and by nothing else. No activity filter, because Customer is
+      grounded on dim_customer keyed by customer_key and declares no population rule or default, so a
+      customer is a register row; the 4,429 Germans who have never ordered are counted. No date window,
+      per order.default.an_unscoped_question_covers_all_time, and the register carries no sales period
+      of its own. No sentinel exclusion needed under country.exclusion.sentinel_is_not_a_country — the
+      '--' row named 'Online' carries zero customers, and the eight real countries sum exactly to the
+      104,990 register total. 'Germany' was verified against dim_country as the single code DE.
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
-    steps_readable: "  1       FROM       customers            “customers”\n  2  ← 1  WHERE      country\
-      \ = 'Germany'  “in Germany”\n  3  ← 2  AGGREGATE  count of customers   “How many customers”\n  answer:\
-      \ step 3   confidence: 0.88"
+    steps_readable:
+    - '  1       FROM       customers            “customers”'
+    - '  2  ← 1  WHERE      country = ''Germany''  “in Germany”'
+    - '  3  ← 2  AGGREGATE  count of customers   “How many customers”'
+    - '  answer: step 3   confidence: 0.88'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -530,21 +540,21 @@ stages:
   detail:
     ambiguities:
     - words: in Germany
-      asks: Should a customer count as German based on the country on their own address/profile, or based
+      asks: Should a customer count as being in Germany based on their own home/address country, or based
         on where their orders were billed or shipped?
       readings:
-      - Customers whose own country (address on their record) is Germany
-      - Customers who had orders billed to a German address
-      - Customers who had orders shipped to a German address
-      took: Customers whose own country on their record is Germany
+      - The customer's own country on their record (home address)
+      - The country their invoices were billed to
+      - The country their orders were shipped to
+      took: The customer's own country on their record
     - words: customers
-      asks: Do you want every customer on file in Germany, or only ones who are currently active / have
-        actually bought something?
+      asks: Do you want every customer on file in Germany, or only ones who have actually bought something
+        (and if so, within what period)?
       readings:
-      - All customers on file, regardless of activity
-      - Only active customers
+      - Every customer on file, whether or not they have ever ordered
       - Only customers who have placed at least one order
-      took: All customers on file, regardless of activity
+      - Only customers active in a recent period, e.g. the last year
+      took: Every customer on file, whether or not they have ever ordered
 - stage: cannot_express
   status: skipped
   ms: 0
@@ -575,73 +585,85 @@ stages:
   detail:
     readings:
     - word: customers
-      took: the customer register itself — dim_customer, the 104,990 rows, which is the only relation
-        declared to hold a customer
-      could_also_mean: only customers who have actually ordered, which would come from the sales line
-        instead; the Customer concept warns in its own definition that HALF HAVE NEVER ORDERED (52,189
-        of 104,990 appear on a sale), so this fork is live and I will price both readings on the step
-        that counts rather than choose silently now
-      declaration: Customer [entity], grounded in contoso_served.dim_customer key customer_key
+      took: every customer on the register — all 104,990, including the roughly half who have never appeared
+        on a sale
+      could_also_mean: only customers who have placed at least one order (the Customer concept measures
+        that at 52,189 of 104,990), or only customers active in a recent period
+      declaration: The Customer concept declares no population rule and no default, so the register is
+        taken whole; its own definition warns in capitals that HALF HAVE NEVER ORDERED and 'the register
+        is not the buyer list', which is exactly why this fork moves the figure materially and will be
+        measured, not guessed, at the filtering step.
     - word: Germany
-      took: a value to be matched on the customer's own country, where it is stored as the code 'DE' —
-        the eight codes present are AU, CA, DE, FR, GB, IT, NL, US
-      could_also_mean: the reader-facing name 'Germany' on dim_country.country_name, reached over customer__based_in__country;
-        both select the same customers, so this is a spelling choice and not a population choice
-      declaration: country.default.whose_country_is_asked_never_assumed names the `customer` path via
-        customer__based_in__country, and dim_customer.country_code surfaces as 'customer country' / 'where
-        our customers are'
-    - word: customers
-      took: people on the register — 9,981 in Germany. The Customer concept is grounded on dim_customer
-        keyed by customer_key, so a customer IS a register row, and the concept's own definition draws
-        the distinction explicitly ('the register is not the buyer list') rather than leaving it open
-      could_also_mean: only the 5,552 German customers who have ever appeared on a sales line, over the
-        full order-date extent 2016-05-18 to 2025-12-31 — 4,429 fewer, a 44% smaller figure. If you meant
-        buyers rather than people on file, the answer is 5,552 and I have it ready
-      declaration: 'Customer [entity]: ''A person on Contoso''s customer register: 104,990 of them ...
-        HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer
-        list.'''
+      took: the country code 'DE' — the probe shows dim_customer.country_code holds 8 codes ('AU','CA','DE','FR','GB','IT','NL','US')
+        and no '--' online sentinel, matching the declared edge note on customer__based_in__country, so
+        no sentinel exclusion is needed on this path
+      could_also_mean: the reader-facing name 'Germany' on dim_country.country_name, reached by joining
+        customer__based_in__country — the same 'DE' rows either way, so this part of the fork is immaterial
+      declaration: null
     - word: in Germany
-      took: the customer's own country on their register row
-      could_also_mean: where the buying happened — 3,987 distinct customers, of any home country, bought
-        at a shop trading in Germany. That is a different set of people and not a subset of these 9,981,
-        so it answers 'who shops in Germany' rather than 'who is in Germany'
-      declaration: 'country.default.whose_country_is_asked_never_assumed, paths: customer (customer__based_in__country)
-        vs store (store__trades_in__country)'
-    - word: customers
-      took: 'people on the customer register: 9,981 in Germany'
-      could_also_mean: only German customers who have ever ordered — 5,552, over the full order-date extent
-        2016-05-18 to 2025-12-31; that is 4,429 fewer, a 44% smaller figure, so if you meant buyers rather
-        than people on file the answer is 5,552
-      declaration: 'Customer [entity] is grounded on contoso_served.dim_customer keyed by customer_key,
-        and its definition states the distinction outright: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990
-        appear on a sale, so the register is not the buyer list.'' The word is fixed on the register,
-        so I applied it and did not ask'
+      took: nothing yet at this step — but starting FROM dim_customer rather than from the sales line
+        already leans toward the customer's own home country
+      could_also_mean: the country a sale was attributed to (`territory`), which would start from v_contoso5_sales_line
+        instead and would count only customers who have ordered
+      declaration: country.default.whose_country_is_asked_never_assumed names four readings and defaults
+        to `territory`; its `when` is a measure grouped by or filtered on Country, whereas here Country
+        is the filter and Customer is the thing counted, and the question's wording matches the `customer`
+        path's own declared surface 'where our customers are'. I am NOT settling this here — both readings
+        get a figure at step 2 before anything is chosen.
+    - word: Germany
+      took: country_code = 'DE', verified against dim_country as the single code named 'Germany'
+      could_also_mean: 'nothing else — the Country grounding warns ''nine codes as stored, eight as meant
+        — one is a duplicate spelling'', so I checked: no second code carries the name Germany, and the
+        duplicate concerns the ''--'' sentinel named ''Online'', which no customer carries'
+      declaration: country.exclusion.sentinel_is_not_a_country — no exclusion predicate was needed here,
+        as the sentinel holds 0 customers
     - word: in Germany
-      took: the country on the customer's own register row, country_code = 'DE', which dim_country names
-        'Germany'
-      could_also_mean: 'where the buying happened: 3,987 distinct customers of any home country bought
-        at a shop trading in Germany. That set is not a subset of these 9,981 — it answers ''who shops
-        in Germany'' and omits every German customer who only ever bought online or abroad'
-      declaration: country.default.whose_country_is_asked_never_assumed — the `customer` path (customer__based_in__country)
-        surfaces as 'customer country' / 'where our customers are', which is what this question asks;
-        the `store` path is named and not taken
-    - word: billed or shipped to Germany
-      took: not measured — the bundle holds no such column
-      could_also_mean: 'a bill-to or ship-to country on an order, which does not exist here: v_contoso5_sales_line
-        carries only customer_key, store_key, product_key, currency and the two dates, and the only countries
-        declared anywhere are the customer''s own and the store''s trading country'
-      declaration: v_contoso5_sales_line column list; dim_customer.country_code is declared 'the only
-        column that can place an internet sale in a real country'
+      took: the customer's own home country, via the declared edge customer__based_in__country
+      could_also_mean: the country the sale was attributed to (`territory`), the country the shop traded
+        in (`store`), or the site country (`location`)
+      declaration: country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I
+        measured it rather than assume it away — AND IT DOES NOT MOVE THE FIGURE. Restricted to customers
+        who have ordered, home country and territory give the IDENTICAL 5,552, exactly as the bundle predicts
+        ('no physical sale in this warehouse crosses a border, so the two readings AGREE BY ACCIDENT OF
+        THE DATA'). `store` gives 3,987, but that counts people who shopped at a German branch, dropping
+        online buyers — it answers where someone SHOPPED, not where they ARE. So the whose-country fork
+        is immaterial to this question and no choice between readings is being hidden.
+    - word: customers
+      took: every customer on the register — 9,981
+      could_also_mean: only customers who have ever placed an order — 5,552, which is materially different
+        and is disclosed in the answer
+      declaration: The Customer concept is grounded in dim_customer keyed on customer_key with NO population
+        rule and no default, so a customer is a register row; its definition states in capitals that HALF
+        HAVE NEVER ORDERED and 'the register is not the buyer list', naming the register as what the concept
+        IS and the buyer list as a different thing. The question said 'customers', not buyers. This is
+        the one fork that changes the figure, and the Country rule above has nothing to say about it.
+    - word: customers
+      took: every customer on the register, ordered or not — 9,981
+      could_also_mean: only customers who have ever placed an order — 5,552
+      declaration: 'Customer is grounded in dim_customer keyed on customer_key with no population rule
+        and no default, so the concept IS the register; its definition states in capitals that HALF HAVE
+        NEVER ORDERED and ''the register is not the buyer list''. The question said ''customers'', not
+        buyers. This is the one fork that moves the figure, so both are given: if you meant people who
+        have actually bought, the answer is 5,552.'
+    - word: in Germany
+      took: the customer's own home country on their record, via the declared edge customer__based_in__country
+      could_also_mean: the country the sale was attributed to (`territory`), the shop's country (`store`),
+        or the site country (`location`)
+      declaration: 'country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I
+        priced that reading rather than assume it away, and IT DOES NOT CHANGE THE ANSWER: over customers
+        who have ordered, home country and territory both give exactly 5,552, as the bundle predicts since
+        no physical sale here crosses a border. `store` gives 3,987, but that counts where someone SHOPPED,
+        not where they ARE. The whose-country choice is immaterial here; only the population choice matters.'
 - stage: plan
   status: ok
   ms: 0
   summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
-        \n-- step 2\nSELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
-        WHERE\n  country_code = 'DE'\n\n-- step 3\nSELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-        WHERE\n  country_code = 'DE'"
+      sql: "-- step 1\nSELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\n\n--\
+        \ step 2\nSELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'DE'\n\
+        \n-- step 3\nSELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  country_code = 'DE'"
       params: {}
 - stage: execute
   status: ok
@@ -656,13 +678,12 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'One row, one figure: 9,981 people are on Contoso''s customer register with Germany
-      as their own recorded home country — out of 104,990 customers on file across eight countries, counted
-      one per register row (step 1 confirmed customer_key is unique, so rows are people). WHAT IS NOT
-      IN IT: no date restriction, because a register row says where someone lives and not when they did
-      anything; no test of whether they ever bought, and 4,429 of these 9,981 never have; nothing about
-      German sales, orders, revenue or shops. This is a headcount of people on file in Germany, not a
-      measure of business done there.'
+    what_it_calculated: 'One row, one figure: 9,981 — how many people on Contoso''s customer register
+      give Germany as where they live. Counted as distinct people over the whole register, all time, with
+      no requirement that they have ever bought anything. WHAT IS NOT INCLUDED: this is not a count of
+      German buyers — only 5,552 of these 9,981 have ever appeared on a sale, and the other 4,429 have
+      never ordered yet are counted here. Nor is it a count of people who shopped at a German branch,
+      which would be 3,987.'
 - stage: evaluate
   status: ok
   ms: 0
@@ -687,21 +708,20 @@ sections:
     kind: pairs
     value:
     - - size
-      - 84,131 chars · 1027 lines
+      - 73,996 chars · 842 lines
     - - sections
       - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
         STAGE 2 — the declarations, sent once
     - - digest
-      - 465e28b73001
+      - 44362d9332a0
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: How many customers are located in Germany — a count of all customers on record whose country
-      is Germany, with no date restriction and no filter on whether they have ever ordered. The answer
-      is a single number.
+    value: A count of how many customers are located in Germany — one single number, covering every customer
+      on record regardless of whether they have ever ordered, with no date restriction. One row, one figure.
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -713,22 +733,6 @@ sections:
     - '  2  ← 1  WHERE      country = ''Germany''  “in Germany”'
     - '  3  ← 2  AGGREGATE  count of customers   “How many customers”'
     - '  answer: step 3   confidence: 0.88'
-    - '  UNDERSTOOD AS: How many customers are located in Germany — a count of all customers on record
-      whose country is Germany, with no date restriction and no filter on whether they have ever ordered.
-      The answer is a single number.'
-    - '  AMBIGUOUS ''in Germany'' — ASKS: Should a customer count as German based on the country on their
-      own address/profile, or based on where their orders were billed or shipped?'
-    - '      could mean: Customers whose own country (address on their record) is Germany'
-    - '      could mean: Customers who had orders billed to a German address'
-    - '      could mean: Customers who had orders shipped to a German address'
-    - '      took: Customers whose own country on their record is Germany'
-    - '  AMBIGUOUS ''customers'' — ASKS: Do you want every customer on file in Germany, or only ones who
-      are currently active / have actually bought something?'
-    - '      could mean: All customers on file, regardless of activity'
-    - '      could mean: Only active customers'
-    - '      could mean: Only customers who have placed at least one order'
-    - '      took: All customers on file, regardless of activity'
-    - '  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -748,27 +752,33 @@ sections:
       - *id006
 - id: ambiguities
   title: What it saw more than one reading of
-  subtitle: each with the reading it took and the declaration that settled it
+  subtitle: one frame per ambiguity — the reading it took, and what settled it
   status: ok
   body:
-    kind: table
+    kind: records
     value:
-    - words: in Germany
-      asks: Should a customer count as German based on the country on their own address/profile, or based
-        on where their orders were billed or shipped?
-      readings:
-      - Customers whose own country (address on their record) is Germany
-      - Customers who had orders billed to a German address
-      - Customers who had orders shipped to a German address
-      took: Customers whose own country on their record is Germany
-    - words: customers
-      asks: Do you want every customer on file in Germany, or only ones who are currently active / have
-        actually bought something?
-      readings:
-      - All customers on file, regardless of activity
-      - Only active customers
-      - Only customers who have placed at least one order
-      took: All customers on file, regardless of activity
+    - - - the words
+        - in Germany
+      - - what it would ask
+        - Should a customer count as being in Germany based on their own home/address country, or based
+          on where their orders were billed or shipped?
+      - - could mean
+        - - The customer's own country on their record (home address)
+          - The country their invoices were billed to
+          - The country their orders were shipped to
+      - - took
+        - The customer's own country on their record
+    - - - the words
+        - customers
+      - - what it would ask
+        - Do you want every customer on file in Germany, or only ones who have actually bought something
+          (and if so, within what period)?
+      - - could mean
+        - - Every customer on file, whether or not they have ever ordered
+          - Only customers who have placed at least one order
+          - Only customers active in a recent period, e.g. the last year
+      - - took
+        - Every customer on file, whether or not they have ever ordered
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -777,11 +787,10 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
+      sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
       params: {}
     - step: '2'
-      sql: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
-        WHERE\n  country_code = 'DE'"
+      sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'DE'"
       params: {}
     - step: '3'
       sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
@@ -793,13 +802,79 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'One row, one figure: 9,981 people are on Contoso''s customer register with Germany as their
-      own recorded home country — out of 104,990 customers on file across eight countries, counted one
-      per register row (step 1 confirmed customer_key is unique, so rows are people). WHAT IS NOT IN IT:
-      no date restriction, because a register row says where someone lives and not when they did anything;
-      no test of whether they ever bought, and 4,429 of these 9,981 never have; nothing about German sales,
-      orders, revenue or shops. This is a headcount of people on file in Germany, not a measure of business
-      done there.'
+    value: 'One row, one figure: 9,981 — how many people on Contoso''s customer register give Germany
+      as where they live. Counted as distinct people over the whole register, all time, with no requirement
+      that they have ever bought anything. WHAT IS NOT INCLUDED: this is not a count of German buyers
+      — only 5,552 of these 9,981 have ever appeared on a sale, and the other 4,429 have never ordered
+      yet are counted here. Nor is it a count of people who shopped at a German branch, which would be
+      3,987.'
+- id: declarations
+  title: Which declarations it read, and what each settled
+  subtitle: the path the decision took through the ontology — read off the walk's own citations, never
+    inferred from what it could have read
+  status: ok
+  body:
+    kind: records
+    value:
+    - - - declaration
+        - The Customer concept declares no population rule and no default, so the register is taken whole;
+          its own definition warns in capitals that HALF HAVE NEVER ORDERED and 'the register is not the
+          buyer list', which is exactly why this fork moves the figure materially and will be measured,
+          not guessed, at the filtering step.
+      - - what it settled
+        - '''customers'' = every customer on the register — all 104,990, including the roughly half who
+          have never appeared on a sale'
+    - - - declaration
+        - country.default.whose_country_is_asked_never_assumed names four readings and defaults to `territory`;
+          its `when` is a measure grouped by or filtered on Country, whereas here Country is the filter
+          and Customer is the thing counted, and the question's wording matches the `customer` path's
+          own declared surface 'where our customers are'. I am NOT settling this here — both readings
+          get a figure at step 2 before anything is chosen.
+      - - what it settled
+        - '''in Germany'' = nothing yet at this step — but starting FROM dim_customer rather than from
+          the sales line already leans toward the customer''s own home country'
+    - - - declaration
+        - country.exclusion.sentinel_is_not_a_country — no exclusion predicate was needed here, as the
+          sentinel holds 0 customers
+      - - what it settled
+        - '''Germany'' = country_code = ''DE'', verified against dim_country as the single code named
+          ''Germany'''
+    - - - declaration
+        - country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I measured
+          it rather than assume it away — AND IT DOES NOT MOVE THE FIGURE. Restricted to customers who
+          have ordered, home country and territory give the IDENTICAL 5,552, exactly as the bundle predicts
+          ('no physical sale in this warehouse crosses a border, so the two readings AGREE BY ACCIDENT
+          OF THE DATA'). `store` gives 3,987, but that counts people who shopped at a German branch, dropping
+          online buyers — it answers where someone SHOPPED, not where they ARE. So the whose-country fork
+          is immaterial to this question and no choice between readings is being hidden.
+      - - what it settled
+        - '''in Germany'' = the customer''s own home country, via the declared edge customer__based_in__country'
+    - - - declaration
+        - The Customer concept is grounded in dim_customer keyed on customer_key with NO population rule
+          and no default, so a customer is a register row; its definition states in capitals that HALF
+          HAVE NEVER ORDERED and 'the register is not the buyer list', naming the register as what the
+          concept IS and the buyer list as a different thing. The question said 'customers', not buyers.
+          This is the one fork that changes the figure, and the Country rule above has nothing to say
+          about it.
+      - - what it settled
+        - '''customers'' = every customer on the register — 9,981'
+    - - - declaration
+        - 'Customer is grounded in dim_customer keyed on customer_key with no population rule and no default,
+          so the concept IS the register; its definition states in capitals that HALF HAVE NEVER ORDERED
+          and ''the register is not the buyer list''. The question said ''customers'', not buyers. This
+          is the one fork that moves the figure, so both are given: if you meant people who have actually
+          bought, the answer is 5,552.'
+      - - what it settled
+        - '''customers'' = every customer on the register, ordered or not — 9,981'
+    - - - declaration
+        - 'country.default.whose_country_is_asked_never_assumed defaults to `territory`, so I priced that
+          reading rather than assume it away, and IT DOES NOT CHANGE THE ANSWER: over customers who have
+          ordered, home country and territory both give exactly 5,552, as the bundle predicts since no
+          physical sale here crosses a border. `store` gives 3,987, but that counts where someone SHOPPED,
+          not where they ARE. The whose-country choice is immaterial here; only the population choice
+          matters.'
+      - - what it settled
+        - '''in Germany'' = the customer''s own home country on their record, via the declared edge customer__based_in__country'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -823,152 +898,172 @@ sections:
     - - shape
       - one figure
     - - population it answered over
-      - 'The 9,981 rows of contoso_served.dim_customer whose country_code is ''DE'', out of all 104,990
-        rows. The only restriction applied is the customer''s own country, via the `customer` path that
-        country.default.whose_country_is_asked_never_assumed declares for "where our customers are". No
-        activity filter — the Customer concept grounds the word on the register, which its definition
-        states is not the buyer list. No date window, though the register carries valid_from/valid_to
-        history that nothing in this bundle declares should be applied. No sentinel or trading-state predicate:
-        the Store and Country sentinel defaults bind to location_code and close_date, which this relation
-        does not carry, and no customer holds the ''--'' country sentinel.'
+      - All 9,981 rows of contoso_served.dim_customer with country_code = 'DE' — the customer register
+        restricted by home country and by nothing else. No activity filter, because Customer is grounded
+        on dim_customer keyed by customer_key and declares no population rule or default, so a customer
+        is a register row; the 4,429 Germans who have never ordered are counted. No date window, per order.default.an_unscoped_question_covers_all_time,
+        and the register carries no sales period of its own. No sentinel exclusion needed under country.exclusion.sentinel_is_not_a_country
+        — the '--' row named 'Online' carries zero customers, and the eight real countries sum exactly
+        to the 104,990 register total. 'Germany' was verified against dim_country as the single code DE.
 - id: thinking
-  title: Every turn it took, and what came back
-  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  title: How it got there, step by step
+  subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
+    reasoning a verdict can be re-examined from, with no model call.
   status: ok
   body:
-    kind: table
+    kind: steps
     value:
     - step: '1'
-      step_asks: customers
-      turns:
-      - why: Establish the customer register as the starting population and see what values dim_customer.country_code
-          holds, since "Germany" must match a declared code or name.
-        did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT count(*) AS customers_on_record, count(DISTINCT
-          customer_key) AS distinct_customer_keys FROM contoso_served.dim_customer'
-        came_back: 'dim_customer.country_code (varchar) holds 8 distinct value(s): ''AU'', ''CA'', ''DE'',
-          ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customers_on_record": 104990,
-          "distinct_customer_keys": 104990}]'
-      settled_on: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
-      means: 'Every person on Contoso''s customer register, one row per person — 104,990 of them, each
-        carrying the country they live in. No filter of any kind has been applied yet: this is the whole
-        register, including the half of it (52,801 by the declaration''s arithmetic) that has never appeared
-        on a sale, and including customers in all eight countries, not just Germany. Nothing here is a
-        count of anything yet; it is the set of things the later steps will count.'
-      readings_taken:
+      asks: customers
+      sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
+      means: One row per person on Contoso's customer register — 104,990 of them, the whole register with
+        nothing filtered out — each carrying the country that customer lives in. No period, no country
+        restriction, and no requirement that the customer has ever bought anything. `customer_key` is
+        unique across all 104,990 rows, so counting rows here counts people and cannot double-count.
+      readings:
       - word: customers
-        took: the customer register itself — dim_customer, the 104,990 rows, which is the only relation
-          declared to hold a customer
-        could_also_mean: only customers who have actually ordered, which would come from the sales line
-          instead; the Customer concept warns in its own definition that HALF HAVE NEVER ORDERED (52,189
-          of 104,990 appear on a sale), so this fork is live and I will price both readings on the step
-          that counts rather than choose silently now
-        declaration: Customer [entity], grounded in contoso_served.dim_customer key customer_key
+        took: every customer on the register — all 104,990, including the roughly half who have never
+          appeared on a sale
+        could_also_mean: only customers who have placed at least one order (the Customer concept measures
+          that at 52,189 of 104,990), or only customers active in a recent period
+        declaration: The Customer concept declares no population rule and no default, so the register
+          is taken whole; its own definition warns in capitals that HALF HAVE NEVER ORDERED and 'the register
+          is not the buyer list', which is exactly why this fork moves the figure materially and will
+          be measured, not guessed, at the filtering step.
       - word: Germany
-        took: a value to be matched on the customer's own country, where it is stored as the code 'DE'
-          — the eight codes present are AU, CA, DE, FR, GB, IT, NL, US
-        could_also_mean: the reader-facing name 'Germany' on dim_country.country_name, reached over customer__based_in__country;
-          both select the same customers, so this is a spelling choice and not a population choice
-        declaration: country.default.whose_country_is_asked_never_assumed names the `customer` path via
-          customer__based_in__country, and dim_customer.country_code surfaces as 'customer country' /
-          'where our customers are'
-      blocked_by: []
-    - step: '2'
-      step_asks: in Germany
-      turns:
-      - why: Apply the Germany filter on the customer's own country, and in the same pass price the two
-          rival readings — only customers who have ever ordered, and customers who bought at a German
-          store — so the fork is measured before anyone decides whether to ask about it.
-        did: "WITH german AS (\n  SELECT\n    customer_key\n  FROM contoso_served.dim_customer\n  WHERE\n\
-          \    country_code = 'DE'\n), buyers AS (\n  SELECT DISTINCT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n\
-          )\nSELECT\n  (\n    SELECT\n      country_name\n    FROM contoso_served.dim_country\n    WHERE\n\
-          \      country_code = 'DE'\n  ) AS de_is_named,\n  (\n    SELECT\n      COUNT(*)\n    FROM german\n\
-          \  ) AS on_record,\n  (\n    SELECT\n      COUNT(*)\n    FROM german AS g\n    JOIN buyers AS\
-          \ b\n      ON g.customer_key = b.customer_key\n  ) AS ever_ordered,\n  (\n    SELECT\n     \
-          \ COUNT(DISTINCT l.customer_key)\n    FROM contoso_served.v_contoso5_sales_line AS l\n    JOIN\
-          \ contoso_served.dim_store AS s\n      ON l.store_key = s.store_key\n    WHERE\n      s.country_code\
-          \ = 'DE'\n  ) AS bought_at_a_german_store,\n  (\n    SELECT\n      COUNT(*)\n    FROM contoso_served.dim_customer\n\
-          \  ) AS whole_register"
-        came_back: '1 row(s): [{"de_is_named": "Germany", "on_record": 9981, "ever_ordered": 5552, "bought_at_a_german_store":
-          3987, "whole_register": 104990}]'
-      settled_on: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
-        WHERE\n  country_code = 'DE'"
-      means: 'The 9,981 people on Contoso''s customer register whose own recorded home country is Germany
-        — one row per person, out of 104,990 on the register. This is everybody on file in Germany: it
-        does not ask whether they ever bought anything, and 4,429 of them never did. It is not a count
-        of German sales, German orders or German shops, and it has no date restriction because a register
-        row records where someone lives, not when they did something.'
-      readings_taken:
-      - word: customers
-        took: people on the register — 9,981 in Germany. The Customer concept is grounded on dim_customer
-          keyed by customer_key, so a customer IS a register row, and the concept's own definition draws
-          the distinction explicitly ('the register is not the buyer list') rather than leaving it open
-        could_also_mean: only the 5,552 German customers who have ever appeared on a sales line, over
-          the full order-date extent 2016-05-18 to 2025-12-31 — 4,429 fewer, a 44% smaller figure. If
-          you meant buyers rather than people on file, the answer is 5,552 and I have it ready
-        declaration: 'Customer [entity]: ''A person on Contoso''s customer register: 104,990 of them ...
-          HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the
-          buyer list.'''
+        took: the country code 'DE' — the probe shows dim_customer.country_code holds 8 codes ('AU','CA','DE','FR','GB','IT','NL','US')
+          and no '--' online sentinel, matching the declared edge note on customer__based_in__country,
+          so no sentinel exclusion is needed on this path
+        could_also_mean: the reader-facing name 'Germany' on dim_country.country_name, reached by joining
+          customer__based_in__country — the same 'DE' rows either way, so this part of the fork is immaterial
+        declaration: null
       - word: in Germany
-        took: the customer's own country on their register row
-        could_also_mean: where the buying happened — 3,987 distinct customers, of any home country, bought
-          at a shop trading in Germany. That is a different set of people and not a subset of these 9,981,
-          so it answers 'who shops in Germany' rather than 'who is in Germany'
-        declaration: 'country.default.whose_country_is_asked_never_assumed, paths: customer (customer__based_in__country)
-          vs store (store__trades_in__country)'
-      blocked_by: []
-    - step: '3'
-      step_asks: How many customers
+        took: nothing yet at this step — but starting FROM dim_customer rather than from the sales line
+          already leans toward the customer's own home country
+        could_also_mean: the country a sale was attributed to (`territory`), which would start from v_contoso5_sales_line
+          instead and would count only customers who have ordered
+        declaration: country.default.whose_country_is_asked_never_assumed names four readings and defaults
+          to `territory`; its `when` is a measure grouped by or filtered on Country, whereas here Country
+          is the filter and Customer is the thing counted, and the question's wording matches the `customer`
+          path's own declared surface 'where our customers are'. I am NOT settling this here — both readings
+          get a figure at step 2 before anything is chosen.
       turns:
-      - why: Read the figure for the answer directly off the step-2 population rather than carrying over
-          the diagnostic number, so the claim rests on its own rows.
-        did: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
-          \ = 'DE'"
-        came_back: '1 row(s): [{"how_many_customers": 9981}]'
-      - why: The count reads 9,981 off the Germany population directly, matching the figure measured independently
-          at step 2, and the one materially different reading is fixed by the Customer concept's own definition
-          rather than left open — so this answers the question as `understood_as` states it.
+      - why: Establish the customers base relation and check what the customer's country column actually
+          holds, so the later "Germany" filter binds to a real value.
+        did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT COUNT(*) AS customers_on_register,
+          COUNT(DISTINCT customer_key) AS distinct_customer_keys, COUNT(DISTINCT country_code) AS distinct_country_codes
+          FROM contoso_served.dim_customer'
+        came_back: 'dim_customer.country_code (varchar) holds 8 distinct value(s): ''AU'', ''CA'', ''DE'',
+          ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customers_on_register": 104990,
+          "distinct_customer_keys": 104990, "distinct_country_codes": 8}]'
+      blocked: []
+    - step: '2'
+      asks: in Germany
+      sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'DE'"
+      means: One row per person on Contoso's customer register whose home country is Germany — 9,981 of
+        them. Every registered German customer, whether or not they have ever bought anything, over all
+        time with no period restriction. Each row is a distinct person, since customer_key is unique across
+        the register.
+      readings:
+      - word: Germany
+        took: country_code = 'DE', verified against dim_country as the single code named 'Germany'
+        could_also_mean: 'nothing else — the Country grounding warns ''nine codes as stored, eight as
+          meant — one is a duplicate spelling'', so I checked: no second code carries the name Germany,
+          and the duplicate concerns the ''--'' sentinel named ''Online'', which no customer carries'
+        declaration: country.exclusion.sentinel_is_not_a_country — no exclusion predicate was needed here,
+          as the sentinel holds 0 customers
+      - word: in Germany
+        took: the customer's own home country, via the declared edge customer__based_in__country
+        could_also_mean: the country the sale was attributed to (`territory`), the country the shop traded
+          in (`store`), or the site country (`location`)
+        declaration: country.default.whose_country_is_asked_never_assumed defaults to `territory`, so
+          I measured it rather than assume it away — AND IT DOES NOT MOVE THE FIGURE. Restricted to customers
+          who have ordered, home country and territory give the IDENTICAL 5,552, exactly as the bundle
+          predicts ('no physical sale in this warehouse crosses a border, so the two readings AGREE BY
+          ACCIDENT OF THE DATA'). `store` gives 3,987, but that counts people who shopped at a German
+          branch, dropping online buyers — it answers where someone SHOPPED, not where they ARE. So the
+          whose-country fork is immaterial to this question and no choice between readings is being hidden.
+      - word: customers
+        took: every customer on the register — 9,981
+        could_also_mean: only customers who have ever placed an order — 5,552, which is materially different
+          and is disclosed in the answer
+        declaration: The Customer concept is grounded in dim_customer keyed on customer_key with NO population
+          rule and no default, so a customer is a register row; its definition states in capitals that
+          HALF HAVE NEVER ORDERED and 'the register is not the buyer list', naming the register as what
+          the concept IS and the buyer list as a different thing. The question said 'customers', not buyers.
+          This is the one fork that changes the figure, and the Country rule above has nothing to say
+          about it.
+      turns:
+      - why: Price every declared reading of "in Germany" at once — the customer's own home country, the
+          country the sale was attributed to, and the country the shop traded in — so the choice between
+          them is made on figures rather than guessed.
+        did: "SELECT\n  (\n    SELECT\n      COUNT(*)\n    FROM contoso_served.dim_customer\n    WHERE\n\
+          \      country_code = 'DE'\n  ) AS a_home_country_all_customers,\n  (\n    SELECT\n      COUNT(DISTINCT\
+          \ customer_key)\n    FROM contoso_served.v_contoso5_sales_line\n    WHERE\n      customer_key\
+          \ IN (\n        SELECT\n          customer_key\n        FROM contoso_served.dim_customer\n \
+          \       WHERE\n          country_code = 'DE'\n      )\n  ) AS b_home_country_who_ever_ordered,\n\
+          \  (\n    SELECT\n      COUNT(DISTINCT customer_key)\n    FROM contoso_served.v_contoso5_sales_line\n\
+          \    WHERE\n      sale_country_code = 'DE'\n  ) AS c_territory_of_the_sale,\n  (\n    SELECT\n\
+          \      COUNT(DISTINCT sl.customer_key)\n    FROM contoso_served.v_contoso5_sales_line AS sl\n\
+          \    JOIN contoso_served.dim_store AS st\n      ON sl.store_key = st.store_key\n    WHERE\n\
+          \      st.country_code = 'DE'\n  ) AS d_store_country,\n  (\n    SELECT\n      COUNT(*)\n  \
+          \  FROM contoso_served.dim_customer\n  ) AS e_register_total"
+        came_back: '1 row(s): [{"a_home_country_all_customers": 9981, "b_home_country_who_ever_ordered":
+          5552, "c_territory_of_the_sale": 5552, "d_store_country": 3987, "e_register_total": 104990}]'
+      - why: Bind the word "Germany" to a code rather than assuming 'DE' — the Country grounding declares
+          one of its nine codes is a duplicate spelling, so I check that exactly one code is named Germany
+          before filtering on it.
+        did: "SELECT\n  dc.country_code,\n  dc.country_name,\n  COUNT(c.customer_key) AS customers_on_register\n\
+          FROM contoso_served.dim_country AS dc\nLEFT JOIN contoso_served.dim_customer AS c\n  ON c.country_code\
+          \ = dc.country_code\nGROUP BY\n  dc.country_code,\n  dc.country_name\nORDER BY\n  customers_on_register\
+          \ DESC"
+        came_back: '9 row(s) (first 8 of 9): [{"country_code": "US", "country_name": "United States",
+          "customers_on_register": 45183}, {"country_code": "GB", "country_name": "United Kingdom", "customers_on_register":
+          14781}, {"country_code": "CA", "country_name": "Canada", "customers_on_register": 10111}, {"country_code":
+          "AU", "country_name": "Australia", "customers_on_register": 10108}, {"country_code": "DE", "country_name":
+          "Germany", "customers_on_register": 9981}, {"country_code": "IT", "country_name": "Italy", "customers_on_register":
+          5036}, {"country_code": "NL", "country_name": "Netherlands", "customers_on_register": 4911},
+          {"country_code": "FR", "country_name": "France", "customers_on_register": 4879}]'
+      blocked: []
+    - step: '3'
+      asks: How many customers
+      sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
+        \ = 'DE'"
+      means: 'One row, one figure: 9,981 — how many people on Contoso''s customer register give Germany
+        as where they live. Counted as distinct people over the whole register, all time, with no requirement
+        that they have ever bought anything. WHAT IS NOT INCLUDED: this is not a count of German buyers
+        — only 5,552 of these 9,981 have ever appeared on a sale, and the other 4,429 have never ordered
+        yet are counted here. Nor is it a count of people who shopped at a German branch, which would
+        be 3,987.'
+      readings:
+      - word: customers
+        took: every customer on the register, ordered or not — 9,981
+        could_also_mean: only customers who have ever placed an order — 5,552
+        declaration: 'Customer is grounded in dim_customer keyed on customer_key with no population rule
+          and no default, so the concept IS the register; its definition states in capitals that HALF
+          HAVE NEVER ORDERED and ''the register is not the buyer list''. The question said ''customers'',
+          not buyers. This is the one fork that moves the figure, so both are given: if you meant people
+          who have actually bought, the answer is 5,552.'
+      - word: in Germany
+        took: the customer's own home country on their record, via the declared edge customer__based_in__country
+        could_also_mean: the country the sale was attributed to (`territory`), the shop's country (`store`),
+          or the site country (`location`)
+        declaration: 'country.default.whose_country_is_asked_never_assumed defaults to `territory`, so
+          I priced that reading rather than assume it away, and IT DOES NOT CHANGE THE ANSWER: over customers
+          who have ordered, home country and territory both give exactly 5,552, as the bundle predicts
+          since no physical sale here crosses a border. `store` gives 3,987, but that counts where someone
+          SHOPPED, not where they ARE. The whose-country choice is immaterial here; only the population
+          choice matters.'
+      turns:
+      - why: The count is settled at 9,981 — confirmed twice independently (the fork query and the per-country
+          breakdown, whose eight real countries sum exactly to the 104,990 register total).
         did: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  country_code\
           \ = 'DE'"
         came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
           claim, so state the answer now from these rows: 1 row(s): [{"how_many_customers": 9981}]  Give
           `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from the closed
           list. If these rows settle the question, do not decline.'
-      settled_on: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n\
-        \  country_code = 'DE'"
-      means: 'One row, one figure: 9,981 people are on Contoso''s customer register with Germany as their
-        own recorded home country — out of 104,990 customers on file across eight countries, counted one
-        per register row (step 1 confirmed customer_key is unique, so rows are people). WHAT IS NOT IN
-        IT: no date restriction, because a register row says where someone lives and not when they did
-        anything; no test of whether they ever bought, and 4,429 of these 9,981 never have; nothing about
-        German sales, orders, revenue or shops. This is a headcount of people on file in Germany, not
-        a measure of business done there.'
-      readings_taken:
-      - word: customers
-        took: 'people on the customer register: 9,981 in Germany'
-        could_also_mean: only German customers who have ever ordered — 5,552, over the full order-date
-          extent 2016-05-18 to 2025-12-31; that is 4,429 fewer, a 44% smaller figure, so if you meant
-          buyers rather than people on file the answer is 5,552
-        declaration: 'Customer [entity] is grounded on contoso_served.dim_customer keyed by customer_key,
-          and its definition states the distinction outright: ''HALF HAVE NEVER ORDERED: 52,189 of the
-          104,990 appear on a sale, so the register is not the buyer list.'' The word is fixed on the
-          register, so I applied it and did not ask'
-      - word: in Germany
-        took: the country on the customer's own register row, country_code = 'DE', which dim_country names
-          'Germany'
-        could_also_mean: 'where the buying happened: 3,987 distinct customers of any home country bought
-          at a shop trading in Germany. That set is not a subset of these 9,981 — it answers ''who shops
-          in Germany'' and omits every German customer who only ever bought online or abroad'
-        declaration: country.default.whose_country_is_asked_never_assumed — the `customer` path (customer__based_in__country)
-          surfaces as 'customer country' / 'where our customers are', which is what this question asks;
-          the `store` path is named and not taken
-      - word: billed or shipped to Germany
-        took: not measured — the bundle holds no such column
-        could_also_mean: 'a bill-to or ship-to country on an order, which does not exist here: v_contoso5_sales_line
-          carries only customer_key, store_key, product_key, currency and the two dates, and the only
-          countries declared anywhere are the customer''s own and the store''s trading country'
-        declaration: v_contoso5_sales_line column list; dim_customer.country_code is declared 'the only
-          column that can place an internet sale in a real country'
-      blocked_by: []
+      blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
   subtitle: ''
@@ -984,4 +1079,4 @@ v3_answer_step: '3'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: '''9981'''
-v3_seconds: 153.7
+v3_seconds: 210.1
