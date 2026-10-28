@@ -1,0 +1,1252 @@
+id: STORE-11
+captured_at: '2026-10-24T21:44:54+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: revenue
+  operation: aggregate
+  qdmr_simplified: "  1       FROM       stores             “stores”\n  2  ← 1  WHERE      closed = 'closed'\
+    \  “closed stores”\n  3  ← 2  AGGREGATE  sum of revenue     “the revenue of all closed stores”\n \
+    \ answer: step 3   confidence: 0.56\n  UNDERSTOOD AS: Total revenue added up across every store that\
+    \ is marked as closed — one single figure covering all closed stores together, over the whole span\
+    \ of revenue on record (no date window was named). Stores that are still open are excluded.\n  AMBIGUOUS\
+    \ 'closed' — ASKS: By \"closed\" do you mean stores that have shut down permanently, or stores that\
+    \ are simply not trading right now (temporarily closed / closed on a given day)?\n      could mean:\
+    \ stores that have permanently shut down\n      could mean: stores that are temporarily not trading\n\
+    \      could mean: stores that were closed on a specific date you have in mind\n      took: stores\
+    \ whose status is closed (shut down)\n  AMBIGUOUS 'the revenue' — ASKS: Over what period do you want\
+    \ the revenue — all revenue these stores ever recorded, only the revenue up to the day each one closed,\
+    \ or revenue in a particular year or period?\n      could mean: all revenue ever recorded for those\
+    \ stores\n      could mean: only revenue earned before each store closed\n      could mean: revenue\
+    \ in a specific recent period, e.g. last year\n      took: all revenue on record, with no date window\n\
+    \  AMBIGUOUS 'all closed stores' — ASKS: Do you want one combined total for all closed stores together,\
+    \ or one revenue figure per closed store?\n      could mean: a single total across all closed stores\n\
+    \      could mean: a breakdown with one row per closed store\n      took: a single combined total\n\
+    \  cannot_express: Splitting each store's revenue into the part earned before it closed and the part\
+    \ after, since no closing date or cut-off was named\n  OUTPUT SHAPE: one figure · one row(s) · carrying\
+    \ revenue"
+  understood_as_in_human_words: Total revenue added up across every store that is marked as closed — one
+    single figure covering all closed stores together, over the whole span of revenue on record (no date
+    window was named). Stores that are still open are excluded.
+  population_actually_answered: 'Every sales line in contoso_served.v_contoso5_sales_line whose store_key
+    points at one of the 16 contoso_served.dim_store rows with a non-null close_date — 2,725 lines over
+    6 distinct stores, order dates 2016-05-18 to 2019-11-02, the full extent on record. Exactly two restrictions:
+    close_date IS NOT NULL, because store.resolution.active_is_the_absent_close_date declares that to
+    BE the `closed` population and the question said "closed"; and net_amount as the money column, because
+    net_revenue.default.revenue_means_net. No channel predicate, no date window, no status filter inside
+    `closed`. Applying the declared `physical` default would change nothing, as the single online store
+    carries no close date.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: one figure
+    columns_the_answer_step_asks_for: []
+    figures_the_answer_step_computes:
+    - sum of revenue
+    answer_step: '3'
+    verb: aggregate
+    said: the revenue of all closed stores
+    stage1_confidence: 0.56
+  canonical_question: &id001
+    understood_as: Total revenue added up across every store that is marked as closed — one single figure
+      covering all closed stores together, over the whole span of revenue on record (no date window was
+      named). Stores that are still open are excluded.
+    steps:
+    - id: '1'
+      do: from
+      thing: stores
+      said: stores
+    - id: '2'
+      do: where
+      of: '1'
+      thing: closed
+      said: closed stores
+      op: '='
+      value: closed
+    - id: '3'
+      do: aggregate
+      of: '2'
+      said: the revenue of all closed stores
+      figures: &id002
+      - how: sum
+        of: revenue
+        said: revenue
+    answer: '3'
+    output_shape: &id004
+      shape: one figure
+      said: the revenue of all closed stores
+      rows: one
+      key_columns: &id006 []
+      figure_columns: &id007
+      - revenue
+    ambiguities:
+    - words: closed
+      question: By "closed" do you mean stores that have shut down permanently, or stores that are simply
+        not trading right now (temporarily closed / closed on a given day)?
+      readings:
+      - stores that have permanently shut down
+      - stores that are temporarily not trading
+      - stores that were closed on a specific date you have in mind
+      assumed: stores whose status is closed (shut down)
+    - words: the revenue
+      question: Over what period do you want the revenue — all revenue these stores ever recorded, only
+        the revenue up to the day each one closed, or revenue in a particular year or period?
+      readings:
+      - all revenue ever recorded for those stores
+      - only revenue earned before each store closed
+      - revenue in a specific recent period, e.g. last year
+      assumed: all revenue on record, with no date window
+    - words: all closed stores
+      question: Do you want one combined total for all closed stores together, or one revenue figure per
+        closed store?
+      readings:
+      - a single total across all closed stores
+      - a breakdown with one row per closed store
+      assumed: a single combined total
+    cannot_express: &id003
+    - Splitting each store's revenue into the part earned before it closed and the part after, since no
+      closing date or cut-off was named
+    confidence: 0.56
+  steps: 3
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: revenue
+      type: string
+    rows:
+    - - '3205452.33'
+  value: 3205452.33
+  raw: '3205452.33'
+  reading: one figure
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "stores → the premises grain — dim_store.store_key, 74 rows, which is what every sale's store_key\
+      \ points at, so revenue attributes to premises and not to sites\n        could also mean: the site\
+      \ grain — 67 distinct location_code, where a re-let place is one store; dim_store.store_key declares\
+      \ finer_than: location_code, and 6 sites carry more than one premises (one of them two closed-and-restructured\
+      \ ones), so the two grains differ"
+    ref: 'dim_store.store_key#finer_than: location_code, and store__placed_at edges join sales on store_key'
+  - kind: ''
+    text: "stores (which channel) → no channel split is needed on this step, and the fork is immaterial\
+      \ for the question: store.resolution.the_channel_is_the_location_sentinel declares default physical\
+      \ for a Store subject, but the single online row (location_code -1) has close_date NULL, so it is\
+      \ not closed under either reading — the 'closed' population is the same 16 physical premises whether\
+      \ the physical default is applied or both channels are covered\n        could also mean: physical\
+      \ shops only (location_code <> -1), which here selects the identical 16 closed rows"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default: physical)'
+  - kind: ''
+    text: "closed → the declared `closed` population — every store row with a close date, 16 premises,\
+      \ 9 annotated 'Closed' and 7 'Restructured'. Their net revenue over all time is 3,205,452.32\n \
+      \       could also mean: the narrower declared `shut` population — status_annotation = 'Closed'\
+      \ only, 9 premises, excluding the 7 that were rebuilt or replaced. That gives 2,870,369.00, which\
+      \ is 335,083.32 (10.5%) less. The declaration does not leave this open: `closed` is the population's\
+      \ own NAME and the question used that word, while the narrower set surfaces as 'shut down', 'shut\
+      \ for good', 'closed permanently', 'closed and not replaced' — none of which was said"
+    ref: store.resolution.active_is_the_absent_close_date (populations closed / shut / restructured; a
+      question using either trading-state column displaces the default `active`)
+  - kind: ''
+    text: "closed → permanently stopped trading — the only sense this bundle holds, carried by close_date\
+      \ and status_annotation\n        could also mean: temporarily not trading, or not trading on a particular\
+      \ day. The bundle cannot express either: there is no opening-hours, suspension or day-level trading-state\
+      \ fact anywhere in it — only a single close date per premises and a source annotation for why"
+    ref: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+  - kind: ''
+    text: "the revenue (over what period) → all revenue on record, no date window — and the fork is measured\
+      \ immaterial: of the 2,725 sales lines belonging to closed stores, ZERO are dated after their own\
+      \ store's close date, so 'all revenue ever' and 'only revenue earned before it closed' are the same\
+      \ 3,205,452.32\n        could also mean: revenue only up to each store's closing day — identical\
+      \ figure, 3,205,452.32"
+    ref: order.default.an_unscoped_question_covers_all_time
+  - kind: ''
+    text: "revenue → net — `net_amount`, after discount, which is what the figures quoted on this step\
+      \ are\n        could also mean: gross, before discount (`gross_amount`), which is a larger number;\
+      \ this step does not yet claim either as the answer"
+    ref: net_revenue.default.revenue_means_net
+  - kind: ''
+    text: "closed → the declared `closed` population — all 16 premises carrying a close date, 9 annotated\
+      \ 'Closed' and 7 'Restructured' — giving 3,205,452.33\n        could also mean: the narrower declared\
+      \ `shut` population, status_annotation = 'Closed' only, 9 premises: 2,870,369.00, which is 335,083.32\
+      \ less, 10.5% of the answer. Only one of the 7 restructured premises ever sold anything, so this\
+      \ choice moves exactly one store and leaves the other five contributors untouched. Not asked, because\
+      \ the declaration fixes it: `closed` is that population's own NAME, while the narrower set surfaces\
+      \ as 'shut down', 'shut for good', 'closed permanently', 'closed and not replaced' — none of which\
+      \ was said"
+    ref: store.resolution.active_is_the_absent_close_date
+  - kind: ''
+    text: "revenue → NET, after discount — 3,205,452.33\n        could also mean: gross, before discount\
+      \ — 3,405,539.83; the 200,087.50 gap is the discount these shops gave away"
+    ref: net_revenue.default.revenue_means_net
+  - kind: ''
+    text: "the revenue (period) → all revenue on record, no window — 2016-05-18 to 2019-11-02 for these\
+      \ stores\n        could also mean: only revenue earned up to each store's own closing day. MEASURED\
+      \ IMMATERIAL: of the 2,725 lines, zero are dated after their store's close date, so both readings\
+      \ return 3,205,452.33 exactly. The decomposition called this split inexpressible; it turns out not\
+      \ to matter"
+    ref: order.default.an_unscoped_question_covers_all_time; order.default.period_is_order_date (order
+      date, not delivery)
+  - kind: ''
+    text: "closed (sense) → permanently stopped trading, the only sense this bundle holds\n        could\
+      \ also mean: temporarily not trading, or not trading on a named day — which the bundle cannot express\
+      \ at all: there is no suspension, opening-hours or day-level trading-state fact, only one close\
+      \ date per premises and the source's reason"
+    ref: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+  - kind: ''
+    text: "all closed stores → a single combined total, as the asked shape\n        could also mean: one\
+      \ row per closed store — 6 rows with money and 10 zeroes, which the single figure hides"
+    ref: declaration://none
+  - kind: ''
+    text: "stores → premises grain (store_key), what every sale points at\n        could also mean: site\
+      \ grain (location_code), where a re-let place is one store; the total is identical, only the count\
+      \ of things behind it changes — 15 sites behind 16 premises"
+    ref: 'dim_store.store_key#finer_than: location_code'
+  - kind: ''
+    text: "stores (channel) → no channel predicate — physical-only follows from the closed filter, not\
+      \ from a choice\n        could also mean: an explicit physical reading, which selects the same rows\
+      \ and the same figure"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default: physical)'
+  concepts: []
+  rules:
+  - id: 'dim_store.store_key#finer_than: location_code'
+    why: '''stores'' = the premises grain — dim_store.store_key, 74 rows, which is what every sale''s
+      store_key points at, so revenue attributes to premises and not to sites'
+  - id: and store__placed_at edges join sales on store_key
+    why: '''stores'' = the premises grain — dim_store.store_key, 74 rows, which is what every sale''s
+      store_key points at, so revenue attributes to premises and not to sites'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject'
+    why: '''stores (which channel)'' = no channel split is needed on this step, and the fork is immaterial
+      for the question: store.resolution.the_channel_is_the_location_sentinel declares default physical
+      for a Store subject, but the single online row (location_code -1) has close_date NULL, so it is
+      not closed under either reading — the ''closed'' population is the same 16 physical premises whether
+      the physical default is applied or both channels are covered'
+  - id: 'default: physical)'
+    why: '''stores (which channel)'' = no channel split is needed on this step, and the fork is immaterial
+      for the question: store.resolution.the_channel_is_the_location_sentinel declares default physical
+      for a Store subject, but the single online row (location_code -1) has close_date NULL, so it is
+      not closed under either reading — the ''closed'' population is the same 16 physical premises whether
+      the physical default is applied or both channels are covered'
+  - id: store.resolution.active_is_the_absent_close_date (populations closed / shut / restructured
+    why: '''closed'' = the declared `closed` population — every store row with a close date, 16 premises,
+      9 annotated ''Closed'' and 7 ''Restructured''. Their net revenue over all time is 3,205,452.32'
+  - id: a question using either trading-state column displaces the default `active`)
+    why: '''closed'' = the declared `closed` population — every store row with a close date, 16 premises,
+      9 annotated ''Closed'' and 7 ''Restructured''. Their net revenue over all time is 3,205,452.32'
+  - id: dim_store.close_date — 'the day the store closed
+    why: '''closed'' = permanently stopped trading — the only sense this bundle holds, carried by close_date
+      and status_annotation'
+  - id: or null if it is still trading'
+    why: '''closed'' = permanently stopped trading — the only sense this bundle holds, carried by close_date
+      and status_annotation'
+  - id: order.default.an_unscoped_question_covers_all_time
+    why: '''the revenue (over what period)'' = all revenue on record, no date window — and the fork is
+      measured immaterial: of the 2,725 sales lines belonging to closed stores, ZERO are dated after their
+      own store''s close date, so ''all revenue ever'' and ''only revenue earned before it closed'' are
+      the same 3,205,452.32'
+  - id: net_revenue.default.revenue_means_net
+    why: '''revenue'' = net — `net_amount`, after discount, which is what the figures quoted on this step
+      are'
+  - id: store.resolution.active_is_the_absent_close_date
+    why: '''closed'' = the declared `closed` population — all 16 premises carrying a close date, 9 annotated
+      ''Closed'' and 7 ''Restructured'' — giving 3,205,452.33'
+  - id: order.default.period_is_order_date (order date
+    why: '''the revenue (period)'' = all revenue on record, no window — 2016-05-18 to 2019-11-02 for these
+      stores'
+  - id: not delivery)
+    why: '''the revenue (period)'' = all revenue on record, no window — 2016-05-18 to 2019-11-02 for these
+      stores'
+  edges: []
+sql:
+- "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line AS l\n\
+  JOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date IS NULL"
+- "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+  \  status_annotation\nFROM contoso_served.dim_store"
+- "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+  \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  NOT close_date IS NULL"
+answer_sql: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS l\nJOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date\
+  \ IS NULL"
+sql_valid: true
+result:
+  status: ok
+  rows: 1
+  cols: &id008
+  - revenue
+  sample_rows:
+  - - '3205452.33'
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id001
+  canonical_question_simplified: "  1       FROM       stores             “stores”\n  2  ← 1  WHERE  \
+    \    closed = 'closed'  “closed stores”\n  3  ← 2  AGGREGATE  sum of revenue     “the revenue of all\
+    \ closed stores”\n  answer: step 3   confidence: 0.56\n  UNDERSTOOD AS: Total revenue added up across\
+    \ every store that is marked as closed — one single figure covering all closed stores together, over\
+    \ the whole span of revenue on record (no date window was named). Stores that are still open are excluded.\n\
+    \  AMBIGUOUS 'closed' — ASKS: By \"closed\" do you mean stores that have shut down permanently, or\
+    \ stores that are simply not trading right now (temporarily closed / closed on a given day)?\n   \
+    \   could mean: stores that have permanently shut down\n      could mean: stores that are temporarily\
+    \ not trading\n      could mean: stores that were closed on a specific date you have in mind\n   \
+    \   took: stores whose status is closed (shut down)\n  AMBIGUOUS 'the revenue' — ASKS: Over what period\
+    \ do you want the revenue — all revenue these stores ever recorded, only the revenue up to the day\
+    \ each one closed, or revenue in a particular year or period?\n      could mean: all revenue ever\
+    \ recorded for those stores\n      could mean: only revenue earned before each store closed\n    \
+    \  could mean: revenue in a specific recent period, e.g. last year\n      took: all revenue on record,\
+    \ with no date window\n  AMBIGUOUS 'all closed stores' — ASKS: Do you want one combined total for\
+    \ all closed stores together, or one revenue figure per closed store?\n      could mean: a single\
+    \ total across all closed stores\n      could mean: a breakdown with one row per closed store\n  \
+    \    took: a single combined total\n  cannot_express: Splitting each store's revenue into the part\
+    \ earned before it closed and the part after, since no closing date or cut-off was named\n  OUTPUT\
+    \ SHAPE: one figure · one row(s) · carrying revenue"
+  understood_as: Total revenue added up across every store that is marked as closed — one single figure
+    covering all closed stores together, over the whole span of revenue on record (no date window was
+    named). Stores that are still open are excluded.
+  ambiguities_it_saw:
+  - words: closed
+    asks: By "closed" do you mean stores that have shut down permanently, or stores that are simply not
+      trading right now (temporarily closed / closed on a given day)?
+    readings:
+    - stores that have permanently shut down
+    - stores that are temporarily not trading
+    - stores that were closed on a specific date you have in mind
+    took: stores whose status is closed (shut down)
+  - words: the revenue
+    asks: Over what period do you want the revenue — all revenue these stores ever recorded, only the
+      revenue up to the day each one closed, or revenue in a particular year or period?
+    readings:
+    - all revenue ever recorded for those stores
+    - only revenue earned before each store closed
+    - revenue in a specific recent period, e.g. last year
+    took: all revenue on record, with no date window
+  - words: all closed stores
+    asks: Do you want one combined total for all closed stores together, or one revenue figure per closed
+      store?
+    readings:
+    - a single total across all closed stores
+    - a breakdown with one row per closed store
+    took: a single combined total
+  presentation:
+    claimed_answer_is: one figure
+    answer_step: '3'
+    answer_step_asks:
+      do: aggregate
+      of: '2'
+      said: the revenue of all closed stores
+      figures: *id002
+    confidence_stage1: 0.56
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+      \  status_annotation\nFROM contoso_served.dim_store"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+      \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  NOT close_date IS NULL"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date\
+      \ IS NULL"
+    params: {}
+  what_it_calculated: 'The one returned value, 3,205,452.33 USD: every dollar Contoso actually charged
+    customers, after discount, on all 2,725 sales lines ever rung up at a shop that has since closed —
+    1,140 orders placed between 2016-05-18 and 2019-11-02, which is the whole span these shops traded
+    in, with no date window imposed. Sixteen premises qualify as closed and 6 of them produced this money;
+    the other 10 shut between 2015-05-05 and 2016-07-07, at or before the sales record starts, so they
+    belong to the population and contribute nothing. WHAT IS NOT IN THE FIGURE: nothing from the 57 shops
+    still trading, and nothing from the web shop — the online row has no close date, so it is not a closed
+    store, which makes this physical-shop money only and not comparable with an all-channel revenue total.
+    It is net: the same sales at list price come to 3,405,539.83, the 200,087.50 difference being discount.
+    And it is attributed to premises, the grain sales are recorded against, so nothing is double-counted
+    at the one site that was re-let and closed twice.'
+  rows_returned: &id005
+  - revenue: '3205452.33'
+  synthesis:
+    claimed: '3205452.33'
+    shape: one figure
+    answered_population: 'Every sales line in contoso_served.v_contoso5_sales_line whose store_key points
+      at one of the 16 contoso_served.dim_store rows with a non-null close_date — 2,725 lines over 6 distinct
+      stores, order dates 2016-05-18 to 2019-11-02, the full extent on record. Exactly two restrictions:
+      close_date IS NOT NULL, because store.resolution.active_is_the_absent_close_date declares that to
+      BE the `closed` population and the question said "closed"; and net_amount as the money column, because
+      net_revenue.default.revenue_means_net. No channel predicate, no date window, no status filter inside
+      `closed`. Applying the declared `physical` default would change nothing, as the single online store
+      carries no close date.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: stores
+    turns:
+    - why: Step 1 is just the starting relation — so look at what the store rows actually hold on the
+        two columns that decide "closed", and on the channel sentinel, before any filter is written.
+      did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN ''online''
+        ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''no_close_date'' ELSE ''has_close_date''
+        END AS close_state, COALESCE(status_annotation, ''<null>'') AS status, COUNT(*) AS store_rows,
+        COUNT(DISTINCT location_code) AS sites FROM contoso_served.dim_store GROUP BY 1, 2, 3 ORDER BY
+        1, 2, 3'
+      came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'', ''Restructured''   AND
+        ALSO: 4 row(s): [{"channel": "online", "close_state": "no_close_date", "status": "<null>", "store_rows":
+        1, "sites": 1}, {"channel": "physical", "close_state": "has_close_date", "status": "Closed", "store_rows":
+        9, "sites": 9}, {"channel": "physical", "close_state": "has_close_date", "status": "Restructured",
+        "store_rows": 7, "sites": 6}, {"channel": "physical", "close_state": "no_close_date", "status":
+        "", "store_rows": 57, "sites": 57}]'
+    settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+      \  close_date,\n  status_annotation\nFROM contoso_served.dim_store"
+    means: 'Every premises the store dimension records — 74 rows, one per shop per trading period, over
+      67 distinct sites. Of these, 57 are physical shops with no close date (still trading), 16 are physical
+      premises carrying a close date (9 annotated ''Closed'', 7 ''Restructured'', those 7 standing on
+      only 6 sites because one site was re-let twice), and 1 is the online sentinel (location_code -1),
+      which carries no close date and a null status. Nothing is filtered yet and nothing is measured yet:
+      this is the population the "closed" filter will cut and the revenue sum will be taken over, and
+      it is at PREMISES grain, which is the grain every sale is recorded against via store_key.'
+    readings_taken:
+    - word: stores
+      took: the premises grain — dim_store.store_key, 74 rows, which is what every sale's store_key points
+        at, so revenue attributes to premises and not to sites
+      could_also_mean: 'the site grain — 67 distinct location_code, where a re-let place is one store;
+        dim_store.store_key declares finer_than: location_code, and 6 sites carry more than one premises
+        (one of them two closed-and-restructured ones), so the two grains differ'
+      declaration: 'dim_store.store_key#finer_than: location_code, and store__placed_at edges join sales
+        on store_key'
+    - word: stores (which channel)
+      took: 'no channel split is needed on this step, and the fork is immaterial for the question: store.resolution.the_channel_is_the_location_sentinel
+        declares default physical for a Store subject, but the single online row (location_code -1) has
+        close_date NULL, so it is not closed under either reading — the ''closed'' population is the same
+        16 physical premises whether the physical default is applied or both channels are covered'
+      could_also_mean: physical shops only (location_code <> -1), which here selects the identical 16
+        closed rows
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical)'
+    blocked_by: []
+  - step: '2'
+    step_asks: closed stores
+    turns:
+    - why: Name the 16 closed premises one by one and check each actually carries sales lines, so step
+        3's total is known to come from real rows rather than a filter that quietly matched something
+        with no revenue — and so the shut/restructured split inside "closed" is visible before it is summed.
+      did: "SELECT\n  s.store_key,\n  s.location_code,\n  s.store_name,\n  s.close_date,\n  s.status_annotation,\n\
+        \  COUNT(l.order_key) AS sales_lines,\n  MIN(l.order_date) AS first_order,\n  MAX(l.order_date)\
+        \ AS last_order\nFROM contoso_served.dim_store AS s\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+        \ AS l\n  ON l.store_key = s.store_key\nWHERE\n  NOT s.close_date IS NULL\nGROUP BY\n  1,\n  2,\n\
+        \  3,\n  4,\n  5\nORDER BY\n  s.status_annotation,\n  s.store_key"
+      came_back: '16 row(s) (first 8 of 16): [{"store_key": 20, "location_code": 2, "store_name": "Contoso
+        Store Northern Territory", "close_date": "2016-07-07", "status_annotation": "Closed", "sales_lines":
+        0, "first_order": null, "last_order": null}, {"store_key": 110, "location_code": 11, "store_name":
+        "Contoso Store Yukon", "close_date": "2015-05-05", "status_annotation": "Closed", "sales_lines":
+        0, "first_order": null, "last_order": null}, {"store_key": 200, "location_code": 20, "store_name":
+        "Contoso Store Brandenburg", "close_date": "2019-08-08", "status_annotation": "Closed", "sales_lines":
+        344, "first_order": "2016-05-27", "last_order": "2019-08-08"}, {"store_key": 280, "location_code":
+        28, "store_name": "Contoso Store Caltanissetta", "close_date": "2017-08-03", "status_annotation":
+        "Closed", "sales_lines": 115, "first_order": "2016-05-24", "last_order": "2017-07-29"}, {"store_key":
+        350, "location_code": 35, "store_name": "Contoso Store Zeeland", "close_date": "2015-07-06", "status_annotation":
+        "Closed", "sales_lines": 0, "first_order": null, "last_order": null}, {"store_key": 410, "location_code":
+        41, "store_name": "Contoso Store Fermanagh", "close_date": "2018-09-09", "status_annotation":'
+    - why: 'Four of the first eight closed shops shut before the sales record even begins, so price both
+        open forks in one query: the shut/restructured split inside "closed", and whether any sale at
+        all is recorded AFTER a store''s close date — if none is, "all revenue ever" and "revenue up to
+        closing" are the same figure and the second ambiguity dissolves.'
+      did: "SELECT\n  s.status_annotation,\n  COUNT(DISTINCT s.store_key) AS closed_stores,\n  COUNT(DISTINCT\
+        \ CASE WHEN NOT l.order_key IS NULL THEN s.store_key END) AS stores_with_sales,\n  COUNT(l.order_key)\
+        \ AS sales_lines,\n  SUM(CASE WHEN l.order_date > s.close_date THEN 1 ELSE 0 END) AS lines_after_close,\n\
+        \  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n  ROUND(SUM(CASE WHEN l.order_date <= s.close_date\
+        \ THEN l.net_amount ELSE 0 END), 2) AS net_revenue_up_to_close\nFROM contoso_served.dim_store\
+        \ AS s\nLEFT JOIN contoso_served.v_contoso5_sales_line AS l\n  ON l.store_key = s.store_key\n\
+        WHERE\n  NOT s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  1"
+      came_back: '2 row(s): [{"status_annotation": "Closed", "closed_stores": 9, "stores_with_sales":
+        5, "sales_lines": 2453, "lines_after_close": 0, "net_revenue": "2870369.00", "net_revenue_up_to_close":
+        "2870369.00"}, {"status_annotation": "Restructured", "closed_stores": 7, "stores_with_sales":
+        1, "sales_lines": 272, "lines_after_close": 0, "net_revenue": "335083.32", "net_revenue_up_to_close":
+        "335083.32"}]'
+    settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+      \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  NOT close_date IS NULL"
+    means: 'The closed premises themselves: 16 store rows, one per shop that has a closing date on record,
+      standing on 15 distinct sites (one site was re-let and closed twice). Nine were annotated ''Closed''
+      by the source and seven ''Restructured''. Only 6 of the 16 ever rang up a sale — the other 10 shut
+      between 2015-05-05 and 2016-07-07, at or before the start of the sales record on 2016-05-18, so
+      they carry no revenue at all and will contribute nothing but their existence to the total. No channel
+      predicate was applied and none was needed: the one online row carries no close date, so it cannot
+      enter this set.'
+    readings_taken:
+    - word: closed
+      took: the declared `closed` population — every store row with a close date, 16 premises, 9 annotated
+        'Closed' and 7 'Restructured'. Their net revenue over all time is 3,205,452.32
+      could_also_mean: 'the narrower declared `shut` population — status_annotation = ''Closed'' only,
+        9 premises, excluding the 7 that were rebuilt or replaced. That gives 2,870,369.00, which is 335,083.32
+        (10.5%) less. The declaration does not leave this open: `closed` is the population''s own NAME
+        and the question used that word, while the narrower set surfaces as ''shut down'', ''shut for
+        good'', ''closed permanently'', ''closed and not replaced'' — none of which was said'
+      declaration: store.resolution.active_is_the_absent_close_date (populations closed / shut / restructured;
+        a question using either trading-state column displaces the default `active`)
+    - word: closed
+      took: permanently stopped trading — the only sense this bundle holds, carried by close_date and
+        status_annotation
+      could_also_mean: 'temporarily not trading, or not trading on a particular day. The bundle cannot
+        express either: there is no opening-hours, suspension or day-level trading-state fact anywhere
+        in it — only a single close date per premises and a source annotation for why'
+      declaration: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+    - word: the revenue (over what period)
+      took: 'all revenue on record, no date window — and the fork is measured immaterial: of the 2,725
+        sales lines belonging to closed stores, ZERO are dated after their own store''s close date, so
+        ''all revenue ever'' and ''only revenue earned before it closed'' are the same 3,205,452.32'
+      could_also_mean: revenue only up to each store's closing day — identical figure, 3,205,452.32
+      declaration: order.default.an_unscoped_question_covers_all_time
+    - word: revenue
+      took: net — `net_amount`, after discount, which is what the figures quoted on this step are
+      could_also_mean: gross, before discount (`gross_amount`), which is a larger number; this step does
+        not yet claim either as the answer
+      declaration: net_revenue.default.revenue_means_net
+    blocked_by: []
+  - step: '3'
+    step_asks: the revenue of all closed stores
+    turns:
+    - why: 'Read the answer''s own rows before claiming it: the single net total over the 16 closed stores''
+        sales, with the date extent it actually covers and the gross figure beside it so the net/gross
+        choice is visible rather than asserted.'
+      did: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n  ROUND(SUM(l.gross_amount), 2) AS\
+        \ gross_revenue,\n  COUNT(*) AS sales_lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT\
+        \ l.store_key) AS stores_contributing,\n  MIN(l.order_date) AS first_order,\n  MAX(l.order_date)\
+        \ AS last_order\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store\
+        \ AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date IS NULL"
+      came_back: '1 row(s): [{"net_revenue": "3205452.33", "gross_revenue": "3405539.83", "sales_lines":
+        2725, "orders": 1140, "stores_contributing": 6, "first_order": "2016-05-18", "last_order": "2019-11-02"}]'
+    - why: 'Claim the figure the rows actually returned: 3,205,452.33 net over every sale ever rung up
+        at the 16 closed premises, with the two readings that could have moved it priced and disclosed
+        rather than asked about, since a declaration names each one.'
+      did: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date\
+        \ IS NULL"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 1 row(s): [{"revenue": "3205452.33"}]  Give `claimed_answer`
+        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+        rows settle the question, do not decline.'
+    settled_on: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date\
+      \ IS NULL"
+    means: 'The one returned value, 3,205,452.33 USD: every dollar Contoso actually charged customers,
+      after discount, on all 2,725 sales lines ever rung up at a shop that has since closed — 1,140 orders
+      placed between 2016-05-18 and 2019-11-02, which is the whole span these shops traded in, with no
+      date window imposed. Sixteen premises qualify as closed and 6 of them produced this money; the other
+      10 shut between 2015-05-05 and 2016-07-07, at or before the sales record starts, so they belong
+      to the population and contribute nothing. WHAT IS NOT IN THE FIGURE: nothing from the 57 shops still
+      trading, and nothing from the web shop — the online row has no close date, so it is not a closed
+      store, which makes this physical-shop money only and not comparable with an all-channel revenue
+      total. It is net: the same sales at list price come to 3,405,539.83, the 200,087.50 difference being
+      discount. And it is attributed to premises, the grain sales are recorded against, so nothing is
+      double-counted at the one site that was re-let and closed twice.'
+    readings_taken:
+    - word: closed
+      took: the declared `closed` population — all 16 premises carrying a close date, 9 annotated 'Closed'
+        and 7 'Restructured' — giving 3,205,452.33
+      could_also_mean: 'the narrower declared `shut` population, status_annotation = ''Closed'' only,
+        9 premises: 2,870,369.00, which is 335,083.32 less, 10.5% of the answer. Only one of the 7 restructured
+        premises ever sold anything, so this choice moves exactly one store and leaves the other five
+        contributors untouched. Not asked, because the declaration fixes it: `closed` is that population''s
+        own NAME, while the narrower set surfaces as ''shut down'', ''shut for good'', ''closed permanently'',
+        ''closed and not replaced'' — none of which was said'
+      declaration: store.resolution.active_is_the_absent_close_date
+    - word: revenue
+      took: NET, after discount — 3,205,452.33
+      could_also_mean: gross, before discount — 3,405,539.83; the 200,087.50 gap is the discount these
+        shops gave away
+      declaration: net_revenue.default.revenue_means_net
+    - word: the revenue (period)
+      took: all revenue on record, no window — 2016-05-18 to 2019-11-02 for these stores
+      could_also_mean: 'only revenue earned up to each store''s own closing day. MEASURED IMMATERIAL:
+        of the 2,725 lines, zero are dated after their store''s close date, so both readings return 3,205,452.33
+        exactly. The decomposition called this split inexpressible; it turns out not to matter'
+      declaration: order.default.an_unscoped_question_covers_all_time; order.default.period_is_order_date
+        (order date, not delivery)
+    - word: closed (sense)
+      took: permanently stopped trading, the only sense this bundle holds
+      could_also_mean: 'temporarily not trading, or not trading on a named day — which the bundle cannot
+        express at all: there is no suspension, opening-hours or day-level trading-state fact, only one
+        close date per premises and the source''s reason'
+      declaration: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+    - word: all closed stores
+      took: a single combined total, as the asked shape
+      could_also_mean: one row per closed store — 6 rows with money and 10 zeroes, which the single figure
+        hides
+      declaration: null
+    - word: stores
+      took: premises grain (store_key), what every sale points at
+      could_also_mean: site grain (location_code), where a re-let place is one store; the total is identical,
+        only the count of things behind it changes — 15 sites behind 16 premises
+      declaration: 'dim_store.store_key#finer_than: location_code'
+    - word: stores (channel)
+      took: no channel predicate — physical-only follows from the closed filter, not from a choice
+      could_also_mean: an explicit physical reading, which selects the same rows and the same figure
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical)'
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: Total revenue added up across every store that is marked as closed — one single figure covering
+      all closed stores together, over the whole span of revenue on record (no date window was named).
+      Stores that are still open are excluded.
+    population: 'Every sales line in contoso_served.v_contoso5_sales_line whose store_key points at one
+      of the 16 contoso_served.dim_store rows with a non-null close_date — 2,725 lines over 6 distinct
+      stores, order dates 2016-05-18 to 2019-11-02, the full extent on record. Exactly two restrictions:
+      close_date IS NOT NULL, because store.resolution.active_is_the_absent_close_date declares that to
+      BE the `closed` population and the question said "closed"; and net_amount as the money column, because
+      net_revenue.default.revenue_means_net. No channel predicate, no date window, no status filter inside
+      `closed`. Applying the declared `physical` default would change nothing, as the single online store
+      carries no close date.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       stores             “stores”\n  2  ← 1  WHERE      closed = 'closed'\
+      \  “closed stores”\n  3  ← 2  AGGREGATE  sum of revenue     “the revenue of all closed stores”\n\
+      \  answer: step 3   confidence: 0.56"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: closed
+      asks: By "closed" do you mean stores that have shut down permanently, or stores that are simply
+        not trading right now (temporarily closed / closed on a given day)?
+      readings:
+      - stores that have permanently shut down
+      - stores that are temporarily not trading
+      - stores that were closed on a specific date you have in mind
+      took: stores whose status is closed (shut down)
+    - words: the revenue
+      asks: Over what period do you want the revenue — all revenue these stores ever recorded, only the
+        revenue up to the day each one closed, or revenue in a particular year or period?
+      readings:
+      - all revenue ever recorded for those stores
+      - only revenue earned before each store closed
+      - revenue in a specific recent period, e.g. last year
+      took: all revenue on record, with no date window
+    - words: all closed stores
+      asks: Do you want one combined total for all closed stores together, or one revenue figure per closed
+        store?
+      readings:
+      - a single total across all closed stores
+      - a breakdown with one row per closed store
+      took: a single combined total
+- stage: cannot_express
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: *id003
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id004
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.56 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id001
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: stores
+      took: the premises grain — dim_store.store_key, 74 rows, which is what every sale's store_key points
+        at, so revenue attributes to premises and not to sites
+      could_also_mean: 'the site grain — 67 distinct location_code, where a re-let place is one store;
+        dim_store.store_key declares finer_than: location_code, and 6 sites carry more than one premises
+        (one of them two closed-and-restructured ones), so the two grains differ'
+      declaration: 'dim_store.store_key#finer_than: location_code, and store__placed_at edges join sales
+        on store_key'
+    - word: stores (which channel)
+      took: 'no channel split is needed on this step, and the fork is immaterial for the question: store.resolution.the_channel_is_the_location_sentinel
+        declares default physical for a Store subject, but the single online row (location_code -1) has
+        close_date NULL, so it is not closed under either reading — the ''closed'' population is the same
+        16 physical premises whether the physical default is applied or both channels are covered'
+      could_also_mean: physical shops only (location_code <> -1), which here selects the identical 16
+        closed rows
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical)'
+    - word: closed
+      took: the declared `closed` population — every store row with a close date, 16 premises, 9 annotated
+        'Closed' and 7 'Restructured'. Their net revenue over all time is 3,205,452.32
+      could_also_mean: 'the narrower declared `shut` population — status_annotation = ''Closed'' only,
+        9 premises, excluding the 7 that were rebuilt or replaced. That gives 2,870,369.00, which is 335,083.32
+        (10.5%) less. The declaration does not leave this open: `closed` is the population''s own NAME
+        and the question used that word, while the narrower set surfaces as ''shut down'', ''shut for
+        good'', ''closed permanently'', ''closed and not replaced'' — none of which was said'
+      declaration: store.resolution.active_is_the_absent_close_date (populations closed / shut / restructured;
+        a question using either trading-state column displaces the default `active`)
+    - word: closed
+      took: permanently stopped trading — the only sense this bundle holds, carried by close_date and
+        status_annotation
+      could_also_mean: 'temporarily not trading, or not trading on a particular day. The bundle cannot
+        express either: there is no opening-hours, suspension or day-level trading-state fact anywhere
+        in it — only a single close date per premises and a source annotation for why'
+      declaration: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+    - word: the revenue (over what period)
+      took: 'all revenue on record, no date window — and the fork is measured immaterial: of the 2,725
+        sales lines belonging to closed stores, ZERO are dated after their own store''s close date, so
+        ''all revenue ever'' and ''only revenue earned before it closed'' are the same 3,205,452.32'
+      could_also_mean: revenue only up to each store's closing day — identical figure, 3,205,452.32
+      declaration: order.default.an_unscoped_question_covers_all_time
+    - word: revenue
+      took: net — `net_amount`, after discount, which is what the figures quoted on this step are
+      could_also_mean: gross, before discount (`gross_amount`), which is a larger number; this step does
+        not yet claim either as the answer
+      declaration: net_revenue.default.revenue_means_net
+    - word: closed
+      took: the declared `closed` population — all 16 premises carrying a close date, 9 annotated 'Closed'
+        and 7 'Restructured' — giving 3,205,452.33
+      could_also_mean: 'the narrower declared `shut` population, status_annotation = ''Closed'' only,
+        9 premises: 2,870,369.00, which is 335,083.32 less, 10.5% of the answer. Only one of the 7 restructured
+        premises ever sold anything, so this choice moves exactly one store and leaves the other five
+        contributors untouched. Not asked, because the declaration fixes it: `closed` is that population''s
+        own NAME, while the narrower set surfaces as ''shut down'', ''shut for good'', ''closed permanently'',
+        ''closed and not replaced'' — none of which was said'
+      declaration: store.resolution.active_is_the_absent_close_date
+    - word: revenue
+      took: NET, after discount — 3,205,452.33
+      could_also_mean: gross, before discount — 3,405,539.83; the 200,087.50 gap is the discount these
+        shops gave away
+      declaration: net_revenue.default.revenue_means_net
+    - word: the revenue (period)
+      took: all revenue on record, no window — 2016-05-18 to 2019-11-02 for these stores
+      could_also_mean: 'only revenue earned up to each store''s own closing day. MEASURED IMMATERIAL:
+        of the 2,725 lines, zero are dated after their store''s close date, so both readings return 3,205,452.33
+        exactly. The decomposition called this split inexpressible; it turns out not to matter'
+      declaration: order.default.an_unscoped_question_covers_all_time; order.default.period_is_order_date
+        (order date, not delivery)
+    - word: closed (sense)
+      took: permanently stopped trading, the only sense this bundle holds
+      could_also_mean: 'temporarily not trading, or not trading on a named day — which the bundle cannot
+        express at all: there is no suspension, opening-hours or day-level trading-state fact, only one
+        close date per premises and the source''s reason'
+      declaration: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+    - word: all closed stores
+      took: a single combined total, as the asked shape
+      could_also_mean: one row per closed store — 6 rows with money and 10 zeroes, which the single figure
+        hides
+      declaration: null
+    - word: stores
+      took: premises grain (store_key), what every sale points at
+      could_also_mean: site grain (location_code), where a re-let place is one store; the total is identical,
+        only the count of things behind it changes — 15 sites behind 16 premises
+      declaration: 'dim_store.store_key#finer_than: location_code'
+    - word: stores (channel)
+      took: no channel predicate — physical-only follows from the closed filter, not from a choice
+      could_also_mean: an explicit physical reading, which selects the same rows and the same figure
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical)'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+        \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\n\n-- step 2\nSELECT\n  store_key,\n\
+        \  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n  status_annotation\n\
+        FROM contoso_served.dim_store\nWHERE\n  NOT close_date IS NULL\n\n-- step 3\nSELECT\n  ROUND(SUM(l.net_amount),\
+        \ 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store\
+        \ AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date IS NULL"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id005
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'The one returned value, 3,205,452.33 USD: every dollar Contoso actually charged
+      customers, after discount, on all 2,725 sales lines ever rung up at a shop that has since closed
+      — 1,140 orders placed between 2016-05-18 and 2019-11-02, which is the whole span these shops traded
+      in, with no date window imposed. Sixteen premises qualify as closed and 6 of them produced this
+      money; the other 10 shut between 2015-05-05 and 2016-07-07, at or before the sales record starts,
+      so they belong to the population and contribute nothing. WHAT IS NOT IN THE FIGURE: nothing from
+      the 57 shops still trading, and nothing from the web shop — the online row has no close date, so
+      it is not a closed store, which makes this physical-shop money only and not comparable with an all-channel
+      revenue total. It is net: the same sales at list price come to 3,405,539.83, the 200,087.50 difference
+      being discount. And it is attributed to premises, the grain sales are recorded against, so nothing
+      is double-counted at the one site that was re-let and closed twice.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'one figure' · graded EXACT
+  detail:
+    claimed_answer: '3205452.33'
+    walk_bucket: EXACT
+    walk_why: '''3205452.33'' within rounding of 3205452.32521 (differs by 0.00479)'
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: What is the revenue of all closed stores?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: Total revenue added up across every store that is marked as closed — one single figure covering
+      all closed stores together, over the whole span of revenue on record (no date window was named).
+      Stores that are still open are excluded.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       stores             “stores”'
+    - '  2  ← 1  WHERE      closed = ''closed''  “closed stores”'
+    - '  3  ← 2  AGGREGATE  sum of revenue     “the revenue of all closed stores”'
+    - '  answer: step 3   confidence: 0.56'
+    - '  UNDERSTOOD AS: Total revenue added up across every store that is marked as closed — one single
+      figure covering all closed stores together, over the whole span of revenue on record (no date window
+      was named). Stores that are still open are excluded.'
+    - '  AMBIGUOUS ''closed'' — ASKS: By "closed" do you mean stores that have shut down permanently,
+      or stores that are simply not trading right now (temporarily closed / closed on a given day)?'
+    - '      could mean: stores that have permanently shut down'
+    - '      could mean: stores that are temporarily not trading'
+    - '      could mean: stores that were closed on a specific date you have in mind'
+    - '      took: stores whose status is closed (shut down)'
+    - '  AMBIGUOUS ''the revenue'' — ASKS: Over what period do you want the revenue — all revenue these
+      stores ever recorded, only the revenue up to the day each one closed, or revenue in a particular
+      year or period?'
+    - '      could mean: all revenue ever recorded for those stores'
+    - '      could mean: only revenue earned before each store closed'
+    - '      could mean: revenue in a specific recent period, e.g. last year'
+    - '      took: all revenue on record, with no date window'
+    - '  AMBIGUOUS ''all closed stores'' — ASKS: Do you want one combined total for all closed stores
+      together, or one revenue figure per closed store?'
+    - '      could mean: a single total across all closed stores'
+    - '      could mean: a breakdown with one row per closed store'
+    - '      took: a single combined total'
+    - '  cannot_express: Splitting each store''s revenue into the part earned before it closed and the
+      part after, since no closing date or cut-off was named'
+    - '  OUTPUT SHAPE: one figure · one row(s) · carrying revenue'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - one figure
+    - - said
+      - the revenue of all closed stores
+    - - rows
+      - one
+    - - key_columns
+      - *id006
+    - - figure_columns
+      - *id007
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: closed
+      asks: By "closed" do you mean stores that have shut down permanently, or stores that are simply
+        not trading right now (temporarily closed / closed on a given day)?
+      readings:
+      - stores that have permanently shut down
+      - stores that are temporarily not trading
+      - stores that were closed on a specific date you have in mind
+      took: stores whose status is closed (shut down)
+    - words: the revenue
+      asks: Over what period do you want the revenue — all revenue these stores ever recorded, only the
+        revenue up to the day each one closed, or revenue in a particular year or period?
+      readings:
+      - all revenue ever recorded for those stores
+      - only revenue earned before each store closed
+      - revenue in a specific recent period, e.g. last year
+      took: all revenue on record, with no date window
+    - words: all closed stores
+      asks: Do you want one combined total for all closed stores together, or one revenue figure per closed
+        store?
+      readings:
+      - a single total across all closed stores
+      - a breakdown with one row per closed store
+      took: a single combined total
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+        \  status_annotation\nFROM contoso_served.dim_store"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+        \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  NOT close_date IS NULL"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date\
+        \ IS NULL"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'The one returned value, 3,205,452.33 USD: every dollar Contoso actually charged customers,
+      after discount, on all 2,725 sales lines ever rung up at a shop that has since closed — 1,140 orders
+      placed between 2016-05-18 and 2019-11-02, which is the whole span these shops traded in, with no
+      date window imposed. Sixteen premises qualify as closed and 6 of them produced this money; the other
+      10 shut between 2015-05-05 and 2016-07-07, at or before the sales record starts, so they belong
+      to the population and contribute nothing. WHAT IS NOT IN THE FIGURE: nothing from the 57 shops still
+      trading, and nothing from the web shop — the online row has no close date, so it is not a closed
+      store, which makes this physical-shop money only and not comparable with an all-channel revenue
+      total. It is net: the same sales at list price come to 3,405,539.83, the 200,087.50 difference being
+      discount. And it is attributed to premises, the grain sales are recorded against, so nothing is
+      double-counted at the one site that was re-let and closed twice.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id008
+      rows: *id005
+      row_count: 1
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '3205452.33'
+    - - shape
+      - one figure
+    - - population it answered over
+      - 'Every sales line in contoso_served.v_contoso5_sales_line whose store_key points at one of the
+        16 contoso_served.dim_store rows with a non-null close_date — 2,725 lines over 6 distinct stores,
+        order dates 2016-05-18 to 2019-11-02, the full extent on record. Exactly two restrictions: close_date
+        IS NOT NULL, because store.resolution.active_is_the_absent_close_date declares that to BE the
+        `closed` population and the question said "closed"; and net_amount as the money column, because
+        net_revenue.default.revenue_means_net. No channel predicate, no date window, no status filter
+        inside `closed`. Applying the declared `physical` default would change nothing, as the single
+        online store carries no close date.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: stores
+      turns:
+      - why: Step 1 is just the starting relation — so look at what the store rows actually hold on the
+          two columns that decide "closed", and on the channel sentinel, before any filter is written.
+        did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN
+          ''online'' ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''no_close_date''
+          ELSE ''has_close_date'' END AS close_state, COALESCE(status_annotation, ''<null>'') AS status,
+          COUNT(*) AS store_rows, COUNT(DISTINCT location_code) AS sites FROM contoso_served.dim_store
+          GROUP BY 1, 2, 3 ORDER BY 1, 2, 3'
+        came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'',
+          ''Restructured''   AND ALSO: 4 row(s): [{"channel": "online", "close_state": "no_close_date",
+          "status": "<null>", "store_rows": 1, "sites": 1}, {"channel": "physical", "close_state": "has_close_date",
+          "status": "Closed", "store_rows": 9, "sites": 9}, {"channel": "physical", "close_state": "has_close_date",
+          "status": "Restructured", "store_rows": 7, "sites": 6}, {"channel": "physical", "close_state":
+          "no_close_date", "status": "", "store_rows": 57, "sites": 57}]'
+      settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+        \  close_date,\n  status_annotation\nFROM contoso_served.dim_store"
+      means: 'Every premises the store dimension records — 74 rows, one per shop per trading period, over
+        67 distinct sites. Of these, 57 are physical shops with no close date (still trading), 16 are
+        physical premises carrying a close date (9 annotated ''Closed'', 7 ''Restructured'', those 7 standing
+        on only 6 sites because one site was re-let twice), and 1 is the online sentinel (location_code
+        -1), which carries no close date and a null status. Nothing is filtered yet and nothing is measured
+        yet: this is the population the "closed" filter will cut and the revenue sum will be taken over,
+        and it is at PREMISES grain, which is the grain every sale is recorded against via store_key.'
+      readings_taken:
+      - word: stores
+        took: the premises grain — dim_store.store_key, 74 rows, which is what every sale's store_key
+          points at, so revenue attributes to premises and not to sites
+        could_also_mean: 'the site grain — 67 distinct location_code, where a re-let place is one store;
+          dim_store.store_key declares finer_than: location_code, and 6 sites carry more than one premises
+          (one of them two closed-and-restructured ones), so the two grains differ'
+        declaration: 'dim_store.store_key#finer_than: location_code, and store__placed_at edges join sales
+          on store_key'
+      - word: stores (which channel)
+        took: 'no channel split is needed on this step, and the fork is immaterial for the question: store.resolution.the_channel_is_the_location_sentinel
+          declares default physical for a Store subject, but the single online row (location_code -1)
+          has close_date NULL, so it is not closed under either reading — the ''closed'' population is
+          the same 16 physical premises whether the physical default is applied or both channels are covered'
+        could_also_mean: physical shops only (location_code <> -1), which here selects the identical 16
+          closed rows
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+          physical)'
+      blocked_by: []
+    - step: '2'
+      step_asks: closed stores
+      turns:
+      - why: Name the 16 closed premises one by one and check each actually carries sales lines, so step
+          3's total is known to come from real rows rather than a filter that quietly matched something
+          with no revenue — and so the shut/restructured split inside "closed" is visible before it is
+          summed.
+        did: "SELECT\n  s.store_key,\n  s.location_code,\n  s.store_name,\n  s.close_date,\n  s.status_annotation,\n\
+          \  COUNT(l.order_key) AS sales_lines,\n  MIN(l.order_date) AS first_order,\n  MAX(l.order_date)\
+          \ AS last_order\nFROM contoso_served.dim_store AS s\nLEFT JOIN contoso_served.v_contoso5_sales_line\
+          \ AS l\n  ON l.store_key = s.store_key\nWHERE\n  NOT s.close_date IS NULL\nGROUP BY\n  1,\n\
+          \  2,\n  3,\n  4,\n  5\nORDER BY\n  s.status_annotation,\n  s.store_key"
+        came_back: '16 row(s) (first 8 of 16): [{"store_key": 20, "location_code": 2, "store_name": "Contoso
+          Store Northern Territory", "close_date": "2016-07-07", "status_annotation": "Closed", "sales_lines":
+          0, "first_order": null, "last_order": null}, {"store_key": 110, "location_code": 11, "store_name":
+          "Contoso Store Yukon", "close_date": "2015-05-05", "status_annotation": "Closed", "sales_lines":
+          0, "first_order": null, "last_order": null}, {"store_key": 200, "location_code": 20, "store_name":
+          "Contoso Store Brandenburg", "close_date": "2019-08-08", "status_annotation": "Closed", "sales_lines":
+          344, "first_order": "2016-05-27", "last_order": "2019-08-08"}, {"store_key": 280, "location_code":
+          28, "store_name": "Contoso Store Caltanissetta", "close_date": "2017-08-03", "status_annotation":
+          "Closed", "sales_lines": 115, "first_order": "2016-05-24", "last_order": "2017-07-29"}, {"store_key":
+          350, "location_code": 35, "store_name": "Contoso Store Zeeland", "close_date": "2015-07-06",
+          "status_annotation": "Closed", "sales_lines": 0, "first_order": null, "last_order": null}, {"store_key":
+          410, "location_code": 41, "store_name": "Contoso Store Fermanagh", "close_date": "2018-09-09",
+          "status_annotation":'
+      - why: 'Four of the first eight closed shops shut before the sales record even begins, so price
+          both open forks in one query: the shut/restructured split inside "closed", and whether any sale
+          at all is recorded AFTER a store''s close date — if none is, "all revenue ever" and "revenue
+          up to closing" are the same figure and the second ambiguity dissolves.'
+        did: "SELECT\n  s.status_annotation,\n  COUNT(DISTINCT s.store_key) AS closed_stores,\n  COUNT(DISTINCT\
+          \ CASE WHEN NOT l.order_key IS NULL THEN s.store_key END) AS stores_with_sales,\n  COUNT(l.order_key)\
+          \ AS sales_lines,\n  SUM(CASE WHEN l.order_date > s.close_date THEN 1 ELSE 0 END) AS lines_after_close,\n\
+          \  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n  ROUND(SUM(CASE WHEN l.order_date <= s.close_date\
+          \ THEN l.net_amount ELSE 0 END), 2) AS net_revenue_up_to_close\nFROM contoso_served.dim_store\
+          \ AS s\nLEFT JOIN contoso_served.v_contoso5_sales_line AS l\n  ON l.store_key = s.store_key\n\
+          WHERE\n  NOT s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  1"
+        came_back: '2 row(s): [{"status_annotation": "Closed", "closed_stores": 9, "stores_with_sales":
+          5, "sales_lines": 2453, "lines_after_close": 0, "net_revenue": "2870369.00", "net_revenue_up_to_close":
+          "2870369.00"}, {"status_annotation": "Restructured", "closed_stores": 7, "stores_with_sales":
+          1, "sales_lines": 272, "lines_after_close": 0, "net_revenue": "335083.32", "net_revenue_up_to_close":
+          "335083.32"}]'
+      settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+        \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  NOT close_date IS\
+        \ NULL"
+      means: 'The closed premises themselves: 16 store rows, one per shop that has a closing date on record,
+        standing on 15 distinct sites (one site was re-let and closed twice). Nine were annotated ''Closed''
+        by the source and seven ''Restructured''. Only 6 of the 16 ever rang up a sale — the other 10
+        shut between 2015-05-05 and 2016-07-07, at or before the start of the sales record on 2016-05-18,
+        so they carry no revenue at all and will contribute nothing but their existence to the total.
+        No channel predicate was applied and none was needed: the one online row carries no close date,
+        so it cannot enter this set.'
+      readings_taken:
+      - word: closed
+        took: the declared `closed` population — every store row with a close date, 16 premises, 9 annotated
+          'Closed' and 7 'Restructured'. Their net revenue over all time is 3,205,452.32
+        could_also_mean: 'the narrower declared `shut` population — status_annotation = ''Closed'' only,
+          9 premises, excluding the 7 that were rebuilt or replaced. That gives 2,870,369.00, which is
+          335,083.32 (10.5%) less. The declaration does not leave this open: `closed` is the population''s
+          own NAME and the question used that word, while the narrower set surfaces as ''shut down'',
+          ''shut for good'', ''closed permanently'', ''closed and not replaced'' — none of which was said'
+        declaration: store.resolution.active_is_the_absent_close_date (populations closed / shut / restructured;
+          a question using either trading-state column displaces the default `active`)
+      - word: closed
+        took: permanently stopped trading — the only sense this bundle holds, carried by close_date and
+          status_annotation
+        could_also_mean: 'temporarily not trading, or not trading on a particular day. The bundle cannot
+          express either: there is no opening-hours, suspension or day-level trading-state fact anywhere
+          in it — only a single close date per premises and a source annotation for why'
+        declaration: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+      - word: the revenue (over what period)
+        took: 'all revenue on record, no date window — and the fork is measured immaterial: of the 2,725
+          sales lines belonging to closed stores, ZERO are dated after their own store''s close date,
+          so ''all revenue ever'' and ''only revenue earned before it closed'' are the same 3,205,452.32'
+        could_also_mean: revenue only up to each store's closing day — identical figure, 3,205,452.32
+        declaration: order.default.an_unscoped_question_covers_all_time
+      - word: revenue
+        took: net — `net_amount`, after discount, which is what the figures quoted on this step are
+        could_also_mean: gross, before discount (`gross_amount`), which is a larger number; this step
+          does not yet claim either as the answer
+        declaration: net_revenue.default.revenue_means_net
+      blocked_by: []
+    - step: '3'
+      step_asks: the revenue of all closed stores
+      turns:
+      - why: 'Read the answer''s own rows before claiming it: the single net total over the 16 closed
+          stores'' sales, with the date extent it actually covers and the gross figure beside it so the
+          net/gross choice is visible rather than asserted.'
+        did: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n  ROUND(SUM(l.gross_amount), 2) AS\
+          \ gross_revenue,\n  COUNT(*) AS sales_lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT\
+          \ l.store_key) AS stores_contributing,\n  MIN(l.order_date) AS first_order,\n  MAX(l.order_date)\
+          \ AS last_order\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store\
+          \ AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date IS NULL"
+        came_back: '1 row(s): [{"net_revenue": "3205452.33", "gross_revenue": "3405539.83", "sales_lines":
+          2725, "orders": 1140, "stores_contributing": 6, "first_order": "2016-05-18", "last_order": "2019-11-02"}]'
+      - why: 'Claim the figure the rows actually returned: 3,205,452.33 net over every sale ever rung
+          up at the 16 closed premises, with the two readings that could have moved it priced and disclosed
+          rather than asked about, since a declaration names each one.'
+        did: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date\
+          \ IS NULL"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 1 row(s): [{"revenue": "3205452.33"}]  Give
+          `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from the closed
+          list. If these rows settle the question, do not decline.'
+      settled_on: "SELECT\n  ROUND(SUM(l.net_amount), 2) AS revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON s.store_key = l.store_key\nWHERE\n  NOT s.close_date\
+        \ IS NULL"
+      means: 'The one returned value, 3,205,452.33 USD: every dollar Contoso actually charged customers,
+        after discount, on all 2,725 sales lines ever rung up at a shop that has since closed — 1,140
+        orders placed between 2016-05-18 and 2019-11-02, which is the whole span these shops traded in,
+        with no date window imposed. Sixteen premises qualify as closed and 6 of them produced this money;
+        the other 10 shut between 2015-05-05 and 2016-07-07, at or before the sales record starts, so
+        they belong to the population and contribute nothing. WHAT IS NOT IN THE FIGURE: nothing from
+        the 57 shops still trading, and nothing from the web shop — the online row has no close date,
+        so it is not a closed store, which makes this physical-shop money only and not comparable with
+        an all-channel revenue total. It is net: the same sales at list price come to 3,405,539.83, the
+        200,087.50 difference being discount. And it is attributed to premises, the grain sales are recorded
+        against, so nothing is double-counted at the one site that was re-let and closed twice.'
+      readings_taken:
+      - word: closed
+        took: the declared `closed` population — all 16 premises carrying a close date, 9 annotated 'Closed'
+          and 7 'Restructured' — giving 3,205,452.33
+        could_also_mean: 'the narrower declared `shut` population, status_annotation = ''Closed'' only,
+          9 premises: 2,870,369.00, which is 335,083.32 less, 10.5% of the answer. Only one of the 7 restructured
+          premises ever sold anything, so this choice moves exactly one store and leaves the other five
+          contributors untouched. Not asked, because the declaration fixes it: `closed` is that population''s
+          own NAME, while the narrower set surfaces as ''shut down'', ''shut for good'', ''closed permanently'',
+          ''closed and not replaced'' — none of which was said'
+        declaration: store.resolution.active_is_the_absent_close_date
+      - word: revenue
+        took: NET, after discount — 3,205,452.33
+        could_also_mean: gross, before discount — 3,405,539.83; the 200,087.50 gap is the discount these
+          shops gave away
+        declaration: net_revenue.default.revenue_means_net
+      - word: the revenue (period)
+        took: all revenue on record, no window — 2016-05-18 to 2019-11-02 for these stores
+        could_also_mean: 'only revenue earned up to each store''s own closing day. MEASURED IMMATERIAL:
+          of the 2,725 lines, zero are dated after their store''s close date, so both readings return
+          3,205,452.33 exactly. The decomposition called this split inexpressible; it turns out not to
+          matter'
+        declaration: order.default.an_unscoped_question_covers_all_time; order.default.period_is_order_date
+          (order date, not delivery)
+      - word: closed (sense)
+        took: permanently stopped trading, the only sense this bundle holds
+        could_also_mean: 'temporarily not trading, or not trading on a named day — which the bundle cannot
+          express at all: there is no suspension, opening-hours or day-level trading-state fact, only
+          one close date per premises and the source''s reason'
+        declaration: dim_store.close_date — 'the day the store closed, or null if it is still trading'
+      - word: all closed stores
+        took: a single combined total, as the asked shape
+        could_also_mean: one row per closed store — 6 rows with money and 10 zeroes, which the single
+          figure hides
+        declaration: null
+      - word: stores
+        took: premises grain (store_key), what every sale points at
+        could_also_mean: site grain (location_code), where a re-let place is one store; the total is identical,
+          only the count of things behind it changes — 15 sites behind 16 premises
+        declaration: 'dim_store.store_key#finer_than: location_code'
+      - word: stores (channel)
+        took: no channel predicate — physical-only follows from the closed filter, not from a choice
+        could_also_mean: an explicit physical reading, which selects the same rows and the same figure
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+          physical)'
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id001
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+v3_answer_step: '3'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: '''3205452.33'' within rounding of 3205452.32521 (differs by 0.00479)'
+v3_seconds: 217.8

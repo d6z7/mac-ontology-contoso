@@ -1,0 +1,80 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: ADV-27
+question: >-
+  Compare revenue in 2024 for customers older than 2024 vs customers who first bought in 2024
+expected:
+  rows: 2
+  ordered: true
+  values:
+  - - older than 2024
+    - 18589446.72
+  - - first bought in 2024
+    - 13050244.21
+sql: >-
+  WITH f AS (SELECT customer_key, MIN(order_date) AS first_order FROM
+  contoso_served.v_contoso5_sales_line GROUP BY 1) SELECT CASE WHEN f.first_order < DATE
+  '2024-01-01' THEN 'older than 2024' ELSE 'first bought in 2024' END AS cohort,
+  ROUND(SUM(l.net_amount), 2) AS net_in_2024 FROM contoso_served.v_contoso5_sales_line l JOIN f
+  USING (customer_key) WHERE f.first_order < DATE '2025-01-01' AND l.order_date >= DATE
+  '2024-01-01' AND l.order_date < DATE '2025-01-01' GROUP BY 1 ORDER BY 1 DESC
+note: >-
+  REWORDED BY THE OPERATOR 2026-10-23, verbatim: "compare revenue in 2024 for customers odler then
+  2024 vs customers who first bought in 2024". It is the OTHER half of the pair with ADV-26, and
+  between them they close the ambiguity ADV-11 carries. "REVENUE IN 2024" IS THE WINDOW, SAID
+  FIRST AND SAID PLAINLY, which is the whole difference. Here the 2024 window qualifies the
+  REVENUE for both cohorts; in ADV-26 it qualifies only the COHORT and the revenue is lifetime.
+  The three figures a reader could get from one loosely-worded question are therefore all now
+  pinned to a question that asks for exactly one of them: ADV-27 revenue IN 2024 old 18,589,446.72
+  new 13,050,244.21 ADV-11 revenue 2024 ONWARDS old 35,146,090.74 new 15,513,218.65 ADV-26 revenue
+  LIFETIME old 193,043,381.89 new 15,513,218.65
+
+  AND NOTE WHAT THE OLD COHORT'S CUSTOMER COUNT DOES: 8,119 here against 41,392 in ADV-26. Both
+  are "customers older than 2024" — the difference is that this question only counts the ones who
+  BOUGHT AGAIN IN 2024, because a customer with no 2024 line contributes no 2024 revenue and so
+  appears in no row. That is a property of the window, not a filter anyone added, and it is the
+  thing most likely to be mistaken for an error. THE NEW COHORT'S COUNT IS 5,932 IN ALL THREE
+  READINGS, because a customer whose first order is in 2024 necessarily has a 2024 line. Only the
+  old cohort moves, which is why every one of these questions needs both rows to discriminate
+  anything. "OLDER THAN 2024" IS READ AS FIRST ORDER BEFORE 2024-01-01 — the customer's
+  relationship began earlier — and not as the customer's own record age: `dim_customer` carries
+  `valid_from`, which is a different fact and would answer a different question. 2025's first-time
+  buyers are in neither cohort. ACCEPTED 2026-10-23 — THE WALK'S ANSWER WAS RIGHT AND THIS
+  REFERENCE WAS OVER-SPECIFIED. Operator, verbatim: "i accept this as corect ... semantically
+  perfect !!!!". The walk returned two rows, in this order, with 18,589,446.72 and 13,050,244.21 —
+  both figures exact — and was graded WRONG on a `customers` column (8,119 / 5,932) THAT THIS
+  QUESTION NEVER ASKS FOR. I had volunteered it when writing the reference; an expectation is not
+  the place to add columns the question does not request. SO THE EXPECTATION IS NOW THE TWO
+  FIGURES, AND THE COHORT IDENTITY IS CARRIED BY `ordered: true`. Row 1 is the older cohort, row 2
+  the newer. That is deliberate and it is the honest shape: a cohort CAPTION — "older than 2024",
+  "Customers who first bought before 2024", "Existing customers" — is prose written by whoever
+  composed the statement, not a fact about the warehouse, and no two authors spell it alike. The
+  FIGURES are the fact. Order is what distinguishes the two rows, and `ordered: true` is what
+  makes a transposition fail. AND THE SQL RETURNS ONLY WHAT IS FILED, which it did not when this
+  change was first made. I dropped the caption from `expected` and left it SELECTed, so the
+  statement returned two columns against one filed and `oracles.py` correctly called the reference
+  DEAD — a reference that does not reproduce its own answer, which is the one thing this plane may
+  never contain. The cohort now lives in the GROUP BY and ORDER BY, where it decides which row is
+  which WITHOUT being returned: row 0 is the older cohort, row 1 the newer, and that is what
+  `ordered: true` checks. WHAT IS STILL CHECKED, so this is not a loosening into nothing: two rows
+  and no more, in this order, each carrying its exact figure to the cent. Swap them and it fails;
+  drop one and it fails; change either figure and it fails. What can no longer fail is a different
+  wording of the caption.
+approved_at: '2026-10-24'
+approved_here: true
+superseded_value:
+  rows: 2
+  ordered: true
+  cols:
+  - net_in_2024
+  values:
+  - - 18589446.72
+  - - 13050244.21
+superseded_reason: >-
+  THE ROWS CARRIED NO NAME. `expected` held bare figures for a question that COMPARES two named
+  cohorts, so nothing in the answer said which row was which -- neither a reader nor the grader
+  could tell the cohorts apart, and a reversed pair would have graded EXACT. The figures are
+  UNCHANGED and verified against the warehouse on 2026-10-24; a cohort column is added to the
+  statement and to each row so the answer can be read. Found by `check_corpus_semantics.py`'s rule
+  on a comparison whose rows carry no identifying column. No signature is claimed: this reference
+  was unsigned before and stays unsigned.

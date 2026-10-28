@@ -1,0 +1,1411 @@
+id: STORE-16
+captured_at: '2026-10-24T21:44:53+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: sites
+  operation: aggregate
+  qdmr_simplified: "  1       FROM       shops                    “shops”\n  2  ← 1  PIVOT_TO   sites\
+    \                    “sites that had shops”\n  3  ← 2  WHERE      were closed = 'closed'   “were closed”\n\
+    \  4  ← 3  AGGREGATE  count distinct of sites  “How many different sites”\n  answer: step 4   confidence:\
+    \ 0.52\n  UNDERSTOOD AS: How many distinct sites that had at least one shop on them are now closed\
+    \ — one single count. I read \"closed\" as applying to the site itself (the whole site shut down),\
+    \ not to individual shops at still-open sites, and I put no date window on it, so every closed site\
+    \ ever counts. Sites that never had a shop are left out, as are sites that had shops and are still\
+    \ open.\n  AMBIGUOUS 'sites that had shops were closed' — ASKS: Do you want sites that themselves\
+    \ shut down (and happened to have shops on them), or sites where shops were closed down even if the\
+    \ site is still open?\n      could mean: the site itself was closed, and it had at least one shop\n\
+    \      could mean: the shops on the site were closed, whether or not the site closed\n      took:\
+    \ the site itself was closed, and it had at least one shop\n  AMBIGUOUS 'closed' — ASKS: By \"closed\"\
+    \ do you mean permanently shut down for good, or also temporarily closed?\n      could mean: permanently\
+    \ shut down / no longer operating\n      could mean: closed at any point, including temporary closures\n\
+    \      took: permanently shut down / no longer operating\n  AMBIGUOUS 'had shops' — ASKS: Does a site\
+    \ count if it ever had a shop at any time, or only if it still had a shop when it closed?\n      could\
+    \ mean: ever had at least one shop\n      could mean: had at least one shop at the moment it closed\n\
+    \      took: ever had at least one shop\n  AMBIGUOUS 'shops' — ASKS: Does \"shops\" mean only things\
+    \ classed as shops, or any retail or commercial unit on the site?\n      could mean: only units that\
+    \ are shops\n      could mean: any retail or commercial unit (shops, kiosks, outlets, concessions)\n\
+    \      took: only units that are shops\n  AMBIGUOUS 'were closed' — ASKS: Over what period — all closures\
+    \ ever recorded, or only those in a particular year or recent window?\n      could mean: all closures,\
+    \ no date limit\n      could mean: closures within a specific period you have in mind\n      took:\
+    \ all closures, no date limit\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many different\
+    \ sites"
+  understood_as_in_human_words: How many distinct sites that had at least one shop on them are now closed
+    — one single count. I read "closed" as applying to the site itself (the whole site shut down), not
+    to individual shops at still-open sites, and I put no date window on it, so every closed site ever
+    counts. Sites that never had a shop are left out, as are sites that had shops and are still open.
+  population_actually_answered: 'The 9 of the 66 physical sites that hold no shop with a null close_date
+    — computed over dim_store rows with location_code <> -1, rolled up to location_code. Restrictions
+    I applied, and where each came from: (1) the online sentinel location -1 excluded, because location.exclusion.the_online_row_is_not_a_place
+    declares it is not a place and store.resolution.the_channel_is_the_location_sentinel defaults a Store-subject
+    question to physical — it carries no close date and could not be a closed site in any case; (2) closure
+    evaluated at SITE grain, a site being closed when nothing trades on it, rather than at premises grain,
+    because dim_store.store_key is declared finer_than location_code and the question asks how many sites;
+    (3) no date filter — every closure ever recorded. I applied NO restriction for "had shops": every
+    one of the 66 physical sites has held a shop, since store__sited_in__location is declared mandatory
+    both ways, so that phrase removed nothing.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: one figure
+    columns_the_answer_step_asks_for: []
+    figures_the_answer_step_computes:
+    - count distinct of sites
+    answer_step: '4'
+    verb: aggregate
+    said: How many different sites
+    stage1_confidence: 0.52
+  canonical_question: &id001
+    understood_as: How many distinct sites that had at least one shop on them are now closed — one single
+      count. I read "closed" as applying to the site itself (the whole site shut down), not to individual
+      shops at still-open sites, and I put no date window on it, so every closed site ever counts. Sites
+      that never had a shop are left out, as are sites that had shops and are still open.
+    steps:
+    - id: '1'
+      do: from
+      thing: shops
+      said: shops
+    - id: '2'
+      do: pivot_to
+      of: '1'
+      to: sites
+      said: sites that had shops
+    - id: '3'
+      do: where
+      of: '2'
+      thing: were closed
+      op: '='
+      value: closed
+      said: were closed
+    - id: '4'
+      do: aggregate
+      of: '3'
+      figures: &id002
+      - how: count distinct
+        of: sites
+        said: how many different sites
+      said: How many different sites
+    answer: '4'
+    output_shape: &id003
+      shape: one figure
+      said: How many different sites that had shops were closed?
+      rows: one
+      key_columns: &id005 []
+      figure_columns: &id006
+      - how many different sites
+    ambiguities:
+    - words: sites that had shops were closed
+      question: Do you want sites that themselves shut down (and happened to have shops on them), or sites
+        where shops were closed down even if the site is still open?
+      readings:
+      - the site itself was closed, and it had at least one shop
+      - the shops on the site were closed, whether or not the site closed
+      assumed: the site itself was closed, and it had at least one shop
+    - words: closed
+      question: By "closed" do you mean permanently shut down for good, or also temporarily closed?
+      readings:
+      - permanently shut down / no longer operating
+      - closed at any point, including temporary closures
+      assumed: permanently shut down / no longer operating
+    - words: had shops
+      question: Does a site count if it ever had a shop at any time, or only if it still had a shop when
+        it closed?
+      readings:
+      - ever had at least one shop
+      - had at least one shop at the moment it closed
+      assumed: ever had at least one shop
+    - words: shops
+      question: Does "shops" mean only things classed as shops, or any retail or commercial unit on the
+        site?
+      readings:
+      - only units that are shops
+      - any retail or commercial unit (shops, kiosks, outlets, concessions)
+      assumed: only units that are shops
+    - words: were closed
+      question: Over what period — all closures ever recorded, or only those in a particular year or recent
+        window?
+      readings:
+      - all closures, no date limit
+      - closures within a specific period you have in mind
+      assumed: all closures, no date limit
+    cannot_express: []
+    confidence: 0.52
+  steps: 4
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: sites_closed
+      type: number
+    rows:
+    - - 9
+  value: 9
+  raw: '9'
+  reading: one figure
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "sites → the place, dim_location's grain — one row per site, 66 physical ones, a re-let site\
+      \ counted once\n        could also mean: the premises, dim_store's grain — which would make the\
+      \ answer 16 closed shops rather than a count of sites"
+    ref: 'dim_store.store_key declares finer_than: location_code, so premises roll up into sites and never
+      the reverse; the question asks ''how many different sites'', so the site grain is named'
+  - kind: ''
+    text: "were closed → not resolved at this step — both readings measured and carried forward: 9 sites\
+      \ with nothing open left, 14 sites where at least one shop closed\n        could also mean: either\
+      \ of those two; they differ by the 5 sites that were re-let and are trading again"
+    ref: no declaration fixes closure at SITE grain — dim_location carries no close_date, and store.resolution.active_is_the_absent_close_date
+      binds close_date on the premises. Step 3 resolves it
+  - kind: ''
+    text: "were closed → the site itself shut down — no shop trades there any more: 9 sites\n        could\
+      \ also mean: any site where a shop closed, even though the site was re-let and trades today: 14\
+      \ sites"
+    ref: 'the question document''s understood_as fixes this: "I read ''closed'' as applying to the site
+      itself (the whole site shut down), not to individual shops at still-open sites". No ontology declaration
+      settles closure at site grain, because dim_location carries no close_date — store.resolution.active_is_the_absent_close_date
+      binds close_date on the premises, and its snapshot_rule note (57 trading shops over 57 location
+      codes, a site holding at most one shop with no close date) is what lets the premises state roll
+      up to a site state cleanly. The 5-site gap between the readings is entirely the re-let sites: 2,
+      3, 7 and two others that closed a shop and opened another'
+  - kind: ''
+    text: "closed → permanently shut down — and this cost nothing, because the two readings agree exactly\n\
+      \        could also mean: closed at any point including temporary or transitional closures"
+    ref: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation = ''Closed'',
+      surfaces ''shut for good'', ''closed and not replaced'') as a child of `closed`. Measured: the 9
+      sites with nothing trading and the 9 sites holding a shut-for-good shop are the same 9, because
+      all 9 ''Closed'' annotations in the bundle sit on the last shop of a dead site and all 7 ''Restructured''
+      ones are followed by a successor. Both readings give 9'
+  - kind: ''
+    text: "had shops → ever held at least one shop — which excludes nothing, since every physical site\
+      \ has held one\n        could also mean: still had a shop at the moment it closed"
+    ref: 'store__sited_in__location is declared mandatory both ways; all 66 physical sites have held a
+      shop, so the condition is not a filter. The two readings coincide here as well: a site goes dark
+      at the moment its last shop closes, so it had a shop then by construction'
+  - kind: ''
+    text: "were closed → the site itself went dark — no shop trades there any more: 9\n        could also\
+      \ mean: any site where a shop closed, even if the site was re-let and is trading today: 14"
+    ref: the question document's understood_as fixes this reading verbatim — closure applies to the site
+      itself, "not to individual shops at still-open sites". No ontology declaration settles closure at
+      site grain, because dim_location carries no close_date at all; store.resolution.active_is_the_absent_close_date
+      binds close_date on the premises, and its snapshot_rule (57 trading shops over 57 distinct location
+      codes — a site holds at most one shop with no close date) is exactly what lets the premises state
+      roll up to a site state without ambiguity. The entire gap between 9 and 14 is the 5 re-let sites,
+      which this reading deliberately keeps out
+  - kind: ''
+    text: "closed → permanently shut down — and this cost nothing, because the readings agree exactly\n\
+      \        could also mean: closed at any point, including temporary or transitional closures"
+    ref: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation = ''Closed'',
+      surfacing as ''shut for good'', ''closed and not replaced'') as a child of `closed`. Measured: the
+      9 sites with nothing trading and the 9 sites holding a shut-for-good shop are the SAME 9 — all 9
+      ''Closed'' annotations in the bundle sit on the last shop of a dead site, and all 7 ''Restructured''
+      ones are followed by a successor. Both readings give 9'
+  - kind: ''
+    text: "shops → physical premises only\n        could also mean: all recorded store rows, the web shop\
+      \ included — which would add nothing here"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel, default physical with applies: subject.
+      Immaterial either way: the online row''s location -1 is not a place and carries no close date, so
+      it cannot be a closed site'
+  - kind: ''
+    text: "had shops → ever held at least one shop\n        could also mean: still had a shop at the moment\
+      \ the site closed"
+    ref: the two readings coincide — a site goes dark at the moment its last shop closes, so by construction
+      it had a shop then. Neither reading removes any of the 66 sites
+  concepts: []
+  rules:
+  - id: 'dim_store.store_key declares finer_than: location_code'
+    why: '''sites'' = the place, dim_location''s grain — one row per site, 66 physical ones, a re-let
+      site counted once'
+  - id: so premises roll up into sites and never the reverse
+    why: '''sites'' = the place, dim_location''s grain — one row per site, 66 physical ones, a re-let
+      site counted once'
+  - id: the question asks 'how many different sites'
+    why: '''sites'' = the place, dim_location''s grain — one row per site, 66 physical ones, a re-let
+      site counted once'
+  - id: so the site grain is named
+    why: '''sites'' = the place, dim_location''s grain — one row per site, 66 physical ones, a re-let
+      site counted once'
+  - id: no declaration fixes closure at SITE grain — dim_location carries no close_date
+    why: '''were closed'' = not resolved at this step — both readings measured and carried forward: 9
+      sites with nothing open left, 14 sites where at least one shop closed'
+  - id: and store.resolution.active_is_the_absent_close_date binds close_date on the premises. Step 3
+      resolves it
+    why: '''were closed'' = not resolved at this step — both readings measured and carried forward: 9
+      sites with nothing open left, 14 sites where at least one shop closed'
+  - id: 'the question document''s understood_as fixes this: "I read ''closed'' as applying to the site
+      itself (the whole site shut down)'
+    why: '''were closed'' = the site itself shut down — no shop trades there any more: 9 sites'
+  - id: not to individual shops at still-open sites". No ontology declaration settles closure at site
+      grain
+    why: '''were closed'' = the site itself shut down — no shop trades there any more: 9 sites'
+  - id: because dim_location carries no close_date — store.resolution.active_is_the_absent_close_date
+      binds close_date on the premises
+    why: '''were closed'' = the site itself shut down — no shop trades there any more: 9 sites'
+  - id: and its snapshot_rule note (57 trading shops over 57 location codes
+    why: '''were closed'' = the site itself shut down — no shop trades there any more: 9 sites'
+  - id: 'a site holding at most one shop with no close date) is what lets the premises state roll up to
+      a site state cleanly. The 5-site gap between the readings is entirely the re-let sites: 2'
+    why: '''were closed'' = the site itself shut down — no shop trades there any more: 9 sites'
+  - id: '3'
+    why: '''were closed'' = the site itself shut down — no shop trades there any more: 9 sites'
+  - id: 7 and two others that closed a shop and opened another
+    why: '''were closed'' = the site itself shut down — no shop trades there any more: 9 sites'
+  - id: store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation = 'Closed'
+    why: '''closed'' = permanently shut down — and this cost nothing, because the two readings agree exactly'
+  - id: surfaces 'shut for good'
+    why: '''closed'' = permanently shut down — and this cost nothing, because the two readings agree exactly'
+  - id: '''closed and not replaced'') as a child of `closed`. Measured: the 9 sites with nothing trading
+      and the 9 sites holding a shut-for-good shop are the same 9'
+    why: '''closed'' = permanently shut down — and this cost nothing, because the two readings agree exactly'
+  - id: because all 9 'Closed' annotations in the bundle sit on the last shop of a dead site and all 7
+      'Restructured' ones are followed by a successor. Both readings give 9
+    why: '''closed'' = permanently shut down — and this cost nothing, because the two readings agree exactly'
+  - id: store__sited_in__location is declared mandatory both ways
+    why: '''had shops'' = ever held at least one shop — which excludes nothing, since every physical site
+      has held one'
+  - id: all 66 physical sites have held a shop
+    why: '''had shops'' = ever held at least one shop — which excludes nothing, since every physical site
+      has held one'
+  - id: 'so the condition is not a filter. The two readings coincide here as well: a site goes dark at
+      the moment its last shop closes'
+    why: '''had shops'' = ever held at least one shop — which excludes nothing, since every physical site
+      has held one'
+  - id: so it had a shop then by construction
+    why: '''had shops'' = ever held at least one shop — which excludes nothing, since every physical site
+      has held one'
+  - id: the question document's understood_as fixes this reading verbatim — closure applies to the site
+      itself
+    why: '''were closed'' = the site itself went dark — no shop trades there any more: 9'
+  - id: '"not to individual shops at still-open sites". No ontology declaration settles closure at site
+      grain'
+    why: '''were closed'' = the site itself went dark — no shop trades there any more: 9'
+  - id: because dim_location carries no close_date at all
+    why: '''were closed'' = the site itself went dark — no shop trades there any more: 9'
+  - id: store.resolution.active_is_the_absent_close_date binds close_date on the premises
+    why: '''were closed'' = the site itself went dark — no shop trades there any more: 9'
+  - id: and its snapshot_rule (57 trading shops over 57 distinct location codes — a site holds at most
+      one shop with no close date) is exactly what lets the premises state roll up to a site state without
+      ambiguity. The entire gap between 9 and 14 is the 5 re-let sites
+    why: '''were closed'' = the site itself went dark — no shop trades there any more: 9'
+  - id: which this reading deliberately keeps out
+    why: '''were closed'' = the site itself went dark — no shop trades there any more: 9'
+  - id: surfacing as 'shut for good'
+    why: '''closed'' = permanently shut down — and this cost nothing, because the readings agree exactly'
+  - id: '''closed and not replaced'') as a child of `closed`. Measured: the 9 sites with nothing trading
+      and the 9 sites holding a shut-for-good shop are the SAME 9 — all 9 ''Closed'' annotations in the
+      bundle sit on the last shop of a dead site'
+    why: '''closed'' = permanently shut down — and this cost nothing, because the readings agree exactly'
+  - id: and all 7 'Restructured' ones are followed by a successor. Both readings give 9
+    why: '''closed'' = permanently shut down — and this cost nothing, because the readings agree exactly'
+  - id: store.resolution.the_channel_is_the_location_sentinel
+    why: '''shops'' = physical premises only'
+  - id: 'default physical with applies: subject. Immaterial either way: the online row''s location -1
+      is not a place and carries no close date'
+    why: '''shops'' = physical premises only'
+  - id: so it cannot be a closed site
+    why: '''shops'' = physical premises only'
+  - id: the two readings coincide — a site goes dark at the moment its last shop closes
+    why: '''had shops'' = ever held at least one shop'
+  - id: so by construction it had a shop then. Neither reading removes any of the 66 sites
+    why: '''had shops'' = ever held at least one shop'
+  edges: []
+sql:
+- "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE\
+  \ 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP\
+  \ BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\nFROM per_site\n\
+  WHERE\n  shops_trading = 0"
+- "SELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n  SUM(CASE\
+  \ WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n  SUM(CASE WHEN close_date\
+  \ IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+  \ <> -1"
+- "SELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n  COUNT(*) AS sites\nFROM (\n  SELECT\n \
+  \   location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE WHEN NOT close_date IS NULL THEN 1 ELSE\
+  \ 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading\n\
+  \  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n\
+  ) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\nORDER BY\n  shops_ever,\n  shops_closed"
+- "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE\
+  \ 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP\
+  \ BY\n    location_code\n)\nSELECT\n  location_code\nFROM per_site\nWHERE\n  shops_trading = 0"
+answer_sql: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+  \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n\
+  \  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\nFROM per_site\n\
+  WHERE\n  shops_trading = 0"
+sql_valid: true
+result:
+  status: ok
+  rows: 1
+  cols: &id007
+  - sites_closed
+  sample_rows:
+  - - 9
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id001
+  canonical_question_simplified: "  1       FROM       shops                    “shops”\n  2  ← 1  PIVOT_TO\
+    \   sites                    “sites that had shops”\n  3  ← 2  WHERE      were closed = 'closed' \
+    \  “were closed”\n  4  ← 3  AGGREGATE  count distinct of sites  “How many different sites”\n  answer:\
+    \ step 4   confidence: 0.52\n  UNDERSTOOD AS: How many distinct sites that had at least one shop on\
+    \ them are now closed — one single count. I read \"closed\" as applying to the site itself (the whole\
+    \ site shut down), not to individual shops at still-open sites, and I put no date window on it, so\
+    \ every closed site ever counts. Sites that never had a shop are left out, as are sites that had shops\
+    \ and are still open.\n  AMBIGUOUS 'sites that had shops were closed' — ASKS: Do you want sites that\
+    \ themselves shut down (and happened to have shops on them), or sites where shops were closed down\
+    \ even if the site is still open?\n      could mean: the site itself was closed, and it had at least\
+    \ one shop\n      could mean: the shops on the site were closed, whether or not the site closed\n\
+    \      took: the site itself was closed, and it had at least one shop\n  AMBIGUOUS 'closed' — ASKS:\
+    \ By \"closed\" do you mean permanently shut down for good, or also temporarily closed?\n      could\
+    \ mean: permanently shut down / no longer operating\n      could mean: closed at any point, including\
+    \ temporary closures\n      took: permanently shut down / no longer operating\n  AMBIGUOUS 'had shops'\
+    \ — ASKS: Does a site count if it ever had a shop at any time, or only if it still had a shop when\
+    \ it closed?\n      could mean: ever had at least one shop\n      could mean: had at least one shop\
+    \ at the moment it closed\n      took: ever had at least one shop\n  AMBIGUOUS 'shops' — ASKS: Does\
+    \ \"shops\" mean only things classed as shops, or any retail or commercial unit on the site?\n   \
+    \   could mean: only units that are shops\n      could mean: any retail or commercial unit (shops,\
+    \ kiosks, outlets, concessions)\n      took: only units that are shops\n  AMBIGUOUS 'were closed'\
+    \ — ASKS: Over what period — all closures ever recorded, or only those in a particular year or recent\
+    \ window?\n      could mean: all closures, no date limit\n      could mean: closures within a specific\
+    \ period you have in mind\n      took: all closures, no date limit\n  OUTPUT SHAPE: one figure · one\
+    \ row(s) · carrying how many different sites"
+  understood_as: How many distinct sites that had at least one shop on them are now closed — one single
+    count. I read "closed" as applying to the site itself (the whole site shut down), not to individual
+    shops at still-open sites, and I put no date window on it, so every closed site ever counts. Sites
+    that never had a shop are left out, as are sites that had shops and are still open.
+  ambiguities_it_saw:
+  - words: sites that had shops were closed
+    asks: Do you want sites that themselves shut down (and happened to have shops on them), or sites where
+      shops were closed down even if the site is still open?
+    readings:
+    - the site itself was closed, and it had at least one shop
+    - the shops on the site were closed, whether or not the site closed
+    took: the site itself was closed, and it had at least one shop
+  - words: closed
+    asks: By "closed" do you mean permanently shut down for good, or also temporarily closed?
+    readings:
+    - permanently shut down / no longer operating
+    - closed at any point, including temporary closures
+    took: permanently shut down / no longer operating
+  - words: had shops
+    asks: Does a site count if it ever had a shop at any time, or only if it still had a shop when it
+      closed?
+    readings:
+    - ever had at least one shop
+    - had at least one shop at the moment it closed
+    took: ever had at least one shop
+  - words: shops
+    asks: Does "shops" mean only things classed as shops, or any retail or commercial unit on the site?
+    readings:
+    - only units that are shops
+    - any retail or commercial unit (shops, kiosks, outlets, concessions)
+    took: only units that are shops
+  - words: were closed
+    asks: Over what period — all closures ever recorded, or only those in a particular year or recent
+      window?
+    readings:
+    - all closures, no date limit
+    - closures within a specific period you have in mind
+    took: all closures, no date limit
+  presentation:
+    claimed_answer_is: one figure
+    answer_step: '4'
+    answer_step_asks:
+      do: aggregate
+      of: '3'
+      figures: *id002
+      said: How many different sites
+    confidence_stage1: 0.52
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n  SUM(CASE\
+      \ WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n  SUM(CASE WHEN\
+      \ close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\n\
+      WHERE\n  location_code <> -1"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n  COUNT(*) AS sites\nFROM (\n  SELECT\n\
+      \    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE WHEN NOT close_date IS NULL THEN\
+      \ 1 ELSE 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading\n\
+      \  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n\
+      ) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\nORDER BY\n  shops_ever,\n  shops_closed"
+    params: {}
+  - step: '3'
+    sql: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+      \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <>\
+      \ -1\n  GROUP BY\n    location_code\n)\nSELECT\n  location_code\nFROM per_site\nWHERE\n  shops_trading\
+      \ = 0"
+    params: {}
+  - step: '4'
+    sql: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+      \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <>\
+      \ -1\n  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\n\
+      FROM per_site\nWHERE\n  shops_trading = 0"
+    params: {}
+  what_it_calculated: 'One figure: 9 — the number of distinct places that once had a physical Contoso
+    shop standing on them and have none trading today, counted over the whole history the store dimension
+    holds, with no date window. Each is a place where every shop that ever traded there has closed and
+    nothing replaced it; the closures run from 2015-05-05 to 2019-08-08, and the last shop at every one
+    of the 9 is annotated Closed, none Restructured. Counted once per place and not once per shop — site
+    46 held two shops in succession and counts once. What the figure does NOT include: the 5 places that
+    saw a shop close but were re-let and are trading today (including those would give 14); the 52 places
+    whose single shop has never closed; the 16 shop closures themselves, which is a premises count and
+    a different question; and the web shop, which has no premises and no place.'
+  rows_returned: &id004
+  - sites_closed: 9
+  synthesis:
+    claimed: '9'
+    shape: one figure
+    answered_population: 'The 9 of the 66 physical sites that hold no shop with a null close_date — computed
+      over dim_store rows with location_code <> -1, rolled up to location_code. Restrictions I applied,
+      and where each came from: (1) the online sentinel location -1 excluded, because location.exclusion.the_online_row_is_not_a_place
+      declares it is not a place and store.resolution.the_channel_is_the_location_sentinel defaults a
+      Store-subject question to physical — it carries no close date and could not be a closed site in
+      any case; (2) closure evaluated at SITE grain, a site being closed when nothing trades on it, rather
+      than at premises grain, because dim_store.store_key is declared finer_than location_code and the
+      question asks how many sites; (3) no date filter — every closure ever recorded. I applied NO restriction
+      for "had shops": every one of the 66 physical sites has held a shop, since store__sited_in__location
+      is declared mandatory both ways, so that phrase removed nothing.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: shops
+    turns:
+    - why: Establish the starting set of shops (premises rows) with the site and trading-state columns
+        the later steps need, and see the state values first-hand.
+      did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT store_key, location_code, store_name,
+        open_date, close_date, status_annotation FROM contoso_served.dim_store WHERE location_code <>
+        -1 ORDER BY location_code, store_key'
+      came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'', ''Restructured''   AND
+        ALSO: 50 row(s) (first 8 of 50): [{"store_key": 10, "location_code": 1, "store_name": "Contoso
+        Store Australian Capital Territory", "open_date": "2008-01-01", "close_date": null, "status_annotation":
+        ""}, {"store_key": 20, "location_code": 2, "store_name": "Contoso Store Northern Territory", "open_date":
+        "2008-01-12", "close_date": "2016-07-07", "status_annotation": "Closed"}, {"store_key": 30, "location_code":
+        3, "store_name": "Contoso Store South Australia", "open_date": "2012-01-07", "close_date": "2015-08-08",
+        "status_annotation": "Restructured"}, {"store_key": 35, "location_code": 3, "store_name": "Contoso
+        Store South Australia", "open_date": "2015-12-08", "close_date": null, "status_annotation": ""},
+        {"store_key": 40, "location_code": 4, "store_name": "Contoso Store Tasmania", "open_date": "2010-01-01",
+        "close_date": null, "status_annotation": ""}, {"store_key": 50, "location_code": 5, "store_name":
+        "Contoso Store Victoria", "open_date": "2015-12-09", "close_date": null, "status_annotation":
+        ""}, {"store_key": 60, "location_code": 6, "store_name": "Contoso Store Western Austral'
+    - why: Settle the starting population's size and grain — how many shop rows, over how many sites —
+        so the later pivot to sites knows a site can hold more than one shop.
+      did: "SELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n\
+        \  SUM(CASE WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n \
+        \ SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\n\
+        WHERE\n  location_code <> -1"
+      came_back: '1 row(s): [{"shop_rows": 73, "sites_behind_them": 66, "shop_rows_with_a_close_date":
+        16, "shop_rows_still_trading": 57}]'
+    settled_on: "SELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n\
+      \  SUM(CASE WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n  SUM(CASE\
+      \ WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\n\
+      WHERE\n  location_code <> -1"
+    means: 'The starting set, now counted: 73 physical shops — one row per premises per trading period,
+      so a site re-let twice contributes three of them — standing on 66 distinct sites. 16 of those shops
+      carry a closing date and 57 are still trading, which is exactly the declared `active` population
+      of 57. This covers every shop ever recorded, with no date window, and excludes the web shop, which
+      has no premises and no site.'
+    readings_taken: []
+    blocked_by: []
+  - step: '2'
+    step_asks: sites that had shops
+    turns:
+    - why: Roll the 73 shops up to the 66 sites they stand on, and show the tenancy pattern of each site
+        — shops ever, shops closed, shops still trading — because that pattern is what the two readings
+        of a "closed site" will each select on.
+      did: "SELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n  COUNT(*) AS sites\nFROM (\n  SELECT\n\
+        \    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE WHEN NOT close_date IS NULL THEN\
+        \ 1 ELSE 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading\n\
+        \  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n\
+        ) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\nORDER BY\n  shops_ever,\n \
+        \ shops_closed"
+      came_back: '5 row(s): [{"shops_ever": 1, "shops_closed": 0, "shops_trading": 1, "sites": 52}, {"shops_ever":
+        1, "shops_closed": 1, "shops_trading": 0, "sites": 8}, {"shops_ever": 2, "shops_closed": 1, "shops_trading":
+        1, "sites": 4}, {"shops_ever": 2, "shops_closed": 2, "shops_trading": 0, "sites": 1}, {"shops_ever":
+        3, "shops_closed": 2, "shops_trading": 1, "sites": 1}]'
+    settled_on: "SELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n  COUNT(*) AS sites\nFROM (\n\
+      \  SELECT\n    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE WHEN NOT close_date IS\
+      \ NULL THEN 1 ELSE 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END)\
+      \ AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP BY\n\
+      \    location_code\n) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\nORDER BY\n\
+      \  shops_ever,\n  shops_closed"
+    means: One row per tenancy pattern, covering all 66 sites that have ever held a physical shop, over
+      all time. Each row says how many shops have ever stood on a site of this kind, how many have closed,
+      how many are still trading, and how many sites share that pattern. The 57 trading shops sit on 57
+      distinct sites, exactly as dim_store's snapshot_rule declares — a site holds at most one shop with
+      no close date — so 9 of the 66 sites have nothing open on them, while 14 have seen at least one
+      shop close.
+    readings_taken:
+    - word: sites
+      took: the place, dim_location's grain — one row per site, 66 physical ones, a re-let site counted
+        once
+      could_also_mean: the premises, dim_store's grain — which would make the answer 16 closed shops rather
+        than a count of sites
+      declaration: 'dim_store.store_key declares finer_than: location_code, so premises roll up into sites
+        and never the reverse; the question asks ''how many different sites'', so the site grain is named'
+    - word: were closed
+      took: 'not resolved at this step — both readings measured and carried forward: 9 sites with nothing
+        open left, 14 sites where at least one shop closed'
+      could_also_mean: either of those two; they differ by the 5 sites that were re-let and are trading
+        again
+      declaration: no declaration fixes closure at SITE grain — dim_location carries no close_date, and
+        store.resolution.active_is_the_absent_close_date binds close_date on the premises. Step 3 resolves
+        it
+    blocked_by: []
+  - step: '3'
+    step_asks: were closed
+    turns:
+    - why: Apply the closure filter at site grain — sites with no shop left trading — and show the last
+        shop to close on each, so the answer can disclose whether these are shut for good or merely annotated
+        Restructured with no successor.
+      did: "WITH per_site AS (\n  SELECT\n    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE\
+        \ WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading,\n    MAX(close_date) AS last_close_date\n\
+        \  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n\
+        )\nSELECT\n  p.location_code,\n  p.shops_ever,\n  p.last_close_date,\n  s.store_name,\n  s.status_annotation\n\
+        FROM per_site AS p\nJOIN contoso_served.dim_store AS s\n  ON s.location_code = p.location_code\
+        \ AND s.close_date = p.last_close_date\nWHERE\n  p.shops_trading = 0\nORDER BY\n  p.location_code"
+      came_back: '9 row(s) (first 8 of 9): [{"location_code": 2, "shops_ever": 1, "last_close_date": "2016-07-07",
+        "store_name": "Contoso Store Northern Territory", "status_annotation": "Closed"}, {"location_code":
+        11, "shops_ever": 1, "last_close_date": "2015-05-05", "store_name": "Contoso Store Yukon", "status_annotation":
+        "Closed"}, {"location_code": 20, "shops_ever": 1, "last_close_date": "2019-08-08", "store_name":
+        "Contoso Store Brandenburg", "status_annotation": "Closed"}, {"location_code": 28, "shops_ever":
+        1, "last_close_date": "2017-08-03", "store_name": "Contoso Store Caltanissetta", "status_annotation":
+        "Closed"}, {"location_code": 35, "shops_ever": 1, "last_close_date": "2015-07-06", "store_name":
+        "Contoso Store Zeeland", "status_annotation": "Closed"}, {"location_code": 41, "shops_ever": 1,
+        "last_close_date": "2018-09-09", "store_name": "Contoso Store Fermanagh", "status_annotation":
+        "Closed"}, {"location_code": 46, "shops_ever": 2, "last_close_date": "2019-08-03", "store_name":
+        "Contoso Store Delaware", "status_annotation": "Closed"}, {"location_code": 52, "shops_ever":
+        1, "last_close_date": "2015-06-03", "store_name": "Contoso Store Mississippi", "status_annotation":
+        "Closed"}]'
+    - why: Confirm the ninth site's annotation and test whether "nothing left trading" and "shut for good"
+        select the same sites, while carrying the wider reading's figure in the same result.
+      did: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+        \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+        \ <> -1\n  GROUP BY\n    location_code\n), dead AS (\n  SELECT\n    location_code\n  FROM per_site\n\
+        \  WHERE\n    shops_trading = 0\n), last_shop AS (\n  SELECT\n    s.location_code,\n    s.status_annotation,\n\
+        \    ROW_NUMBER() OVER (PARTITION BY s.location_code ORDER BY s.close_date DESC) AS rn\n  FROM\
+        \ contoso_served.dim_store AS s\n  JOIN dead AS d\n    ON d.location_code = s.location_code\n\
+        )\nSELECT\n  l.status_annotation AS status_of_last_shop_to_close,\n  COUNT(*) AS sites_with_nothing_trading,\n\
+        \  (\n    SELECT\n      COUNT(DISTINCT location_code)\n    FROM contoso_served.dim_store\n   \
+        \ WHERE\n      location_code <> -1 AND status_annotation = 'Closed'\n  ) AS sites_holding_a_shop_shut_for_good,\n\
+        \  (\n    SELECT\n      COUNT(DISTINCT location_code)\n    FROM contoso_served.dim_store\n   \
+        \ WHERE\n      location_code <> -1 AND NOT close_date IS NULL\n  ) AS sites_where_any_shop_ever_closed\n\
+        FROM last_shop AS l\nWHERE\n  l.rn = 1\nGROUP BY\n  l.status_annotation"
+      came_back: '1 row(s): [{"status_of_last_shop_to_close": "Closed", "sites_with_nothing_trading":
+        9, "sites_holding_a_shop_shut_for_good": 9, "sites_where_any_shop_ever_closed": 14}]'
+    settled_on: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL\
+      \ THEN 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+      \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  location_code\nFROM per_site\nWHERE\n  shops_trading\
+      \ = 0"
+    means: 'The 9 sites that once held a physical shop and now hold none — every shop that ever stood
+      on them has closed and none was replaced. Site 46 is the one that held two shops in succession before
+      going dark; the other 8 held one each. The last shop to close at every one of the 9 is annotated
+      Closed by the source, none Restructured, so these are sites shut for good rather than sites between
+      tenants. All time, no date window. Not in this set: the 5 sites that saw a shop close and were re-let
+      and are trading again, and the 52 sites whose single shop never closed.'
+    readings_taken:
+    - word: were closed
+      took: 'the site itself shut down — no shop trades there any more: 9 sites'
+      could_also_mean: 'any site where a shop closed, even though the site was re-let and trades today:
+        14 sites'
+      declaration: 'the question document''s understood_as fixes this: "I read ''closed'' as applying
+        to the site itself (the whole site shut down), not to individual shops at still-open sites". No
+        ontology declaration settles closure at site grain, because dim_location carries no close_date
+        — store.resolution.active_is_the_absent_close_date binds close_date on the premises, and its snapshot_rule
+        note (57 trading shops over 57 location codes, a site holding at most one shop with no close date)
+        is what lets the premises state roll up to a site state cleanly. The 5-site gap between the readings
+        is entirely the re-let sites: 2, 3, 7 and two others that closed a shop and opened another'
+    - word: closed
+      took: permanently shut down — and this cost nothing, because the two readings agree exactly
+      could_also_mean: closed at any point including temporary or transitional closures
+      declaration: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation
+        = ''Closed'', surfaces ''shut for good'', ''closed and not replaced'') as a child of `closed`.
+        Measured: the 9 sites with nothing trading and the 9 sites holding a shut-for-good shop are the
+        same 9, because all 9 ''Closed'' annotations in the bundle sit on the last shop of a dead site
+        and all 7 ''Restructured'' ones are followed by a successor. Both readings give 9'
+    - word: had shops
+      took: ever held at least one shop — which excludes nothing, since every physical site has held one
+      could_also_mean: still had a shop at the moment it closed
+      declaration: 'store__sited_in__location is declared mandatory both ways; all 66 physical sites have
+        held a shop, so the condition is not a filter. The two readings coincide here as well: a site
+        goes dark at the moment its last shop closes, so it had a shop then by construction'
+    blocked_by: []
+  - step: '4'
+    step_asks: How many different sites
+    turns:
+    - why: 'Claim the count of sites that went dark: 9, with the one reading that would give a different
+        figure (14) disclosed rather than hidden.'
+      did: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+        \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+        \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\n\
+        FROM per_site\nWHERE\n  shops_trading = 0"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 1 row(s): [{"sites_closed": 9}]  Give `claimed_answer`
+        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+        rows settle the question, do not decline.'
+    settled_on: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL\
+      \ THEN 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+      \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\n\
+      FROM per_site\nWHERE\n  shops_trading = 0"
+    means: 'One figure: 9 — the number of distinct places that once had a physical Contoso shop standing
+      on them and have none trading today, counted over the whole history the store dimension holds, with
+      no date window. Each is a place where every shop that ever traded there has closed and nothing replaced
+      it; the closures run from 2015-05-05 to 2019-08-08, and the last shop at every one of the 9 is annotated
+      Closed, none Restructured. Counted once per place and not once per shop — site 46 held two shops
+      in succession and counts once. What the figure does NOT include: the 5 places that saw a shop close
+      but were re-let and are trading today (including those would give 14); the 52 places whose single
+      shop has never closed; the 16 shop closures themselves, which is a premises count and a different
+      question; and the web shop, which has no premises and no place.'
+    readings_taken:
+    - word: were closed
+      took: 'the site itself went dark — no shop trades there any more: 9'
+      could_also_mean: 'any site where a shop closed, even if the site was re-let and is trading today:
+        14'
+      declaration: the question document's understood_as fixes this reading verbatim — closure applies
+        to the site itself, "not to individual shops at still-open sites". No ontology declaration settles
+        closure at site grain, because dim_location carries no close_date at all; store.resolution.active_is_the_absent_close_date
+        binds close_date on the premises, and its snapshot_rule (57 trading shops over 57 distinct location
+        codes — a site holds at most one shop with no close date) is exactly what lets the premises state
+        roll up to a site state without ambiguity. The entire gap between 9 and 14 is the 5 re-let sites,
+        which this reading deliberately keeps out
+    - word: closed
+      took: permanently shut down — and this cost nothing, because the readings agree exactly
+      could_also_mean: closed at any point, including temporary or transitional closures
+      declaration: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation
+        = ''Closed'', surfacing as ''shut for good'', ''closed and not replaced'') as a child of `closed`.
+        Measured: the 9 sites with nothing trading and the 9 sites holding a shut-for-good shop are the
+        SAME 9 — all 9 ''Closed'' annotations in the bundle sit on the last shop of a dead site, and all
+        7 ''Restructured'' ones are followed by a successor. Both readings give 9'
+    - word: shops
+      took: physical premises only
+      could_also_mean: all recorded store rows, the web shop included — which would add nothing here
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel, default physical with applies:
+        subject. Immaterial either way: the online row''s location -1 is not a place and carries no close
+        date, so it cannot be a closed site'
+    - word: had shops
+      took: ever held at least one shop
+      could_also_mean: still had a shop at the moment the site closed
+      declaration: the two readings coincide — a site goes dark at the moment its last shop closes, so
+        by construction it had a shop then. Neither reading removes any of the 66 sites
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: How many distinct sites that had at least one shop on them are now closed — one single count.
+      I read "closed" as applying to the site itself (the whole site shut down), not to individual shops
+      at still-open sites, and I put no date window on it, so every closed site ever counts. Sites that
+      never had a shop are left out, as are sites that had shops and are still open.
+    population: 'The 9 of the 66 physical sites that hold no shop with a null close_date — computed over
+      dim_store rows with location_code <> -1, rolled up to location_code. Restrictions I applied, and
+      where each came from: (1) the online sentinel location -1 excluded, because location.exclusion.the_online_row_is_not_a_place
+      declares it is not a place and store.resolution.the_channel_is_the_location_sentinel defaults a
+      Store-subject question to physical — it carries no close date and could not be a closed site in
+      any case; (2) closure evaluated at SITE grain, a site being closed when nothing trades on it, rather
+      than at premises grain, because dim_store.store_key is declared finer_than location_code and the
+      question asks how many sites; (3) no date filter — every closure ever recorded. I applied NO restriction
+      for "had shops": every one of the 66 physical sites has held a shop, since store__sited_in__location
+      is declared mandatory both ways, so that phrase removed nothing.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       shops                    “shops”\n  2  ← 1  PIVOT_TO   sites\
+      \                    “sites that had shops”\n  3  ← 2  WHERE      were closed = 'closed'   “were\
+      \ closed”\n  4  ← 3  AGGREGATE  count distinct of sites  “How many different sites”\n  answer: step\
+      \ 4   confidence: 0.52"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: sites that had shops were closed
+      asks: Do you want sites that themselves shut down (and happened to have shops on them), or sites
+        where shops were closed down even if the site is still open?
+      readings:
+      - the site itself was closed, and it had at least one shop
+      - the shops on the site were closed, whether or not the site closed
+      took: the site itself was closed, and it had at least one shop
+    - words: closed
+      asks: By "closed" do you mean permanently shut down for good, or also temporarily closed?
+      readings:
+      - permanently shut down / no longer operating
+      - closed at any point, including temporary closures
+      took: permanently shut down / no longer operating
+    - words: had shops
+      asks: Does a site count if it ever had a shop at any time, or only if it still had a shop when it
+        closed?
+      readings:
+      - ever had at least one shop
+      - had at least one shop at the moment it closed
+      took: ever had at least one shop
+    - words: shops
+      asks: Does "shops" mean only things classed as shops, or any retail or commercial unit on the site?
+      readings:
+      - only units that are shops
+      - any retail or commercial unit (shops, kiosks, outlets, concessions)
+      took: only units that are shops
+    - words: were closed
+      asks: Over what period — all closures ever recorded, or only those in a particular year or recent
+        window?
+      readings:
+      - all closures, no date limit
+      - closures within a specific period you have in mind
+      took: all closures, no date limit
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.52 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id001
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: sites
+      took: the place, dim_location's grain — one row per site, 66 physical ones, a re-let site counted
+        once
+      could_also_mean: the premises, dim_store's grain — which would make the answer 16 closed shops rather
+        than a count of sites
+      declaration: 'dim_store.store_key declares finer_than: location_code, so premises roll up into sites
+        and never the reverse; the question asks ''how many different sites'', so the site grain is named'
+    - word: were closed
+      took: 'not resolved at this step — both readings measured and carried forward: 9 sites with nothing
+        open left, 14 sites where at least one shop closed'
+      could_also_mean: either of those two; they differ by the 5 sites that were re-let and are trading
+        again
+      declaration: no declaration fixes closure at SITE grain — dim_location carries no close_date, and
+        store.resolution.active_is_the_absent_close_date binds close_date on the premises. Step 3 resolves
+        it
+    - word: were closed
+      took: 'the site itself shut down — no shop trades there any more: 9 sites'
+      could_also_mean: 'any site where a shop closed, even though the site was re-let and trades today:
+        14 sites'
+      declaration: 'the question document''s understood_as fixes this: "I read ''closed'' as applying
+        to the site itself (the whole site shut down), not to individual shops at still-open sites". No
+        ontology declaration settles closure at site grain, because dim_location carries no close_date
+        — store.resolution.active_is_the_absent_close_date binds close_date on the premises, and its snapshot_rule
+        note (57 trading shops over 57 location codes, a site holding at most one shop with no close date)
+        is what lets the premises state roll up to a site state cleanly. The 5-site gap between the readings
+        is entirely the re-let sites: 2, 3, 7 and two others that closed a shop and opened another'
+    - word: closed
+      took: permanently shut down — and this cost nothing, because the two readings agree exactly
+      could_also_mean: closed at any point including temporary or transitional closures
+      declaration: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation
+        = ''Closed'', surfaces ''shut for good'', ''closed and not replaced'') as a child of `closed`.
+        Measured: the 9 sites with nothing trading and the 9 sites holding a shut-for-good shop are the
+        same 9, because all 9 ''Closed'' annotations in the bundle sit on the last shop of a dead site
+        and all 7 ''Restructured'' ones are followed by a successor. Both readings give 9'
+    - word: had shops
+      took: ever held at least one shop — which excludes nothing, since every physical site has held one
+      could_also_mean: still had a shop at the moment it closed
+      declaration: 'store__sited_in__location is declared mandatory both ways; all 66 physical sites have
+        held a shop, so the condition is not a filter. The two readings coincide here as well: a site
+        goes dark at the moment its last shop closes, so it had a shop then by construction'
+    - word: were closed
+      took: 'the site itself went dark — no shop trades there any more: 9'
+      could_also_mean: 'any site where a shop closed, even if the site was re-let and is trading today:
+        14'
+      declaration: the question document's understood_as fixes this reading verbatim — closure applies
+        to the site itself, "not to individual shops at still-open sites". No ontology declaration settles
+        closure at site grain, because dim_location carries no close_date at all; store.resolution.active_is_the_absent_close_date
+        binds close_date on the premises, and its snapshot_rule (57 trading shops over 57 distinct location
+        codes — a site holds at most one shop with no close date) is exactly what lets the premises state
+        roll up to a site state without ambiguity. The entire gap between 9 and 14 is the 5 re-let sites,
+        which this reading deliberately keeps out
+    - word: closed
+      took: permanently shut down — and this cost nothing, because the readings agree exactly
+      could_also_mean: closed at any point, including temporary or transitional closures
+      declaration: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation
+        = ''Closed'', surfacing as ''shut for good'', ''closed and not replaced'') as a child of `closed`.
+        Measured: the 9 sites with nothing trading and the 9 sites holding a shut-for-good shop are the
+        SAME 9 — all 9 ''Closed'' annotations in the bundle sit on the last shop of a dead site, and all
+        7 ''Restructured'' ones are followed by a successor. Both readings give 9'
+    - word: shops
+      took: physical premises only
+      could_also_mean: all recorded store rows, the web shop included — which would add nothing here
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel, default physical with applies:
+        subject. Immaterial either way: the online row''s location -1 is not a place and carries no close
+        date, so it cannot be a closed site'
+    - word: had shops
+      took: ever held at least one shop
+      could_also_mean: still had a shop at the moment the site closed
+      declaration: the two readings coincide — a site goes dark at the moment its last shop closes, so
+        by construction it had a shop then. Neither reading removes any of the 66 sites
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 4 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n\
+        \  SUM(CASE WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n \
+        \ SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\n\
+        WHERE\n  location_code <> -1\n\n-- step 2\nSELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n\
+        \  COUNT(*) AS sites\nFROM (\n  SELECT\n    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE\
+        \ WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date\
+        \ IS NULL THEN 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+        \ <> -1\n  GROUP BY\n    location_code\n) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\n\
+        ORDER BY\n  shops_ever,\n  shops_closed\n\n-- step 3\nWITH per_site AS (\n  SELECT\n    location_code,\n\
+        \    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n\
+        \  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  location_code\n\
+        FROM per_site\nWHERE\n  shops_trading = 0\n\n-- step 4\nWITH per_site AS (\n  SELECT\n    location_code,\n\
+        \    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n\
+        \  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT\
+        \ location_code) AS sites_closed\nFROM per_site\nWHERE\n  shops_trading = 0"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'One figure: 9 — the number of distinct places that once had a physical Contoso
+      shop standing on them and have none trading today, counted over the whole history the store dimension
+      holds, with no date window. Each is a place where every shop that ever traded there has closed and
+      nothing replaced it; the closures run from 2015-05-05 to 2019-08-08, and the last shop at every
+      one of the 9 is annotated Closed, none Restructured. Counted once per place and not once per shop
+      — site 46 held two shops in succession and counts once. What the figure does NOT include: the 5
+      places that saw a shop close but were re-let and are trading today (including those would give 14);
+      the 52 places whose single shop has never closed; the 16 shop closures themselves, which is a premises
+      count and a different question; and the web shop, which has no premises and no place.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'one figure' · graded WRONG
+  detail:
+    claimed_answer: '9'
+    walk_bucket: WRONG
+    walk_why: claimed '9', reference 14
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many different sites that had shops were closed?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many distinct sites that had at least one shop on them are now closed — one single count.
+      I read "closed" as applying to the site itself (the whole site shut down), not to individual shops
+      at still-open sites, and I put no date window on it, so every closed site ever counts. Sites that
+      never had a shop are left out, as are sites that had shops and are still open.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       shops                    “shops”'
+    - '  2  ← 1  PIVOT_TO   sites                    “sites that had shops”'
+    - '  3  ← 2  WHERE      were closed = ''closed''   “were closed”'
+    - '  4  ← 3  AGGREGATE  count distinct of sites  “How many different sites”'
+    - '  answer: step 4   confidence: 0.52'
+    - '  UNDERSTOOD AS: How many distinct sites that had at least one shop on them are now closed — one
+      single count. I read "closed" as applying to the site itself (the whole site shut down), not to
+      individual shops at still-open sites, and I put no date window on it, so every closed site ever
+      counts. Sites that never had a shop are left out, as are sites that had shops and are still open.'
+    - '  AMBIGUOUS ''sites that had shops were closed'' — ASKS: Do you want sites that themselves shut
+      down (and happened to have shops on them), or sites where shops were closed down even if the site
+      is still open?'
+    - '      could mean: the site itself was closed, and it had at least one shop'
+    - '      could mean: the shops on the site were closed, whether or not the site closed'
+    - '      took: the site itself was closed, and it had at least one shop'
+    - '  AMBIGUOUS ''closed'' — ASKS: By "closed" do you mean permanently shut down for good, or also
+      temporarily closed?'
+    - '      could mean: permanently shut down / no longer operating'
+    - '      could mean: closed at any point, including temporary closures'
+    - '      took: permanently shut down / no longer operating'
+    - '  AMBIGUOUS ''had shops'' — ASKS: Does a site count if it ever had a shop at any time, or only
+      if it still had a shop when it closed?'
+    - '      could mean: ever had at least one shop'
+    - '      could mean: had at least one shop at the moment it closed'
+    - '      took: ever had at least one shop'
+    - '  AMBIGUOUS ''shops'' — ASKS: Does "shops" mean only things classed as shops, or any retail or
+      commercial unit on the site?'
+    - '      could mean: only units that are shops'
+    - '      could mean: any retail or commercial unit (shops, kiosks, outlets, concessions)'
+    - '      took: only units that are shops'
+    - '  AMBIGUOUS ''were closed'' — ASKS: Over what period — all closures ever recorded, or only those
+      in a particular year or recent window?'
+    - '      could mean: all closures, no date limit'
+    - '      could mean: closures within a specific period you have in mind'
+    - '      took: all closures, no date limit'
+    - '  OUTPUT SHAPE: one figure · one row(s) · carrying how many different sites'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - one figure
+    - - said
+      - How many different sites that had shops were closed?
+    - - rows
+      - one
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: sites that had shops were closed
+      asks: Do you want sites that themselves shut down (and happened to have shops on them), or sites
+        where shops were closed down even if the site is still open?
+      readings:
+      - the site itself was closed, and it had at least one shop
+      - the shops on the site were closed, whether or not the site closed
+      took: the site itself was closed, and it had at least one shop
+    - words: closed
+      asks: By "closed" do you mean permanently shut down for good, or also temporarily closed?
+      readings:
+      - permanently shut down / no longer operating
+      - closed at any point, including temporary closures
+      took: permanently shut down / no longer operating
+    - words: had shops
+      asks: Does a site count if it ever had a shop at any time, or only if it still had a shop when it
+        closed?
+      readings:
+      - ever had at least one shop
+      - had at least one shop at the moment it closed
+      took: ever had at least one shop
+    - words: shops
+      asks: Does "shops" mean only things classed as shops, or any retail or commercial unit on the site?
+      readings:
+      - only units that are shops
+      - any retail or commercial unit (shops, kiosks, outlets, concessions)
+      took: only units that are shops
+    - words: were closed
+      asks: Over what period — all closures ever recorded, or only those in a particular year or recent
+        window?
+      readings:
+      - all closures, no date limit
+      - closures within a specific period you have in mind
+      took: all closures, no date limit
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n\
+        \  SUM(CASE WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n \
+        \ SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\n\
+        WHERE\n  location_code <> -1"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n  COUNT(*) AS sites\nFROM (\n  SELECT\n\
+        \    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE WHEN NOT close_date IS NULL THEN\
+        \ 1 ELSE 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading\n\
+        \  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n\
+        ) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\nORDER BY\n  shops_ever,\n \
+        \ shops_closed"
+      params: {}
+    - step: '3'
+      sql: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+        \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+        \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  location_code\nFROM per_site\nWHERE\n  shops_trading\
+        \ = 0"
+      params: {}
+    - step: '4'
+      sql: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+        \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+        \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\n\
+        FROM per_site\nWHERE\n  shops_trading = 0"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'One figure: 9 — the number of distinct places that once had a physical Contoso shop standing
+      on them and have none trading today, counted over the whole history the store dimension holds, with
+      no date window. Each is a place where every shop that ever traded there has closed and nothing replaced
+      it; the closures run from 2015-05-05 to 2019-08-08, and the last shop at every one of the 9 is annotated
+      Closed, none Restructured. Counted once per place and not once per shop — site 46 held two shops
+      in succession and counts once. What the figure does NOT include: the 5 places that saw a shop close
+      but were re-let and are trading today (including those would give 14); the 52 places whose single
+      shop has never closed; the 16 shop closures themselves, which is a premises count and a different
+      question; and the web shop, which has no premises and no place.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id007
+      rows: *id004
+      row_count: 1
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '9'
+    - - shape
+      - one figure
+    - - population it answered over
+      - 'The 9 of the 66 physical sites that hold no shop with a null close_date — computed over dim_store
+        rows with location_code <> -1, rolled up to location_code. Restrictions I applied, and where each
+        came from: (1) the online sentinel location -1 excluded, because location.exclusion.the_online_row_is_not_a_place
+        declares it is not a place and store.resolution.the_channel_is_the_location_sentinel defaults
+        a Store-subject question to physical — it carries no close date and could not be a closed site
+        in any case; (2) closure evaluated at SITE grain, a site being closed when nothing trades on it,
+        rather than at premises grain, because dim_store.store_key is declared finer_than location_code
+        and the question asks how many sites; (3) no date filter — every closure ever recorded. I applied
+        NO restriction for "had shops": every one of the 66 physical sites has held a shop, since store__sited_in__location
+        is declared mandatory both ways, so that phrase removed nothing.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: shops
+      turns:
+      - why: Establish the starting set of shops (premises rows) with the site and trading-state columns
+          the later steps need, and see the state values first-hand.
+        did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT store_key, location_code, store_name,
+          open_date, close_date, status_annotation FROM contoso_served.dim_store WHERE location_code <>
+          -1 ORDER BY location_code, store_key'
+        came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'',
+          ''Restructured''   AND ALSO: 50 row(s) (first 8 of 50): [{"store_key": 10, "location_code":
+          1, "store_name": "Contoso Store Australian Capital Territory", "open_date": "2008-01-01", "close_date":
+          null, "status_annotation": ""}, {"store_key": 20, "location_code": 2, "store_name": "Contoso
+          Store Northern Territory", "open_date": "2008-01-12", "close_date": "2016-07-07", "status_annotation":
+          "Closed"}, {"store_key": 30, "location_code": 3, "store_name": "Contoso Store South Australia",
+          "open_date": "2012-01-07", "close_date": "2015-08-08", "status_annotation": "Restructured"},
+          {"store_key": 35, "location_code": 3, "store_name": "Contoso Store South Australia", "open_date":
+          "2015-12-08", "close_date": null, "status_annotation": ""}, {"store_key": 40, "location_code":
+          4, "store_name": "Contoso Store Tasmania", "open_date": "2010-01-01", "close_date": null, "status_annotation":
+          ""}, {"store_key": 50, "location_code": 5, "store_name": "Contoso Store Victoria", "open_date":
+          "2015-12-09", "close_date": null, "status_annotation": ""}, {"store_key": 60, "location_code":
+          6, "store_name": "Contoso Store Western Austral'
+      - why: Settle the starting population's size and grain — how many shop rows, over how many sites
+          — so the later pivot to sites knows a site can hold more than one shop.
+        did: "SELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n\
+          \  SUM(CASE WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n\
+          \  SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\n\
+          WHERE\n  location_code <> -1"
+        came_back: '1 row(s): [{"shop_rows": 73, "sites_behind_them": 66, "shop_rows_with_a_close_date":
+          16, "shop_rows_still_trading": 57}]'
+      settled_on: "SELECT\n  COUNT(*) AS shop_rows,\n  COUNT(DISTINCT location_code) AS sites_behind_them,\n\
+        \  SUM(CASE WHEN NOT close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_with_a_close_date,\n \
+        \ SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shop_rows_still_trading\nFROM contoso_served.dim_store\n\
+        WHERE\n  location_code <> -1"
+      means: 'The starting set, now counted: 73 physical shops — one row per premises per trading period,
+        so a site re-let twice contributes three of them — standing on 66 distinct sites. 16 of those
+        shops carry a closing date and 57 are still trading, which is exactly the declared `active` population
+        of 57. This covers every shop ever recorded, with no date window, and excludes the web shop, which
+        has no premises and no site.'
+      readings_taken: []
+      blocked_by: []
+    - step: '2'
+      step_asks: sites that had shops
+      turns:
+      - why: Roll the 73 shops up to the 66 sites they stand on, and show the tenancy pattern of each
+          site — shops ever, shops closed, shops still trading — because that pattern is what the two
+          readings of a "closed site" will each select on.
+        did: "SELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n  COUNT(*) AS sites\nFROM (\n\
+          \  SELECT\n    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE WHEN NOT close_date\
+          \ IS NULL THEN 1 ELSE 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE\
+          \ 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n\
+          \  GROUP BY\n    location_code\n) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\n\
+          ORDER BY\n  shops_ever,\n  shops_closed"
+        came_back: '5 row(s): [{"shops_ever": 1, "shops_closed": 0, "shops_trading": 1, "sites": 52},
+          {"shops_ever": 1, "shops_closed": 1, "shops_trading": 0, "sites": 8}, {"shops_ever": 2, "shops_closed":
+          1, "shops_trading": 1, "sites": 4}, {"shops_ever": 2, "shops_closed": 2, "shops_trading": 0,
+          "sites": 1}, {"shops_ever": 3, "shops_closed": 2, "shops_trading": 1, "sites": 1}]'
+      settled_on: "SELECT\n  shops_ever,\n  shops_closed,\n  shops_trading,\n  COUNT(*) AS sites\nFROM\
+        \ (\n  SELECT\n    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE WHEN NOT close_date\
+        \ IS NULL THEN 1 ELSE 0 END) AS shops_closed,\n    SUM(CASE WHEN close_date IS NULL THEN 1 ELSE\
+        \ 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n\
+        \  GROUP BY\n    location_code\n) AS s\nGROUP BY\n  shops_ever,\n  shops_closed,\n  shops_trading\n\
+        ORDER BY\n  shops_ever,\n  shops_closed"
+      means: One row per tenancy pattern, covering all 66 sites that have ever held a physical shop, over
+        all time. Each row says how many shops have ever stood on a site of this kind, how many have closed,
+        how many are still trading, and how many sites share that pattern. The 57 trading shops sit on
+        57 distinct sites, exactly as dim_store's snapshot_rule declares — a site holds at most one shop
+        with no close date — so 9 of the 66 sites have nothing open on them, while 14 have seen at least
+        one shop close.
+      readings_taken:
+      - word: sites
+        took: the place, dim_location's grain — one row per site, 66 physical ones, a re-let site counted
+          once
+        could_also_mean: the premises, dim_store's grain — which would make the answer 16 closed shops
+          rather than a count of sites
+        declaration: 'dim_store.store_key declares finer_than: location_code, so premises roll up into
+          sites and never the reverse; the question asks ''how many different sites'', so the site grain
+          is named'
+      - word: were closed
+        took: 'not resolved at this step — both readings measured and carried forward: 9 sites with nothing
+          open left, 14 sites where at least one shop closed'
+        could_also_mean: either of those two; they differ by the 5 sites that were re-let and are trading
+          again
+        declaration: no declaration fixes closure at SITE grain — dim_location carries no close_date,
+          and store.resolution.active_is_the_absent_close_date binds close_date on the premises. Step
+          3 resolves it
+      blocked_by: []
+    - step: '3'
+      step_asks: were closed
+      turns:
+      - why: Apply the closure filter at site grain — sites with no shop left trading — and show the last
+          shop to close on each, so the answer can disclose whether these are shut for good or merely
+          annotated Restructured with no successor.
+        did: "WITH per_site AS (\n  SELECT\n    location_code,\n    COUNT(*) AS shops_ever,\n    SUM(CASE\
+          \ WHEN close_date IS NULL THEN 1 ELSE 0 END) AS shops_trading,\n    MAX(close_date) AS last_close_date\n\
+          \  FROM contoso_served.dim_store\n  WHERE\n    location_code <> -1\n  GROUP BY\n    location_code\n\
+          )\nSELECT\n  p.location_code,\n  p.shops_ever,\n  p.last_close_date,\n  s.store_name,\n  s.status_annotation\n\
+          FROM per_site AS p\nJOIN contoso_served.dim_store AS s\n  ON s.location_code = p.location_code\
+          \ AND s.close_date = p.last_close_date\nWHERE\n  p.shops_trading = 0\nORDER BY\n  p.location_code"
+        came_back: '9 row(s) (first 8 of 9): [{"location_code": 2, "shops_ever": 1, "last_close_date":
+          "2016-07-07", "store_name": "Contoso Store Northern Territory", "status_annotation": "Closed"},
+          {"location_code": 11, "shops_ever": 1, "last_close_date": "2015-05-05", "store_name": "Contoso
+          Store Yukon", "status_annotation": "Closed"}, {"location_code": 20, "shops_ever": 1, "last_close_date":
+          "2019-08-08", "store_name": "Contoso Store Brandenburg", "status_annotation": "Closed"}, {"location_code":
+          28, "shops_ever": 1, "last_close_date": "2017-08-03", "store_name": "Contoso Store Caltanissetta",
+          "status_annotation": "Closed"}, {"location_code": 35, "shops_ever": 1, "last_close_date": "2015-07-06",
+          "store_name": "Contoso Store Zeeland", "status_annotation": "Closed"}, {"location_code": 41,
+          "shops_ever": 1, "last_close_date": "2018-09-09", "store_name": "Contoso Store Fermanagh", "status_annotation":
+          "Closed"}, {"location_code": 46, "shops_ever": 2, "last_close_date": "2019-08-03", "store_name":
+          "Contoso Store Delaware", "status_annotation": "Closed"}, {"location_code": 52, "shops_ever":
+          1, "last_close_date": "2015-06-03", "store_name": "Contoso Store Mississippi", "status_annotation":
+          "Closed"}]'
+      - why: Confirm the ninth site's annotation and test whether "nothing left trading" and "shut for
+          good" select the same sites, while carrying the wider reading's figure in the same result.
+        did: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+          \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+          \ <> -1\n  GROUP BY\n    location_code\n), dead AS (\n  SELECT\n    location_code\n  FROM per_site\n\
+          \  WHERE\n    shops_trading = 0\n), last_shop AS (\n  SELECT\n    s.location_code,\n    s.status_annotation,\n\
+          \    ROW_NUMBER() OVER (PARTITION BY s.location_code ORDER BY s.close_date DESC) AS rn\n  FROM\
+          \ contoso_served.dim_store AS s\n  JOIN dead AS d\n    ON d.location_code = s.location_code\n\
+          )\nSELECT\n  l.status_annotation AS status_of_last_shop_to_close,\n  COUNT(*) AS sites_with_nothing_trading,\n\
+          \  (\n    SELECT\n      COUNT(DISTINCT location_code)\n    FROM contoso_served.dim_store\n \
+          \   WHERE\n      location_code <> -1 AND status_annotation = 'Closed'\n  ) AS sites_holding_a_shop_shut_for_good,\n\
+          \  (\n    SELECT\n      COUNT(DISTINCT location_code)\n    FROM contoso_served.dim_store\n \
+          \   WHERE\n      location_code <> -1 AND NOT close_date IS NULL\n  ) AS sites_where_any_shop_ever_closed\n\
+          FROM last_shop AS l\nWHERE\n  l.rn = 1\nGROUP BY\n  l.status_annotation"
+        came_back: '1 row(s): [{"status_of_last_shop_to_close": "Closed", "sites_with_nothing_trading":
+          9, "sites_holding_a_shop_shut_for_good": 9, "sites_where_any_shop_ever_closed": 14}]'
+      settled_on: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL\
+        \ THEN 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+        \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  location_code\nFROM per_site\nWHERE\n  shops_trading\
+        \ = 0"
+      means: 'The 9 sites that once held a physical shop and now hold none — every shop that ever stood
+        on them has closed and none was replaced. Site 46 is the one that held two shops in succession
+        before going dark; the other 8 held one each. The last shop to close at every one of the 9 is
+        annotated Closed by the source, none Restructured, so these are sites shut for good rather than
+        sites between tenants. All time, no date window. Not in this set: the 5 sites that saw a shop
+        close and were re-let and are trading again, and the 52 sites whose single shop never closed.'
+      readings_taken:
+      - word: were closed
+        took: 'the site itself shut down — no shop trades there any more: 9 sites'
+        could_also_mean: 'any site where a shop closed, even though the site was re-let and trades today:
+          14 sites'
+        declaration: 'the question document''s understood_as fixes this: "I read ''closed'' as applying
+          to the site itself (the whole site shut down), not to individual shops at still-open sites".
+          No ontology declaration settles closure at site grain, because dim_location carries no close_date
+          — store.resolution.active_is_the_absent_close_date binds close_date on the premises, and its
+          snapshot_rule note (57 trading shops over 57 location codes, a site holding at most one shop
+          with no close date) is what lets the premises state roll up to a site state cleanly. The 5-site
+          gap between the readings is entirely the re-let sites: 2, 3, 7 and two others that closed a
+          shop and opened another'
+      - word: closed
+        took: permanently shut down — and this cost nothing, because the two readings agree exactly
+        could_also_mean: closed at any point including temporary or transitional closures
+        declaration: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation
+          = ''Closed'', surfaces ''shut for good'', ''closed and not replaced'') as a child of `closed`.
+          Measured: the 9 sites with nothing trading and the 9 sites holding a shut-for-good shop are
+          the same 9, because all 9 ''Closed'' annotations in the bundle sit on the last shop of a dead
+          site and all 7 ''Restructured'' ones are followed by a successor. Both readings give 9'
+      - word: had shops
+        took: ever held at least one shop — which excludes nothing, since every physical site has held
+          one
+        could_also_mean: still had a shop at the moment it closed
+        declaration: 'store__sited_in__location is declared mandatory both ways; all 66 physical sites
+          have held a shop, so the condition is not a filter. The two readings coincide here as well:
+          a site goes dark at the moment its last shop closes, so it had a shop then by construction'
+      blocked_by: []
+    - step: '4'
+      step_asks: How many different sites
+      turns:
+      - why: 'Claim the count of sites that went dark: 9, with the one reading that would give a different
+          figure (14) disclosed rather than hidden.'
+        did: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL THEN\
+          \ 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+          \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\n\
+          FROM per_site\nWHERE\n  shops_trading = 0"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 1 row(s): [{"sites_closed": 9}]  Give `claimed_answer`
+          as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+          rows settle the question, do not decline.'
+      settled_on: "WITH per_site AS (\n  SELECT\n    location_code,\n    SUM(CASE WHEN close_date IS NULL\
+        \ THEN 1 ELSE 0 END) AS shops_trading\n  FROM contoso_served.dim_store\n  WHERE\n    location_code\
+        \ <> -1\n  GROUP BY\n    location_code\n)\nSELECT\n  COUNT(DISTINCT location_code) AS sites_closed\n\
+        FROM per_site\nWHERE\n  shops_trading = 0"
+      means: 'One figure: 9 — the number of distinct places that once had a physical Contoso shop standing
+        on them and have none trading today, counted over the whole history the store dimension holds,
+        with no date window. Each is a place where every shop that ever traded there has closed and nothing
+        replaced it; the closures run from 2015-05-05 to 2019-08-08, and the last shop at every one of
+        the 9 is annotated Closed, none Restructured. Counted once per place and not once per shop — site
+        46 held two shops in succession and counts once. What the figure does NOT include: the 5 places
+        that saw a shop close but were re-let and are trading today (including those would give 14); the
+        52 places whose single shop has never closed; the 16 shop closures themselves, which is a premises
+        count and a different question; and the web shop, which has no premises and no place.'
+      readings_taken:
+      - word: were closed
+        took: 'the site itself went dark — no shop trades there any more: 9'
+        could_also_mean: 'any site where a shop closed, even if the site was re-let and is trading today:
+          14'
+        declaration: the question document's understood_as fixes this reading verbatim — closure applies
+          to the site itself, "not to individual shops at still-open sites". No ontology declaration settles
+          closure at site grain, because dim_location carries no close_date at all; store.resolution.active_is_the_absent_close_date
+          binds close_date on the premises, and its snapshot_rule (57 trading shops over 57 distinct location
+          codes — a site holds at most one shop with no close date) is exactly what lets the premises
+          state roll up to a site state without ambiguity. The entire gap between 9 and 14 is the 5 re-let
+          sites, which this reading deliberately keeps out
+      - word: closed
+        took: permanently shut down — and this cost nothing, because the readings agree exactly
+        could_also_mean: closed at any point, including temporary or transitional closures
+        declaration: 'store.resolution.active_is_the_absent_close_date declares `shut` (status_annotation
+          = ''Closed'', surfacing as ''shut for good'', ''closed and not replaced'') as a child of `closed`.
+          Measured: the 9 sites with nothing trading and the 9 sites holding a shut-for-good shop are
+          the SAME 9 — all 9 ''Closed'' annotations in the bundle sit on the last shop of a dead site,
+          and all 7 ''Restructured'' ones are followed by a successor. Both readings give 9'
+      - word: shops
+        took: physical premises only
+        could_also_mean: all recorded store rows, the web shop included — which would add nothing here
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel, default physical with applies:
+          subject. Immaterial either way: the online row''s location -1 is not a place and carries no
+          close date, so it cannot be a closed site'
+      - word: had shops
+        took: ever held at least one shop
+        could_also_mean: still had a shop at the moment the site closed
+        declaration: the two readings coincide — a site goes dark at the moment its last shop closes,
+          so by construction it had a shop then. Neither reading removes any of the 66 sites
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id001
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+v3_answer_step: '4'
+v3_gaps: []
+v3_bucket: WRONG
+v3_why: claimed '9', reference 14
+v3_seconds: 311.6

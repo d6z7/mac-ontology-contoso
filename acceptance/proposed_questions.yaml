@@ -1,0 +1,1391 @@
+# PROPOSED QUESTIONS — twenty questions composed to find the EXPRESSIVE LIMIT of the MAC query
+# grammar, not to be answered by it. 2026-10-09.
+#
+# WHY THIS FILE EXISTS, in the operator's words: "i know that the current ontology vocabulary and
+# grammar is incomplete for complexer queries and we need to solve it ... if we first solve all
+# other aspects and leave this to the end ... then i might find myself in the trouble of figuring
+# inherent limitation of the system is so big that these questions cannot be handled at all."
+#
+# THIS IS NOT THE CORPUS. `acceptance/questions.yaml` is the operator's and is untouched. Nothing
+# here is approved, nothing here is a reference answer, and no board reads it. Every entry carries
+# a HAND-WRITTEN oracle SQL statement that was EXECUTED against this bundle's own
+# `contoso5.duckdb` on 2026-10-09, and the figure it returned. The oracle is the standard; the
+# intents below are the attempts, and their verdicts are measurements of the grammar.
+#
+# THE HYPOTHESIS UNDER TEST. A prior measurement concluded "grammar is not the bottleneck: 70/70
+# corpus questions encode, 1 needs new grammar". These twenty are harder than the corpus on
+# purpose — the shapes the operator named: "how many something is more or less than something else
+# somewhere else where this is here or there and something is not somewhere else", and trends over
+# months, years and quarters.
+#
+#   MEASURED, 20 questions / 45 encoding attempts:
+#     3  of 20  reach a CORRECT answer — and all three only because a PERSON supplied, by hand,
+#               the derived set or the derived constant that the grammar cannot compute
+#     2  of 20  have exactly one available encoding and it answers a DIFFERENT question
+#     4  of 20  refuse or clarify honestly
+#    11 of 20   CANNOT BE ENCODED — a field, an operation or a construct does not exist
+#    13 of 20   have a plausible nearest encoding that PLANS, EXECUTES and returns a confident
+#               WRONG number. That is the figure that matters: the grammar's reach is not the
+#               risk, its SILENCE about its own reach is.
+#
+#   WHY THE CORPUS COULD NOT HAVE FOUND THESE, measured: 13 of this bundle's 85 recorded intents
+#   carry a `having` or an `all_of`, and every one of the thirteen is `operation: list` or
+#   `operation: exists`. Not one is a `count`. The shape that breaks is absent from the corpus,
+#   so "70 of 70 encode" is a fact about which questions were written down.
+#
+# HOW TO READ AN ENTRY. `verdict` is the best outcome any attempt reached. `attempts` are every
+# encoding tried, each with the classification MEASURED today:
+#
+#   CANNOT_ENCODE  the Intent model rejects it (pydantic) — no field carries the question
+#   REFUSED        the planner returned a Refusal; `detail` quotes its own reason
+#   CLARIFIED      the planner asked back
+#   SQL_INVALID    a Plan was produced and the ENGINE rejected the statement
+#   PLANS_WRONG    it ran, and the figure answers a different question than the oracle
+#   PLANS_PARTIAL  it ran, the figure is EXACT for a NARROWER question, and the asked question
+#                  is not answered — the comparison, the threshold or the delta is simply absent
+#   PLANS_CORRECT  it ran, and the figure is the oracle's
+#
+# `matches_oracle` is the honest flag beside every PLANS_* row. `expect` is what the attempt
+# returned on 2026-10-09 and is what `meaning-as-code/tools/mac_grammar_reach.py` holds it to: a
+# recorded REFUSED that becomes a PLANS_CORRECT is NEWS and the gate says so.
+#
+# ASSUMPTIONS ARE STATED PER QUESTION, because most of these questions have more than one
+# defensible reading and a silent choice would make the oracle worthless. Where the bundle's own
+# declarations settle the reading, the oracle follows the BUNDLE and says so — a sales question
+# means the STORE's country (country.yaml#country.default.a_sales_question_means_the_store_country),
+# "stores" means the physical, trading ones (store.yaml, `physical` + `active`, 57 of 74 rows), and
+# the `--` country sentinel is not a country. Aligning the oracle with the declared reading is what
+# makes a WRONG verdict a statement about the GRAMMAR rather than about a population default.
+
+metadata:
+  schema: mac.proposed_questions/1
+  status: PROPOSED — not approved, not a reference, not read by the board
+  pack: example/contoso5
+  composed_on: '2026-10-09'
+  measured_against:
+    bundle: example/contoso5
+    warehouse: contoso5.duckdb
+    view_schema: contoso_served
+    runtime: mac-platform @ packages/mac-runtime/src/mac_runtime
+  read_by: meaning-as-code/tools/mac_grammar_reach.py
+  default_assumptions:
+    - a sales question means the STORE's country, per country.yaml#country.default
+    - '"stores" means the 57 physical, trading rows of dim_store (populations `physical` + `active`)'
+    - the `--` country/location sentinel is excluded (country.yaml, location.yaml exclusions)
+    - '"revenue" means net_amount, per net_revenue.yaml#net_revenue.default.revenue_means_net'
+    - a question naming no period covers all of order_date, 2016-05-18 .. 2025-12-31
+
+questions:
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-01
+    question: Which stores sold more than the average store in their own country?
+    shape: a threshold that is a CORRELATED aggregate — the average of the group the row is in
+    assumptions:
+      - the store's own country, not the customer's
+      - the comparison set is the other stores of that country, trading and physical
+      - the average is the mean of the per-store totals, not the mean of the line amounts
+    oracle_sql: |
+      WITH s AS (
+        SELECT st.store_key, st.store_name, st.country_code, SUM(sl.net_amount) AS rev
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key = sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL
+        GROUP BY 1,2,3)
+      SELECT store_name, country_code, rev
+      FROM s WHERE rev > (SELECT AVG(rev) FROM s s2 WHERE s2.country_code = s.country_code)
+      ORDER BY country_code, rev DESC
+    oracle:
+      rows: 25
+      first_row_note: Contoso Store Victoria (AU) 2 432 039.27 against an AU mean of 1 500 222.98
+    verdict: CANNOT_ENCODE
+    missing: >-
+      `HavingRef.value` is a SCALAR float. There is no way to say "the value is the average of this
+      measure over the other members of my own group", which needs a correlated scalar subquery.
+    not_expressible: >-
+      DECLARED — `having` (scope: intent), and `correlated_subquery_filter` + `derived_table` name
+      the SQL half. This is ADV-13's defect with one more hop (per country rather than global).
+    attempts:
+      - label: name the correlated aggregate in the threshold
+        classification: CANNOT_ENCODE
+        detail: "having.0.value — Input should be a valid number, unable to parse string as a number"
+        expect: {classification: CANNOT_ENCODE}
+        intent:
+          measure: Store
+          operation: list
+          having:
+            - subject: NetRevenue
+              operation: average
+              op: gt
+              value: country_avg
+              utterance: above the average of stores in their own country
+          confidence: 0.6
+      - label: ADV-13's vacuous 0.0 threshold with a country slice
+        classification: SQL_INVALID
+        detail: >-
+          a Plan was composed and DuckDB rejected it — `SELECT dim_country.country_name,
+          dim_store.store_name ... GROUP BY dim_country.country_code, dim_country.country_name`
+          leaves store_name ungrouped (BinderException). A `list` of one concept sliced by ANOTHER
+          and carrying a `having` composes a statement no engine runs; nothing in the grammar says
+          so. (With `column: country_code` instead it refuses policy_denied — country_code claims
+          no `axis` role — so this slice column is the only one available.)
+        expect: {classification: SQL_INVALID}
+        intent:
+          measure: Store
+          operation: list
+          slices:
+            - {term: Country, utterance: in their own country, column: country_name}
+          having:
+            - {subject: NetRevenue, operation: average, op: gt, value: 0.0, utterance: above the average store in their country}
+          confidence: 0.5
+      - label: ADV-13 exactly — the global shape, no slice
+        classification: PLANS_WRONG
+        detail: >-
+          `HAVING AVG(net_amount) > 0.0` — every store with any sale passes. 57 of 57 trading
+          stores, where the per-country question is 25 and ANCHOR_21's global reading is 8.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 57}
+        intent:
+          measure: Store
+          operation: list
+          having:
+            - {subject: NetRevenue, operation: average, op: gt, value: 0.0, utterance: more than the average store}
+          confidence: 0.5
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-02
+    question: How many customers bought Contoso products but never bought Litware?
+    shape: exclusion plus existence — a NEGATED existence group at the identity grain
+    assumptions:
+      - all time; brand is read off the product row
+      - '"bought" means at least one sales line; "never" means zero sales lines'
+    oracle_sql: |
+      SELECT COUNT(*) AS customers FROM (
+        SELECT sl.customer_key FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_product p ON p.product_key = sl.product_key
+        GROUP BY 1
+        HAVING SUM(CASE WHEN p.brand='Contoso' THEN 1 ELSE 0 END) > 0
+           AND SUM(CASE WHEN p.brand='Litware' THEN 1 ELSE 0 END) = 0)
+    oracle:
+      value: 29768
+      reference_figures: 52189 customers bought anything, 33229 bought Contoso at all
+    verdict: CANNOT_ENCODE
+    missing: >-
+      `Intent.all_of` is a conjunction of groups that must EACH have a row; there is no `none_of`
+      — a group that must have NO row. A row-level `ne`/`not_in` cannot say it: "has a row that is
+      not Litware" is true of every Contoso buyer.
+    not_expressible: >-
+      NEW, and a declared entry DENIES it. `set_operation` reads "EXCEPT is NOT in this gap — it is
+      the anti-join the `exists` operation already covers". It is not covered: `exists` anti-joins
+      the subject's canonical key against an EVENT concept and cannot carry "no row where brand =
+      X" (`correlated_subquery_filter` is the declared reason the inner query cannot be qualified).
+    attempts:
+      - label: all_of Contoso, plus a row filter brand ne Litware
+        classification: PLANS_WRONG
+        detail: >-
+          `WHERE brand IS DISTINCT FROM 'Litware' HAVING SUM(CASE WHEN brand='Contoso'...) > 0`
+          with NO GROUP BY — the group-level quantifier became a predicate on the whole
+          population. 51 936 = every customer with any non-Litware line.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, value: 51936}
+        intent:
+          measure: Customer
+          operation: count
+          filters:
+            - {term: Brand, op: ne, value: Litware, utterance: never Litware}
+          all_of:
+            - filters: [{term: Brand, op: eq, value: Contoso, utterance: Contoso}]
+              utterance: bought Contoso
+          confidence: 0.5
+      - label: two all_of groups, the second negated with ne
+        classification: PLANS_WRONG
+        detail: >-
+          same missing GROUP BY. 52 189 = every customer who ever bought anything, for a question
+          whose answer is 29 768. The HAVING is evaluated once over the entire result set.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, value: 52189}
+        intent:
+          measure: Customer
+          operation: count
+          all_of:
+            - filters: [{term: Brand, op: eq, value: Contoso, utterance: Contoso}]
+              utterance: bought Contoso
+            - filters: [{term: Brand, op: ne, value: Litware, utterance: never Litware}]
+              utterance: never Litware
+          confidence: 0.5
+      - label: a `none_of` field
+        classification: CANNOT_ENCODE
+        detail: "none_of — Extra inputs are not permitted (Intent model_config extra='forbid')"
+        expect: {classification: CANNOT_ENCODE}
+        intent:
+          measure: Customer
+          operation: count
+          none_of:
+            - filters: [{term: Brand, op: eq, value: Litware, utterance: Litware}]
+          confidence: 0.5
+      - label: all_of with a not_in group, asked as a LIST so the identity is grouped
+        classification: PLANS_WRONG
+        detail: >-
+          `GROUP BY customer_key HAVING SUM(CASE WHEN brand='Contoso'...) > 0 AND SUM(CASE WHEN
+          brand NOT IN ('Litware') ...) > 0` — correctly grouped and still the wrong QUESTION:
+          33 229 = everyone who bought Contoso, because every one of them also has a non-Litware
+          line. An existence group cannot be turned into a non-existence group by negating its
+          predicate.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 33229}
+        intent:
+          measure: Customer
+          operation: list
+          all_of:
+            - filters: [{term: Brand, op: eq, value: Contoso, utterance: Contoso}]
+              utterance: bought Contoso
+            - filters: [{term: Brand, op: not_in, value: [Litware], utterance: never Litware}]
+              utterance: never Litware
+          confidence: 0.4
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-03
+    question: How many products were sold in EVERY country where we have an open store?
+    shape: set division where the DIVISOR is itself derived from the data
+    assumptions:
+      - '"open store" = the `active` + `physical` population; on this data that is 8 countries'
+      - the same population is applied to the sales side, which is what the planner does
+    oracle_sql: |
+      WITH universe AS (
+        SELECT DISTINCT st.country_code FROM contoso_served.dim_store st
+        WHERE st.location_code <> -1 AND st.close_date IS NULL),
+      sold AS (
+        SELECT DISTINCT sl.product_key, st.country_code
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key = sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL)
+      SELECT COUNT(*) AS products FROM (
+        SELECT product_key FROM sold WHERE country_code IN (SELECT country_code FROM universe)
+        GROUP BY 1 HAVING COUNT(DISTINCT country_code) = (SELECT COUNT(*) FROM universe))
+    oracle:
+      value: 817
+    verdict: ENCODES_PLANS_CORRECT — with the universe enumerated by hand
+    missing: >-
+      the universe. `all_of` takes a LIST OF LITERAL GROUPS, so "every country where we have an
+      open store" has to be typed out as eight `eq` groups by whoever writes the intent. Nothing
+      computes the divisor, and nothing notices when it changes: open a store in a ninth country
+      and the same intent silently answers the old question.
+    not_expressible: NEW — a derived universe for a set division is nowhere declared.
+    attempts:
+      - label: eight hand-written all_of groups, asked as a COUNT
+        classification: PLANS_WRONG
+        detail: >-
+          2517 — the entire catalogue. The eight `SUM(CASE WHEN country_code = ...) > 0` terms are
+          emitted with NO GROUP BY, so they test the whole population instead of each product.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, value: 2517}
+        intent:
+          measure: Product
+          operation: count
+          all_of:
+            - {filters: [{term: Country, op: eq, value: AU, utterance: AU}], utterance: sold in AU}
+            - {filters: [{term: Country, op: eq, value: CA, utterance: CA}], utterance: sold in CA}
+            - {filters: [{term: Country, op: eq, value: DE, utterance: DE}], utterance: sold in DE}
+            - {filters: [{term: Country, op: eq, value: FR, utterance: FR}], utterance: sold in FR}
+            - {filters: [{term: Country, op: eq, value: GB, utterance: GB}], utterance: sold in GB}
+            - {filters: [{term: Country, op: eq, value: IT, utterance: IT}], utterance: sold in IT}
+            - {filters: [{term: Country, op: eq, value: NL, utterance: NL}], utterance: sold in NL}
+            - {filters: [{term: Country, op: eq, value: US, utterance: US}], utterance: sold in US}
+          confidence: 0.6
+      - label: the same eight groups, asked as a LIST
+        classification: PLANS_CORRECT
+        detail: >-
+          817 rows, exactly the oracle. `GROUP BY dim_product.product_name` is present because the
+          answer is a list of the subject, and that is the only reason the group-level conjunction
+          works at all.
+        matches_oracle: true
+        expect: {classification: PLANS_CORRECT, rows: 817}
+        intent:
+          measure: Product
+          operation: list
+          all_of:
+            - {filters: [{term: Country, op: eq, value: AU, utterance: AU}], utterance: sold in AU}
+            - {filters: [{term: Country, op: eq, value: CA, utterance: CA}], utterance: sold in CA}
+            - {filters: [{term: Country, op: eq, value: DE, utterance: DE}], utterance: sold in DE}
+            - {filters: [{term: Country, op: eq, value: FR, utterance: FR}], utterance: sold in FR}
+            - {filters: [{term: Country, op: eq, value: GB, utterance: GB}], utterance: sold in GB}
+            - {filters: [{term: Country, op: eq, value: IT, utterance: IT}], utterance: sold in IT}
+            - {filters: [{term: Country, op: eq, value: NL, utterance: NL}], utterance: sold in NL}
+            - {filters: [{term: Country, op: eq, value: US, utterance: US}], utterance: sold in US}
+          confidence: 0.6
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-04
+    question: Which brands grew year over year in 2021 against 2020?
+    shape: YtY delta, and a predicate ON the delta
+    assumptions:
+      - 2020 and 2021 chosen because every brand FELL 2023 -> 2024, which makes a weaker oracle
+      - growth means net revenue in 2021 strictly greater than in 2020
+    oracle_sql: |
+      SELECT p.brand,
+        SUM(CASE WHEN sl.order_date >= DATE '2020-01-01' AND sl.order_date < DATE '2021-01-01' THEN sl.net_amount ELSE 0 END) AS rev_2020,
+        SUM(CASE WHEN sl.order_date >= DATE '2021-01-01' AND sl.order_date < DATE '2022-01-01' THEN sl.net_amount ELSE 0 END) AS rev_2021
+      FROM contoso_served.v_contoso5_sales_line sl
+      JOIN contoso_served.dim_product p ON p.product_key = sl.product_key
+      WHERE sl.order_date >= DATE '2020-01-01' AND sl.order_date < DATE '2022-01-01'
+      GROUP BY 1 HAVING rev_2021 > rev_2020 ORDER BY 1
+    oracle:
+      rows: 4
+      first_row_note: Litware, Southridge Video, Tailspin Toys, The Phone Company — 4 of 11 brands
+    verdict: CANNOT_ENCODE
+    missing: >-
+      TWO things. (1) There is no YEAR-grain comparison axis: a grain slice (`term: year`) is
+      resolved as a FUNCTION of the subject's date column and is not accepted as `compare.along`,
+      while the only axis that IS accepted (`Order.order_date`) is the raw day. (2) Even with a
+      delta column there is no predicate on it — SQL's QUALIFY, or a wrapper query.
+    not_expressible: >-
+      NEW, and `CompareRef`'s own docstring claims the opposite: "'year-over-year growth by
+      country' ... one row set, one grouping, and one more column". Measured here: not at year
+      grain, not at month grain, not at quarter grain.
+    attempts:
+      - label: year grain slice plus a brand slice, compare along NetRevenue.order_date
+        classification: REFUSED
+        detail: >-
+          unsupported_intent — "this asks each row to be compared with the previous
+          NetRevenue.order_date, and the answer is not broken down by it". The axis check reads the
+          SliceRef's declared `column`, which a grain slice leaves None, so a temporal grain can
+          never satisfy it.
+        expect: {classification: REFUSED, reason_code: unsupported_intent}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          slices:
+            - {term: Brand, utterance: by brand, column: brand}
+            - {term: year, utterance: year over year, column: null}
+          period: {start: '2020-01-01', end: '2022-01-01', raw: 2020 and 2021}
+          compare: {against: previous, along: NetRevenue.order_date, as: difference, utterance: year over year}
+          confidence: 0.6
+      - label: year grain slice carrying column=order_date, so the axis check passes
+        classification: REFUSED
+        detail: >-
+          policy_denied — the composer emitted UNPARSEABLE SQL and only the bundle's declared SQL
+          guards noticed: `OVER (PARTITION BY dim_product.brand, CAST(date_trunc(:grain_1,
+          ...order_date) ORDER BY ...)`. `sql.py` builds the partition list with
+          `item.split(" AS ")[0]`, which truncates the grain's `CAST(... AS DATE)` mid-expression.
+          The refusal blames the guards ("A guard that cannot see its subject does not pass it")
+          and never names the real fault. Had the guards been absent the statement would have gone
+          to the engine; had the parenthesis been balanced the answer would still be NULL in every
+          row, because partitioning BY the month makes every partition one row long.
+        expect: {classification: REFUSED, reason_code: policy_denied}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          slices:
+            - {term: Brand, utterance: by brand, column: brand}
+            - {term: year, utterance: year over year, column: order_date}
+          period: {start: '2020-01-01', end: '2022-01-01', raw: 2020 and 2021}
+          compare: {against: previous, along: NetRevenue.order_date, as: difference, utterance: year over year}
+          confidence: 0.6
+      - label: the only axis that resolves — Order.order_date, a DAY
+        classification: PLANS_WRONG
+        detail: >-
+          6190 rows of brand x DAY with a day-over-day delta, for a question about two years. Valid
+          SQL, a real LAG, and a different question.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 6190}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          slices:
+            - {term: Brand, utterance: by brand, column: brand}
+            - {term: Order, utterance: year, column: order_date}
+          period: {start: '2020-01-01', end: '2022-01-01', raw: 2020 and 2021}
+          compare: {against: previous, along: Order.order_date, as: difference, utterance: year over year}
+          confidence: 0.6
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-05
+    question: What was the month-over-month change in net revenue in 2024?
+    shape: MtM — period-over-period at month grain
+    assumptions:
+      - calendar months of order_date; the first month has no predecessor and reads NULL
+    oracle_sql: |
+      WITH m AS (SELECT date_trunc('month', order_date) AS mth, SUM(net_amount) AS rev
+        FROM contoso_served.v_contoso5_sales_line
+        WHERE order_date >= DATE '2024-01-01' AND order_date < DATE '2025-01-01' GROUP BY 1)
+      SELECT mth, rev, rev - LAG(rev) OVER (ORDER BY mth) AS mom_change FROM m ORDER BY mth
+    oracle:
+      rows: 12
+      first_row_note: "2024-01 3 282 292.89 (NULL); 2024-02 4 147 885.77 (+865 592.88); 2024-03 -2 083 578.86"
+    verdict: CANNOT_ENCODE
+    missing: >-
+      a comparison axis at a temporal GRAIN. The grain mechanism (`_temporal_axis`, a date_trunc
+      function over the subject's period column) and the comparison mechanism
+      (`compare_axis`, a declared `<Concept>.<column>` that must also appear as a slice) are two
+      separate readers that cannot name the same axis.
+    not_expressible: NEW — and contradicted by `CompareRef`, which names "monthly revenue trend" as its own purpose.
+    attempts:
+      - label: month grain slice, compare along NetRevenue.order_date
+        classification: REFUSED
+        detail: unsupported_intent — "the answer is not broken down by it"
+        expect: {classification: REFUSED, reason_code: unsupported_intent}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          slices: [{term: month, utterance: monthly, column: null}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          compare: {against: previous, along: NetRevenue.order_date, as: difference, utterance: month over month}
+          confidence: 0.6
+      - label: month grain slice carrying column=order_date
+        classification: REFUSED
+        detail: >-
+          policy_denied — unparseable SQL, the same truncated `CAST(date_trunc(...)` as PROP-04.
+        expect: {classification: REFUSED, reason_code: policy_denied}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          slices: [{term: month, utterance: monthly, column: order_date}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          compare: {against: previous, along: NetRevenue.order_date, as: difference, utterance: month over month}
+          confidence: 0.6
+      - label: Order.order_date — day over day
+        classification: PLANS_WRONG
+        detail: >-
+          3450 rows (one per trading day over all time; with the 2024 period, 365) with a
+          day-over-day delta. Also note the outer ORDER BY is the AGGREGATE, descending, so a
+          series is returned out of its own axis order.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 365}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          slices: [{term: Order, utterance: monthly, column: order_date}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          compare: {against: previous, along: Order.order_date, as: difference, utterance: month over month}
+          confidence: 0.6
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-06
+    question: What are the top 3 products by net revenue within each product category?
+    shape: rank WITHIN a group — per-group top-N
+    assumptions:
+      - all time; category means `category_name`, the declared default level
+      - ties broken arbitrarily; none occur in the first three of any category
+    oracle_sql: |
+      WITH r AS (
+        SELECT p.category_name, p.product_name, SUM(sl.net_amount) AS rev,
+               ROW_NUMBER() OVER (PARTITION BY p.category_name ORDER BY SUM(sl.net_amount) DESC) AS rk
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_product p ON p.product_key = sl.product_key
+        GROUP BY 1,2)
+      SELECT category_name, product_name, rev FROM r WHERE rk <= 3
+      ORDER BY category_name, rev DESC
+    oracle:
+      rows: 24
+      first_row_note: 3 per category over 8 categories; Audio's leader is WWI 4GB Video Recording Pen X200 Yellow
+    verdict: ENCODES_PLANS_WRONG
+    missing: >-
+      `Intent.limit` is a GLOBAL row cap. There is no per-partition limit, which is
+      `ROW_NUMBER() OVER (PARTITION BY ...)` plus a predicate on it.
+    not_expressible: NEW — per-group top-N is not among the nine entries.
+    attempts:
+      - label: category and product slices, ordering by the aggregate, limit 3
+        classification: PLANS_WRONG
+        detail: >-
+          3 rows, all three from Computers. The limit truncated the GLOBAL ranking.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 3}
+        intent:
+          measure: NetRevenue
+          operation: rank
+          slices:
+            - {term: ProductCategory, utterance: within each category, column: category_name}
+            - {term: Product, utterance: products, column: product_name}
+          ordering: [{by: aggregate, direction: desc}]
+          limit: 3
+          confidence: 0.6
+      - label: limit 24 — 3 x 8, the nearest arithmetic workaround
+        classification: PLANS_WRONG
+        detail: >-
+          24 rows, the right COUNT and the wrong ROWS: the global top 24, dominated by Computers
+          and TV and Video, with several categories absent entirely. A workaround that returns the
+          expected shape and the wrong content is the hardest kind to notice.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 24}
+        intent:
+          measure: NetRevenue
+          operation: rank
+          slices:
+            - {term: ProductCategory, utterance: within each category, column: category_name}
+            - {term: Product, utterance: products, column: product_name}
+          ordering: [{by: aggregate, direction: desc}]
+          limit: 24
+          confidence: 0.6
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-07
+    question: In which countries does the average order value exceed the global average order value?
+    shape: a threshold that is a GLOBAL aggregate, over a RATIO measure
+    assumptions:
+      - average order value = net revenue / distinct orders, the declared ratio route
+      - the global average is the total over total, not the mean of the eight country figures
+    oracle_sql: |
+      WITH per_country AS (
+        SELECT st.country_code, SUM(sl.net_amount) AS rev, COUNT(DISTINCT sl.order_key) AS orders
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key = sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL GROUP BY 1),
+      g_all AS (SELECT SUM(rev)/SUM(orders) AS aov FROM per_country)
+      SELECT country_code, rev/orders AS aov, (SELECT aov FROM g_all) AS global_aov
+      FROM per_country WHERE rev/orders > (SELECT aov FROM g_all) ORDER BY 2 DESC
+    oracle:
+      rows: 3
+      first_row_note: IT 2630.83, GB 2481.04, US 2422.85 against a global 2414.06
+    verdict: CANNOT_ENCODE
+    missing: >-
+      two mechanisms. (1) The threshold is an aggregate over the whole population, which
+      `HavingRef.value` cannot hold. (2) `HavingRef.operation` is typed `OperationKind`, an
+      11-member closed vocabulary, and only `sum` and `average` are honoured — `ratio` SILENTLY
+      RENDERS AS SUM. So even a hand-computed global AOV cannot be applied to the ratio.
+    not_expressible: >-
+      the threshold half is DECLARED (`having`). The silent operation fallback is NEW and is the
+      worst class in the file — it answers.
+    attempts:
+      - label: the average order value per country, with no threshold
+        classification: PLANS_PARTIAL
+        detail: >-
+          8 rows and the figures are exact: IT 2630.8305770088, GB 2481.0377482293, US
+          2422.8451023667 — the ratio route is sound. Only the comparison is missing.
+        matches_oracle: false
+        expect: {classification: PLANS_PARTIAL, rows: 8}
+        intent:
+          measure: NetRevenue
+          operation: ratio
+          denominator: Order
+          slices: [{term: Country, utterance: by country, column: country_name}]
+          confidence: 0.8
+      - label: the same, with the global AOV hand-computed into a having over the ratio
+        classification: PLANS_WRONG
+        detail: >-
+          `having: {operation: ratio, value: 2414.058}` compiled to `HAVING SUM(net_amount) >
+          2414.058` — total revenue above 2 414 USD, true of all eight. 8 rows where the answer is
+          3, from an answer that claims to have filtered. Measured across all eleven
+          OperationKind members: sum -> SUM, average -> AVG, count -> refuses, min/max -> clarify,
+          and ratio, rank, list, compare, exists, define -> SUM, silently.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 8}
+        intent:
+          measure: NetRevenue
+          operation: ratio
+          denominator: Order
+          slices: [{term: Country, utterance: by country, column: country_name}]
+          having:
+            - {subject: NetRevenue, operation: ratio, op: gt, value: 2414.058, utterance: above the global average order value}
+          confidence: 0.5
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-08
+    question: How many of our stores are in a state where no customer is based?
+    shape: multi-hop NEGATION across two dimensions on a shared attribute
+    assumptions:
+      - state is matched within its country, since state names repeat across countries
+      - trading physical stores only; all 104 990 customer rows count as "based"
+      - 'state-level rather than country-level, because every one of the 8 countries HAS customers:
+        the country-level reading answers 0 and discriminates nothing'
+    oracle_sql: |
+      SELECT COUNT(*) AS stores FROM contoso_served.dim_store st
+      WHERE st.location_code <> -1 AND st.close_date IS NULL
+        AND NOT EXISTS (SELECT 1 FROM contoso_served.dim_customer c
+                        WHERE c.country_code = st.country_code AND c.state = st.state)
+    oracle:
+      value: 53
+      reference_figures: 57 trading stores, 66 store states, 565 customer states
+    verdict: CANNOT_ENCODE
+    missing: >-
+      a NEGATED join filter. `JoinFilterRef.op` is the 8-member `FilterOp`, and exactly ONE member
+      (`eq`) renders valid SQL. `ne`, `gt`, `gte`, `lt`, `lte` and `not_in` emit the ENUM'S OWN
+      NAME as the SQL operator — `dim_store.state ne dim_customer.state` — and `in` renders
+      `state in state`, which parses, executes, and means something nobody asked.
+    not_expressible: >-
+      NEW. `JoinFilterRef` is not mentioned in `not_expressible` at all, and finding A8 records
+      only the left-column half of its asymmetry.
+    attempts:
+      - label: join filter Store.state ne Customer.state
+        classification: REFUSED
+        detail: >-
+          policy_denied — "Invalid expression / Unexpected token ... dim_store.state ne
+          dim_customer.state". The refusal reports that four SQL guards could not parse the
+          statement; it never says that the operator is unimplemented.
+        expect: {classification: REFUSED, reason_code: policy_denied}
+        intent:
+          measure: Store
+          operation: count
+          join_filters:
+            - {left_term: Store, op: ne, right_term: Customer, right_column: state, utterance: where no customer is based}
+          confidence: 0.5
+      - label: the positive form — eq — which IS implemented
+        classification: PLANS_WRONG
+        detail: >-
+          4, which is exactly 57 - 53, the complement. The answer the question wants is one NOT
+          away and the grammar cannot take it.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, value: 4}
+        intent:
+          measure: Store
+          operation: count
+          join_filters:
+            - {left_term: Store, op: eq, right_term: Customer, right_column: state, utterance: where a customer is based}
+          confidence: 0.5
+      - label: op=in, the other member that renders without a parse error
+        classification: PLANS_WRONG
+        detail: >-
+          `dim_store.state in dim_customer.state` executes and returns 5. Valid to the parser,
+          meaningless as a question, and nothing refuses it.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, value: 5}
+        intent:
+          measure: Store
+          operation: count
+          join_filters:
+            - {left_term: Store, op: in, right_term: Customer, right_column: state, utterance: where a customer is based}
+          confidence: 0.4
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-09
+    question: How did the margin percentage change quarter over quarter in 2024?
+    shape: period-over-period on a DERIVED measure
+    assumptions:
+      - margin percentage = margin_amount / net_amount, the declared `margin_percent` ratio
+      - calendar quarters of order_date
+    oracle_sql: |
+      WITH q AS (SELECT date_trunc('quarter', order_date) AS qtr,
+        SUM(margin_amount)/NULLIF(SUM(net_amount),0) AS margin_pct
+        FROM contoso_served.v_contoso5_sales_line
+        WHERE order_date >= DATE '2024-01-01' AND order_date < DATE '2025-01-01' GROUP BY 1)
+      SELECT qtr, margin_pct, margin_pct - LAG(margin_pct) OVER (ORDER BY qtr) AS qoq_change
+      FROM q ORDER BY qtr
+    oracle:
+      rows: 4
+      first_row_note: "Q1 0.5565203771112336 (NULL), Q2 0.5619814595433922 (+0.0054610824), Q3 0.5600061795680787, Q4 0.5598062856721783"
+    verdict: CANNOT_ENCODE
+    missing: the same temporal-grain comparison axis as PROP-04 and PROP-05.
+    not_expressible: NEW — see PROP-05.
+    attempts:
+      - label: quarter grain slice plus compare along Margin.order_date
+        classification: REFUSED
+        detail: unsupported_intent — "the answer is not broken down by it"
+        expect: {classification: REFUSED, reason_code: unsupported_intent}
+        intent:
+          measure: Margin
+          operation: ratio
+          denominator: NetRevenue
+          slices: [{term: quarter, utterance: quarter over quarter, column: null}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          compare: {against: previous, along: Margin.order_date, as: difference, utterance: quarter over quarter}
+          confidence: 0.5
+      - label: Order.order_date — the ratio IS wrapped in the LAG, at day grain
+        classification: PLANS_WRONG
+        detail: >-
+          365 rows. The window arithmetic over a derived measure is composed correctly —
+          `((SUM(margin)/NULLIF(SUM(net),0)) - LAG(same) OVER (ORDER BY order_date))` — so the
+          only thing missing is the grain. A daily margin-percentage swing is noise, not a trend.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 365}
+        intent:
+          measure: Margin
+          operation: ratio
+          denominator: NetRevenue
+          slices: [{term: Order, utterance: quarter, column: order_date}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          compare: {against: previous, along: Order.order_date, as: difference, utterance: quarter over quarter}
+          confidence: 0.5
+      - label: drop the comparison — the quarterly margin percentage alone
+        classification: PLANS_PARTIAL
+        detail: >-
+          4 rows and the four figures match the oracle to sixteen decimal places. The derived
+          measure at quarter grain is exactly right; the CHANGE column is what cannot be had.
+        matches_oracle: false
+        expect: {classification: PLANS_PARTIAL, rows: 4}
+        intent:
+          measure: Margin
+          operation: ratio
+          denominator: NetRevenue
+          slices: [{term: quarter, utterance: by quarter, column: null}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          confidence: 0.8
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-10
+    question: How much 2024 revenue came from customers whose FIRST order was in 2024, against returning customers?
+    shape: a COHORT — an aggregate over the customer's own history used as a row predicate
+    assumptions:
+      - first order = MIN(order_date) over all time, not within 2024
+      - the revenue counted is 2024 revenue only; the cohort is decided over all history
+    oracle_sql: |
+      WITH firsts AS (SELECT customer_key, MIN(order_date) AS first_order
+                      FROM contoso_served.v_contoso5_sales_line GROUP BY 1)
+      SELECT CASE WHEN f.first_order >= DATE '2024-01-01' AND f.first_order < DATE '2025-01-01'
+                  THEN 'new' ELSE 'returning' END AS cohort,
+             SUM(sl.net_amount) AS rev, COUNT(DISTINCT sl.customer_key) AS customers
+      FROM contoso_served.v_contoso5_sales_line sl JOIN firsts f ON f.customer_key = sl.customer_key
+      WHERE sl.order_date >= DATE '2024-01-01' AND sl.order_date < DATE '2025-01-01'
+      GROUP BY 1 ORDER BY 1
+    oracle:
+      rows: 2
+      first_row_note: new 13 050 244.21 over 5 932 customers; returning 18 589 446.72 over 8 119
+    verdict: CANNOT_ENCODE
+    missing: >-
+      THREE separate walls. (1) `HavingRef.value` is typed `float`, so a DATE threshold cannot even
+      be written down. (2) `HavingRef.subject` naming a concept whose min is wanted produces a
+      clarification, not a plan. (3) The cohort is a derived table — the per-customer first order
+      has to exist before the revenue can be attributed to it.
+    not_expressible: >-
+      PARTLY DECLARED — `derived_table` and `correlated_subquery_filter`. The `float` typing of a
+      threshold is NEW and specific: no date, no timestamp and no string can be a HAVING threshold.
+      This is ADV-11, which the corpus records with an EMPTY intent at confidence 0.2.
+    attempts:
+      - label: having min over Order with a DATE threshold
+        classification: CANNOT_ENCODE
+        detail: "having.0.value — Input should be a valid number, unable to parse string as a number ('2024-01-01')"
+        expect: {classification: CANNOT_ENCODE}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          having:
+            - {subject: Order, operation: min, op: gte, value: '2024-01-01', utterance: first order in 2024}
+          confidence: 0.4
+      - label: the same with the year as a number
+        classification: CLARIFIED
+        detail: >-
+          "Which column's min did you mean on Order? delivery_date, order_date" — a good question,
+          and a dead end: whichever column is named, the threshold is still a scalar compared
+          against a date.
+        expect: {classification: CLARIFIED}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          having:
+            - {subject: Order, operation: min, op: gte, value: 2024.0, utterance: first order in 2024}
+          confidence: 0.4
+      - label: a filter term "first order"
+        classification: PLANS_WRONG
+        detail: >-
+          the term fuzzy-matched to `order_date` and emitted `order_date >= '2024-01-01'`, already
+          implied by the period. 31 639 690.92 — the PLAIN 2024 total, byte-identical to the
+          unqualified question, for a question about a cohort worth 13 050 244.21. The word "first"
+          was absorbed without trace.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, value: 31639690.92344}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          filters:
+            - {term: first order, op: gte, value: '2024', utterance: first order in 2024}
+          confidence: 0.3
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-11
+    question: How many stores sold more than 1.5 times the revenue of the weakest store in their own country?
+    shape: a correlated aggregate threshold with ARITHMETIC applied to it
+    assumptions:
+      - weakest = the minimum of the per-store totals within that country
+      - trading physical stores only
+    oracle_sql: |
+      WITH s AS (SELECT st.store_name, st.country_code, SUM(sl.net_amount) AS rev
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key = sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL GROUP BY 1,2)
+      SELECT COUNT(*) AS stores FROM s
+      WHERE rev > 1.5 * (SELECT MIN(rev) FROM s s2 WHERE s2.country_code = s.country_code)
+    oracle:
+      value: 4
+    verdict: CANNOT_ENCODE
+    missing: >-
+      the correlated aggregate of PROP-01, and on top of it arithmetic ON the threshold. Nothing in
+      the Intent composes an expression; `value` is a literal and there is no multiplier.
+    not_expressible: >-
+      DECLARED — `having` (scope: intent) plus `correlated_subquery_filter`.
+    attempts:
+      - label: having min with 1.5 as the value
+        classification: CLARIFIED
+        detail: >-
+          "Which column's min did you mean on NetRevenue? delivery_date, net_amount, net_price,
+          order_date" — and no answer to it would help: 1.5 would be read as 1.5 USD.
+        expect: {classification: CLARIFIED}
+        intent:
+          measure: Store
+          operation: list
+          slices: [{term: Country, utterance: in the same country, column: country_name}]
+          having:
+            - {subject: NetRevenue, operation: min, op: gt, value: 1.5, utterance: 1.5x the weakest store in their own country}
+          confidence: 0.3
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-12
+    question: Which product categories take a larger share of German revenue than they do of global revenue?
+    shape: two shares at DIFFERENT scopes, compared with each other
+    assumptions:
+      - German = store country DE; global = every country, same population rules
+      - share means the category's revenue over the total of its own scope
+    oracle_sql: |
+      WITH de AS (SELECT p.category_name, SUM(sl.net_amount) AS rev
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_product p ON p.product_key=sl.product_key
+        JOIN contoso_served.dim_store st ON st.store_key=sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL AND st.country_code='DE' GROUP BY 1),
+      gl AS (SELECT p.category_name, SUM(sl.net_amount) AS rev
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_product p ON p.product_key=sl.product_key
+        JOIN contoso_served.dim_store st ON st.store_key=sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL GROUP BY 1)
+      SELECT gl.category_name,
+        de.rev/(SELECT SUM(rev) FROM de) AS de_share,
+        gl.rev/(SELECT SUM(rev) FROM gl) AS global_share
+      FROM gl JOIN de ON de.category_name=gl.category_name
+      WHERE de.rev/(SELECT SUM(rev) FROM de) > gl.rev/(SELECT SUM(rev) FROM gl)
+      ORDER BY 2 DESC
+    oracle:
+      rows: 4
+      first_row_note: Cell phones 0.15688 vs 0.15577; TV and Video; Cameras and camcorders; Games and Toys
+    verdict: ENCODES_REFUSES
+    missing: >-
+      a share of the total BROKEN DOWN BY a slice, which is `SUM(x) / SUM(SUM(x)) OVER ()`. And
+      then two of them at different scopes in one answer, and a comparison between them —
+      `Intent.also` carries two aggregates but no arithmetic between them.
+    not_expressible: >-
+      NEW as a declaration, KNOWN to the runtime. The refusal below is precise and cites the
+      window function by name; the grammar file says nothing about it. `multiple_measures` records
+      the sibling gap ("STILL NOT EXPRESSIBLE: arithmetic BETWEEN the columns").
+    attempts:
+      - label: share of total, broken down by category, filtered to Germany
+        classification: REFUSED
+        detail: >-
+          unsupported_intent — "a share of the total BROKEN DOWN BY ProductCategory needs one grand
+          total shared across the result rows, which is a window function (SUM(x) / SUM(SUM(x))
+          OVER ()) and not a scalar denominator. This engine composes the scalar form only." An
+          exemplary refusal. The gap it names is in no declaration.
+        expect: {classification: REFUSED, reason_code: unsupported_intent}
+        intent:
+          measure: NetRevenue
+          operation: ratio
+          denominator: NetRevenue
+          denominator_scope: total
+          slices: [{term: ProductCategory, utterance: by category, column: category_name}]
+          filters: [{term: Country, op: eq, value: Germany, utterance: in Germany}]
+          confidence: 0.5
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-13
+    question: How many customers bought more than 3 different brands in 2024?
+    shape: a HAVING over a DISTINCT COUNT of a dimension that is never shown
+    assumptions:
+      - 'more than 3 means 4 or more distinct brands'
+      - 2024 by order_date
+    oracle_sql: |
+      SELECT COUNT(*) AS customers FROM (
+        SELECT sl.customer_key FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_product p ON p.product_key=sl.product_key
+        WHERE sl.order_date >= DATE '2024-01-01' AND sl.order_date < DATE '2025-01-01'
+        GROUP BY 1 HAVING COUNT(DISTINCT p.brand) > 3)
+    oracle:
+      value: 2078
+      reference_figures: 14 051 customers bought anything in 2024
+    verdict: ENCODES_PLANS_CORRECT — as a LIST only
+    missing: >-
+      nothing, IF the question asks WHICH. If it asks HOW MANY, the identity leaves the GROUP BY
+      and the HAVING becomes a predicate on the whole population. This is the single sharpest
+      limitation found: `HavingRef`'s own docstring measures this shape at 416 of 460 BIRD+Spider
+      questions, and half of its utterances ("how many X have more than N of Y") are answered with
+      the size of the unfiltered population.
+    not_expressible: >-
+      NEW and undeclared. The worst class in the file, by `negation_over_nullable`'s own
+      definition: "the other gaps refuse, this one answers".
+    attempts:
+      - label: having Brand count > 3, asked as a COUNT
+        classification: PLANS_WRONG
+        detail: >-
+          `SELECT COUNT(DISTINCT customer_key) ... HAVING COUNT(DISTINCT brand) > 3` with NO GROUP
+          BY. 14 051 — every customer who bought anything in 2024, 6.8x the answer. Valid SQL, a
+          plausible figure, and nothing in the result says the filter did not apply per customer.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, value: 14051}
+        intent:
+          measure: Customer
+          operation: count
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          having:
+            - {subject: Brand, operation: count, op: gt, value: 3.0, utterance: more than 3 brands}
+          confidence: 0.7
+      - label: the same, asked as a LIST
+        classification: PLANS_CORRECT
+        detail: >-
+          `GROUP BY dim_customer.customer_key HAVING COUNT(DISTINCT dim_product.brand) > 3` —
+          2078 rows, exactly the oracle. The mechanism is right and only the question's own shape
+          decides whether it fires.
+        matches_oracle: true
+        expect: {classification: PLANS_CORRECT, rows: 2078}
+        intent:
+          measure: Customer
+          operation: list
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          having:
+            - {subject: Brand, operation: count, op: gt, value: 3.0, utterance: more than 3 brands}
+          confidence: 0.7
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-14
+    question: In which months of 2024 did units sold fall against the previous month?
+    shape: a predicate ON a window result — SQL's QUALIFY
+    assumptions:
+      - calendar months of order_date; January 2024 has no predecessor and cannot qualify
+    oracle_sql: |
+      WITH m AS (SELECT date_trunc('month', order_date) AS mth, SUM(quantity) AS units,
+                        SUM(net_amount) AS rev
+        FROM contoso_served.v_contoso5_sales_line
+        WHERE order_date >= DATE '2024-01-01' AND order_date < DATE '2025-01-01' GROUP BY 1),
+      d AS (SELECT mth, units, rev, units - LAG(units) OVER (ORDER BY mth) AS dunits FROM m)
+      SELECT mth, units, dunits, rev FROM d WHERE dunits < 0 ORDER BY mth
+    oracle:
+      rows: 6
+      first_row_note: "March (-8196), April (-3398), June (-996), July (-1502), September (-838), November (-390)"
+    verdict: CANNOT_ENCODE
+    missing: >-
+      a predicate on the comparison column. `filters` resolve against DECLARED dimensions, and the
+      delta is an emitted alias no concept declares; `having` restricts the measure, not the delta.
+    not_expressible: NEW — no entry covers a filter on a window result.
+    attempts:
+      - label: a row filter naming the delta column
+        classification: REFUSED
+        detail: unresolved_term — "No known dimension matches the term 'unitssold_change'"
+        expect: {classification: REFUSED, reason_code: unresolved_term}
+        intent:
+          measure: UnitsSold
+          operation: sum
+          slices: [{term: Order, utterance: month, column: order_date}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          compare: {against: previous, along: Order.order_date, as: difference, utterance: against the previous month}
+          filters: [{term: unitssold_change, op: lt, value: 0, utterance: fell}]
+          confidence: 0.4
+      - label: a having with operation=compare
+        classification: PLANS_WRONG
+        detail: >-
+          `operation: compare` rendered as SUM, so the predicate became `HAVING SUM(quantity) < 0`
+          — impossible — and the answer is ZERO ROWS. "No month fell", confidently, against an
+          oracle of six. An empty result that is not an answer but looks like one.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 0}
+        intent:
+          measure: UnitsSold
+          operation: sum
+          slices: [{term: Order, utterance: month, column: order_date}]
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          compare: {against: previous, along: Order.order_date, as: difference, utterance: against the previous month}
+          having:
+            - {subject: UnitsSold, operation: compare, op: lt, value: 0.0, utterance: fell}
+          confidence: 0.4
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-15
+    question: Which brands took more than 10% of total net revenue in 2024?
+    shape: a threshold that is a FRACTION of the grand total
+    assumptions:
+      - the 2024 total over all brands; 10% of it is 3 163 969.09
+    oracle_sql: |
+      WITH b AS (SELECT p.brand, SUM(sl.net_amount) AS rev
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_product p ON p.product_key=sl.product_key
+        WHERE sl.order_date >= DATE '2024-01-01' AND sl.order_date < DATE '2025-01-01' GROUP BY 1)
+      SELECT brand, rev, rev/(SELECT SUM(rev) FROM b) AS share FROM b
+      WHERE rev > 0.10 * (SELECT SUM(rev) FROM b) ORDER BY rev DESC
+    oracle:
+      rows: 4
+      first_row_note: Contoso 0.2076, Adventure Works 0.2029, The Phone Company 0.1636, Wide World Importers 0.1285
+    verdict: ENCODES_PLANS_CORRECT — with the threshold computed by hand
+    missing: >-
+      the arithmetic that turns "10% of the total" into a number. Supply the number and the
+      mechanism is exact; ask the question as a person asks it and there is no field for it.
+    not_expressible: >-
+      DECLARED — `having` (scope: intent), which names exactly this.
+    attempts:
+      - label: having sum > the hand-computed 10% of the total
+        classification: PLANS_CORRECT
+        detail: >-
+          4 rows, the oracle's four brands. The ONLY thing the grammar could not do was multiply
+          the total by 0.1, and a person did it outside the system — so the intent is now stale the
+          moment the data moves.
+        matches_oracle: true
+        expect: {classification: PLANS_CORRECT, rows: 4}
+        intent:
+          measure: NetRevenue
+          operation: sum
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          slices: [{term: Brand, utterance: by brand, column: brand}]
+          having:
+            - {subject: NetRevenue, operation: sum, op: gt, value: 3163969.09, utterance: more than 10% of the total}
+          confidence: 0.6
+      - label: ask for the share itself and threshold it
+        classification: REFUSED
+        detail: >-
+          unsupported_intent — "a share of the total needs a PART to be the share OF, and this
+          question filters nothing". So `denominator_scope: total` cannot be combined with a
+          BREAKDOWN at all: "each brand's share of the total" is not askable, only "Contoso's
+          share of the total" is (which plans, and returns 0.2076).
+        expect: {classification: REFUSED, reason_code: unsupported_intent}
+        intent:
+          measure: NetRevenue
+          operation: ratio
+          denominator: NetRevenue
+          denominator_scope: total
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          slices: [{term: Brand, utterance: by brand, column: brand}]
+          having:
+            - {subject: NetRevenue, operation: ratio, op: gt, value: 0.10, utterance: more than 10% of the total}
+          confidence: 0.5
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-16
+    question: Which store had the biggest year-over-year revenue drop between 2023 and 2024?
+    shape: RANK on a delta — ordering by a computed comparison column
+    assumptions:
+      - drop = 2024 revenue minus 2023 revenue, most negative first
+      - trading physical stores only
+    oracle_sql: |
+      WITH s AS (SELECT st.store_name,
+        SUM(CASE WHEN sl.order_date >= DATE '2023-01-01' AND sl.order_date < DATE '2024-01-01' THEN sl.net_amount ELSE 0 END) AS r23,
+        SUM(CASE WHEN sl.order_date >= DATE '2024-01-01' AND sl.order_date < DATE '2025-01-01' THEN sl.net_amount ELSE 0 END) AS r24
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key=sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL
+          AND sl.order_date >= DATE '2023-01-01' AND sl.order_date < DATE '2025-01-01' GROUP BY 1)
+      SELECT store_name, r23, r24, r24-r23 AS delta FROM s ORDER BY delta ASC LIMIT 1
+    oracle:
+      rows: 1
+      first_row_note: Contoso Store Oregon, 618 603.58 -> 293 347.67, delta -325 255.91
+    verdict: ENCODES_REFUSES
+    missing: >-
+      an ordering key that names the comparison column. `OrderingSpec.by` is 'aggregate' or a
+      DECLARED column, and the delta is neither.
+    not_expressible: NEW — nothing says an answer cannot be ordered by its own computed column.
+    attempts:
+      - label: compare plus ordering by netrevenue_change
+        classification: REFUSED
+        detail: >-
+          ontology_gap — "nothing this question touches declares a column 'netrevenue_change' to
+          order by (checked NetRevenue, Store, Order) ... Filing an open question". An honest
+          refusal, and it files the open question against the ONTOLOGY for a column the RUNTIME
+          invented.
+        expect: {classification: REFUSED, reason_code: ontology_gap}
+        intent:
+          measure: NetRevenue
+          operation: rank
+          slices:
+            - {term: Store, utterance: by store, column: store_name}
+            - {term: Order, utterance: year, column: order_date}
+          period: {start: '2023-01-01', end: '2025-01-01', raw: 2023 and 2024}
+          compare: {against: previous, along: Order.order_date, as: difference, utterance: year over year}
+          ordering: [{by: netrevenue_change, direction: asc}]
+          limit: 3
+          confidence: 0.4
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-17
+    question: How many products were sold in 2023 but not in 2024?
+    shape: set difference across TWO periods
+    assumptions:
+      - sold = at least one sales line in the year, any store, any channel
+    oracle_sql: |
+      SELECT COUNT(*) AS products FROM (
+        SELECT DISTINCT product_key FROM contoso_served.v_contoso5_sales_line
+        WHERE order_date >= DATE '2023-01-01' AND order_date < DATE '2024-01-01'
+        EXCEPT
+        SELECT DISTINCT product_key FROM contoso_served.v_contoso5_sales_line
+        WHERE order_date >= DATE '2024-01-01' AND order_date < DATE '2025-01-01')
+    oracle:
+      value: 48
+      reference_figures: 56 products were never sold in 2024 at all (MQ-08); 55 were sold on or after 2023-01-01 and not in 2024
+    verdict: ENCODES_PLANS_WRONG
+    missing: >-
+      a SECOND period. `Intent.period` is one half-open range, and `exists` spends it on the
+      anti-join's subquery — the grammar says so: "skips the period gate — the period belongs to
+      the subquery". The outer set's own window has nowhere to go, and a date `filter` can only be
+      open-ended (`>= 2023-01-01` keeps 2025 too).
+    not_expressible: >-
+      NEW. `set_operation` declares INTERSECT/UNION and explicitly exempts EXCEPT as "the anti-join
+      the `exists` operation already covers"; this is an EXCEPT whose two sides differ only by
+      PERIOD, and it is not covered.
+    attempts:
+      - label: exists with the 2024 period
+        classification: PLANS_WRONG
+        detail: >-
+          56 rows — products never sold in 2024 at any time, which is MQ-08's question, not this
+          one. The 2023 half of the question is simply absent from the SQL.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 56}
+        intent:
+          measure: Product
+          operation: exists
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          confidence: 0.6
+      - label: the same plus a filter naming 2023
+        classification: PLANS_WRONG
+        detail: >-
+          55 rows. The filter emitted `order_date >= '2023-01-01'` — OPEN-ENDED — so the answer is
+          "sold in 2023 OR 2025 and not in 2024". Independently verified: that set is 55. Seven
+          products wrong, from a filter that reads as if it had bounded the year.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 55}
+        intent:
+          measure: Product
+          operation: exists
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          filters: [{term: Order, op: gte, value: '2023', utterance: sold in 2023}]
+          confidence: 0.4
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-18
+    question: What is the average number of order lines per order, by country?
+    shape: an aggregate OF an aggregate
+    assumptions:
+      - a line is a row of v_contoso5_sales_line; an order is a distinct order_key
+      - store country; trading physical stores only
+    oracle_sql: |
+      WITH o AS (SELECT st.country_code, sl.order_key, COUNT(*) AS lines
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key=sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL GROUP BY 1,2)
+      SELECT country_code, AVG(lines) AS avg_lines_per_order FROM o GROUP BY 1 ORDER BY 2 DESC
+    oracle:
+      rows: 8
+      first_row_note: "CA 2.4290, AU 2.4230, DE 2.3980, NL 2.3945, GB 2.3879, US 2.3877, FR 2.3565, IT 2.3402"
+    verdict: ENCODES_REFUSES
+    missing: >-
+      A CONCEPT, NOT A GRAMMAR FIELD — and this is the one entry here whose gap is ontology. No
+      concept counts LINES: the relation's key is [order_key, line_number], `Order` counts distinct
+      order_key, and nothing counts the row. Verified arithmetically: total lines / total orders
+      per country equals AVG(lines per order) to the last digit, so the `ratio` route would answer
+      this EXACTLY once a line-grain concept exists — exactly the fix StoreVersion was for
+      Store/row (finding A3).
+    not_expressible: NOT A GRAMMAR GAP. Recorded here so it is not counted as one.
+    attempts:
+      - label: ratio Order over Order
+        classification: REFUSED
+        detail: >-
+          unsupported_intent — "Order is declared class 'event', no derivation rule says how to
+          aggregate it, and its grounding marks no column field_role: measure". Correct and well
+          said; it names the ontology gap.
+        expect: {classification: REFUSED, reason_code: unsupported_intent}
+        intent:
+          measure: Order
+          operation: ratio
+          denominator: Order
+          slices: [{term: Country, utterance: by country, column: country_name}]
+          confidence: 0.3
+      - label: a line-grain subject
+        classification: REFUSED
+        detail: unresolved_term — "No measure or derivation rule named 'OrderLine' is known to this pack"
+        expect: {classification: REFUSED, reason_code: unresolved_term}
+        intent:
+          measure: OrderLine
+          operation: count
+          confidence: 0.3
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-19
+    question: How many stores earn more revenue per square metre than the median store?
+    shape: a derived measure from a COLUMN, thresholded against a MEDIAN
+    assumptions:
+      - revenue per square metre = the store's all-time net revenue over its square_metres
+      - median over the 57 trading physical stores; the median is 1 594.28 USD/m2
+    oracle_sql: |
+      WITH s AS (SELECT st.store_name, st.square_metres,
+                        SUM(sl.net_amount)/st.square_metres AS rev_per_m2
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key=sl.store_key
+        WHERE st.location_code <> -1 AND st.close_date IS NULL GROUP BY 1,2)
+      SELECT COUNT(*) AS stores, (SELECT MEDIAN(rev_per_m2) FROM s) AS median_rev_per_m2
+      FROM s WHERE rev_per_m2 > (SELECT MEDIAN(rev_per_m2) FROM s)
+    oracle:
+      rows: 1
+      first_row_note: 28 stores above a median of 1 594.2795256550
+    verdict: CANNOT_ENCODE
+    missing: >-
+      THREE things. (1) `median` is not a member of `OperationKind`, so the central statistic of
+      any distribution cannot be asked for. (2) `Intent.denominator` names a SUBJECT, so a measure
+      cannot be divided by a COLUMN of a dimension — and naming one is not refused, it is
+      fuzzy-matched. (3) The median-as-threshold is PROP-01's correlated aggregate again.
+    not_expressible: >-
+      NEW on all three counts. The grammar lists eleven operations and declares nothing about the
+      statistics it does not have.
+    attempts:
+      - label: denominator naming the square_metres COLUMN
+        classification: PLANS_WRONG
+        detail: >-
+          the denominator resolved to the STORE CONCEPT and became `COUNT(DISTINCT
+          dim_store.location_code)`, which is 1 inside each store's group — so the ratio equals
+          the numerator. 57 rows, byte-identical to the plain revenue-by-store answer
+          (Connecticut 3 897 804.53 in both), labelled `netrevenue_per_store`. A question about
+          floor-area productivity answered with gross revenue, under a column name that almost
+          says so.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 57}
+        intent:
+          measure: NetRevenue
+          operation: ratio
+          denominator: square_metres
+          slices: [{term: Store, utterance: by store, column: store_name}]
+          confidence: 0.4
+      - label: operation=median
+        classification: CANNOT_ENCODE
+        detail: >-
+          "operation — Input should be 'count', 'sum', 'average', 'min', 'max', 'list', 'rank',
+          'compare', 'ratio', 'define' or 'exists'". Eleven operations, no median, no percentile,
+          no standard deviation, no mode.
+        expect: {classification: CANNOT_ENCODE}
+        intent:
+          measure: NetRevenue
+          operation: median
+          confidence: 0.4
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  - id: PROP-20
+    question: >-
+      How many Computers or Audio products sold more units in Germany than in France in 2024,
+      among products that were never sold online?
+    shape: >-
+      the operator's own sentence — "how many something is more or less than something else
+      somewhere else where this is here or there and something is not somewhere else"
+    assumptions:
+      - units = quantity; Germany/France are STORE countries
+      - '"never sold online" = no line against the location sentinel (-1), over all time'
+      - products with no German and no French sale are excluded by the comparison being strict
+    oracle_sql: |
+      WITH u AS (SELECT sl.product_key,
+         SUM(CASE WHEN st.country_code='DE' THEN sl.quantity ELSE 0 END) AS de_units,
+         SUM(CASE WHEN st.country_code='FR' THEN sl.quantity ELSE 0 END) AS fr_units,
+         SUM(CASE WHEN st.location_code = -1 THEN 1 ELSE 0 END) AS online_lines
+        FROM contoso_served.v_contoso5_sales_line sl
+        JOIN contoso_served.dim_store st ON st.store_key=sl.store_key
+        JOIN contoso_served.dim_product p ON p.product_key=sl.product_key
+        WHERE sl.order_date >= DATE '2024-01-01' AND sl.order_date < DATE '2025-01-01'
+          AND p.category_name IN ('Computers','Audio')
+        GROUP BY 1)
+      SELECT COUNT(*) AS products FROM u WHERE de_units > fr_units AND online_lines = 0
+    oracle:
+      value: 3
+    verdict: CANNOT_ENCODE
+    missing: >-
+      THREE of the gaps above at once, which is why this is the operator's sentence: a comparison
+      between two MEMBERS of one dimension on the same row (PROP-04/PROP-20's `compare` refuses a
+      label axis), a negated existence group (PROP-02), and a count of the identities that survive
+      both (PROP-13). What the grammar DOES reach is the raw grid, and it reaches it correctly.
+    not_expressible: >-
+      the pieces are NEW individually; as a whole this is the shape `multiple_measures` gestures at
+      with "STILL NOT EXPRESSIBLE: arithmetic BETWEEN the columns".
+    attempts:
+      - label: the grid — product x country units, categories OR'd, online excluded by default
+        classification: PLANS_WRONG
+        detail: >-
+          469 rows of product x country units. Every INGREDIENT is right: `any_of` emitted
+          `(category_name = 'Computers' OR category_name = 'Audio')`, the IN filter bound both
+          countries, the period bound, and the store population default excluded the online
+          channel. What is missing is everything after the grid — the comparison, the negation and
+          the count. 469 rows for an answer of 3.
+        matches_oracle: false
+        expect: {classification: PLANS_WRONG, rows: 469}
+        intent:
+          measure: UnitsSold
+          operation: sum
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          slices:
+            - {term: Product, utterance: products, column: product_name}
+            - {term: Country, utterance: in Germany than in France, column: country_name}
+          filters:
+            - {term: Country, op: in, value: [Germany, France], utterance: Germany or France}
+          any_of:
+            - {filters: [{term: ProductCategory, op: eq, value: Computers, utterance: Computers}], utterance: Computers}
+            - {filters: [{term: ProductCategory, op: eq, value: Audio, utterance: Audio}], utterance: Audio}
+          confidence: 0.35
+      - label: compare along Country.country_name — Germany against France on one row
+        classification: REFUSED
+        detail: >-
+          ontology_gap — "a comparison with the previous member has to ORDER the axis, and
+          Country.country_name is declared string — a label, not a monotonic value". Correct about
+          ordering and fatal for the question: "more in X than in Y" is not about an ORDER, it is
+          about two named members, and `compare` has only one target, `previous`.
+        expect: {classification: REFUSED, reason_code: ontology_gap}
+        intent:
+          measure: UnitsSold
+          operation: sum
+          period: {start: '2024-01-01', end: '2025-01-01', raw: '2024'}
+          slices:
+            - {term: Product, utterance: products, column: product_name}
+            - {term: Country, utterance: Germany vs France, column: country_name}
+          filters:
+            - {term: Country, op: in, value: [Germany, France], utterance: Germany or France}
+          compare: {against: previous, along: Country.country_name, as: difference, utterance: more in Germany than in France}
+          confidence: 0.3
+
+  # ───────────────────────────────────────────────────────────────────────────────────────────
+  # MEMBER vs MEMBER AS A RATIO — the operator's two questions of 2026-10-17, both measured
+  # inexpressible the same day. They are NOT association failures: the spike read both correctly.
+  - id: PROP-21
+    question: What is the ratio of female to male customers?
+    shape: >-
+      MEMBER vs MEMBER as a ratio — one measure, one axis, two named members of that axis.
+      Not a share of the total, and not a side-by-side breakdown.
+    assumptions:
+    - the two members are the whole of the gender register (female, male); there is no third
+    - the figure is a count of customers, not of orders
+    oracle_sql: |
+      SELECT SUM(CASE WHEN gender='female' THEN 1 ELSE 0 END) AS female,
+             SUM(CASE WHEN gender='male'   THEN 1 ELSE 0 END) AS male,
+             SUM(CASE WHEN gender='female' THEN 1.0 ELSE 0 END)
+               / NULLIF(SUM(CASE WHEN gender='male' THEN 1.0 ELSE 0 END), 0) AS ratio
+      FROM contoso_served.dim_customer
+    oracle:
+      female: 51927
+      male: 53063
+      ratio: 0.9785914855925975
+    verdict: not_expressible
+    not_expressible: >-
+      MEASURED 2026-10-17, both routes. (1) Intent.denominator is a str naming another MEASURE and
+      DenominatorScope is filtered|total — there is no way to say "the same measure over a different
+      named population", so this refuses with "divided by itself over the same rows is 1.0".
+      (2) CompareAs.RATIO IS implemented (planner/sql.py:2757 composes (x) / NULLIF(prev, 0)), but
+      CompareTo has exactly ONE member, `previous` — the ratio only ever runs against the preceding
+      row of an ordered axis. Nothing can name the comparand.
+    missing:
+    - a CompareTo member naming another member of the same axis, OR a denominator carrying a population
+    attempts:
+    - 'operation ratio, denominator naming the same measure -> Refusal UNSUPPORTED_INTENT'
+    - 'operation compare along gender -> desugars to a side-by-side breakdown, no ratio composed'
+  - id: PROP-22
+    question: What is the size ratio of German shops to French shops?
+    shape: >-
+      The same MEMBER vs MEMBER ratio as PROP-21 on a different axis, over a COLUMN measure
+      (dim_store.square_metres) rather than a measure concept.
+    assumptions:
+    - trading and physical stores only (location_code <> -1), the bundle's standing store population
+    - size is the declared floor area square_metres, whose column declares aggregate {type stock, unit m2}
+    oracle_sql: |
+      SELECT SUM(CASE WHEN c.country_name='Germany' THEN s.square_metres ELSE 0 END) AS germany,
+             SUM(CASE WHEN c.country_name='France'  THEN s.square_metres ELSE 0 END) AS france,
+             SUM(CASE WHEN c.country_name='Germany' THEN s.square_metres ELSE 0 END) * 1.0
+               / NULLIF(SUM(CASE WHEN c.country_name='France' THEN s.square_metres ELSE 0 END), 0) AS ratio
+      FROM contoso_served.dim_store s
+      JOIN contoso_served.dim_country c ON c.country_code = s.country_code
+      WHERE s.location_code <> -1
+    oracle:
+      germany_m2: 15550
+      france_m2: 2390
+      ratio: 6.506276150627615
+    verdict: not_expressible
+    not_expressible: >-
+      Same two blocked routes as PROP-21. Additionally measured: asked as a share of the total
+      (denominator_scope total), the planner emits COUNT(DISTINCT dim_store.location_code) — it drops
+      the narrowed column and counts STORES instead of summing floor space. A silent wrong number,
+      not a refusal. That is the figure-reference defect (BACKLOG S-1), visible here.
+    missing:
+    - a CompareTo member naming another member of the same axis, OR a denominator carrying a population
+    - a figure reference that survives into the ratio path (BACKLOG S-1)
+    attempts:
+    - 'operation ratio, denominator square_metres -> Refusal "Store divided by itself"'
+    - 'operation ratio, denominator_scope total -> Plan, but COUNT(DISTINCT location_code): wrong measure'

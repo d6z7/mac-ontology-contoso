@@ -1,0 +1,38 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: ADV-12
+question: >-
+  Revenue from high-value products (Price > 1000)
+expected: 44657111.19
+sql: >-
+  WITH latest_price AS (
+    SELECT
+      product_key,
+      unit_price,
+      ROW_NUMBER() OVER (
+        PARTITION BY product_key
+        ORDER BY order_date DESC, order_key DESC, line_number DESC
+      ) AS rn
+    FROM contoso_served.v_contoso5_sales_line
+  )
+  SELECT ROUND(SUM(l.net_amount), 2)
+    FROM contoso_served.v_contoso5_sales_line l
+    JOIN latest_price p ON p.product_key = l.product_key AND p.rn = 1
+   WHERE p.unit_price > 1000
+superseded_value: 'a 154-row list: product_name + revenue, ordered by revenue desc'
+superseded_reason: >-
+  Re-approved 2026-10-26 under the ruling that Product no longer serves catalogue price/cost
+  columns. The approved population is still PRODUCT-qualified (not line-qualified): products whose
+  latest line `unit_price` is above 1000, then all their lines counted for revenue.
+
+  This reproduces the signed figure exactly (44,657,111.19) and preserves the 2026-10-19 reading
+  that "high-value PRODUCTS" qualifies product identity rather than individual lines.
+
+  The previous SQL (`p.list_price > 1000`) became invalid when `dim_product.list_price` was
+  retired by operator ruling 2026-10-26.
+note: >-
+  APPROVED BY THE OPERATOR on 2026-10-19 as a high-value-product reference, then re-approved on
+  2026-10-26 on sales-line SQL after Product price/cost retirement. The expected value is unchanged.
+approved_by: operator
+approved_at: '2026-10-26'
+approved_here: true

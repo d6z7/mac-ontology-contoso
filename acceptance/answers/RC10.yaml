@@ -1,0 +1,1067 @@
+id: RC10
+captured_at: '2026-10-24T21:44:56+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: orders
+  operation: aggregate
+  qdmr_simplified: "  1       FROM       orders           “orders”\n  2  ← 1  DURING     by year     \
+    \     “in 2024”\n  3  ← 2  AGGREGATE  count of orders  “how many orders were placed”\n  answer: step\
+    \ 3   confidence: 0.92\n  UNDERSTOOD AS: How many orders were placed during the year 2024 — one single\
+    \ count covering every order whose placement date falls in 2024, with no filtering by status, customer\
+    \ or channel.\n  AMBIGUOUS 'in 2024' — ASKS: Does 2024 mean the calendar year January–December 2024,\
+    \ or your company's fiscal year 2024?\n      could mean: the calendar year, 1 January to 31 December\
+    \ 2024\n      could mean: the fiscal year labelled 2024, which may start and end on other dates\n\
+    \      took: the calendar year 2024\n  AMBIGUOUS 'orders were placed' — ASKS: Should cancelled, returned,\
+    \ failed or still-draft orders be counted, or only orders that went through?\n      could mean: every\
+    \ order that was placed, whatever happened to it afterwards\n      could mean: only valid/completed\
+    \ orders, excluding cancelled, failed or returned ones\n      took: every order that was placed, regardless\
+    \ of its later status\n  AMBIGUOUS 'orders' — ASKS: Do you want the number of orders themselves, or\
+    \ the number of items/lines across those orders?\n      could mean: one count per order\n      could\
+    \ mean: a count of the individual line items within the orders\n      took: one count per order\n\
+    \  AMBIGUOUS 'placed' — ASKS: Which date decides whether an order falls in 2024 — the date it was\
+    \ placed, or the date it shipped or was paid?\n      could mean: the date the order was placed\n \
+    \     could mean: the date the order shipped, was paid, or was fulfilled\n      took: the date the\
+    \ order was placed\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many orders"
+  understood_as_in_human_words: How many orders were placed during the year 2024 — one single count covering
+    every order whose placement date falls in 2024, with no filtering by status, customer or channel.
+  population_actually_answered: 'Distinct order_key over contoso_served.v_contoso5_sales_line where order_date
+    falls on or after 2024-01-01 and before 2025-01-01 — 15,899 orders on 38,109 lines. Three restrictions
+    I deliberately did NOT apply: no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+    scopes its `default: physical` with `applies: subject` and this subject is an Order rather than a
+    Store, so the web shop is in alongside the physical shops; no status predicate, because the bundle
+    declares no order status column to filter on; no customer or product predicate, because the question
+    named none. The 2024 calendar window on order_date is the only restriction.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: one figure
+    columns_the_answer_step_asks_for: []
+    figures_the_answer_step_computes:
+    - count of orders
+    answer_step: '3'
+    verb: aggregate
+    said: how many orders were placed
+    stage1_confidence: 0.92
+  canonical_question: &id001
+    understood_as: How many orders were placed during the year 2024 — one single count covering every
+      order whose placement date falls in 2024, with no filtering by status, customer or channel.
+    steps:
+    - id: '1'
+      do: from
+      thing: orders
+      said: orders
+    - id: '2'
+      do: during
+      of: '1'
+      grain: year
+      said: in 2024
+    - id: '3'
+      do: aggregate
+      of: '2'
+      figures: &id002
+      - how: count
+        of: orders
+        said: how many orders
+      said: how many orders were placed
+    answer: '3'
+    output_shape: &id003
+      shape: one figure
+      said: How many orders
+      rows: one
+      key_columns: &id005 []
+      figure_columns: &id006
+      - how many orders
+    ambiguities:
+    - words: in 2024
+      question: Does 2024 mean the calendar year January–December 2024, or your company's fiscal year
+        2024?
+      readings:
+      - the calendar year, 1 January to 31 December 2024
+      - the fiscal year labelled 2024, which may start and end on other dates
+      assumed: the calendar year 2024
+    - words: orders were placed
+      question: Should cancelled, returned, failed or still-draft orders be counted, or only orders that
+        went through?
+      readings:
+      - every order that was placed, whatever happened to it afterwards
+      - only valid/completed orders, excluding cancelled, failed or returned ones
+      assumed: every order that was placed, regardless of its later status
+    - words: orders
+      question: Do you want the number of orders themselves, or the number of items/lines across those
+        orders?
+      readings:
+      - one count per order
+      - a count of the individual line items within the orders
+      assumed: one count per order
+    - words: placed
+      question: Which date decides whether an order falls in 2024 — the date it was placed, or the date
+        it shipped or was paid?
+      readings:
+      - the date the order was placed
+      - the date the order shipped, was paid, or was fulfilled
+      assumed: the date the order was placed
+    confidence: 0.92
+  steps: 3
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: orders_placed
+      type: number
+    rows:
+    - - 15899
+  value: 15899
+  raw: '15899'
+  reading: one figure
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "orders → one count per order — 93,470 distinct order_key over the line relation\n        could\
+      \ also mean: one count per order line, which is 223,974 — a figure 2.4x larger"
+    ref: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and its grounding
+      note says it is reached by counting distinct order_key over the line relation, not collapsed, each
+      row carrying exactly one product. The document's own ambiguity on "orders" assumed the same.
+  - kind: ''
+    text: "orders → both sales channels — the web shop and the physical shops together\n        could\
+      \ also mean: physical shops only, the `physical` population of the channel rule"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel declares `applies: subject`, which scopes
+      its `default: physical` to questions whose subject is a Store. This question''s subject is an Order,
+      so the default does not reach it and nothing is excluded.'
+  - kind: ''
+    text: "in 2024 → the calendar year, 1 January to 31 December 2024 — 15,899 orders\n        could also\
+      \ mean: a fiscal year labelled 2024 starting on some other month, which I could not price: nothing\
+      \ in this bundle declares a fiscal calendar, no column names a fiscal period, and order_date is\
+      \ the only declared period binding, so there is no fiscal year here to measure against"
+    ref: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named grain (day/month/quarter/year)
+      is computed on that calendar column and on nothing else.'
+  - kind: ''
+    text: "placed → the date the order was placed — order_date — giving 15,899 orders\n        could also\
+      \ mean: the date the order was delivered — delivery_date — giving 15,917 orders, 18 more (+0.11%)"
+    ref: 'order.default.period_is_order_date declares `default: ordered` on order_date, and lists "placed"
+      among the surfaces that select it — so the question''s own word names this reading, and the default
+      would have chosen it anyway.'
+  - kind: ''
+    text: "orders → one count per order — 15,899 distinct order_key\n        could also mean: one count\
+      \ per order line, which is 38,109 — 2.4x larger"
+    ref: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and its grounding
+      note states it is reached by counting distinct order_key over the line relation, not collapsed.
+  - kind: ''
+    text: "placed → the date the order was placed — order_date — 15,899 orders\n        could also mean:\
+      \ the date the order was delivered — delivery_date — 15,917 orders, 18 more (+0.11%)"
+    ref: 'order.default.period_is_order_date declares `default: ordered` on order_date and lists "placed"
+      among the surfaces selecting it, so the question''s own word names this reading and the default
+      would have chosen it anyway.'
+  - kind: ''
+    text: "in 2024 → the calendar year, 1 January to 31 December 2024\n        could also mean: a fiscal\
+      \ year labelled 2024 beginning in some other month — which I could not price, because nothing in\
+      \ this bundle declares a fiscal calendar and no column names a fiscal period"
+    ref: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named year grain is computed
+      on that calendar column and on nothing else.'
+  - kind: ''
+    text: "orders were placed → every order the warehouse records, whatever happened to it afterwards\n\
+      \        could also mean: only orders that went through, excluding cancelled, returned or failed\
+      \ ones — a reading this bundle cannot express: the sales line carries no status, cancellation or\
+      \ return column, so these are not two figures here, they are one"
+    ref: The declared columns of v_contoso5_sales_line are the order and line keys, two dates, four foreign
+      keys, the channel, the currency and the money and quantity measures. No order state is among them;
+      the only `status_annotation` in the bundle sits on dim_store and records why a SHOP stopped trading.
+  concepts: []
+  rules:
+  - id: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`
+    why: '''orders'' = one count per order — 93,470 distinct order_key over the line relation'
+  - id: and its grounding note says it is reached by counting distinct order_key over the line relation
+    why: '''orders'' = one count per order — 93,470 distinct order_key over the line relation'
+  - id: not collapsed
+    why: '''orders'' = one count per order — 93,470 distinct order_key over the line relation'
+  - id: each row carrying exactly one product. The document's own ambiguity on "orders" assumed the same.
+    why: '''orders'' = one count per order — 93,470 distinct order_key over the line relation'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel declares `applies: subject`'
+    why: '''orders'' = both sales channels — the web shop and the physical shops together'
+  - id: 'which scopes its `default: physical` to questions whose subject is a Store. This question''s
+      subject is an Order'
+    why: '''orders'' = both sales channels — the web shop and the physical shops together'
+  - id: so the default does not reach it and nothing is excluded.
+    why: '''orders'' = both sales channels — the web shop and the physical shops together'
+  - id: 'v_contoso5_sales_line.order_date carries `period_binding: True`'
+    why: '''in 2024'' = the calendar year, 1 January to 31 December 2024 — 15,899 orders'
+  - id: so a named grain (day/month/quarter/year) is computed on that calendar column and on nothing else.
+    why: '''in 2024'' = the calendar year, 1 January to 31 December 2024 — 15,899 orders'
+  - id: 'order.default.period_is_order_date declares `default: ordered` on order_date'
+    why: '''placed'' = the date the order was placed — order_date — giving 15,899 orders'
+  - id: and lists "placed" among the surfaces that select it — so the question's own word names this reading
+    why: '''placed'' = the date the order was placed — order_date — giving 15,899 orders'
+  - id: and the default would have chosen it anyway.
+    why: '''placed'' = the date the order was placed — order_date — giving 15,899 orders'
+  - id: and its grounding note states it is reached by counting distinct order_key over the line relation
+    why: '''orders'' = one count per order — 15,899 distinct order_key'
+  - id: not collapsed.
+    why: '''orders'' = one count per order — 15,899 distinct order_key'
+  - id: 'order.default.period_is_order_date declares `default: ordered` on order_date and lists "placed"
+      among the surfaces selecting it'
+    why: '''placed'' = the date the order was placed — order_date — 15,899 orders'
+  - id: so the question's own word names this reading and the default would have chosen it anyway.
+    why: '''placed'' = the date the order was placed — order_date — 15,899 orders'
+  - id: so a named year grain is computed on that calendar column and on nothing else.
+    why: '''in 2024'' = the calendar year, 1 January to 31 December 2024'
+  - id: The declared columns of v_contoso5_sales_line are the order and line keys
+    why: '''orders were placed'' = every order the warehouse records, whatever happened to it afterwards'
+  - id: two dates
+    why: '''orders were placed'' = every order the warehouse records, whatever happened to it afterwards'
+  - id: four foreign keys
+    why: '''orders were placed'' = every order the warehouse records, whatever happened to it afterwards'
+  - id: the channel
+    why: '''orders were placed'' = every order the warehouse records, whatever happened to it afterwards'
+  - id: the currency and the money and quantity measures. No order state is among them
+    why: '''orders were placed'' = every order the warehouse records, whatever happened to it afterwards'
+  - id: the only `status_annotation` in the bundle sits on dim_store and records why a SHOP stopped trading.
+    why: '''orders were placed'' = every order the warehouse records, whatever happened to it afterwards'
+  edges: []
+sql:
+- "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\nWHERE\n\
+  \  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+- "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date) AS first_order_date,\n\
+  \  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line"
+- "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND\
+  \ order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_placed_in_2024,\n\
+  \  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n      AND delivery_date\
+  \ < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_delivered_in_2024,\n  COUNT(\n\
+  \    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+  \ AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n  MIN(\n    CASE\n      WHEN order_date\
+  \ >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_date\n\
+  \    END\n  ) AS first_order_date_in_window,\n  MAX(\n    CASE\n      WHEN order_date >= CAST('2024-01-01'\
+  \ AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_date\n    END\n  ) AS\
+  \ last_order_date_in_window\nFROM contoso_served.v_contoso5_sales_line"
+answer_sql: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+  WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+sql_valid: true
+result:
+  status: ok
+  rows: 1
+  cols: &id007
+  - orders_placed
+  sample_rows:
+  - - 15899
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id001
+  canonical_question_simplified: "  1       FROM       orders           “orders”\n  2  ← 1  DURING   \
+    \  by year          “in 2024”\n  3  ← 2  AGGREGATE  count of orders  “how many orders were placed”\n\
+    \  answer: step 3   confidence: 0.92\n  UNDERSTOOD AS: How many orders were placed during the year\
+    \ 2024 — one single count covering every order whose placement date falls in 2024, with no filtering\
+    \ by status, customer or channel.\n  AMBIGUOUS 'in 2024' — ASKS: Does 2024 mean the calendar year\
+    \ January–December 2024, or your company's fiscal year 2024?\n      could mean: the calendar year,\
+    \ 1 January to 31 December 2024\n      could mean: the fiscal year labelled 2024, which may start\
+    \ and end on other dates\n      took: the calendar year 2024\n  AMBIGUOUS 'orders were placed' — ASKS:\
+    \ Should cancelled, returned, failed or still-draft orders be counted, or only orders that went through?\n\
+    \      could mean: every order that was placed, whatever happened to it afterwards\n      could mean:\
+    \ only valid/completed orders, excluding cancelled, failed or returned ones\n      took: every order\
+    \ that was placed, regardless of its later status\n  AMBIGUOUS 'orders' — ASKS: Do you want the number\
+    \ of orders themselves, or the number of items/lines across those orders?\n      could mean: one count\
+    \ per order\n      could mean: a count of the individual line items within the orders\n      took:\
+    \ one count per order\n  AMBIGUOUS 'placed' — ASKS: Which date decides whether an order falls in 2024\
+    \ — the date it was placed, or the date it shipped or was paid?\n      could mean: the date the order\
+    \ was placed\n      could mean: the date the order shipped, was paid, or was fulfilled\n      took:\
+    \ the date the order was placed\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many orders"
+  understood_as: How many orders were placed during the year 2024 — one single count covering every order
+    whose placement date falls in 2024, with no filtering by status, customer or channel.
+  ambiguities_it_saw:
+  - words: in 2024
+    asks: Does 2024 mean the calendar year January–December 2024, or your company's fiscal year 2024?
+    readings:
+    - the calendar year, 1 January to 31 December 2024
+    - the fiscal year labelled 2024, which may start and end on other dates
+    took: the calendar year 2024
+  - words: orders were placed
+    asks: Should cancelled, returned, failed or still-draft orders be counted, or only orders that went
+      through?
+    readings:
+    - every order that was placed, whatever happened to it afterwards
+    - only valid/completed orders, excluding cancelled, failed or returned ones
+    took: every order that was placed, regardless of its later status
+  - words: orders
+    asks: Do you want the number of orders themselves, or the number of items/lines across those orders?
+    readings:
+    - one count per order
+    - a count of the individual line items within the orders
+    took: one count per order
+  - words: placed
+    asks: Which date decides whether an order falls in 2024 — the date it was placed, or the date it shipped
+      or was paid?
+    readings:
+    - the date the order was placed
+    - the date the order shipped, was paid, or was fulfilled
+    took: the date the order was placed
+  presentation:
+    claimed_answer_is: one figure
+    answer_step: '3'
+    answer_step_asks:
+      do: aggregate
+      of: '2'
+      figures: *id002
+      said: how many orders were placed
+    confidence_stage1: 0.92
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date) AS first_order_date,\n\
+      \  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n \
+      \     AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_placed_in_2024,\n\
+      \  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n      AND\
+      \ delivery_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_delivered_in_2024,\n\
+      \  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date <\
+      \ CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n  MIN(\n    CASE\n\
+      \      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS\
+      \ DATE)\n      THEN order_date\n    END\n  ) AS first_order_date_in_window,\n  MAX(\n    CASE\n\
+      \      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS\
+      \ DATE)\n      THEN order_date\n    END\n  ) AS last_order_date_in_window\nFROM contoso_served.v_contoso5_sales_line"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+      WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+    params: {}
+  what_it_calculated: '15,899 is the number of distinct orders Contoso recorded as placed during the calendar
+    year 2024 — one count per order, not one per order line — over a window whose contents run the full
+    span 1 January to 31 December 2024. Those 15,899 orders carry 38,109 lines between them, which is
+    what a line-grain reading would have returned instead. WHAT I DID NOT INCLUDE: nothing was excluded
+    on status, because this bundle holds no order status at all — no cancelled, returned, failed or draft
+    flag exists anywhere on the sales line, so every order the warehouse records as placed is counted
+    and none could have been removed. Nothing was excluded on channel: web-shop orders are in alongside
+    the physical shops. Nothing was excluded on customer, product, store or currency. And this is not
+    the delivered-in-2024 figure, which is 15,917.'
+  rows_returned: &id004
+  - orders_placed: 15899
+  synthesis:
+    claimed: '15899'
+    shape: one figure
+    answered_population: 'Distinct order_key over contoso_served.v_contoso5_sales_line where order_date
+      falls on or after 2024-01-01 and before 2025-01-01 — 15,899 orders on 38,109 lines. Three restrictions
+      I deliberately did NOT apply: no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+      scopes its `default: physical` with `applies: subject` and this subject is an Order rather than
+      a Store, so the web shop is in alongside the physical shops; no status predicate, because the bundle
+      declares no order status column to filter on; no customer or product predicate, because the question
+      named none. The 2024 calendar window on order_date is the only restriction.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: orders
+    turns:
+    - why: Establish the base relation for "orders" — the sales line view, where an Order is counted as
+        distinct order_key — and confirm its grain and date extent before any 2024 filter is applied.
+      did: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date) AS\
+        \ first_order_date,\n  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line"
+      came_back: '1 row(s): [{"lines": 223974, "orders": 93470, "first_order_date": "2016-05-18", "last_order_date":
+        "2025-12-31"}]'
+    settled_on: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date)\
+      \ AS first_order_date,\n  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line"
+    means: 'One row describing the entire order population this question will be narrowed from, before
+      any period filter: Contoso''s sales fact holds 223,974 order lines, which roll up into 93,470 distinct
+      orders, placed over a ten-year span from 18 May 2016 to 31 December 2025. Each row of the underlying
+      relation is one product on one order, so "orders" is the 93,470 and not the 223,974. No 2024 filter,
+      no status filter, no channel filter and no customer filter has been applied yet.'
+    readings_taken:
+    - word: orders
+      took: one count per order — 93,470 distinct order_key over the line relation
+      could_also_mean: one count per order line, which is 223,974 — a figure 2.4x larger
+      declaration: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and
+        its grounding note says it is reached by counting distinct order_key over the line relation, not
+        collapsed, each row carrying exactly one product. The document's own ambiguity on "orders" assumed
+        the same.
+    - word: orders
+      took: both sales channels — the web shop and the physical shops together
+      could_also_mean: physical shops only, the `physical` population of the channel rule
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel declares `applies: subject`,
+        which scopes its `default: physical` to questions whose subject is a Store. This question''s subject
+        is an Order, so the default does not reach it and nothing is excluded.'
+    blocked_by: []
+  - step: '2'
+    step_asks: in 2024
+    turns:
+    - why: 'Apply the 2024 window and price the date fork at the same time: how many orders fall in 2024
+        by the date they were placed versus by the date they were delivered, plus the first and last order
+        date the window actually covers.'
+      did: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n\
+        \      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_placed_in_2024,\n\
+        \  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n      AND\
+        \ delivery_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_delivered_in_2024,\n\
+        \  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date\
+        \ < CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n  MIN(\n\
+        \    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+        \ AS DATE)\n      THEN order_date\n    END\n  ) AS first_order_date_in_window,\n  MAX(\n    CASE\n\
+        \      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+        \ AS DATE)\n      THEN order_date\n    END\n  ) AS last_order_date_in_window\nFROM contoso_served.v_contoso5_sales_line"
+      came_back: '1 row(s): [{"orders_placed_in_2024": 15899, "orders_delivered_in_2024": 15917, "lines_placed_in_2024":
+        38109, "first_order_date_in_window": "2024-01-01", "last_order_date_in_window": "2024-12-31"}]'
+    settled_on: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n\
+      \      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_placed_in_2024,\n\
+      \  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n      AND\
+      \ delivery_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_delivered_in_2024,\n\
+      \  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date <\
+      \ CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n  MIN(\n    CASE\n\
+      \      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS\
+      \ DATE)\n      THEN order_date\n    END\n  ) AS first_order_date_in_window,\n  MAX(\n    CASE\n\
+      \      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS\
+      \ DATE)\n      THEN order_date\n    END\n  ) AS last_order_date_in_window\nFROM contoso_served.v_contoso5_sales_line"
+    means: 'The 2024 population, measured: 15,899 distinct orders were placed between 1 January and 31
+      December 2024, carried on 38,109 order lines. Orders are not sparse at the edges — the window actually
+      contains placement dates running the full span from 2024-01-01 to 2024-12-31, so this is a complete
+      calendar year and not a partial one. The alternative reading, orders DELIVERED in that same window,
+      gives 15,917 — 18 orders more, because a few December-2023 orders arrived in January 2024 and a
+      few December-2024 orders arrived in January 2025.'
+    readings_taken:
+    - word: in 2024
+      took: the calendar year, 1 January to 31 December 2024 — 15,899 orders
+      could_also_mean: 'a fiscal year labelled 2024 starting on some other month, which I could not price:
+        nothing in this bundle declares a fiscal calendar, no column names a fiscal period, and order_date
+        is the only declared period binding, so there is no fiscal year here to measure against'
+      declaration: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named grain
+        (day/month/quarter/year) is computed on that calendar column and on nothing else.'
+    - word: placed
+      took: the date the order was placed — order_date — giving 15,899 orders
+      could_also_mean: the date the order was delivered — delivery_date — giving 15,917 orders, 18 more
+        (+0.11%)
+      declaration: 'order.default.period_is_order_date declares `default: ordered` on order_date, and
+        lists "placed" among the surfaces that select it — so the question''s own word names this reading,
+        and the default would have chosen it anyway.'
+    blocked_by: []
+  - step: '3'
+    step_asks: how many orders were placed
+    turns:
+    - why: Produce the single figure the question asks for, in its own clean query, so the claimed answer
+        comes from one unambiguous column rather than from a diagnostic row.
+      did: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+        WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+      came_back: '1 row(s): [{"orders_placed": 15899}]'
+    - why: The clean single-figure query returns 15,899, matching the diagnostic from step 2, so the answer
+        is confirmed and can be claimed with its reading stated.
+      did: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+        WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 1 row(s): [{"orders_placed": 15899}]  Give `claimed_answer`
+        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+        rows settle the question, do not decline.'
+    settled_on: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+      WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+    means: '15,899 is the number of distinct orders Contoso recorded as placed during the calendar year
+      2024 — one count per order, not one per order line — over a window whose contents run the full span
+      1 January to 31 December 2024. Those 15,899 orders carry 38,109 lines between them, which is what
+      a line-grain reading would have returned instead. WHAT I DID NOT INCLUDE: nothing was excluded on
+      status, because this bundle holds no order status at all — no cancelled, returned, failed or draft
+      flag exists anywhere on the sales line, so every order the warehouse records as placed is counted
+      and none could have been removed. Nothing was excluded on channel: web-shop orders are in alongside
+      the physical shops. Nothing was excluded on customer, product, store or currency. And this is not
+      the delivered-in-2024 figure, which is 15,917.'
+    readings_taken:
+    - word: orders
+      took: one count per order — 15,899 distinct order_key
+      could_also_mean: one count per order line, which is 38,109 — 2.4x larger
+      declaration: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and
+        its grounding note states it is reached by counting distinct order_key over the line relation,
+        not collapsed.
+    - word: placed
+      took: the date the order was placed — order_date — 15,899 orders
+      could_also_mean: the date the order was delivered — delivery_date — 15,917 orders, 18 more (+0.11%)
+      declaration: 'order.default.period_is_order_date declares `default: ordered` on order_date and lists
+        "placed" among the surfaces selecting it, so the question''s own word names this reading and the
+        default would have chosen it anyway.'
+    - word: in 2024
+      took: the calendar year, 1 January to 31 December 2024
+      could_also_mean: a fiscal year labelled 2024 beginning in some other month — which I could not price,
+        because nothing in this bundle declares a fiscal calendar and no column names a fiscal period
+      declaration: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named year grain
+        is computed on that calendar column and on nothing else.'
+    - word: orders were placed
+      took: every order the warehouse records, whatever happened to it afterwards
+      could_also_mean: 'only orders that went through, excluding cancelled, returned or failed ones —
+        a reading this bundle cannot express: the sales line carries no status, cancellation or return
+        column, so these are not two figures here, they are one'
+      declaration: The declared columns of v_contoso5_sales_line are the order and line keys, two dates,
+        four foreign keys, the channel, the currency and the money and quantity measures. No order state
+        is among them; the only `status_annotation` in the bundle sits on dim_store and records why a
+        SHOP stopped trading.
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: How many orders were placed during the year 2024 — one single count covering every order whose
+      placement date falls in 2024, with no filtering by status, customer or channel.
+    population: 'Distinct order_key over contoso_served.v_contoso5_sales_line where order_date falls on
+      or after 2024-01-01 and before 2025-01-01 — 15,899 orders on 38,109 lines. Three restrictions I
+      deliberately did NOT apply: no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+      scopes its `default: physical` with `applies: subject` and this subject is an Order rather than
+      a Store, so the web shop is in alongside the physical shops; no status predicate, because the bundle
+      declares no order status column to filter on; no customer or product predicate, because the question
+      named none. The 2024 calendar window on order_date is the only restriction.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       orders           “orders”\n  2  ← 1  DURING     by year    \
+      \      “in 2024”\n  3  ← 2  AGGREGATE  count of orders  “how many orders were placed”\n  answer:\
+      \ step 3   confidence: 0.92"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: in 2024
+      asks: Does 2024 mean the calendar year January–December 2024, or your company's fiscal year 2024?
+      readings:
+      - the calendar year, 1 January to 31 December 2024
+      - the fiscal year labelled 2024, which may start and end on other dates
+      took: the calendar year 2024
+    - words: orders were placed
+      asks: Should cancelled, returned, failed or still-draft orders be counted, or only orders that went
+        through?
+      readings:
+      - every order that was placed, whatever happened to it afterwards
+      - only valid/completed orders, excluding cancelled, failed or returned ones
+      took: every order that was placed, regardless of its later status
+    - words: orders
+      asks: Do you want the number of orders themselves, or the number of items/lines across those orders?
+      readings:
+      - one count per order
+      - a count of the individual line items within the orders
+      took: one count per order
+    - words: placed
+      asks: Which date decides whether an order falls in 2024 — the date it was placed, or the date it
+        shipped or was paid?
+      readings:
+      - the date the order was placed
+      - the date the order shipped, was paid, or was fulfilled
+      took: the date the order was placed
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.92 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id001
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: orders
+      took: one count per order — 93,470 distinct order_key over the line relation
+      could_also_mean: one count per order line, which is 223,974 — a figure 2.4x larger
+      declaration: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and
+        its grounding note says it is reached by counting distinct order_key over the line relation, not
+        collapsed, each row carrying exactly one product. The document's own ambiguity on "orders" assumed
+        the same.
+    - word: orders
+      took: both sales channels — the web shop and the physical shops together
+      could_also_mean: physical shops only, the `physical` population of the channel rule
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel declares `applies: subject`,
+        which scopes its `default: physical` to questions whose subject is a Store. This question''s subject
+        is an Order, so the default does not reach it and nothing is excluded.'
+    - word: in 2024
+      took: the calendar year, 1 January to 31 December 2024 — 15,899 orders
+      could_also_mean: 'a fiscal year labelled 2024 starting on some other month, which I could not price:
+        nothing in this bundle declares a fiscal calendar, no column names a fiscal period, and order_date
+        is the only declared period binding, so there is no fiscal year here to measure against'
+      declaration: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named grain
+        (day/month/quarter/year) is computed on that calendar column and on nothing else.'
+    - word: placed
+      took: the date the order was placed — order_date — giving 15,899 orders
+      could_also_mean: the date the order was delivered — delivery_date — giving 15,917 orders, 18 more
+        (+0.11%)
+      declaration: 'order.default.period_is_order_date declares `default: ordered` on order_date, and
+        lists "placed" among the surfaces that select it — so the question''s own word names this reading,
+        and the default would have chosen it anyway.'
+    - word: orders
+      took: one count per order — 15,899 distinct order_key
+      could_also_mean: one count per order line, which is 38,109 — 2.4x larger
+      declaration: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and
+        its grounding note states it is reached by counting distinct order_key over the line relation,
+        not collapsed.
+    - word: placed
+      took: the date the order was placed — order_date — 15,899 orders
+      could_also_mean: the date the order was delivered — delivery_date — 15,917 orders, 18 more (+0.11%)
+      declaration: 'order.default.period_is_order_date declares `default: ordered` on order_date and lists
+        "placed" among the surfaces selecting it, so the question''s own word names this reading and the
+        default would have chosen it anyway.'
+    - word: in 2024
+      took: the calendar year, 1 January to 31 December 2024
+      could_also_mean: a fiscal year labelled 2024 beginning in some other month — which I could not price,
+        because nothing in this bundle declares a fiscal calendar and no column names a fiscal period
+      declaration: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named year grain
+        is computed on that calendar column and on nothing else.'
+    - word: orders were placed
+      took: every order the warehouse records, whatever happened to it afterwards
+      could_also_mean: 'only orders that went through, excluding cancelled, returned or failed ones —
+        a reading this bundle cannot express: the sales line carries no status, cancellation or return
+        column, so these are not two figures here, they are one'
+      declaration: The declared columns of v_contoso5_sales_line are the order and line keys, two dates,
+        four foreign keys, the channel, the currency and the money and quantity measures. No order state
+        is among them; the only `status_annotation` in the bundle sits on dim_store and records why a
+        SHOP stopped trading.
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date)\
+        \ AS first_order_date,\n  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line\n\
+        \n-- step 2\nSELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS\
+        \ DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  )\
+        \ AS orders_placed_in_2024,\n  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01'\
+        \ AS DATE)\n      AND delivery_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n\
+        \  ) AS orders_delivered_in_2024,\n  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01'\
+        \ AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n\
+        \  MIN(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date <\
+        \ CAST('2025-01-01' AS DATE)\n      THEN order_date\n    END\n  ) AS first_order_date_in_window,\n\
+        \  MAX(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date <\
+        \ CAST('2025-01-01' AS DATE)\n      THEN order_date\n    END\n  ) AS last_order_date_in_window\n\
+        FROM contoso_served.v_contoso5_sales_line\n\n-- step 3\nSELECT\n  COUNT(DISTINCT order_key) AS\
+        \ orders_placed\nFROM contoso_served.v_contoso5_sales_line\nWHERE\n  order_date >= CAST('2024-01-01'\
+        \ AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: '15,899 is the number of distinct orders Contoso recorded as placed during the
+      calendar year 2024 — one count per order, not one per order line — over a window whose contents
+      run the full span 1 January to 31 December 2024. Those 15,899 orders carry 38,109 lines between
+      them, which is what a line-grain reading would have returned instead. WHAT I DID NOT INCLUDE: nothing
+      was excluded on status, because this bundle holds no order status at all — no cancelled, returned,
+      failed or draft flag exists anywhere on the sales line, so every order the warehouse records as
+      placed is counted and none could have been removed. Nothing was excluded on channel: web-shop orders
+      are in alongside the physical shops. Nothing was excluded on customer, product, store or currency.
+      And this is not the delivered-in-2024 figure, which is 15,917.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'one figure' · graded EXACT
+  detail:
+    claimed_answer: '15899'
+    walk_bucket: EXACT
+    walk_why: '''15899'''
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many orders were placed in 2024?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many orders were placed during the year 2024 — one single count covering every order whose
+      placement date falls in 2024, with no filtering by status, customer or channel.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       orders           “orders”'
+    - '  2  ← 1  DURING     by year          “in 2024”'
+    - '  3  ← 2  AGGREGATE  count of orders  “how many orders were placed”'
+    - '  answer: step 3   confidence: 0.92'
+    - '  UNDERSTOOD AS: How many orders were placed during the year 2024 — one single count covering every
+      order whose placement date falls in 2024, with no filtering by status, customer or channel.'
+    - '  AMBIGUOUS ''in 2024'' — ASKS: Does 2024 mean the calendar year January–December 2024, or your
+      company''s fiscal year 2024?'
+    - '      could mean: the calendar year, 1 January to 31 December 2024'
+    - '      could mean: the fiscal year labelled 2024, which may start and end on other dates'
+    - '      took: the calendar year 2024'
+    - '  AMBIGUOUS ''orders were placed'' — ASKS: Should cancelled, returned, failed or still-draft orders
+      be counted, or only orders that went through?'
+    - '      could mean: every order that was placed, whatever happened to it afterwards'
+    - '      could mean: only valid/completed orders, excluding cancelled, failed or returned ones'
+    - '      took: every order that was placed, regardless of its later status'
+    - '  AMBIGUOUS ''orders'' — ASKS: Do you want the number of orders themselves, or the number of items/lines
+      across those orders?'
+    - '      could mean: one count per order'
+    - '      could mean: a count of the individual line items within the orders'
+    - '      took: one count per order'
+    - '  AMBIGUOUS ''placed'' — ASKS: Which date decides whether an order falls in 2024 — the date it
+      was placed, or the date it shipped or was paid?'
+    - '      could mean: the date the order was placed'
+    - '      could mean: the date the order shipped, was paid, or was fulfilled'
+    - '      took: the date the order was placed'
+    - '  OUTPUT SHAPE: one figure · one row(s) · carrying how many orders'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - one figure
+    - - said
+      - How many orders
+    - - rows
+      - one
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: in 2024
+      asks: Does 2024 mean the calendar year January–December 2024, or your company's fiscal year 2024?
+      readings:
+      - the calendar year, 1 January to 31 December 2024
+      - the fiscal year labelled 2024, which may start and end on other dates
+      took: the calendar year 2024
+    - words: orders were placed
+      asks: Should cancelled, returned, failed or still-draft orders be counted, or only orders that went
+        through?
+      readings:
+      - every order that was placed, whatever happened to it afterwards
+      - only valid/completed orders, excluding cancelled, failed or returned ones
+      took: every order that was placed, regardless of its later status
+    - words: orders
+      asks: Do you want the number of orders themselves, or the number of items/lines across those orders?
+      readings:
+      - one count per order
+      - a count of the individual line items within the orders
+      took: one count per order
+    - words: placed
+      asks: Which date decides whether an order falls in 2024 — the date it was placed, or the date it
+        shipped or was paid?
+      readings:
+      - the date the order was placed
+      - the date the order shipped, was paid, or was fulfilled
+      took: the date the order was placed
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date) AS\
+        \ first_order_date,\n  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n\
+        \      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_placed_in_2024,\n\
+        \  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n      AND\
+        \ delivery_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_delivered_in_2024,\n\
+        \  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date\
+        \ < CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n  MIN(\n\
+        \    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+        \ AS DATE)\n      THEN order_date\n    END\n  ) AS first_order_date_in_window,\n  MAX(\n    CASE\n\
+        \      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+        \ AS DATE)\n      THEN order_date\n    END\n  ) AS last_order_date_in_window\nFROM contoso_served.v_contoso5_sales_line"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+        WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: '15,899 is the number of distinct orders Contoso recorded as placed during the calendar year
+      2024 — one count per order, not one per order line — over a window whose contents run the full span
+      1 January to 31 December 2024. Those 15,899 orders carry 38,109 lines between them, which is what
+      a line-grain reading would have returned instead. WHAT I DID NOT INCLUDE: nothing was excluded on
+      status, because this bundle holds no order status at all — no cancelled, returned, failed or draft
+      flag exists anywhere on the sales line, so every order the warehouse records as placed is counted
+      and none could have been removed. Nothing was excluded on channel: web-shop orders are in alongside
+      the physical shops. Nothing was excluded on customer, product, store or currency. And this is not
+      the delivered-in-2024 figure, which is 15,917.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id007
+      rows: *id004
+      row_count: 1
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '15899'
+    - - shape
+      - one figure
+    - - population it answered over
+      - 'Distinct order_key over contoso_served.v_contoso5_sales_line where order_date falls on or after
+        2024-01-01 and before 2025-01-01 — 15,899 orders on 38,109 lines. Three restrictions I deliberately
+        did NOT apply: no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+        scopes its `default: physical` with `applies: subject` and this subject is an Order rather than
+        a Store, so the web shop is in alongside the physical shops; no status predicate, because the
+        bundle declares no order status column to filter on; no customer or product predicate, because
+        the question named none. The 2024 calendar window on order_date is the only restriction.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: orders
+      turns:
+      - why: Establish the base relation for "orders" — the sales line view, where an Order is counted
+          as distinct order_key — and confirm its grain and date extent before any 2024 filter is applied.
+        did: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date)\
+          \ AS first_order_date,\n  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line"
+        came_back: '1 row(s): [{"lines": 223974, "orders": 93470, "first_order_date": "2016-05-18", "last_order_date":
+          "2025-12-31"}]'
+      settled_on: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  MIN(order_date)\
+        \ AS first_order_date,\n  MAX(order_date) AS last_order_date\nFROM contoso_served.v_contoso5_sales_line"
+      means: 'One row describing the entire order population this question will be narrowed from, before
+        any period filter: Contoso''s sales fact holds 223,974 order lines, which roll up into 93,470
+        distinct orders, placed over a ten-year span from 18 May 2016 to 31 December 2025. Each row of
+        the underlying relation is one product on one order, so "orders" is the 93,470 and not the 223,974.
+        No 2024 filter, no status filter, no channel filter and no customer filter has been applied yet.'
+      readings_taken:
+      - word: orders
+        took: one count per order — 93,470 distinct order_key over the line relation
+        could_also_mean: one count per order line, which is 223,974 — a figure 2.4x larger
+        declaration: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and
+          its grounding note says it is reached by counting distinct order_key over the line relation,
+          not collapsed, each row carrying exactly one product. The document's own ambiguity on "orders"
+          assumed the same.
+      - word: orders
+        took: both sales channels — the web shop and the physical shops together
+        could_also_mean: physical shops only, the `physical` population of the channel rule
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel declares `applies: subject`,
+          which scopes its `default: physical` to questions whose subject is a Store. This question''s
+          subject is an Order, so the default does not reach it and nothing is excluded.'
+      blocked_by: []
+    - step: '2'
+      step_asks: in 2024
+      turns:
+      - why: 'Apply the 2024 window and price the date fork at the same time: how many orders fall in
+          2024 by the date they were placed versus by the date they were delivered, plus the first and
+          last order date the window actually covers.'
+        did: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n\
+          \      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_placed_in_2024,\n\
+          \  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n     \
+          \ AND delivery_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  ) AS orders_delivered_in_2024,\n\
+          \  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date\
+          \ < CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n  MIN(\n\
+          \    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+          \ AS DATE)\n      THEN order_date\n    END\n  ) AS first_order_date_in_window,\n  MAX(\n   \
+          \ CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+          \ AS DATE)\n      THEN order_date\n    END\n  ) AS last_order_date_in_window\nFROM contoso_served.v_contoso5_sales_line"
+        came_back: '1 row(s): [{"orders_placed_in_2024": 15899, "orders_delivered_in_2024": 15917, "lines_placed_in_2024":
+          38109, "first_order_date_in_window": "2024-01-01", "last_order_date_in_window": "2024-12-31"}]'
+      settled_on: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS\
+        \ DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n  )\
+        \ AS orders_placed_in_2024,\n  COUNT(\n    DISTINCT CASE\n      WHEN delivery_date >= CAST('2024-01-01'\
+        \ AS DATE)\n      AND delivery_date < CAST('2025-01-01' AS DATE)\n      THEN order_key\n    END\n\
+        \  ) AS orders_delivered_in_2024,\n  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01'\
+        \ AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_placed_in_2024,\n\
+        \  MIN(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date <\
+        \ CAST('2025-01-01' AS DATE)\n      THEN order_date\n    END\n  ) AS first_order_date_in_window,\n\
+        \  MAX(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date <\
+        \ CAST('2025-01-01' AS DATE)\n      THEN order_date\n    END\n  ) AS last_order_date_in_window\n\
+        FROM contoso_served.v_contoso5_sales_line"
+      means: 'The 2024 population, measured: 15,899 distinct orders were placed between 1 January and
+        31 December 2024, carried on 38,109 order lines. Orders are not sparse at the edges — the window
+        actually contains placement dates running the full span from 2024-01-01 to 2024-12-31, so this
+        is a complete calendar year and not a partial one. The alternative reading, orders DELIVERED in
+        that same window, gives 15,917 — 18 orders more, because a few December-2023 orders arrived in
+        January 2024 and a few December-2024 orders arrived in January 2025.'
+      readings_taken:
+      - word: in 2024
+        took: the calendar year, 1 January to 31 December 2024 — 15,899 orders
+        could_also_mean: 'a fiscal year labelled 2024 starting on some other month, which I could not
+          price: nothing in this bundle declares a fiscal calendar, no column names a fiscal period, and
+          order_date is the only declared period binding, so there is no fiscal year here to measure against'
+        declaration: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named grain
+          (day/month/quarter/year) is computed on that calendar column and on nothing else.'
+      - word: placed
+        took: the date the order was placed — order_date — giving 15,899 orders
+        could_also_mean: the date the order was delivered — delivery_date — giving 15,917 orders, 18 more
+          (+0.11%)
+        declaration: 'order.default.period_is_order_date declares `default: ordered` on order_date, and
+          lists "placed" among the surfaces that select it — so the question''s own word names this reading,
+          and the default would have chosen it anyway.'
+      blocked_by: []
+    - step: '3'
+      step_asks: how many orders were placed
+      turns:
+      - why: Produce the single figure the question asks for, in its own clean query, so the claimed answer
+          comes from one unambiguous column rather than from a diagnostic row.
+        did: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+          WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+        came_back: '1 row(s): [{"orders_placed": 15899}]'
+      - why: The clean single-figure query returns 15,899, matching the diagnostic from step 2, so the
+          answer is confirmed and can be claimed with its reading stated.
+        did: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+          WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 1 row(s): [{"orders_placed": 15899}]  Give `claimed_answer`
+          as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+          rows settle the question, do not decline.'
+      settled_on: "SELECT\n  COUNT(DISTINCT order_key) AS orders_placed\nFROM contoso_served.v_contoso5_sales_line\n\
+        WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+      means: '15,899 is the number of distinct orders Contoso recorded as placed during the calendar year
+        2024 — one count per order, not one per order line — over a window whose contents run the full
+        span 1 January to 31 December 2024. Those 15,899 orders carry 38,109 lines between them, which
+        is what a line-grain reading would have returned instead. WHAT I DID NOT INCLUDE: nothing was
+        excluded on status, because this bundle holds no order status at all — no cancelled, returned,
+        failed or draft flag exists anywhere on the sales line, so every order the warehouse records as
+        placed is counted and none could have been removed. Nothing was excluded on channel: web-shop
+        orders are in alongside the physical shops. Nothing was excluded on customer, product, store or
+        currency. And this is not the delivered-in-2024 figure, which is 15,917.'
+      readings_taken:
+      - word: orders
+        took: one count per order — 15,899 distinct order_key
+        could_also_mean: one count per order line, which is 38,109 — 2.4x larger
+        declaration: The Order concept is grounded in v_contoso5_sales_line with `counts order_key`, and
+          its grounding note states it is reached by counting distinct order_key over the line relation,
+          not collapsed.
+      - word: placed
+        took: the date the order was placed — order_date — 15,899 orders
+        could_also_mean: the date the order was delivered — delivery_date — 15,917 orders, 18 more (+0.11%)
+        declaration: 'order.default.period_is_order_date declares `default: ordered` on order_date and
+          lists "placed" among the surfaces selecting it, so the question''s own word names this reading
+          and the default would have chosen it anyway.'
+      - word: in 2024
+        took: the calendar year, 1 January to 31 December 2024
+        could_also_mean: a fiscal year labelled 2024 beginning in some other month — which I could not
+          price, because nothing in this bundle declares a fiscal calendar and no column names a fiscal
+          period
+        declaration: 'v_contoso5_sales_line.order_date carries `period_binding: True`, so a named year
+          grain is computed on that calendar column and on nothing else.'
+      - word: orders were placed
+        took: every order the warehouse records, whatever happened to it afterwards
+        could_also_mean: 'only orders that went through, excluding cancelled, returned or failed ones
+          — a reading this bundle cannot express: the sales line carries no status, cancellation or return
+          column, so these are not two figures here, they are one'
+        declaration: The declared columns of v_contoso5_sales_line are the order and line keys, two dates,
+          four foreign keys, the channel, the currency and the money and quantity measures. No order state
+          is among them; the only `status_annotation` in the bundle sits on dim_store and records why
+          a SHOP stopped trading.
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id001
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+v3_answer_step: '3'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: '''15899'''
+v3_seconds: 114.4

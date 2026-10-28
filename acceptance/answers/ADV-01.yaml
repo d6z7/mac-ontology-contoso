@@ -1,0 +1,1894 @@
+id: ADV-01
+captured_at: '2026-10-24T21:44:49+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: gross revenue
+  operation: select
+  qdmr_simplified: "  1       FROM       revenue                                   “gross vs net revenue”\n\
+    \  2  ← 1  DURING     by year                                   “in 2024”\n  3  ← 2  GROUP_BY   by\
+    \ brand                                  “by brand”\n  4  ← 3  AGGREGATE  sum of gross revenue, sum\
+    \ of net revenue  “gross vs net revenue”\n  5  ← 4  SELECT     brand, gross revenue, net revenue \
+    \        “Compare gross vs net revenue by brand”\n  answer: step 5   confidence: 0.78\n  UNDERSTOOD\
+    \ AS: For each brand, show two 2024 revenue figures side by side: gross revenue and net revenue, summed\
+    \ over everything sold in calendar year 2024. One row per brand; nothing is filtered to particular\
+    \ products, regions or channels, and brands with no 2024 revenue would simply not appear.\n  AMBIGUOUS\
+    \ 'net revenue' — ASKS: When you say net revenue, what should be taken off the gross figure — discounts,\
+    \ returns, taxes, shipping, or some combination?\n      could mean: gross minus discounts only\n \
+    \     could mean: gross minus discounts and returns/credits\n      could mean: gross minus discounts,\
+    \ returns and taxes and anything else finance normally nets out\n      took: net revenue is the figure\
+    \ already reported as net, i.e. gross less the standard deductions\n  AMBIGUOUS 'in 2024' — ASKS:\
+    \ Does 2024 mean the calendar year January–December 2024, or your fiscal year 2024?\n      could mean:\
+    \ calendar year 2024\n      could mean: fiscal year 2024\n      took: calendar year 2024\n  AMBIGUOUS\
+    \ 'by brand' — ASKS: Should every brand appear, including ones with no revenue at all in 2024, or\
+    \ only brands that had revenue that year?\n      could mean: only brands with 2024 revenue\n     \
+    \ could mean: all brands, showing zero for those with none\n      took: only brands with 2024 revenue\n\
+    \  AMBIGUOUS 'revenue ... in 2024' — ASKS: Should a sale count as 2024 based on when it was ordered,\
+    \ when it shipped, or when it was invoiced/recognised?\n      could mean: order date falls in 2024\n\
+    \      could mean: ship or delivery date falls in 2024\n      could mean: invoice or revenue-recognition\
+    \ date falls in 2024\n      took: the date revenue is normally reported on\n  cannot_express: a full\
+    \ gross-to-net bridge showing each deduction (discounts, returns, taxes) as its own column or line\n\
+    \  OUTPUT SHAPE: a list of names and figures · many row(s) · named by brand · carrying gross revenue,\
+    \ net revenue"
+  understood_as_in_human_words: 'For each brand, show two 2024 revenue figures side by side: gross revenue
+    and net revenue, summed over everything sold in calendar year 2024. One row per brand; nothing is
+    filtered to particular products, regions or channels, and brands with no 2024 revenue would simply
+    not appear.'
+  population_actually_answered: 'The 38,109 sales lines of contoso_served.v_contoso5_sales_line whose
+    order_date falls in 2024-01-01..2024-12-31, each joined one-to-one to dim_product for its brand, grouped
+    into all 11 brands. The 2024 date window on order_date is the ONLY row filter in the query — chosen
+    over delivery_date because order.default.period_is_order_date declares order date the reporting convention.
+    Nothing else is restricted: no channel predicate, so both the physical shops and the online store
+    are in (store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject` and this
+    question''s subject is a measure, so its `physical` default does not reach here); no product, store,
+    customer, country, currency or trading-status filter; no brand omitted and none dormant. The eleven
+    rows sum to exactly the independently measured ungrouped 2024 totals — 33,631,448.47 gross and 31,639,690.92
+    net — so the table partitions the year''s revenue once each, with nothing stranded outside it and
+    nothing counted twice.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: a list of names and figures
+    columns_the_answer_step_asks_for: &id001
+    - brand
+    - gross revenue
+    - net revenue
+    figures_the_answer_step_computes: []
+    answer_step: '5'
+    verb: select
+    said: Compare gross vs net revenue by brand
+    stage1_confidence: 0.78
+  canonical_question: &id002
+    understood_as: 'For each brand, show two 2024 revenue figures side by side: gross revenue and net
+      revenue, summed over everything sold in calendar year 2024. One row per brand; nothing is filtered
+      to particular products, regions or channels, and brands with no 2024 revenue would simply not appear.'
+    steps:
+    - id: '1'
+      do: from
+      thing: revenue
+      said: gross vs net revenue
+    - id: '2'
+      do: during
+      of: '1'
+      grain: year
+      said: in 2024
+    - id: '3'
+      do: group_by
+      of: '2'
+      thing: brand
+      said: by brand
+    - id: '4'
+      do: aggregate
+      of: '3'
+      said: gross vs net revenue
+      figures:
+      - how: sum
+        of: gross revenue
+        said: gross
+      - how: sum
+        of: net revenue
+        said: net revenue
+    - id: '5'
+      do: select
+      of: '4'
+      columns: *id001
+      said: Compare gross vs net revenue by brand
+    answer: '5'
+    output_shape: &id004
+      shape: a list of names and figures
+      said: Compare gross vs net revenue by brand in 2024
+      key_columns: &id006
+      - brand
+      figure_columns: &id007
+      - gross revenue
+      - net revenue
+      rows: many
+    ambiguities:
+    - words: net revenue
+      question: When you say net revenue, what should be taken off the gross figure — discounts, returns,
+        taxes, shipping, or some combination?
+      readings:
+      - gross minus discounts only
+      - gross minus discounts and returns/credits
+      - gross minus discounts, returns and taxes and anything else finance normally nets out
+      assumed: net revenue is the figure already reported as net, i.e. gross less the standard deductions
+    - words: in 2024
+      question: Does 2024 mean the calendar year January–December 2024, or your fiscal year 2024?
+      readings:
+      - calendar year 2024
+      - fiscal year 2024
+      assumed: calendar year 2024
+    - words: by brand
+      question: Should every brand appear, including ones with no revenue at all in 2024, or only brands
+        that had revenue that year?
+      readings:
+      - only brands with 2024 revenue
+      - all brands, showing zero for those with none
+      assumed: only brands with 2024 revenue
+    - words: revenue ... in 2024
+      question: Should a sale count as 2024 based on when it was ordered, when it shipped, or when it
+        was invoiced/recognised?
+      readings:
+      - order date falls in 2024
+      - ship or delivery date falls in 2024
+      - invoice or revenue-recognition date falls in 2024
+      assumed: the date revenue is normally reported on
+    cannot_express: &id003
+    - a full gross-to-net bridge showing each deduction (discounts, returns, taxes) as its own column
+      or line
+    confidence: 0.78
+  steps: 5
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: brand
+      type: string
+    - name: gross_revenue
+      type: string
+    - name: net_revenue
+      type: string
+    rows:
+    - - Contoso
+      - '6977387.65'
+      - '6568133.00'
+    - - Adventure Works
+      - '6825647.67'
+      - '6420657.92'
+    - - The Phone Company
+      - '5501771.00'
+      - '5175125.81'
+    - - Wide World Importers
+      - '4327133.56'
+      - '4065046.17'
+    - - Proseware
+      - '2824354.60'
+      - '2648585.03'
+    - - Fabrikam
+      - '2517720.04'
+      - '2371833.51'
+    - - Southridge Video
+      - '2201998.93'
+      - '2073883.07'
+    - - Litware
+      - '1360593.49'
+      - '1280128.24'
+    - - A. Datum
+      - '474625.40'
+      - '446608.54'
+    - - Northwind Traders
+      - '361836.17'
+      - '347968.61'
+    - - Tailspin Toys
+      - '258379.96'
+      - '241721.03'
+  value: null
+  raw: '[{"brand": "Contoso", "gross_revenue": 6977387.65, "net_revenue": 6568133.00}, {"brand": "Adventure
+    Works", "gross_revenue": 6825647.67, "net_revenue": 6420657.92}, {"brand": "The Phone Company", "gross_revenue":
+    5501771.00, "net_revenue": 5175125.81}, {"brand": "Wide World Importers", "gross_revenue": 4327133.56,
+    "net_revenue": 4065046.17}, {"brand": "Proseware", "gross_revenue": 2824354.60, "net_revenue": 2648585.03},
+    {"brand": "Fabrikam", "gross_revenue": 2517720.04, "net_revenue": 2371833.51}, {"brand": "Southridge
+    Video", "gross_revenue": 2201998.93, "net_revenue": 2073883.07}, {"brand": "Litware", "gross_revenue":
+    1360593.49, "net_revenue": 1280128.24}, {"brand": "A. Datum", "gross_revenue": 474625.40, "net_revenue":
+    446608.54}, {"brand": "Northwind Traders", "gross_revenue": 361836.17, "net_revenue": 347968.61},
+    {"brand": "Tailspin Toys", "gross_revenue": 258379.96, "net_revenue": 241721.03}]'
+  reading: a list of names and figures
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "net revenue → gross less discount, which is what net_amount is: discount_amount is measured\
+      \ as exactly gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing\
+      \ else\n        could also mean: gross less returns, credits, taxes or shipping as well — the question's\
+      \ own ambiguity list raises these, but no column in this bundle records a return, a tax or a freight\
+      \ charge, so the richer readings are not expressible here and cannot differ from this one"
+    ref: v_contoso5_sales_line.net_amount — 'what the customer was actually charged for the line, in USD,
+      after discount'; cannot_express already names the full gross-to-net bridge as out of reach
+  - kind: ''
+    text: "gross vs net revenue → both figures explicitly, so no default is exercised\n        could also\
+      \ mean: a single unqualified 'revenue', which would have been net only"
+    ref: net_revenue.default.revenue_means_net fires only when a question says revenue without saying
+      net or gross — this question names both, so it does not fire
+  - kind: ''
+    text: "everything sold → both channels, no store predicate — the web shop's 86,790,054.13 of net revenue\
+      \ is in\n        could also mean: physical shops only, 132,024,417.53 net"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`; the subject
+      here is a measure, not a Store, so the `physical` default is not reached — operator ruling of 2026-10-18,
+      ''both internet and physical shops combined make revenue'''
+  - kind: ''
+    text: "2024 → nothing yet — this step applies no date filter; it only confirms 2024 lies inside the\
+      \ recorded extent\n        could also mean: order date vs delivery date, which step 2 must settle"
+    ref: order.default.period_is_order_date — order_date is the period column and the time axis binds
+      on it
+  - kind: ''
+    text: "in 2024 → ORDERED in calendar 2024 — 38,109 lines, 33,631,448.47 gross and 31,639,690.92 net\n\
+      \        could also mean: DELIVERED in calendar 2024 — 38,153 lines, 33,678,502.78 gross and 31,684,958.13\
+      \ net. Measured: 44 more lines and 45,267.21 more net, 0.14%, because deliveries straddle the year\
+      \ boundary in both directions. The gross-vs-net comparison this question is actually about is unmoved\
+      \ by the choice — discount is 5.92% of gross under either reading"
+    ref: order.default.period_is_order_date, default `ordered` — order date is the declared reporting
+      convention and the time axis binds on it; delivery is a logistics question
+  - kind: ''
+    text: "2024 → calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive\n        could also mean:\
+      \ a fiscal year 2024"
+    ref: none — nothing in this bundle declares a fiscal calendar or year-start offset, so the fiscal
+      reading cannot be computed here at all; this is a limit of the data, not a choice I made
+  - kind: ''
+    text: "revenue → both channels — shops and the web shop together\n        could also mean: physical\
+      \ shops only"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`; the subject
+      of this step is a measure, not a Store, so the `physical` default is never reached'
+  - kind: ''
+    text: "brand → dim_product.brand — 11 values, one per product row, reached by product_key\n      \
+      \  could also mean: dim_product.manufacturer, the legal-name spelling of the same axis"
+    ref: 'Brand [enumeration] grounded in contoso_served.dim_product counts brand; manufacturer is declared
+      as NAMING brand with naming: legal, #2 behind common, so brand is what an answer shows'
+  - kind: ''
+    text: "by brand → only brands that sold in 2024 — which turns out to be all 11, so the table is complete\
+      \ either way\n        could also mean: all 11 brands with zeros for dormant ones. Measured: there\
+      \ are no dormant brands in 2024, so the two readings return the identical 11 rows and the choice\
+      \ is void"
+    ref: none needed — the readings agree
+  - kind: ''
+    text: "by brand → the INNER JOIN, now that the LEFT JOIN has proved it equivalent — zero unmatched\
+      \ lines, zero null brands\n        could also mean: a LEFT JOIN retaining orphan sales, of which\
+      \ there are none"
+    ref: gross_revenue__by__product and net_revenue__by__product declare (1..N) -> Product (1); product__sold_under__brand
+      declares Product (1..N) -> Brand (1). Both now measured rather than assumed.
+  - kind: ''
+    text: "sum → plain SUM of each money column per brand\n        could also mean: nothing — both are\
+      \ declared FLOW, so SUM over any grouping is the declared-correct operation"
+    ref: 'gross_amount / net_amount: ''a FLOW — it accumulates, so SUM over any period and any grouping
+      is correct, in USD'''
+  - kind: ''
+    text: "net revenue → gross less discount, 31,639,690.92 for 2024 — the only deduction the data holds\n\
+      \        could also mean: gross less returns, credits and taxes too, which would be lower still"
+    ref: net_amount is 'what the customer was actually charged for the line, after discount'; discount_amount
+      is measured as exactly gross_amount - net_amount, and the full gross-to-net bridge is already listed
+      under cannot_express
+  - kind: ''
+    text: "in 2024 → ordered in calendar 2024\n        could also mean: delivered in calendar 2024, which\
+      \ shifts the all-brand net by 45,267.21 (0.14%) and leaves the 5.92% discount rate unchanged"
+    ref: order.default.period_is_order_date, default `ordered`
+  - kind: ''
+    text: "net revenue → gross less discount — 31,639,690.92 across all brands in 2024\n        could\
+      \ also mean: gross less discounts AND returns/credits, or less taxes and shipping too, as finance\
+      \ would normally net out — every such reading would be LOWER than this figure"
+    ref: net_amount is 'what the customer was actually charged for the line, in USD, after discount',
+      and discount_amount is measured as exactly gross_amount - net_amount — so discount is provably the
+      entire gap between the two columns I am showing. No return, credit, tax or freight column exists
+      on any relation here, so the fuller readings are not computable at all; the question's own cannot_express
+      names the full bridge as out of reach. A limit of the data, not a choice I made between available
+      figures.
+  - kind: ''
+    text: "in 2024 → ORDER DATE within calendar 2024 — 38,109 lines, 33,631,448.47 gross, 31,639,690.92\
+      \ net\n        could also mean: DELIVERY date within 2024 — 38,153 lines, 33,678,502.78 gross, 31,684,958.13\
+      \ net; measured as 45,267.21 more net, 0.14%, from deliveries crossing the year boundary. It changes\
+      \ no brand's rank and leaves the gross-to-net gap at 5.92% either way, so the comparison the question\
+      \ asks for is unaffected."
+    ref: order.default.period_is_order_date, default `ordered` — 'order date is the reporting convention;
+      delivery is a logistics question', and the time axis is declared to bind on order_date
+  - kind: ''
+    text: "2024 → the calendar year, 1 January to 31 December\n        could also mean: a fiscal year\
+      \ 2024 beginning in some other month"
+    ref: none — nothing in this bundle declares a fiscal calendar, accounting period or year-start offset,
+      so the fiscal reading cannot be computed. This is the one fork I could not price even in principle.
+  - kind: ''
+    text: "by brand → the brands that sold in 2024 — which proved to be all 11 the warehouse holds\n \
+      \       could also mean: all brands with a zero row for any dormant one. Measured: none was dormant\
+      \ in 2024, so both readings return the identical 11 rows and the choice is void."
+    ref: Brand [enumeration], eleven names carried on the product row; dim_product.brand — '11 brands
+      over 2,517 products, so a question about brands wants the 11 and not the 2,517'
+  - kind: ''
+    text: "revenue → both channels — physical shops and the web shop combined\n        could also mean:\
+      \ physical shops only, which across all time drops about 40% of the money"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`; the subject
+      of this question is a measure, not a Store, so its `physical` default is never reached — operator
+      ruling of 2026-10-18, ''both internet and physical shops combined make revenue'''
+  - kind: ''
+    text: "brand → dim_product.brand, reached from the sale by product_key\n        could also mean: dim_product.manufacturer,\
+      \ a second spelling of the same axis"
+    ref: 'manufacturer is declared as NAMING brand with naming: legal, #2 behind common in the preference
+      order common > legal > long > short > code, so brand is the name an answer shows'
+  concepts: []
+  rules:
+  - id: v_contoso5_sales_line.net_amount — 'what the customer was actually charged for the line
+    why: '''net revenue'' = gross less discount, which is what net_amount is: discount_amount is measured
+      as exactly gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing else'
+  - id: in USD
+    why: '''net revenue'' = gross less discount, which is what net_amount is: discount_amount is measured
+      as exactly gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing else'
+  - id: after discount'
+    why: '''net revenue'' = gross less discount, which is what net_amount is: discount_amount is measured
+      as exactly gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing else'
+  - id: cannot_express already names the full gross-to-net bridge as out of reach
+    why: '''net revenue'' = gross less discount, which is what net_amount is: discount_amount is measured
+      as exactly gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing else'
+  - id: net_revenue.default.revenue_means_net fires only when a question says revenue without saying net
+      or gross — this question names both
+    why: '''gross vs net revenue'' = both figures explicitly, so no default is exercised'
+  - id: so it does not fire
+    why: '''gross vs net revenue'' = both figures explicitly, so no default is exercised'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`'
+    why: '''everything sold'' = both channels, no store predicate — the web shop''s 86,790,054.13 of net
+      revenue is in'
+  - id: the subject here is a measure
+    why: '''everything sold'' = both channels, no store predicate — the web shop''s 86,790,054.13 of net
+      revenue is in'
+  - id: not a Store
+    why: '''everything sold'' = both channels, no store predicate — the web shop''s 86,790,054.13 of net
+      revenue is in'
+  - id: so the `physical` default is not reached — operator ruling of 2026-10-18
+    why: '''everything sold'' = both channels, no store predicate — the web shop''s 86,790,054.13 of net
+      revenue is in'
+  - id: '''both internet and physical shops combined make revenue'''
+    why: '''everything sold'' = both channels, no store predicate — the web shop''s 86,790,054.13 of net
+      revenue is in'
+  - id: order.default.period_is_order_date — order_date is the period column and the time axis binds on
+      it
+    why: '''2024'' = nothing yet — this step applies no date filter; it only confirms 2024 lies inside
+      the recorded extent'
+  - id: order.default.period_is_order_date
+    why: '''in 2024'' = ORDERED in calendar 2024 — 38,109 lines, 33,631,448.47 gross and 31,639,690.92
+      net'
+  - id: default `ordered` — order date is the declared reporting convention and the time axis binds on
+      it
+    why: '''in 2024'' = ORDERED in calendar 2024 — 38,109 lines, 33,631,448.47 gross and 31,639,690.92
+      net'
+  - id: delivery is a logistics question
+    why: '''in 2024'' = ORDERED in calendar 2024 — 38,109 lines, 33,631,448.47 gross and 31,639,690.92
+      net'
+  - id: none — nothing in this bundle declares a fiscal calendar or year-start offset
+    why: '''2024'' = calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive'
+  - id: so the fiscal reading cannot be computed here at all
+    why: '''2024'' = calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive'
+  - id: this is a limit of the data
+    why: '''2024'' = calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive'
+  - id: not a choice I made
+    why: '''2024'' = calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive'
+  - id: the subject of this step is a measure
+    why: '''revenue'' = both channels — shops and the web shop together'
+  - id: so the `physical` default is never reached
+    why: '''revenue'' = both channels — shops and the web shop together'
+  - id: Brand [enumeration] grounded in contoso_served.dim_product counts brand
+    why: '''brand'' = dim_product.brand — 11 values, one per product row, reached by product_key'
+  - id: 'manufacturer is declared as NAMING brand with naming: legal'
+    why: '''brand'' = dim_product.brand — 11 values, one per product row, reached by product_key'
+  - id: '#2 behind common'
+    why: '''brand'' = dim_product.brand — 11 values, one per product row, reached by product_key'
+  - id: so brand is what an answer shows
+    why: '''brand'' = dim_product.brand — 11 values, one per product row, reached by product_key'
+  - id: none needed — the readings agree
+    why: '''by brand'' = only brands that sold in 2024 — which turns out to be all 11, so the table is
+      complete either way'
+  - id: gross_revenue__by__product and net_revenue__by__product declare (1..N) -> Product (1)
+    why: '''by brand'' = the INNER JOIN, now that the LEFT JOIN has proved it equivalent — zero unmatched
+      lines, zero null brands'
+  - id: product__sold_under__brand declares Product (1..N) -> Brand (1). Both now measured rather than
+      assumed.
+    why: '''by brand'' = the INNER JOIN, now that the LEFT JOIN has proved it equivalent — zero unmatched
+      lines, zero null brands'
+  - id: 'gross_amount / net_amount: ''a FLOW — it accumulates'
+    why: '''sum'' = plain SUM of each money column per brand'
+  - id: so SUM over any period and any grouping is correct
+    why: '''sum'' = plain SUM of each money column per brand'
+  - id: in USD'
+    why: '''sum'' = plain SUM of each money column per brand'
+  - id: net_amount is 'what the customer was actually charged for the line
+    why: '''net revenue'' = gross less discount, 31,639,690.92 for 2024 — the only deduction the data
+      holds'
+  - id: discount_amount is measured as exactly gross_amount - net_amount
+    why: '''net revenue'' = gross less discount, 31,639,690.92 for 2024 — the only deduction the data
+      holds'
+  - id: and the full gross-to-net bridge is already listed under cannot_express
+    why: '''net revenue'' = gross less discount, 31,639,690.92 for 2024 — the only deduction the data
+      holds'
+  - id: default `ordered`
+    why: '''in 2024'' = ordered in calendar 2024'
+  - id: and discount_amount is measured as exactly gross_amount - net_amount — so discount is provably
+      the entire gap between the two columns I am showing. No return
+    why: '''net revenue'' = gross less discount — 31,639,690.92 across all brands in 2024'
+  - id: credit
+    why: '''net revenue'' = gross less discount — 31,639,690.92 across all brands in 2024'
+  - id: tax or freight column exists on any relation here
+    why: '''net revenue'' = gross less discount — 31,639,690.92 across all brands in 2024'
+  - id: so the fuller readings are not computable at all
+    why: '''net revenue'' = gross less discount — 31,639,690.92 across all brands in 2024'
+  - id: the question's own cannot_express names the full bridge as out of reach. A limit of the data
+    why: '''net revenue'' = gross less discount — 31,639,690.92 across all brands in 2024'
+  - id: not a choice I made between available figures.
+    why: '''net revenue'' = gross less discount — 31,639,690.92 across all brands in 2024'
+  - id: default `ordered` — 'order date is the reporting convention
+    why: '''in 2024'' = ORDER DATE within calendar 2024 — 38,109 lines, 33,631,448.47 gross, 31,639,690.92
+      net'
+  - id: delivery is a logistics question'
+    why: '''in 2024'' = ORDER DATE within calendar 2024 — 38,109 lines, 33,631,448.47 gross, 31,639,690.92
+      net'
+  - id: and the time axis is declared to bind on order_date
+    why: '''in 2024'' = ORDER DATE within calendar 2024 — 38,109 lines, 33,631,448.47 gross, 31,639,690.92
+      net'
+  - id: none — nothing in this bundle declares a fiscal calendar
+    why: '''2024'' = the calendar year, 1 January to 31 December'
+  - id: accounting period or year-start offset
+    why: '''2024'' = the calendar year, 1 January to 31 December'
+  - id: so the fiscal reading cannot be computed. This is the one fork I could not price even in principle.
+    why: '''2024'' = the calendar year, 1 January to 31 December'
+  - id: Brand [enumeration]
+    why: '''by brand'' = the brands that sold in 2024 — which proved to be all 11 the warehouse holds'
+  - id: eleven names carried on the product row
+    why: '''by brand'' = the brands that sold in 2024 — which proved to be all 11 the warehouse holds'
+  - id: dim_product.brand — '11 brands over 2
+    why: '''by brand'' = the brands that sold in 2024 — which proved to be all 11 the warehouse holds'
+  - id: 517 products
+    why: '''by brand'' = the brands that sold in 2024 — which proved to be all 11 the warehouse holds'
+  - id: so a question about brands wants the 11 and not the 2
+    why: '''by brand'' = the brands that sold in 2024 — which proved to be all 11 the warehouse holds'
+  - id: 517'
+    why: '''by brand'' = the brands that sold in 2024 — which proved to be all 11 the warehouse holds'
+  - id: the subject of this question is a measure
+    why: '''revenue'' = both channels — physical shops and the web shop combined'
+  - id: so its `physical` default is never reached — operator ruling of 2026-10-18
+    why: '''revenue'' = both channels — physical shops and the web shop combined'
+  - id: '#2 behind common in the preference order common > legal > long > short > code'
+    why: '''brand'' = dim_product.brand, reached from the sale by product_key'
+  - id: so brand is the name an answer shows
+    why: '''brand'' = dim_product.brand, reached from the sale by product_key'
+  edges: []
+sql:
+- "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount), 2)\
+  \ AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product AS\
+  \ p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND\
+  \ s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue DESC"
+- "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n  net_amount\n\
+  FROM contoso_served.v_contoso5_sales_line"
+- "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n  net_amount\n\
+  FROM contoso_served.v_contoso5_sales_line\nWHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND\
+  \ order_date < CAST('2025-01-01' AS DATE)"
+- "SELECT\n  p.brand,\n  s.order_key,\n  s.line_number,\n  s.gross_amount,\n  s.net_amount\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS s\nJOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date\
+  \ >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01' AS DATE)"
+- "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount), 2)\
+  \ AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product AS\
+  \ p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND\
+  \ s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue DESC"
+answer_sql: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+  \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+  \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND\
+  \ s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue DESC"
+sql_valid: true
+result:
+  status: ok
+  rows: 11
+  cols: &id008
+  - brand
+  - gross_revenue
+  - net_revenue
+  sample_rows:
+  - - Contoso
+    - '6977387.65'
+    - '6568133.00'
+  - - Adventure Works
+    - '6825647.67'
+    - '6420657.92'
+  - - The Phone Company
+    - '5501771.00'
+    - '5175125.81'
+  - - Wide World Importers
+    - '4327133.56'
+    - '4065046.17'
+  - - Proseware
+    - '2824354.60'
+    - '2648585.03'
+  - - Fabrikam
+    - '2517720.04'
+    - '2371833.51'
+  - - Southridge Video
+    - '2201998.93'
+    - '2073883.07'
+  - - Litware
+    - '1360593.49'
+    - '1280128.24'
+  - - A. Datum
+    - '474625.40'
+    - '446608.54'
+  - - Northwind Traders
+    - '361836.17'
+    - '347968.61'
+  - - Tailspin Toys
+    - '258379.96'
+    - '241721.03'
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1       FROM       revenue                                   “gross\
+    \ vs net revenue”\n  2  ← 1  DURING     by year                                   “in 2024”\n  3 \
+    \ ← 2  GROUP_BY   by brand                                  “by brand”\n  4  ← 3  AGGREGATE  sum of\
+    \ gross revenue, sum of net revenue  “gross vs net revenue”\n  5  ← 4  SELECT     brand, gross revenue,\
+    \ net revenue         “Compare gross vs net revenue by brand”\n  answer: step 5   confidence: 0.78\n\
+    \  UNDERSTOOD AS: For each brand, show two 2024 revenue figures side by side: gross revenue and net\
+    \ revenue, summed over everything sold in calendar year 2024. One row per brand; nothing is filtered\
+    \ to particular products, regions or channels, and brands with no 2024 revenue would simply not appear.\n\
+    \  AMBIGUOUS 'net revenue' — ASKS: When you say net revenue, what should be taken off the gross figure\
+    \ — discounts, returns, taxes, shipping, or some combination?\n      could mean: gross minus discounts\
+    \ only\n      could mean: gross minus discounts and returns/credits\n      could mean: gross minus\
+    \ discounts, returns and taxes and anything else finance normally nets out\n      took: net revenue\
+    \ is the figure already reported as net, i.e. gross less the standard deductions\n  AMBIGUOUS 'in\
+    \ 2024' — ASKS: Does 2024 mean the calendar year January–December 2024, or your fiscal year 2024?\n\
+    \      could mean: calendar year 2024\n      could mean: fiscal year 2024\n      took: calendar year\
+    \ 2024\n  AMBIGUOUS 'by brand' — ASKS: Should every brand appear, including ones with no revenue at\
+    \ all in 2024, or only brands that had revenue that year?\n      could mean: only brands with 2024\
+    \ revenue\n      could mean: all brands, showing zero for those with none\n      took: only brands\
+    \ with 2024 revenue\n  AMBIGUOUS 'revenue ... in 2024' — ASKS: Should a sale count as 2024 based on\
+    \ when it was ordered, when it shipped, or when it was invoiced/recognised?\n      could mean: order\
+    \ date falls in 2024\n      could mean: ship or delivery date falls in 2024\n      could mean: invoice\
+    \ or revenue-recognition date falls in 2024\n      took: the date revenue is normally reported on\n\
+    \  cannot_express: a full gross-to-net bridge showing each deduction (discounts, returns, taxes) as\
+    \ its own column or line\n  OUTPUT SHAPE: a list of names and figures · many row(s) · named by brand\
+    \ · carrying gross revenue, net revenue"
+  understood_as: 'For each brand, show two 2024 revenue figures side by side: gross revenue and net revenue,
+    summed over everything sold in calendar year 2024. One row per brand; nothing is filtered to particular
+    products, regions or channels, and brands with no 2024 revenue would simply not appear.'
+  ambiguities_it_saw:
+  - words: net revenue
+    asks: When you say net revenue, what should be taken off the gross figure — discounts, returns, taxes,
+      shipping, or some combination?
+    readings:
+    - gross minus discounts only
+    - gross minus discounts and returns/credits
+    - gross minus discounts, returns and taxes and anything else finance normally nets out
+    took: net revenue is the figure already reported as net, i.e. gross less the standard deductions
+  - words: in 2024
+    asks: Does 2024 mean the calendar year January–December 2024, or your fiscal year 2024?
+    readings:
+    - calendar year 2024
+    - fiscal year 2024
+    took: calendar year 2024
+  - words: by brand
+    asks: Should every brand appear, including ones with no revenue at all in 2024, or only brands that
+      had revenue that year?
+    readings:
+    - only brands with 2024 revenue
+    - all brands, showing zero for those with none
+    took: only brands with 2024 revenue
+  - words: revenue ... in 2024
+    asks: Should a sale count as 2024 based on when it was ordered, when it shipped, or when it was invoiced/recognised?
+    readings:
+    - order date falls in 2024
+    - ship or delivery date falls in 2024
+    - invoice or revenue-recognition date falls in 2024
+    took: the date revenue is normally reported on
+  presentation:
+    claimed_answer_is: a list of names and figures
+    answer_step: '5'
+    answer_step_asks:
+      do: select
+      of: '4'
+      columns: *id001
+      said: Compare gross vs net revenue by brand
+    confidence_stage1: 0.78
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n  net_amount\n\
+      FROM contoso_served.v_contoso5_sales_line"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n  net_amount\n\
+      FROM contoso_served.v_contoso5_sales_line\nWHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n \
+      \ AND order_date < CAST('2025-01-01' AS DATE)"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  p.brand,\n  s.order_key,\n  s.line_number,\n  s.gross_amount,\n  s.net_amount\nFROM\
+      \ contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+      \ = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01'\
+      \ AS DATE)"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+      \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue DESC"
+    params: {}
+  - step: '5'
+    sql: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+      \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue DESC"
+    params: {}
+  what_it_calculated: 'For each of the eleven brands Contoso sells under, the two 2024 revenue figures
+    side by side in USD: gross — what the goods would have fetched at list price — and net, what customers
+    were actually charged after discount. A sale counts as 2024 when the order was placed between 1 January
+    and 31 December 2024, and both sales channels are included, the physical shops and the web shop. Eleven
+    brands, one row each, ordered by net. Together they took 33,631,448.47 gross and 31,639,690.92 net
+    over 38,109 order lines; the 1,991,757.55 between those two totals is discount, which in this warehouse
+    is the whole of the difference between gross and net. Contoso (6.57m net) and Adventure Works (6.42m)
+    are nearly level at the top; the bottom three are an order of magnitude smaller, Tailspin Toys taking
+    241,721.03. The erosion from gross to net is strikingly even — 5.79% to 6.45% of gross for ten of
+    the eleven — with one exception a reader should see: Northwind Traders discounted just 3.83%, keeping
+    noticeably more of its list value than any other brand. WHAT IS NOT IN THESE FIGURES: no returns,
+    credits, taxes, shipping or any other finance deduction, because none of those is recorded anywhere
+    in this bundle. "Net" here means after-discount only, and is therefore HIGHER than a finance-grade
+    net revenue would be. This is also not a fiscal year, and not a gross-to-net bridge showing each deduction
+    as its own line.'
+  rows_returned: &id005
+  - brand: Contoso
+    gross_revenue: '6977387.65'
+    net_revenue: '6568133.00'
+  - brand: Adventure Works
+    gross_revenue: '6825647.67'
+    net_revenue: '6420657.92'
+  - brand: The Phone Company
+    gross_revenue: '5501771.00'
+    net_revenue: '5175125.81'
+  - brand: Wide World Importers
+    gross_revenue: '4327133.56'
+    net_revenue: '4065046.17'
+  - brand: Proseware
+    gross_revenue: '2824354.60'
+    net_revenue: '2648585.03'
+  - brand: Fabrikam
+    gross_revenue: '2517720.04'
+    net_revenue: '2371833.51'
+  - brand: Southridge Video
+    gross_revenue: '2201998.93'
+    net_revenue: '2073883.07'
+  - brand: Litware
+    gross_revenue: '1360593.49'
+    net_revenue: '1280128.24'
+  - brand: A. Datum
+    gross_revenue: '474625.40'
+    net_revenue: '446608.54'
+  - brand: Northwind Traders
+    gross_revenue: '361836.17'
+    net_revenue: '347968.61'
+  - brand: Tailspin Toys
+    gross_revenue: '258379.96'
+    net_revenue: '241721.03'
+  synthesis:
+    claimed: '[{"brand": "Contoso", "gross_revenue": 6977387.65, "net_revenue": 6568133.00}, {"brand":
+      "Adventure Works", "gross_revenue": 6825647.67, "net_revenue": 6420657.92}, {"brand": "The Phone
+      Company", "gross_revenue": 5501771.00, "net_revenue": 5175125.81}, {"brand": "Wide World Importers",
+      "gross_revenue": 4327133.56, "net_revenue": 4065046.17}, {"brand": "Proseware", "gross_revenue":
+      2824354.60, "net_revenue": 2648585.03}, {"brand": "Fabrikam", "gross_revenue": 2517720.04, "net_revenue":
+      2371833.51}, {"brand": "Southridge Video", "gross_revenue": 2201998.93, "net_revenue": 2073883.07},
+      {"brand": "Litware", "gross_revenue": 1360593.49, "net_revenue": 1280128.24}, {"brand": "A. Datum",
+      "gross_revenue": 474625.40, "net_revenue": 446608.54}, {"brand": "Northwind Traders", "gross_revenue":
+      361836.17, "net_revenue": 347968.61}, {"brand": "Tailspin Toys", "gross_revenue": 258379.96, "net_revenue":
+      241721.03}]'
+    shape: a list of names and figures
+    answered_population: 'The 38,109 sales lines of contoso_served.v_contoso5_sales_line whose order_date
+      falls in 2024-01-01..2024-12-31, each joined one-to-one to dim_product for its brand, grouped into
+      all 11 brands. The 2024 date window on order_date is the ONLY row filter in the query — chosen over
+      delivery_date because order.default.period_is_order_date declares order date the reporting convention.
+      Nothing else is restricted: no channel predicate, so both the physical shops and the online store
+      are in (store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject` and this
+      question''s subject is a measure, so its `physical` default does not reach here); no product, store,
+      customer, country, currency or trading-status filter; no brand omitted and none dormant. The eleven
+      rows sum to exactly the independently measured ungrouped 2024 totals — 33,631,448.47 gross and 31,639,690.92
+      net — so the table partitions the year''s revenue once each, with nothing stranded outside it and
+      nothing counted twice.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: gross vs net revenue
+    turns:
+    - why: 'Step 1 is the FROM: pin the sales-line relation that carries both gross_amount and net_amount,
+        and confirm its row count, date extent and the two unfiltered totals before any year or brand
+        grouping is applied.'
+      did: 'probe ''dim_product.brand'' AND ALSO: SELECT COUNT(*) AS lines, COUNT(DISTINCT order_key)
+        AS orders, MIN(order_date) AS first_order, MAX(order_date) AS last_order, ROUND(SUM(gross_amount),2)
+        AS gross_revenue, ROUND(SUM(net_amount),2) AS net_revenue, COUNT(DISTINCT channel) AS channels
+        FROM contoso_served.v_contoso5_sales_line'
+      came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure Works'',
+        ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge Video'',
+        ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s): [{"lines":
+        223974, "orders": 93470, "first_order": "2016-05-18", "last_order": "2025-12-31", "gross_revenue":
+        "232601542.66", "net_revenue": "218814471.66", "channels": 2}]'
+    settled_on: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n\
+      \  net_amount\nFROM contoso_served.v_contoso5_sales_line"
+    means: 'One row per sales line — 223,974 of them across 93,470 orders, from 2016-05-18 to 2025-12-31
+      — each carrying the two amounts the question wants compared: what Contoso would have charged for
+      that line at list (gross, 232,601,542.66 in total) and what it actually charged after discount (net,
+      218,814,471.66 in total). The 13,787,071.00 between them is discount, which is the only deduction
+      this bundle holds. Both sales channels are in: 93,550 online lines and the rest physical shops.
+      Nothing is filtered to a year, a brand, a product or a place — this is just the pool that steps
+      2 to 4 will cut to 2024 and group by brand.'
+    readings_taken:
+    - word: net revenue
+      took: 'gross less discount, which is what net_amount is: discount_amount is measured as exactly
+        gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing else'
+      could_also_mean: gross less returns, credits, taxes or shipping as well — the question's own ambiguity
+        list raises these, but no column in this bundle records a return, a tax or a freight charge, so
+        the richer readings are not expressible here and cannot differ from this one
+      declaration: v_contoso5_sales_line.net_amount — 'what the customer was actually charged for the
+        line, in USD, after discount'; cannot_express already names the full gross-to-net bridge as out
+        of reach
+    - word: gross vs net revenue
+      took: both figures explicitly, so no default is exercised
+      could_also_mean: a single unqualified 'revenue', which would have been net only
+      declaration: net_revenue.default.revenue_means_net fires only when a question says revenue without
+        saying net or gross — this question names both, so it does not fire
+    - word: everything sold
+      took: both channels, no store predicate — the web shop's 86,790,054.13 of net revenue is in
+      could_also_mean: physical shops only, 132,024,417.53 net
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+        the subject here is a measure, not a Store, so the `physical` default is not reached — operator
+        ruling of 2026-10-18, ''both internet and physical shops combined make revenue'''
+    - word: '2024'
+      took: nothing yet — this step applies no date filter; it only confirms 2024 lies inside the recorded
+        extent
+      could_also_mean: order date vs delivery date, which step 2 must settle
+      declaration: order.default.period_is_order_date — order_date is the period column and the time axis
+        binds on it
+    blocked_by: []
+  - step: '2'
+    step_asks: in 2024
+    turns:
+    - why: Apply the 2024 window, and in the same pass price the ordered-vs-delivered fork the declarations
+        settle, so the default is disclosed with the number it costs rather than just named.
+      did: "SELECT\n  COUNT(*) FILTER(WHERE\n    order_date >= CAST('2024-01-01' AS DATE)\n    AND order_date\
+        \ < CAST('2025-01-01' AS DATE)) AS lines_ordered_2024,\n  ROUND(\n    SUM(gross_amount) FILTER(WHERE\n\
+        \      order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)),\n\
+        \    2\n  ) AS gross_ordered_2024,\n  ROUND(\n    SUM(net_amount) FILTER(WHERE\n      order_date\
+        \ >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)),\n    2\n\
+        \  ) AS net_ordered_2024,\n  COUNT(*) FILTER(WHERE\n    delivery_date >= CAST('2024-01-01' AS\
+        \ DATE)\n    AND delivery_date < CAST('2025-01-01' AS DATE)) AS lines_delivered_2024,\n  ROUND(\n\
+        \    SUM(gross_amount) FILTER(WHERE\n      delivery_date >= CAST('2024-01-01' AS DATE)\n     \
+        \ AND delivery_date < CAST('2025-01-01' AS DATE)),\n    2\n  ) AS gross_delivered_2024,\n  ROUND(\n\
+        \    SUM(net_amount) FILTER(WHERE\n      delivery_date >= CAST('2024-01-01' AS DATE)\n      AND\
+        \ delivery_date < CAST('2025-01-01' AS DATE)),\n    2\n  ) AS net_delivered_2024,\n  COUNT(DISTINCT\
+        \ product_key) FILTER(WHERE\n    order_date >= CAST('2024-01-01' AS DATE)\n    AND order_date\
+        \ < CAST('2025-01-01' AS DATE)) AS products_ordered_2024\nFROM contoso_served.v_contoso5_sales_line"
+      came_back: '1 row(s): [{"lines_ordered_2024": 38109, "gross_ordered_2024": "33631448.47", "net_ordered_2024":
+        "31639690.92", "lines_delivered_2024": 38153, "gross_delivered_2024": "33678502.78", "net_delivered_2024":
+        "31684958.13", "products_ordered_2024": 2461}]'
+    settled_on: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n\
+      \  net_amount\nFROM contoso_served.v_contoso5_sales_line\nWHERE\n  order_date >= CAST('2024-01-01'\
+      \ AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+    means: The 38,109 sales lines Contoso took orders for during calendar 2024, each carrying what it
+      would have cost at list and what the customer was actually charged. Over that slice the company
+      booked 33,631,448.47 gross and 31,639,690.92 net, the 1,991,757.55 gap being discount. It spans
+      2,461 of the 2,517 products, both the shops and the web shop. One year out of the ten the bundle
+      records — about 14.5% of all-time net revenue. Nothing is grouped yet; this is the 2024 pool that
+      step 3 will split by brand.
+    readings_taken:
+    - word: in 2024
+      took: ORDERED in calendar 2024 — 38,109 lines, 33,631,448.47 gross and 31,639,690.92 net
+      could_also_mean: 'DELIVERED in calendar 2024 — 38,153 lines, 33,678,502.78 gross and 31,684,958.13
+        net. Measured: 44 more lines and 45,267.21 more net, 0.14%, because deliveries straddle the year
+        boundary in both directions. The gross-vs-net comparison this question is actually about is unmoved
+        by the choice — discount is 5.92% of gross under either reading'
+      declaration: order.default.period_is_order_date, default `ordered` — order date is the declared
+        reporting convention and the time axis binds on it; delivery is a logistics question
+    - word: '2024'
+      took: calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive
+      could_also_mean: a fiscal year 2024
+      declaration: none — nothing in this bundle declares a fiscal calendar or year-start offset, so the
+        fiscal reading cannot be computed here at all; this is a limit of the data, not a choice I made
+    - word: revenue
+      took: both channels — shops and the web shop together
+      could_also_mean: physical shops only
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+        the subject of this step is a measure, not a Store, so the `physical` default is never reached'
+    blocked_by: []
+  - step: '3'
+    step_asks: by brand
+    turns:
+    - why: 'Attach brand via the declared product edge and prove the grain survives: a LEFT JOIN so any
+        unmatched product or null brand shows as its own row, with a window total that must still read
+        38,109 if nothing fanned out or was lost.'
+      did: "SELECT\n  p.brand,\n  COUNT(*) AS lines,\n  COUNT(DISTINCT s.product_key) AS products_sold,\n\
+        \  SUM(COUNT(*)) OVER () AS lines_all_brands,\n  COUNT(DISTINCT p.brand) OVER () AS brands_with_2024_sales\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nLEFT JOIN contoso_served.dim_product AS p\n  ON\
+        \ s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND s.order_date\
+        \ < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  lines DESC"
+      came_back: '11 row(s) (first 8 of 11): [{"brand": "Contoso", "lines": 10722, "products_sold": 708,
+        "lines_all_brands": 38109, "brands_with_2024_sales": 11}, {"brand": "The Phone Company", "lines":
+        6056, "products_sold": 152, "lines_all_brands": 38109, "brands_with_2024_sales": 11}, {"brand":
+        "Southridge Video", "lines": 5864, "products_sold": 192, "lines_all_brands": 38109, "brands_with_2024_sales":
+        11}, {"brand": "Adventure Works", "lines": 3617, "products_sold": 182, "lines_all_brands": 38109,
+        "brands_with_2024_sales": 11}, {"brand": "Wide World Importers", "lines": 3339, "products_sold":
+        166, "lines_all_brands": 38109, "brands_with_2024_sales": 11}, {"brand": "Proseware", "lines":
+        2639, "products_sold": 235, "lines_all_brands": 38109, "brands_with_2024_sales": 11}, {"brand":
+        "Tailspin Toys", "lines": 2433, "products_sold": 144, "lines_all_brands": 38109, "brands_with_2024_sales":
+        11}, {"brand": "Fabrikam", "lines": 1426, "products_sold": 262, "lines_all_brands": 38109, "brands_with_2024_sales":
+        11}]'
+    settled_on: "SELECT\n  p.brand,\n  s.order_key,\n  s.line_number,\n  s.gross_amount,\n  s.net_amount\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+      \ = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01'\
+      \ AS DATE)"
+    means: The same 38,109 sales lines Contoso took orders for in calendar 2024, now each tagged with
+      the brand of the product sold, ready to be totalled 11 ways. Every brand the warehouse knows traded
+      in 2024 — Contoso is the busiest at 10,722 lines over 708 products, Litware the quietest of the
+      eleven — and no sale points at a product the product table lacks, so no revenue is stranded outside
+      the brand breakdown. The line count is unchanged from step 2, which is what tells me the join added
+      a label rather than multiplying sales.
+    readings_taken:
+    - word: brand
+      took: dim_product.brand — 11 values, one per product row, reached by product_key
+      could_also_mean: dim_product.manufacturer, the legal-name spelling of the same axis
+      declaration: 'Brand [enumeration] grounded in contoso_served.dim_product counts brand; manufacturer
+        is declared as NAMING brand with naming: legal, #2 behind common, so brand is what an answer shows'
+    - word: by brand
+      took: only brands that sold in 2024 — which turns out to be all 11, so the table is complete either
+        way
+      could_also_mean: 'all 11 brands with zeros for dormant ones. Measured: there are no dormant brands
+        in 2024, so the two readings return the identical 11 rows and the choice is void'
+      declaration: none needed — the readings agree
+    - word: by brand
+      took: the INNER JOIN, now that the LEFT JOIN has proved it equivalent — zero unmatched lines, zero
+        null brands
+      could_also_mean: a LEFT JOIN retaining orphan sales, of which there are none
+      declaration: gross_revenue__by__product and net_revenue__by__product declare (1..N) -> Product (1);
+        product__sold_under__brand declares Product (1..N) -> Brand (1). Both now measured rather than
+        assumed.
+    blocked_by: []
+  - step: '4'
+    step_asks: gross vs net revenue
+    turns:
+    - why: Sum the two declared flow measures per brand and check they reconcile to the 2024 totals step
+        2 settled (33,631,448.47 gross / 31,639,690.92 net), so the breakdown is proved to account for
+        all of the year's revenue and none of it twice.
+      did: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+        \ 2) AS net_revenue,\n  ROUND(SUM(s.gross_amount) - SUM(s.net_amount), 2) AS discount,\n  ROUND(100.0\
+        \ * (\n    SUM(s.gross_amount) - SUM(s.net_amount)\n  ) / SUM(s.gross_amount), 2) AS discount_pct_of_gross,\n\
+        \  ROUND(SUM(SUM(s.gross_amount)) OVER (), 2) AS gross_all_brands,\n  ROUND(SUM(SUM(s.net_amount))\
+        \ OVER (), 2) AS net_all_brands\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+        \ DESC"
+      came_back: '11 row(s) (first 8 of 11): [{"brand": "Contoso", "gross_revenue": "6977387.65", "net_revenue":
+        "6568133.00", "discount": "409254.65", "discount_pct_of_gross": 5.87, "gross_all_brands": "33631448.47",
+        "net_all_brands": "31639690.92"}, {"brand": "Adventure Works", "gross_revenue": "6825647.67",
+        "net_revenue": "6420657.92", "discount": "404989.75", "discount_pct_of_gross": 5.93, "gross_all_brands":
+        "33631448.47", "net_all_brands": "31639690.92"}, {"brand": "The Phone Company", "gross_revenue":
+        "5501771.00", "net_revenue": "5175125.81", "discount": "326645.19", "discount_pct_of_gross": 5.94,
+        "gross_all_brands": "33631448.47", "net_all_brands": "31639690.92"}, {"brand": "Wide World Importers",
+        "gross_revenue": "4327133.56", "net_revenue": "4065046.17", "discount": "262087.39", "discount_pct_of_gross":
+        6.06, "gross_all_brands": "33631448.47", "net_all_brands": "31639690.92"}, {"brand": "Proseware",
+        "gross_revenue": "2824354.60", "net_revenue": "2648585.03", "discount": "175769.57", "discount_pct_of_gross":
+        6.22, "gross_all_brands": "33631448.47", "net_all_brands": "31639690.92"}, {"brand": "Fabrikam",
+        "gross_revenue": "2517720.04", "net_revenue": "2371833.51", "discount": "145886.53", "d'
+    settled_on: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+      \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue DESC"
+    means: 'For each of the eleven brands Contoso sells under, two 2024 money figures in USD: what its
+      products would have fetched at list price (gross) and what customers were actually charged after
+      discount (net), counting a sale into 2024 by the day it was ordered. Contoso leads at 6.57m net
+      from 6.98m gross, Adventure Works is close behind at 6.42m from 6.83m, and the eleven together make
+      31,639,690.92 net from 33,631,448.47 gross. The 1,991,757.55 between those totals is discount and
+      nothing else — no returns, taxes or shipping are recorded anywhere in this bundle. Every brand discounts
+      between 5.79% and 6.22% of gross, so no brand''s net is eroded materially more than another''s.'
+    readings_taken:
+    - word: sum
+      took: plain SUM of each money column per brand
+      could_also_mean: nothing — both are declared FLOW, so SUM over any grouping is the declared-correct
+        operation
+      declaration: 'gross_amount / net_amount: ''a FLOW — it accumulates, so SUM over any period and any
+        grouping is correct, in USD'''
+    - word: net revenue
+      took: gross less discount, 31,639,690.92 for 2024 — the only deduction the data holds
+      could_also_mean: gross less returns, credits and taxes too, which would be lower still
+      declaration: net_amount is 'what the customer was actually charged for the line, after discount';
+        discount_amount is measured as exactly gross_amount - net_amount, and the full gross-to-net bridge
+        is already listed under cannot_express
+    - word: in 2024
+      took: ordered in calendar 2024
+      could_also_mean: delivered in calendar 2024, which shifts the all-brand net by 45,267.21 (0.14%)
+        and leaves the 5.92% discount rate unchanged
+      declaration: order.default.period_is_order_date, default `ordered`
+    blocked_by: []
+  - step: '5'
+    step_asks: Compare gross vs net revenue by brand
+    turns:
+    - why: I have not actually seen the three lowest brand rows — the previous result was truncated at
+        8 of 11 — so I read the identical table ascending before claiming a figure, rather than claiming
+        an answer whose rows I have not looked at.
+      did: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+        \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+        \ ASC"
+      came_back: '11 row(s) (first 8 of 11): [{"brand": "Tailspin Toys", "gross_revenue": "258379.96",
+        "net_revenue": "241721.03"}, {"brand": "Northwind Traders", "gross_revenue": "361836.17", "net_revenue":
+        "347968.61"}, {"brand": "A. Datum", "gross_revenue": "474625.40", "net_revenue": "446608.54"},
+        {"brand": "Litware", "gross_revenue": "1360593.49", "net_revenue": "1280128.24"}, {"brand": "Southridge
+        Video", "gross_revenue": "2201998.93", "net_revenue": "2073883.07"}, {"brand": "Fabrikam", "gross_revenue":
+        "2517720.04", "net_revenue": "2371833.51"}, {"brand": "Proseware", "gross_revenue": "2824354.60",
+        "net_revenue": "2648585.03"}, {"brand": "Wide World Importers", "gross_revenue": "4327133.56",
+        "net_revenue": "4065046.17"}]'
+    - why: All eleven rows are now in view and reconcile to the cent against the independently-measured
+        2024 totals, so the table can be claimed; I also correct step 4's discount range, which I had
+        stated over only the 8 rows then visible.
+      did: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+        \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+        \ DESC"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 11 row(s) (first 8 of 11): [{"brand": "Contoso", "gross_revenue":
+        "6977387.65", "net_revenue": "6568133.00"}, {"brand": "Adventure Works", "gross_revenue": "6825647.67",
+        "net_revenue": "6420657.92"}, {"brand": "The Phone Company", "gross_revenue": "5501771.00", "net_revenue":
+        "5175125.81"}, {"brand": "Wide World Importers", "gross_revenue": "4327133.56", "net_revenue":
+        "4065046.17"}, {"brand": "Proseware", "gross_revenue": "2824354.60", "net_revenue": "2648585.03"},
+        {"brand": "Fabrikam", "gross_revenue": "2517720.04", "net_revenue": "2371833.51"}, {"brand": "Southridge
+        Video", "gross_revenue": "2201998.93", "net_revenue": "2073883.07"}, {"brand": "Litware", "gross_revenue":
+        "1360593.49", "net_revenue": "1280128.24"}]  Give `claimed_answer` as the value a person would
+        be handed, and `claimed_answer_is` from the closed list. If these rows settle the question, do
+        not decline.'
+    settled_on: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+      \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue DESC"
+    means: 'For each of the eleven brands Contoso sells under, the two 2024 revenue figures side by side
+      in USD: gross — what the goods would have fetched at list price — and net, what customers were actually
+      charged after discount. A sale counts as 2024 when the order was placed between 1 January and 31
+      December 2024, and both sales channels are included, the physical shops and the web shop. Eleven
+      brands, one row each, ordered by net. Together they took 33,631,448.47 gross and 31,639,690.92 net
+      over 38,109 order lines; the 1,991,757.55 between those two totals is discount, which in this warehouse
+      is the whole of the difference between gross and net. Contoso (6.57m net) and Adventure Works (6.42m)
+      are nearly level at the top; the bottom three are an order of magnitude smaller, Tailspin Toys taking
+      241,721.03. The erosion from gross to net is strikingly even — 5.79% to 6.45% of gross for ten of
+      the eleven — with one exception a reader should see: Northwind Traders discounted just 3.83%, keeping
+      noticeably more of its list value than any other brand. WHAT IS NOT IN THESE FIGURES: no returns,
+      credits, taxes, shipping or any other finance deduction, because none of those is recorded anywhere
+      in this bundle. "Net" here means after-discount only, and is therefore HIGHER than a finance-grade
+      net revenue would be. This is also not a fiscal year, and not a gross-to-net bridge showing each
+      deduction as its own line.'
+    readings_taken:
+    - word: net revenue
+      took: gross less discount — 31,639,690.92 across all brands in 2024
+      could_also_mean: gross less discounts AND returns/credits, or less taxes and shipping too, as finance
+        would normally net out — every such reading would be LOWER than this figure
+      declaration: net_amount is 'what the customer was actually charged for the line, in USD, after discount',
+        and discount_amount is measured as exactly gross_amount - net_amount — so discount is provably
+        the entire gap between the two columns I am showing. No return, credit, tax or freight column
+        exists on any relation here, so the fuller readings are not computable at all; the question's
+        own cannot_express names the full bridge as out of reach. A limit of the data, not a choice I
+        made between available figures.
+    - word: in 2024
+      took: ORDER DATE within calendar 2024 — 38,109 lines, 33,631,448.47 gross, 31,639,690.92 net
+      could_also_mean: DELIVERY date within 2024 — 38,153 lines, 33,678,502.78 gross, 31,684,958.13 net;
+        measured as 45,267.21 more net, 0.14%, from deliveries crossing the year boundary. It changes
+        no brand's rank and leaves the gross-to-net gap at 5.92% either way, so the comparison the question
+        asks for is unaffected.
+      declaration: order.default.period_is_order_date, default `ordered` — 'order date is the reporting
+        convention; delivery is a logistics question', and the time axis is declared to bind on order_date
+    - word: '2024'
+      took: the calendar year, 1 January to 31 December
+      could_also_mean: a fiscal year 2024 beginning in some other month
+      declaration: none — nothing in this bundle declares a fiscal calendar, accounting period or year-start
+        offset, so the fiscal reading cannot be computed. This is the one fork I could not price even
+        in principle.
+    - word: by brand
+      took: the brands that sold in 2024 — which proved to be all 11 the warehouse holds
+      could_also_mean: 'all brands with a zero row for any dormant one. Measured: none was dormant in
+        2024, so both readings return the identical 11 rows and the choice is void.'
+      declaration: Brand [enumeration], eleven names carried on the product row; dim_product.brand — '11
+        brands over 2,517 products, so a question about brands wants the 11 and not the 2,517'
+    - word: revenue
+      took: both channels — physical shops and the web shop combined
+      could_also_mean: physical shops only, which across all time drops about 40% of the money
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+        the subject of this question is a measure, not a Store, so its `physical` default is never reached
+        — operator ruling of 2026-10-18, ''both internet and physical shops combined make revenue'''
+    - word: brand
+      took: dim_product.brand, reached from the sale by product_key
+      could_also_mean: dim_product.manufacturer, a second spelling of the same axis
+      declaration: 'manufacturer is declared as NAMING brand with naming: legal, #2 behind common in the
+        preference order common > legal > long > short > code, so brand is the name an answer shows'
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: 'For each brand, show two 2024 revenue figures side by side: gross revenue and net revenue,
+      summed over everything sold in calendar year 2024. One row per brand; nothing is filtered to particular
+      products, regions or channels, and brands with no 2024 revenue would simply not appear.'
+    population: 'The 38,109 sales lines of contoso_served.v_contoso5_sales_line whose order_date falls
+      in 2024-01-01..2024-12-31, each joined one-to-one to dim_product for its brand, grouped into all
+      11 brands. The 2024 date window on order_date is the ONLY row filter in the query — chosen over
+      delivery_date because order.default.period_is_order_date declares order date the reporting convention.
+      Nothing else is restricted: no channel predicate, so both the physical shops and the online store
+      are in (store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject` and this
+      question''s subject is a measure, so its `physical` default does not reach here); no product, store,
+      customer, country, currency or trading-status filter; no brand omitted and none dormant. The eleven
+      rows sum to exactly the independently measured ungrouped 2024 totals — 33,631,448.47 gross and 31,639,690.92
+      net — so the table partitions the year''s revenue once each, with nothing stranded outside it and
+      nothing counted twice.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       revenue                                   “gross vs net revenue”\n\
+      \  2  ← 1  DURING     by year                                   “in 2024”\n  3  ← 2  GROUP_BY  \
+      \ by brand                                  “by brand”\n  4  ← 3  AGGREGATE  sum of gross revenue,\
+      \ sum of net revenue  “gross vs net revenue”\n  5  ← 4  SELECT     brand, gross revenue, net revenue\
+      \         “Compare gross vs net revenue by brand”\n  answer: step 5   confidence: 0.78"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: net revenue
+      asks: When you say net revenue, what should be taken off the gross figure — discounts, returns,
+        taxes, shipping, or some combination?
+      readings:
+      - gross minus discounts only
+      - gross minus discounts and returns/credits
+      - gross minus discounts, returns and taxes and anything else finance normally nets out
+      took: net revenue is the figure already reported as net, i.e. gross less the standard deductions
+    - words: in 2024
+      asks: Does 2024 mean the calendar year January–December 2024, or your fiscal year 2024?
+      readings:
+      - calendar year 2024
+      - fiscal year 2024
+      took: calendar year 2024
+    - words: by brand
+      asks: Should every brand appear, including ones with no revenue at all in 2024, or only brands that
+        had revenue that year?
+      readings:
+      - only brands with 2024 revenue
+      - all brands, showing zero for those with none
+      took: only brands with 2024 revenue
+    - words: revenue ... in 2024
+      asks: Should a sale count as 2024 based on when it was ordered, when it shipped, or when it was
+        invoiced/recognised?
+      readings:
+      - order date falls in 2024
+      - ship or delivery date falls in 2024
+      - invoice or revenue-recognition date falls in 2024
+      took: the date revenue is normally reported on
+- stage: cannot_express
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: *id003
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id004
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.78 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: net revenue
+      took: 'gross less discount, which is what net_amount is: discount_amount is measured as exactly
+        gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing else'
+      could_also_mean: gross less returns, credits, taxes or shipping as well — the question's own ambiguity
+        list raises these, but no column in this bundle records a return, a tax or a freight charge, so
+        the richer readings are not expressible here and cannot differ from this one
+      declaration: v_contoso5_sales_line.net_amount — 'what the customer was actually charged for the
+        line, in USD, after discount'; cannot_express already names the full gross-to-net bridge as out
+        of reach
+    - word: gross vs net revenue
+      took: both figures explicitly, so no default is exercised
+      could_also_mean: a single unqualified 'revenue', which would have been net only
+      declaration: net_revenue.default.revenue_means_net fires only when a question says revenue without
+        saying net or gross — this question names both, so it does not fire
+    - word: everything sold
+      took: both channels, no store predicate — the web shop's 86,790,054.13 of net revenue is in
+      could_also_mean: physical shops only, 132,024,417.53 net
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+        the subject here is a measure, not a Store, so the `physical` default is not reached — operator
+        ruling of 2026-10-18, ''both internet and physical shops combined make revenue'''
+    - word: '2024'
+      took: nothing yet — this step applies no date filter; it only confirms 2024 lies inside the recorded
+        extent
+      could_also_mean: order date vs delivery date, which step 2 must settle
+      declaration: order.default.period_is_order_date — order_date is the period column and the time axis
+        binds on it
+    - word: in 2024
+      took: ORDERED in calendar 2024 — 38,109 lines, 33,631,448.47 gross and 31,639,690.92 net
+      could_also_mean: 'DELIVERED in calendar 2024 — 38,153 lines, 33,678,502.78 gross and 31,684,958.13
+        net. Measured: 44 more lines and 45,267.21 more net, 0.14%, because deliveries straddle the year
+        boundary in both directions. The gross-vs-net comparison this question is actually about is unmoved
+        by the choice — discount is 5.92% of gross under either reading'
+      declaration: order.default.period_is_order_date, default `ordered` — order date is the declared
+        reporting convention and the time axis binds on it; delivery is a logistics question
+    - word: '2024'
+      took: calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive
+      could_also_mean: a fiscal year 2024
+      declaration: none — nothing in this bundle declares a fiscal calendar or year-start offset, so the
+        fiscal reading cannot be computed here at all; this is a limit of the data, not a choice I made
+    - word: revenue
+      took: both channels — shops and the web shop together
+      could_also_mean: physical shops only
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+        the subject of this step is a measure, not a Store, so the `physical` default is never reached'
+    - word: brand
+      took: dim_product.brand — 11 values, one per product row, reached by product_key
+      could_also_mean: dim_product.manufacturer, the legal-name spelling of the same axis
+      declaration: 'Brand [enumeration] grounded in contoso_served.dim_product counts brand; manufacturer
+        is declared as NAMING brand with naming: legal, #2 behind common, so brand is what an answer shows'
+    - word: by brand
+      took: only brands that sold in 2024 — which turns out to be all 11, so the table is complete either
+        way
+      could_also_mean: 'all 11 brands with zeros for dormant ones. Measured: there are no dormant brands
+        in 2024, so the two readings return the identical 11 rows and the choice is void'
+      declaration: none needed — the readings agree
+    - word: by brand
+      took: the INNER JOIN, now that the LEFT JOIN has proved it equivalent — zero unmatched lines, zero
+        null brands
+      could_also_mean: a LEFT JOIN retaining orphan sales, of which there are none
+      declaration: gross_revenue__by__product and net_revenue__by__product declare (1..N) -> Product (1);
+        product__sold_under__brand declares Product (1..N) -> Brand (1). Both now measured rather than
+        assumed.
+    - word: sum
+      took: plain SUM of each money column per brand
+      could_also_mean: nothing — both are declared FLOW, so SUM over any grouping is the declared-correct
+        operation
+      declaration: 'gross_amount / net_amount: ''a FLOW — it accumulates, so SUM over any period and any
+        grouping is correct, in USD'''
+    - word: net revenue
+      took: gross less discount, 31,639,690.92 for 2024 — the only deduction the data holds
+      could_also_mean: gross less returns, credits and taxes too, which would be lower still
+      declaration: net_amount is 'what the customer was actually charged for the line, after discount';
+        discount_amount is measured as exactly gross_amount - net_amount, and the full gross-to-net bridge
+        is already listed under cannot_express
+    - word: in 2024
+      took: ordered in calendar 2024
+      could_also_mean: delivered in calendar 2024, which shifts the all-brand net by 45,267.21 (0.14%)
+        and leaves the 5.92% discount rate unchanged
+      declaration: order.default.period_is_order_date, default `ordered`
+    - word: net revenue
+      took: gross less discount — 31,639,690.92 across all brands in 2024
+      could_also_mean: gross less discounts AND returns/credits, or less taxes and shipping too, as finance
+        would normally net out — every such reading would be LOWER than this figure
+      declaration: net_amount is 'what the customer was actually charged for the line, in USD, after discount',
+        and discount_amount is measured as exactly gross_amount - net_amount — so discount is provably
+        the entire gap between the two columns I am showing. No return, credit, tax or freight column
+        exists on any relation here, so the fuller readings are not computable at all; the question's
+        own cannot_express names the full bridge as out of reach. A limit of the data, not a choice I
+        made between available figures.
+    - word: in 2024
+      took: ORDER DATE within calendar 2024 — 38,109 lines, 33,631,448.47 gross, 31,639,690.92 net
+      could_also_mean: DELIVERY date within 2024 — 38,153 lines, 33,678,502.78 gross, 31,684,958.13 net;
+        measured as 45,267.21 more net, 0.14%, from deliveries crossing the year boundary. It changes
+        no brand's rank and leaves the gross-to-net gap at 5.92% either way, so the comparison the question
+        asks for is unaffected.
+      declaration: order.default.period_is_order_date, default `ordered` — 'order date is the reporting
+        convention; delivery is a logistics question', and the time axis is declared to bind on order_date
+    - word: '2024'
+      took: the calendar year, 1 January to 31 December
+      could_also_mean: a fiscal year 2024 beginning in some other month
+      declaration: none — nothing in this bundle declares a fiscal calendar, accounting period or year-start
+        offset, so the fiscal reading cannot be computed. This is the one fork I could not price even
+        in principle.
+    - word: by brand
+      took: the brands that sold in 2024 — which proved to be all 11 the warehouse holds
+      could_also_mean: 'all brands with a zero row for any dormant one. Measured: none was dormant in
+        2024, so both readings return the identical 11 rows and the choice is void.'
+      declaration: Brand [enumeration], eleven names carried on the product row; dim_product.brand — '11
+        brands over 2,517 products, so a question about brands wants the 11 and not the 2,517'
+    - word: revenue
+      took: both channels — physical shops and the web shop combined
+      could_also_mean: physical shops only, which across all time drops about 40% of the money
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+        the subject of this question is a measure, not a Store, so its `physical` default is never reached
+        — operator ruling of 2026-10-18, ''both internet and physical shops combined make revenue'''
+    - word: brand
+      took: dim_product.brand, reached from the sale by product_key
+      could_also_mean: dim_product.manufacturer, a second spelling of the same axis
+      declaration: 'manufacturer is declared as NAMING brand with naming: legal, #2 behind common in the
+        preference order common > legal > long > short > code, so brand is the name an answer shows'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 5 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n\
+        \  net_amount\nFROM contoso_served.v_contoso5_sales_line\n\n-- step 2\nSELECT\n  order_key,\n\
+        \  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n  net_amount\nFROM contoso_served.v_contoso5_sales_line\n\
+        WHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)\n\
+        \n-- step 3\nSELECT\n  p.brand,\n  s.order_key,\n  s.line_number,\n  s.gross_amount,\n  s.net_amount\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+        \ = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01'\
+        \ AS DATE)\n\n-- step 4\nSELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n\
+        \  ROUND(SUM(s.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\n\
+        JOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date\
+        \ >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n \
+        \ p.brand\nORDER BY\n  net_revenue DESC\n\n-- step 5\nSELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount),\
+        \ 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date\
+        \ >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n \
+        \ p.brand\nORDER BY\n  net_revenue DESC"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id005
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'For each of the eleven brands Contoso sells under, the two 2024 revenue figures
+      side by side in USD: gross — what the goods would have fetched at list price — and net, what customers
+      were actually charged after discount. A sale counts as 2024 when the order was placed between 1
+      January and 31 December 2024, and both sales channels are included, the physical shops and the web
+      shop. Eleven brands, one row each, ordered by net. Together they took 33,631,448.47 gross and 31,639,690.92
+      net over 38,109 order lines; the 1,991,757.55 between those two totals is discount, which in this
+      warehouse is the whole of the difference between gross and net. Contoso (6.57m net) and Adventure
+      Works (6.42m) are nearly level at the top; the bottom three are an order of magnitude smaller, Tailspin
+      Toys taking 241,721.03. The erosion from gross to net is strikingly even — 5.79% to 6.45% of gross
+      for ten of the eleven — with one exception a reader should see: Northwind Traders discounted just
+      3.83%, keeping noticeably more of its list value than any other brand. WHAT IS NOT IN THESE FIGURES:
+      no returns, credits, taxes, shipping or any other finance deduction, because none of those is recorded
+      anywhere in this bundle. "Net" here means after-discount only, and is therefore HIGHER than a finance-grade
+      net revenue would be. This is also not a fiscal year, and not a gross-to-net bridge showing each
+      deduction as its own line.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'a list of names and figures' · graded EXACT
+  detail:
+    claimed_answer: '[{"brand": "Contoso", "gross_revenue": 6977387.65, "net_revenue": 6568133.00}, {"brand":
+      "Adventure Works", "gross_revenue": 6825647.67, "net_revenue": 6420657.92}, {"brand": "The Phone
+      Company", "gross_revenue": 5501771.00, "net_revenue": 5175125.81}, {"brand": "Wide World Importers",
+      "gross_revenue": 4327133.56, "net_revenue": 4065046.17}, {"brand": "Proseware", "gross_revenue":
+      2824354.60, "net_revenue": 2648585.03}, {"brand": "Fabrikam", "gross_revenue": 2517720.04, "net_revenue":
+      2371833.51}, {"brand": "Southridge Video", "gross_revenue": 2201998.93, "net_revenue": 2073883.07},
+      {"brand": "Litware", "gross_revenue": 1360593.49, "net_revenue": 1280128.24}, {"brand": "A. Datum",
+      "gross_revenue": 474625.40, "net_revenue": 446608.54}, {"brand": "Northwind Traders", "gross_revenue":
+      361836.17, "net_revenue": 347968.61}, {"brand": "Tailspin Toys", "gross_revenue": 258379.96, "net_revenue":
+      241721.03}]'
+    walk_bucket: EXACT
+    walk_why: 11 row(s) match, in the reference's order
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: Compare gross vs net revenue by brand in 2024
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'For each brand, show two 2024 revenue figures side by side: gross revenue and net revenue,
+      summed over everything sold in calendar year 2024. One row per brand; nothing is filtered to particular
+      products, regions or channels, and brands with no 2024 revenue would simply not appear.'
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       revenue                                   “gross vs net revenue”'
+    - '  2  ← 1  DURING     by year                                   “in 2024”'
+    - '  3  ← 2  GROUP_BY   by brand                                  “by brand”'
+    - '  4  ← 3  AGGREGATE  sum of gross revenue, sum of net revenue  “gross vs net revenue”'
+    - '  5  ← 4  SELECT     brand, gross revenue, net revenue         “Compare gross vs net revenue by
+      brand”'
+    - '  answer: step 5   confidence: 0.78'
+    - '  UNDERSTOOD AS: For each brand, show two 2024 revenue figures side by side: gross revenue and
+      net revenue, summed over everything sold in calendar year 2024. One row per brand; nothing is filtered
+      to particular products, regions or channels, and brands with no 2024 revenue would simply not appear.'
+    - '  AMBIGUOUS ''net revenue'' — ASKS: When you say net revenue, what should be taken off the gross
+      figure — discounts, returns, taxes, shipping, or some combination?'
+    - '      could mean: gross minus discounts only'
+    - '      could mean: gross minus discounts and returns/credits'
+    - '      could mean: gross minus discounts, returns and taxes and anything else finance normally nets
+      out'
+    - '      took: net revenue is the figure already reported as net, i.e. gross less the standard deductions'
+    - '  AMBIGUOUS ''in 2024'' — ASKS: Does 2024 mean the calendar year January–December 2024, or your
+      fiscal year 2024?'
+    - '      could mean: calendar year 2024'
+    - '      could mean: fiscal year 2024'
+    - '      took: calendar year 2024'
+    - '  AMBIGUOUS ''by brand'' — ASKS: Should every brand appear, including ones with no revenue at all
+      in 2024, or only brands that had revenue that year?'
+    - '      could mean: only brands with 2024 revenue'
+    - '      could mean: all brands, showing zero for those with none'
+    - '      took: only brands with 2024 revenue'
+    - '  AMBIGUOUS ''revenue ... in 2024'' — ASKS: Should a sale count as 2024 based on when it was ordered,
+      when it shipped, or when it was invoiced/recognised?'
+    - '      could mean: order date falls in 2024'
+    - '      could mean: ship or delivery date falls in 2024'
+    - '      could mean: invoice or revenue-recognition date falls in 2024'
+    - '      took: the date revenue is normally reported on'
+    - '  cannot_express: a full gross-to-net bridge showing each deduction (discounts, returns, taxes)
+      as its own column or line'
+    - '  OUTPUT SHAPE: a list of names and figures · many row(s) · named by brand · carrying gross revenue,
+      net revenue'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a list of names and figures
+    - - said
+      - Compare gross vs net revenue by brand in 2024
+    - - key_columns
+      - *id006
+    - - figure_columns
+      - *id007
+    - - rows
+      - many
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: net revenue
+      asks: When you say net revenue, what should be taken off the gross figure — discounts, returns,
+        taxes, shipping, or some combination?
+      readings:
+      - gross minus discounts only
+      - gross minus discounts and returns/credits
+      - gross minus discounts, returns and taxes and anything else finance normally nets out
+      took: net revenue is the figure already reported as net, i.e. gross less the standard deductions
+    - words: in 2024
+      asks: Does 2024 mean the calendar year January–December 2024, or your fiscal year 2024?
+      readings:
+      - calendar year 2024
+      - fiscal year 2024
+      took: calendar year 2024
+    - words: by brand
+      asks: Should every brand appear, including ones with no revenue at all in 2024, or only brands that
+        had revenue that year?
+      readings:
+      - only brands with 2024 revenue
+      - all brands, showing zero for those with none
+      took: only brands with 2024 revenue
+    - words: revenue ... in 2024
+      asks: Should a sale count as 2024 based on when it was ordered, when it shipped, or when it was
+        invoiced/recognised?
+      readings:
+      - order date falls in 2024
+      - ship or delivery date falls in 2024
+      - invoice or revenue-recognition date falls in 2024
+      took: the date revenue is normally reported on
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n  net_amount\n\
+        FROM contoso_served.v_contoso5_sales_line"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n  net_amount\n\
+        FROM contoso_served.v_contoso5_sales_line\nWHERE\n  order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND order_date < CAST('2025-01-01' AS DATE)"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  p.brand,\n  s.order_key,\n  s.line_number,\n  s.gross_amount,\n  s.net_amount\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+        \ = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01'\
+        \ AS DATE)"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+        \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+        \ DESC"
+      params: {}
+    - step: '5'
+      sql: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+        \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+        \ DESC"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'For each of the eleven brands Contoso sells under, the two 2024 revenue figures side by side
+      in USD: gross — what the goods would have fetched at list price — and net, what customers were actually
+      charged after discount. A sale counts as 2024 when the order was placed between 1 January and 31
+      December 2024, and both sales channels are included, the physical shops and the web shop. Eleven
+      brands, one row each, ordered by net. Together they took 33,631,448.47 gross and 31,639,690.92 net
+      over 38,109 order lines; the 1,991,757.55 between those two totals is discount, which in this warehouse
+      is the whole of the difference between gross and net. Contoso (6.57m net) and Adventure Works (6.42m)
+      are nearly level at the top; the bottom three are an order of magnitude smaller, Tailspin Toys taking
+      241,721.03. The erosion from gross to net is strikingly even — 5.79% to 6.45% of gross for ten of
+      the eleven — with one exception a reader should see: Northwind Traders discounted just 3.83%, keeping
+      noticeably more of its list value than any other brand. WHAT IS NOT IN THESE FIGURES: no returns,
+      credits, taxes, shipping or any other finance deduction, because none of those is recorded anywhere
+      in this bundle. "Net" here means after-discount only, and is therefore HIGHER than a finance-grade
+      net revenue would be. This is also not a fiscal year, and not a gross-to-net bridge showing each
+      deduction as its own line.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id008
+      rows: *id005
+      row_count: 11
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '[{"brand": "Contoso", "gross_revenue": 6977387.65, "net_revenue": 6568133.00}, {"brand": "Adventure
+        Works", "gross_revenue": 6825647.67, "net_revenue": 6420657.92}, {"brand": "The Phone Company",
+        "gross_revenue": 5501771.00, "net_revenue": 5175125.81}, {"brand": "Wide World Importers", "gross_revenue":
+        4327133.56, "net_revenue": 4065046.17}, {"brand": "Proseware", "gross_revenue": 2824354.60, "net_revenue":
+        2648585.03}, {"brand": "Fabrikam", "gross_revenue": 2517720.04, "net_revenue": 2371833.51}, {"brand":
+        "Southridge Video", "gross_revenue": 2201998.93, "net_revenue": 2073883.07}, {"brand": "Litware",
+        "gross_revenue": 1360593.49, "net_revenue": 1280128.24}, {"brand": "A. Datum", "gross_revenue":
+        474625.40, "net_revenue": 446608.54}, {"brand": "Northwind Traders", "gross_revenue": 361836.17,
+        "net_revenue": 347968.61}, {"brand": "Tailspin Toys", "gross_revenue": 258379.96, "net_revenue":
+        241721.03}]'
+    - - shape
+      - a list of names and figures
+    - - population it answered over
+      - 'The 38,109 sales lines of contoso_served.v_contoso5_sales_line whose order_date falls in 2024-01-01..2024-12-31,
+        each joined one-to-one to dim_product for its brand, grouped into all 11 brands. The 2024 date
+        window on order_date is the ONLY row filter in the query — chosen over delivery_date because order.default.period_is_order_date
+        declares order date the reporting convention. Nothing else is restricted: no channel predicate,
+        so both the physical shops and the online store are in (store.resolution.the_channel_is_the_location_sentinel
+        is scoped `applies: subject` and this question''s subject is a measure, so its `physical` default
+        does not reach here); no product, store, customer, country, currency or trading-status filter;
+        no brand omitted and none dormant. The eleven rows sum to exactly the independently measured ungrouped
+        2024 totals — 33,631,448.47 gross and 31,639,690.92 net — so the table partitions the year''s
+        revenue once each, with nothing stranded outside it and nothing counted twice.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: gross vs net revenue
+      turns:
+      - why: 'Step 1 is the FROM: pin the sales-line relation that carries both gross_amount and net_amount,
+          and confirm its row count, date extent and the two unfiltered totals before any year or brand
+          grouping is applied.'
+        did: 'probe ''dim_product.brand'' AND ALSO: SELECT COUNT(*) AS lines, COUNT(DISTINCT order_key)
+          AS orders, MIN(order_date) AS first_order, MAX(order_date) AS last_order, ROUND(SUM(gross_amount),2)
+          AS gross_revenue, ROUND(SUM(net_amount),2) AS net_revenue, COUNT(DISTINCT channel) AS channels
+          FROM contoso_served.v_contoso5_sales_line'
+        came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure
+          Works'', ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge
+          Video'', ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s):
+          [{"lines": 223974, "orders": 93470, "first_order": "2016-05-18", "last_order": "2025-12-31",
+          "gross_revenue": "232601542.66", "net_revenue": "218814471.66", "channels": 2}]'
+      settled_on: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n\
+        \  net_amount\nFROM contoso_served.v_contoso5_sales_line"
+      means: 'One row per sales line — 223,974 of them across 93,470 orders, from 2016-05-18 to 2025-12-31
+        — each carrying the two amounts the question wants compared: what Contoso would have charged for
+        that line at list (gross, 232,601,542.66 in total) and what it actually charged after discount
+        (net, 218,814,471.66 in total). The 13,787,071.00 between them is discount, which is the only
+        deduction this bundle holds. Both sales channels are in: 93,550 online lines and the rest physical
+        shops. Nothing is filtered to a year, a brand, a product or a place — this is just the pool that
+        steps 2 to 4 will cut to 2024 and group by brand.'
+      readings_taken:
+      - word: net revenue
+        took: 'gross less discount, which is what net_amount is: discount_amount is measured as exactly
+          gross_amount - net_amount, so gross - net is 13,787,071.00 of discount and nothing else'
+        could_also_mean: gross less returns, credits, taxes or shipping as well — the question's own ambiguity
+          list raises these, but no column in this bundle records a return, a tax or a freight charge,
+          so the richer readings are not expressible here and cannot differ from this one
+        declaration: v_contoso5_sales_line.net_amount — 'what the customer was actually charged for the
+          line, in USD, after discount'; cannot_express already names the full gross-to-net bridge as
+          out of reach
+      - word: gross vs net revenue
+        took: both figures explicitly, so no default is exercised
+        could_also_mean: a single unqualified 'revenue', which would have been net only
+        declaration: net_revenue.default.revenue_means_net fires only when a question says revenue without
+          saying net or gross — this question names both, so it does not fire
+      - word: everything sold
+        took: both channels, no store predicate — the web shop's 86,790,054.13 of net revenue is in
+        could_also_mean: physical shops only, 132,024,417.53 net
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+          the subject here is a measure, not a Store, so the `physical` default is not reached — operator
+          ruling of 2026-10-18, ''both internet and physical shops combined make revenue'''
+      - word: '2024'
+        took: nothing yet — this step applies no date filter; it only confirms 2024 lies inside the recorded
+          extent
+        could_also_mean: order date vs delivery date, which step 2 must settle
+        declaration: order.default.period_is_order_date — order_date is the period column and the time
+          axis binds on it
+      blocked_by: []
+    - step: '2'
+      step_asks: in 2024
+      turns:
+      - why: Apply the 2024 window, and in the same pass price the ordered-vs-delivered fork the declarations
+          settle, so the default is disclosed with the number it costs rather than just named.
+        did: "SELECT\n  COUNT(*) FILTER(WHERE\n    order_date >= CAST('2024-01-01' AS DATE)\n    AND order_date\
+          \ < CAST('2025-01-01' AS DATE)) AS lines_ordered_2024,\n  ROUND(\n    SUM(gross_amount) FILTER(WHERE\n\
+          \      order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS\
+          \ DATE)),\n    2\n  ) AS gross_ordered_2024,\n  ROUND(\n    SUM(net_amount) FILTER(WHERE\n \
+          \     order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS\
+          \ DATE)),\n    2\n  ) AS net_ordered_2024,\n  COUNT(*) FILTER(WHERE\n    delivery_date >= CAST('2024-01-01'\
+          \ AS DATE)\n    AND delivery_date < CAST('2025-01-01' AS DATE)) AS lines_delivered_2024,\n \
+          \ ROUND(\n    SUM(gross_amount) FILTER(WHERE\n      delivery_date >= CAST('2024-01-01' AS DATE)\n\
+          \      AND delivery_date < CAST('2025-01-01' AS DATE)),\n    2\n  ) AS gross_delivered_2024,\n\
+          \  ROUND(\n    SUM(net_amount) FILTER(WHERE\n      delivery_date >= CAST('2024-01-01' AS DATE)\n\
+          \      AND delivery_date < CAST('2025-01-01' AS DATE)),\n    2\n  ) AS net_delivered_2024,\n\
+          \  COUNT(DISTINCT product_key) FILTER(WHERE\n    order_date >= CAST('2024-01-01' AS DATE)\n\
+          \    AND order_date < CAST('2025-01-01' AS DATE)) AS products_ordered_2024\nFROM contoso_served.v_contoso5_sales_line"
+        came_back: '1 row(s): [{"lines_ordered_2024": 38109, "gross_ordered_2024": "33631448.47", "net_ordered_2024":
+          "31639690.92", "lines_delivered_2024": 38153, "gross_delivered_2024": "33678502.78", "net_delivered_2024":
+          "31684958.13", "products_ordered_2024": 2461}]'
+      settled_on: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  product_key,\n  gross_amount,\n\
+        \  net_amount\nFROM contoso_served.v_contoso5_sales_line\nWHERE\n  order_date >= CAST('2024-01-01'\
+        \ AS DATE)\n  AND order_date < CAST('2025-01-01' AS DATE)"
+      means: The 38,109 sales lines Contoso took orders for during calendar 2024, each carrying what it
+        would have cost at list and what the customer was actually charged. Over that slice the company
+        booked 33,631,448.47 gross and 31,639,690.92 net, the 1,991,757.55 gap being discount. It spans
+        2,461 of the 2,517 products, both the shops and the web shop. One year out of the ten the bundle
+        records — about 14.5% of all-time net revenue. Nothing is grouped yet; this is the 2024 pool that
+        step 3 will split by brand.
+      readings_taken:
+      - word: in 2024
+        took: ORDERED in calendar 2024 — 38,109 lines, 33,631,448.47 gross and 31,639,690.92 net
+        could_also_mean: 'DELIVERED in calendar 2024 — 38,153 lines, 33,678,502.78 gross and 31,684,958.13
+          net. Measured: 44 more lines and 45,267.21 more net, 0.14%, because deliveries straddle the
+          year boundary in both directions. The gross-vs-net comparison this question is actually about
+          is unmoved by the choice — discount is 5.92% of gross under either reading'
+        declaration: order.default.period_is_order_date, default `ordered` — order date is the declared
+          reporting convention and the time axis binds on it; delivery is a logistics question
+      - word: '2024'
+        took: calendar year, 2024-01-01 inclusive to 2025-01-01 exclusive
+        could_also_mean: a fiscal year 2024
+        declaration: none — nothing in this bundle declares a fiscal calendar or year-start offset, so
+          the fiscal reading cannot be computed here at all; this is a limit of the data, not a choice
+          I made
+      - word: revenue
+        took: both channels — shops and the web shop together
+        could_also_mean: physical shops only
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+          the subject of this step is a measure, not a Store, so the `physical` default is never reached'
+      blocked_by: []
+    - step: '3'
+      step_asks: by brand
+      turns:
+      - why: 'Attach brand via the declared product edge and prove the grain survives: a LEFT JOIN so
+          any unmatched product or null brand shows as its own row, with a window total that must still
+          read 38,109 if nothing fanned out or was lost.'
+        did: "SELECT\n  p.brand,\n  COUNT(*) AS lines,\n  COUNT(DISTINCT s.product_key) AS products_sold,\n\
+          \  SUM(COUNT(*)) OVER () AS lines_all_brands,\n  COUNT(DISTINCT p.brand) OVER () AS brands_with_2024_sales\n\
+          FROM contoso_served.v_contoso5_sales_line AS s\nLEFT JOIN contoso_served.dim_product AS p\n\
+          \  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n \
+          \ AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  lines DESC"
+        came_back: '11 row(s) (first 8 of 11): [{"brand": "Contoso", "lines": 10722, "products_sold":
+          708, "lines_all_brands": 38109, "brands_with_2024_sales": 11}, {"brand": "The Phone Company",
+          "lines": 6056, "products_sold": 152, "lines_all_brands": 38109, "brands_with_2024_sales": 11},
+          {"brand": "Southridge Video", "lines": 5864, "products_sold": 192, "lines_all_brands": 38109,
+          "brands_with_2024_sales": 11}, {"brand": "Adventure Works", "lines": 3617, "products_sold":
+          182, "lines_all_brands": 38109, "brands_with_2024_sales": 11}, {"brand": "Wide World Importers",
+          "lines": 3339, "products_sold": 166, "lines_all_brands": 38109, "brands_with_2024_sales": 11},
+          {"brand": "Proseware", "lines": 2639, "products_sold": 235, "lines_all_brands": 38109, "brands_with_2024_sales":
+          11}, {"brand": "Tailspin Toys", "lines": 2433, "products_sold": 144, "lines_all_brands": 38109,
+          "brands_with_2024_sales": 11}, {"brand": "Fabrikam", "lines": 1426, "products_sold": 262, "lines_all_brands":
+          38109, "brands_with_2024_sales": 11}]'
+      settled_on: "SELECT\n  p.brand,\n  s.order_key,\n  s.line_number,\n  s.gross_amount,\n  s.net_amount\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+        \ = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n  AND s.order_date < CAST('2025-01-01'\
+        \ AS DATE)"
+      means: The same 38,109 sales lines Contoso took orders for in calendar 2024, now each tagged with
+        the brand of the product sold, ready to be totalled 11 ways. Every brand the warehouse knows traded
+        in 2024 — Contoso is the busiest at 10,722 lines over 708 products, Litware the quietest of the
+        eleven — and no sale points at a product the product table lacks, so no revenue is stranded outside
+        the brand breakdown. The line count is unchanged from step 2, which is what tells me the join
+        added a label rather than multiplying sales.
+      readings_taken:
+      - word: brand
+        took: dim_product.brand — 11 values, one per product row, reached by product_key
+        could_also_mean: dim_product.manufacturer, the legal-name spelling of the same axis
+        declaration: 'Brand [enumeration] grounded in contoso_served.dim_product counts brand; manufacturer
+          is declared as NAMING brand with naming: legal, #2 behind common, so brand is what an answer
+          shows'
+      - word: by brand
+        took: only brands that sold in 2024 — which turns out to be all 11, so the table is complete either
+          way
+        could_also_mean: 'all 11 brands with zeros for dormant ones. Measured: there are no dormant brands
+          in 2024, so the two readings return the identical 11 rows and the choice is void'
+        declaration: none needed — the readings agree
+      - word: by brand
+        took: the INNER JOIN, now that the LEFT JOIN has proved it equivalent — zero unmatched lines,
+          zero null brands
+        could_also_mean: a LEFT JOIN retaining orphan sales, of which there are none
+        declaration: gross_revenue__by__product and net_revenue__by__product declare (1..N) -> Product
+          (1); product__sold_under__brand declares Product (1..N) -> Brand (1). Both now measured rather
+          than assumed.
+      blocked_by: []
+    - step: '4'
+      step_asks: gross vs net revenue
+      turns:
+      - why: Sum the two declared flow measures per brand and check they reconcile to the 2024 totals
+          step 2 settled (33,631,448.47 gross / 31,639,690.92 net), so the breakdown is proved to account
+          for all of the year's revenue and none of it twice.
+        did: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+          \ 2) AS net_revenue,\n  ROUND(SUM(s.gross_amount) - SUM(s.net_amount), 2) AS discount,\n  ROUND(100.0\
+          \ * (\n    SUM(s.gross_amount) - SUM(s.net_amount)\n  ) / SUM(s.gross_amount), 2) AS discount_pct_of_gross,\n\
+          \  ROUND(SUM(SUM(s.gross_amount)) OVER (), 2) AS gross_all_brands,\n  ROUND(SUM(SUM(s.net_amount))\
+          \ OVER (), 2) AS net_all_brands\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+          \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+          \ DESC"
+        came_back: '11 row(s) (first 8 of 11): [{"brand": "Contoso", "gross_revenue": "6977387.65", "net_revenue":
+          "6568133.00", "discount": "409254.65", "discount_pct_of_gross": 5.87, "gross_all_brands": "33631448.47",
+          "net_all_brands": "31639690.92"}, {"brand": "Adventure Works", "gross_revenue": "6825647.67",
+          "net_revenue": "6420657.92", "discount": "404989.75", "discount_pct_of_gross": 5.93, "gross_all_brands":
+          "33631448.47", "net_all_brands": "31639690.92"}, {"brand": "The Phone Company", "gross_revenue":
+          "5501771.00", "net_revenue": "5175125.81", "discount": "326645.19", "discount_pct_of_gross":
+          5.94, "gross_all_brands": "33631448.47", "net_all_brands": "31639690.92"}, {"brand": "Wide World
+          Importers", "gross_revenue": "4327133.56", "net_revenue": "4065046.17", "discount": "262087.39",
+          "discount_pct_of_gross": 6.06, "gross_all_brands": "33631448.47", "net_all_brands": "31639690.92"},
+          {"brand": "Proseware", "gross_revenue": "2824354.60", "net_revenue": "2648585.03", "discount":
+          "175769.57", "discount_pct_of_gross": 6.22, "gross_all_brands": "33631448.47", "net_all_brands":
+          "31639690.92"}, {"brand": "Fabrikam", "gross_revenue": "2517720.04", "net_revenue": "2371833.51",
+          "discount": "145886.53", "d'
+      settled_on: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+        \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+        \ DESC"
+      means: 'For each of the eleven brands Contoso sells under, two 2024 money figures in USD: what its
+        products would have fetched at list price (gross) and what customers were actually charged after
+        discount (net), counting a sale into 2024 by the day it was ordered. Contoso leads at 6.57m net
+        from 6.98m gross, Adventure Works is close behind at 6.42m from 6.83m, and the eleven together
+        make 31,639,690.92 net from 33,631,448.47 gross. The 1,991,757.55 between those totals is discount
+        and nothing else — no returns, taxes or shipping are recorded anywhere in this bundle. Every brand
+        discounts between 5.79% and 6.22% of gross, so no brand''s net is eroded materially more than
+        another''s.'
+      readings_taken:
+      - word: sum
+        took: plain SUM of each money column per brand
+        could_also_mean: nothing — both are declared FLOW, so SUM over any grouping is the declared-correct
+          operation
+        declaration: 'gross_amount / net_amount: ''a FLOW — it accumulates, so SUM over any period and
+          any grouping is correct, in USD'''
+      - word: net revenue
+        took: gross less discount, 31,639,690.92 for 2024 — the only deduction the data holds
+        could_also_mean: gross less returns, credits and taxes too, which would be lower still
+        declaration: net_amount is 'what the customer was actually charged for the line, after discount';
+          discount_amount is measured as exactly gross_amount - net_amount, and the full gross-to-net
+          bridge is already listed under cannot_express
+      - word: in 2024
+        took: ordered in calendar 2024
+        could_also_mean: delivered in calendar 2024, which shifts the all-brand net by 45,267.21 (0.14%)
+          and leaves the 5.92% discount rate unchanged
+        declaration: order.default.period_is_order_date, default `ordered`
+      blocked_by: []
+    - step: '5'
+      step_asks: Compare gross vs net revenue by brand
+      turns:
+      - why: I have not actually seen the three lowest brand rows — the previous result was truncated
+          at 8 of 11 — so I read the identical table ascending before claiming a figure, rather than claiming
+          an answer whose rows I have not looked at.
+        did: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+          \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+          \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+          \ ASC"
+        came_back: '11 row(s) (first 8 of 11): [{"brand": "Tailspin Toys", "gross_revenue": "258379.96",
+          "net_revenue": "241721.03"}, {"brand": "Northwind Traders", "gross_revenue": "361836.17", "net_revenue":
+          "347968.61"}, {"brand": "A. Datum", "gross_revenue": "474625.40", "net_revenue": "446608.54"},
+          {"brand": "Litware", "gross_revenue": "1360593.49", "net_revenue": "1280128.24"}, {"brand":
+          "Southridge Video", "gross_revenue": "2201998.93", "net_revenue": "2073883.07"}, {"brand": "Fabrikam",
+          "gross_revenue": "2517720.04", "net_revenue": "2371833.51"}, {"brand": "Proseware", "gross_revenue":
+          "2824354.60", "net_revenue": "2648585.03"}, {"brand": "Wide World Importers", "gross_revenue":
+          "4327133.56", "net_revenue": "4065046.17"}]'
+      - why: All eleven rows are now in view and reconcile to the cent against the independently-measured
+          2024 totals, so the table can be claimed; I also correct step 4's discount range, which I had
+          stated over only the 8 rows then visible.
+        did: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+          \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+          \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+          \ DESC"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 11 row(s) (first 8 of 11): [{"brand": "Contoso",
+          "gross_revenue": "6977387.65", "net_revenue": "6568133.00"}, {"brand": "Adventure Works", "gross_revenue":
+          "6825647.67", "net_revenue": "6420657.92"}, {"brand": "The Phone Company", "gross_revenue":
+          "5501771.00", "net_revenue": "5175125.81"}, {"brand": "Wide World Importers", "gross_revenue":
+          "4327133.56", "net_revenue": "4065046.17"}, {"brand": "Proseware", "gross_revenue": "2824354.60",
+          "net_revenue": "2648585.03"}, {"brand": "Fabrikam", "gross_revenue": "2517720.04", "net_revenue":
+          "2371833.51"}, {"brand": "Southridge Video", "gross_revenue": "2201998.93", "net_revenue": "2073883.07"},
+          {"brand": "Litware", "gross_revenue": "1360593.49", "net_revenue": "1280128.24"}]  Give `claimed_answer`
+          as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+          rows settle the question, do not decline.'
+      settled_on: "SELECT\n  p.brand,\n  ROUND(SUM(s.gross_amount), 2) AS gross_revenue,\n  ROUND(SUM(s.net_amount),\
+        \ 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  s.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \  AND s.order_date < CAST('2025-01-01' AS DATE)\nGROUP BY\n  p.brand\nORDER BY\n  net_revenue\
+        \ DESC"
+      means: 'For each of the eleven brands Contoso sells under, the two 2024 revenue figures side by
+        side in USD: gross — what the goods would have fetched at list price — and net, what customers
+        were actually charged after discount. A sale counts as 2024 when the order was placed between
+        1 January and 31 December 2024, and both sales channels are included, the physical shops and the
+        web shop. Eleven brands, one row each, ordered by net. Together they took 33,631,448.47 gross
+        and 31,639,690.92 net over 38,109 order lines; the 1,991,757.55 between those two totals is discount,
+        which in this warehouse is the whole of the difference between gross and net. Contoso (6.57m net)
+        and Adventure Works (6.42m) are nearly level at the top; the bottom three are an order of magnitude
+        smaller, Tailspin Toys taking 241,721.03. The erosion from gross to net is strikingly even — 5.79%
+        to 6.45% of gross for ten of the eleven — with one exception a reader should see: Northwind Traders
+        discounted just 3.83%, keeping noticeably more of its list value than any other brand. WHAT IS
+        NOT IN THESE FIGURES: no returns, credits, taxes, shipping or any other finance deduction, because
+        none of those is recorded anywhere in this bundle. "Net" here means after-discount only, and is
+        therefore HIGHER than a finance-grade net revenue would be. This is also not a fiscal year, and
+        not a gross-to-net bridge showing each deduction as its own line.'
+      readings_taken:
+      - word: net revenue
+        took: gross less discount — 31,639,690.92 across all brands in 2024
+        could_also_mean: gross less discounts AND returns/credits, or less taxes and shipping too, as
+          finance would normally net out — every such reading would be LOWER than this figure
+        declaration: net_amount is 'what the customer was actually charged for the line, in USD, after
+          discount', and discount_amount is measured as exactly gross_amount - net_amount — so discount
+          is provably the entire gap between the two columns I am showing. No return, credit, tax or freight
+          column exists on any relation here, so the fuller readings are not computable at all; the question's
+          own cannot_express names the full bridge as out of reach. A limit of the data, not a choice
+          I made between available figures.
+      - word: in 2024
+        took: ORDER DATE within calendar 2024 — 38,109 lines, 33,631,448.47 gross, 31,639,690.92 net
+        could_also_mean: DELIVERY date within 2024 — 38,153 lines, 33,678,502.78 gross, 31,684,958.13
+          net; measured as 45,267.21 more net, 0.14%, from deliveries crossing the year boundary. It changes
+          no brand's rank and leaves the gross-to-net gap at 5.92% either way, so the comparison the question
+          asks for is unaffected.
+        declaration: order.default.period_is_order_date, default `ordered` — 'order date is the reporting
+          convention; delivery is a logistics question', and the time axis is declared to bind on order_date
+      - word: '2024'
+        took: the calendar year, 1 January to 31 December
+        could_also_mean: a fiscal year 2024 beginning in some other month
+        declaration: none — nothing in this bundle declares a fiscal calendar, accounting period or year-start
+          offset, so the fiscal reading cannot be computed. This is the one fork I could not price even
+          in principle.
+      - word: by brand
+        took: the brands that sold in 2024 — which proved to be all 11 the warehouse holds
+        could_also_mean: 'all brands with a zero row for any dormant one. Measured: none was dormant in
+          2024, so both readings return the identical 11 rows and the choice is void.'
+        declaration: Brand [enumeration], eleven names carried on the product row; dim_product.brand —
+          '11 brands over 2,517 products, so a question about brands wants the 11 and not the 2,517'
+      - word: revenue
+        took: both channels — physical shops and the web shop combined
+        could_also_mean: physical shops only, which across all time drops about 40% of the money
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel is scoped `applies: subject`;
+          the subject of this question is a measure, not a Store, so its `physical` default is never reached
+          — operator ruling of 2026-10-18, ''both internet and physical shops combined make revenue'''
+      - word: brand
+        took: dim_product.brand, reached from the sale by product_key
+        could_also_mean: dim_product.manufacturer, a second spelling of the same axis
+        declaration: 'manufacturer is declared as NAMING brand with naming: legal, #2 behind common in
+          the preference order common > legal > long > short > code, so brand is the name an answer shows'
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+v3_answer_step: '5'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: 11 row(s) match, in the reference's order
+v3_seconds: 311.9

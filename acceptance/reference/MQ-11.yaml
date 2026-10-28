@@ -1,0 +1,77 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: MQ-11
+question: >-
+  Show me revenue by country for customers in the same country as their store
+expected:
+  rows: 8
+  ordered: false
+  values:
+  - - United States
+    - 67827886.25744
+  - - United Kingdom
+    - 15058669.66559
+  - - Germany
+    - 14382768.43893
+  - - Canada
+    - 13712923.80616
+  - - Australia
+    - 7501114.88577
+  - - Netherlands
+    - 5211393.64305
+  - - Italy
+    - 4607013.38666
+  - - France
+    - 3722647.44807
+sql: >-
+  SELECT co.country_name, ROUND(SUM(l.net_amount),5) FROM contoso_served.v_contoso5_sales_line l
+  JOIN contoso_served.dim_store s ON l.store_key=s.store_key JOIN contoso_served.dim_customer cu
+  ON l.customer_key=cu.customer_key JOIN contoso_served.dim_country co ON
+  s.country_code=co.country_code WHERE s.store_code IS DISTINCT FROM -1 AND cu.country_code =
+  s.country_code GROUP BY co.country_name ORDER BY 2 DESC
+note: >-
+  INDEPENDENTLY VERIFIED 2026-10-18, not read back from the engine: the SQL below was written by
+  hand against contoso5.duckdb and returns this figure exactly. SHOP POPULATION throughout
+  (`store_code IS DISTINCT FROM -1`), AND IT IS DECLARED HERE RATHER THAN INHERITED. Shop-only
+  was the bundle''s default for Store until the operator reversed it on 2026-10-18 -- "now i am
+  for correctnes and correctness is both" -- so this restriction is a choice this reference has to
+  justify, and the justification is the AXIS and not a default: the online channel is one row of
+  `dim_store` carrying `store_code = -1`, and it has neither a country nor a floor area, so it
+  cannot appear on an axis that groups by either. A question that names the online channel is
+  answered -- see MQ-07 and ADV-24. THE CROSS- DIMENSION PREDICATE IS THE POINT: `cu.country_code
+  = s.country_code` compares a column of one concept to a column of another, which is what
+  `join_filters` exists for. United States verified at 67827886.25744.
+approved_by: operator
+approved_at: '2026-10-24'
+approved_here: true
+superseded_value:
+  rows: 8
+  ordered: true
+  values:
+  - - United States
+    - 67827886.25744
+  - - United Kingdom
+    - 15058669.66559
+  - - Germany
+    - 14382768.43893
+  - - Canada
+    - 13712923.80616
+  - - Australia
+    - 7501114.88577
+  - - Netherlands
+    - 5211393.64305
+  - - Italy
+    - 4607013.38666
+  - - France
+    - 3722647.44807
+superseded_reason: >-
+  ROW ORDER IS NOT AN ANSWER UNLESS THE QUESTION ASKED FOR ONE, and this question asks for a SET.
+  Ruled by the operator on 2026-10-24 ("go 1 2 3 4") over a proposal naming all nine references.
+  `ordered: true` made row POSITION part of the signed contract, so a correct answer returning the
+  right members in another order graded as a failure -- the defect measured on MQ-08 on
+  2026-10-09, where two products inside the approved set at different positions failed a question
+  asking set membership. THE CHECK IS NOT WEAKENED. The value list here is COMPLETE, so with
+  `ordered: false` every approved row must still be PRESENT in the result --
+  `sdk/acceptance/selfcheck.py#compare` runs a membership test over all of them, not a sample.
+  What is given up is only the claim that the question asked for a sequence, which it does not. A
+  ranking keeps its order: no `top`, `highest`, `trend` or `compare` question is touched.

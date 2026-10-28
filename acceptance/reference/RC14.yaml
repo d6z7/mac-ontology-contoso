@@ -1,0 +1,72 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: RC14
+question: >-
+  How many customers were between 25 and 44 years old on the 10.12.2022?
+expected: 31586
+sql: >-
+  SELECT count(DISTINCT customer_key) FROM contoso_served.dim_customer WHERE birth_date >= date
+  '1977-12-11' AND birth_date <= date '1997-12-10'
+note: >-
+  Aged 25 to 44 ON 2022-12-10; the date in the question pins the as_of.
+
+  REPHRASED BY THE OPERATOR 2026-10-23, verbatim: "how many cuseterms were betewen 25 adn 44 years
+  old on the 10.12.2022". The previous wording was "How many customers were aged between 25 and 44
+  on 2022-12-10?" and the figure is unchanged — only the words moved, and they moved to close the
+  one reading that destroyed this question.
+
+  WHAT THE OLD WORDING COST, measured 2026-10-23. The V3 walk decomposed it correctly —
+  `from customers -> during 2022-12-10 (day) -> where aged between 25 and 44 -> count` — and then
+  read `during` as ACTIVITY ON THAT DAY rather than as the as-of for the age. It measured the
+  alternatives in one query and chose:
+      register current on that day    82,043
+      customers ORDERING that day         62   <- chosen
+  and answered 19: the number of that day's 62 buyers who were 25 to 44. Nineteen against 31,586,
+  three orders of magnitude out, at confidence 0.86, with nothing flagging the implausibility.
+  Its arithmetic over those 62 was flawless — ages 22 to 87, 19 in the band inclusive, 18
+  exclusive, exactly one aged 25 and none aged 44, all disclosed.
+  WORSE, IT CONTRADICTED ITS OWN EARLIER STEP. At step 1 it had settled `customers` as "the
+  customer register — all 104,990 rows, the declared grounding of the Customer entity". Step 2 then
+  overrode that silently: "ASSUMED 'customers' = resolved by this step to the buyers active that
+  day, which settles the register-versus-buyer-list fork left open at step 1 in favour of buyers".
+  A later step revised a settled step's population without reopening it.
+
+  "YEARS OLD ON <date>" IS WHAT REMOVES IT. The date now attaches to an AGE and not to a period a
+  row can fall inside, so `during` is no longer the natural step for it. The underlying gap is in
+  the canonical form and is recorded here rather than in prose nobody reads: the v3 step
+  vocabulary has ONE way to say a date — `during`, "the period the question names" — and no way to
+  distinguish a period that FILTERS rows from a date that ANCHORS a measure. Until it has, a
+  question must say which in its own words.
+
+  THE FOUR READINGS, all measured on 2026-10-23, so the next reader can see what this figure is
+  NOT:
+      31,586   every customer on the register, completed years        <- this reference
+      24,787   only register rows current on that day (valid_from <= d <= valid_to)
+      15,676   only the 52,189 customers who ever ordered
+          19   only the 62 customers who ordered on that very day     <- what the walk answered
+  A SECOND FORK SURVIVES THE REPHRASE and is flagged for the operator rather than buried: this
+  reference counts the WHOLE register and ignores `valid_from`/`valid_to`, so it includes 22,947
+  rows whose validity had expired before that date. "Customers on 10.12.2022" could legitimately
+  mean the 82,043 on the books that day, of whom 24,787 were in the band. Nobody has ruled it.
+approved_by: operator
+approved_at: '2026-10-02'
+ruling: >-
+  operator, 2026-10-02: re-worded the question to pin the date, then re-approved.
+superseded_value: 31553
+superseded_reason: >-
+  31553 was approved on 2026-09-25 for the undated wording "How many customers are aged between 25
+  and 44?". That question had no stable answer and the value was not reproducible by any birth-
+  date window near any as_of (542 windows within +/-400 days yield it). The question now carries
+  its own as_of and has one answer.
+cloned_from:
+  bundle: example/contoso
+  path: acceptance/reference/RC14.yaml
+  commit: e7465b1
+  cloned_at: '2026-09-29'
+  basis: 'Approved on the same landing: main.* is identical in both bundles (8 tables,
+    row counts and columns measured equal on 2026-09-29; 223 974 sales lines), so
+    the approved value is the value here too. The `sql` above is the approving bundle''s
+    served view (contoso_served.v_contoso_order_line, dim_contoso_*), NOT this bundle''s
+    plane (v_contoso5_sales_line, dim_*): the expected value stands, the derivation
+    on this bundle''s own served plane is owed before its capture is judged against
+    it.'

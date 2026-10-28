@@ -1,0 +1,52 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED: `approved_by` is empty. An agent computed this figure and an agent may not
+# sign a reference.
+id: AGG-16
+question: >-
+  What percentage of total net revenue comes from customers resident in Germany?
+expected: 11.2601
+sql: >-
+  SELECT ROUND(100.0 * SUM(CASE WHEN co.country_name = 'Germany' THEN l.net_amount ELSE 0 END)
+               / SUM(l.net_amount), 4)
+    FROM contoso_served.v_contoso5_sales_line l
+    JOIN contoso_served.dim_customer cu ON l.customer_key = cu.customer_key
+    JOIN contoso_served.dim_country  co ON cu.country_code = co.country_code
+note: >-
+  ONE HALF OF A DELIBERATE PAIR, added 2026-10-23 with AGG-17. Together they test a single
+  proposition: that the eight DECLINED answers in this corpus are ambiguous QUESTIONS rather than a
+  model that cannot answer, and that naming the reading in the question recovers the answer.
+
+  WHAT THEY ARE SPLIT FROM. AGG-12 asks "What percentage of total net revenue comes from Germany?"
+  and the walk refused it, in these words:
+
+      "11.2601% if 'from Germany' means the customer's country (24,638,830.18 of 218,814,471.66);
+       6.573% if it means the store's country (14,382,768.44 of 218,814,471.66).
+       I will not choose between them."
+
+  That refusal is CORRECT and is not a failure. `country.default.whose_country_is_asked_never_assumed`
+  declares three paths — store, customer, location — with their own surface names, and carries
+  `never: pick between the store and the customer silently, and never average the two`
+  (RULING-2026-10-22). AGG-12 names no path, so there is nothing to pick from. AGG-12 STAYS IN THE
+  CORPUS UNCHANGED for exactly that reason: the ability to refuse an underspecified question is a
+  capability worth a test of its own, and these two do not replace it.
+
+  WHAT THIS ONE ADDS is the word AGG-12 lacks: `customers resident in`, which is the declared
+  `customer` path (`customer__based_in__country`, surfaces "customer country", "where our
+  customers are"). So an answer of 11.2601 is evidence that a named path is followed, and an
+  answer of 6.573 would be evidence that the naming was ignored — the two outcomes are
+  distinguishable, which is the point of splitting rather than rewording in place.
+
+  THE DENOMINATOR IS BOTH CHANNELS AND ALL TIME: 218,814,471.66 over 2016-05-19 to 2025-12-31,
+  by `revenue_means_both_channels` (ruled 2026-10-18, reversing an earlier shop-only reading) and
+  `order.default.an_unscoped_question_covers_all_time`. Only the NUMERATOR is filtered to Germany;
+  a reader who filtered both would get 100%.
+expected_by: agent
+expected_at: '2026-10-23'
+approved_by: null
+approved_at: null
+awaiting_approval: >-
+  The arithmetic is re-runnable and agrees with the figure the walk itself published for this
+  reading. What needs a signature is that "customers resident in Germany" is the customer path and
+  that the denominator stays the whole estate rather than German sales.

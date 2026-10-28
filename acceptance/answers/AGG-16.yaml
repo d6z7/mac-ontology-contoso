@@ -1,0 +1,1635 @@
+id: AGG-16
+captured_at: '2026-10-24T21:44:51+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: percentage of total net revenue from customers resident in Germany
+  operation: compute
+  qdmr_simplified: "  1         FROM       net revenue                                               \
+    \                                “net revenue”\n  2  ← 1    AGGREGATE  sum of net revenue        \
+    \                                                                “total net revenue”\n  3  ← 1   \
+    \ WHERE      customers resident in Germany = 'Germany'                                           \
+    \      “comes from customers resident in Germany”\n  4  ← 3    AGGREGATE  sum of net revenue     \
+    \                                                                   “net revenue from customers resident\
+    \ in Germany”\n  5  ← 4+2  COMPUTE    share of the total -> percentage of total net revenue from customers\
+    \ resident in Germany  “what percentage of total net revenue”\n  answer: step 5   confidence: 0.62\
+    \   A DAG   step(s) 1 feed more than one   converging at 5\n  UNDERSTOOD AS: Of all net revenue (no\
+    \ period restriction — everything on record), what share of it is attributable to customers whose\
+    \ country of residence is Germany. The answer is a single percentage: German-resident customers' net\
+    \ revenue divided by net revenue from all customers everywhere, with no customers excluded from the\
+    \ denominator.\n  AMBIGUOUS 'customers resident in Germany' — ASKS: Should 'resident in Germany' mean\
+    \ the country recorded on the customer's own record (where they live), or the country on the individual\
+    \ order's billing or shipping address?\n      could mean: Customers whose own country of residence\
+    \ on file is Germany — all their revenue counts, wherever it was shipped or billed\n      could mean:\
+    \ Revenue on orders billed or shipped to a German address, regardless of where the customer is recorded\
+    \ as living\n      took: The country of residence recorded on the customer, not the order address\n\
+    \  AMBIGUOUS 'net revenue' — ASKS: What should net revenue mean here — gross sales less returns and\
+    \ discounts, and is tax and shipping in or out?\n      could mean: Gross sales minus returns, credits\
+    \ and discounts, excluding tax and shipping\n      could mean: Whatever figure is already labelled\
+    \ 'net revenue' in the reporting, taken as-is\n      could mean: The invoiced amount including tax\
+    \ and shipping\n      took: The figure already labelled 'net revenue', taken as-is\n  AMBIGUOUS 'total\
+    \ net revenue' — ASKS: Over what period should this be measured — all time, the current year to date,\
+    \ or the last full financial year?\n      could mean: All time, every period on record\n      could\
+    \ mean: The current year to date\n      could mean: The last completed financial year\n      took:\
+    \ All time, no period restriction\n  AMBIGUOUS 'total net revenue' — ASKS: Should the bottom of the\
+    \ percentage be net revenue from every customer everywhere, including revenue whose customer or country\
+    \ is unknown?\n      could mean: All net revenue on record, including revenue with no customer or\
+    \ no country recorded\n      could mean: Only net revenue that can be attributed to a customer with\
+    \ a known country of residence\n      took: All net revenue on record, nothing excluded\n  OUTPUT\
+    \ SHAPE: one figure · one row(s) · carrying percentage of total net revenue"
+  understood_as_in_human_words: 'Of all net revenue (no period restriction — everything on record), what
+    share of it is attributable to customers whose country of residence is Germany. The answer is a single
+    percentage: German-resident customers'' net revenue divided by net revenue from all customers everywhere,
+    with no customers excluded from the denominator.'
+  population_actually_answered: 'Numerator: the 25,552 sales lines (of 223,974) whose buying customer
+    carries `dim_customer.country_code` = DE, resolved from the word "Germany" via `dim_country.country_name`.
+    Denominator: ALL 223,974 lines of v_contoso5_sales_line — no restriction applied, and confirmed by
+    the row itself at 218,814,471.65866, identical to the unjoined total measured on step 1. Three restrictions
+    I did NOT apply, each on a declaration: no period filter, because order.default.an_unscoped_question_covers_all_time
+    (C, operator 2026-09-30) makes an unscoped question cover the full extent of order_date, 2016-05-18
+    to 2025-12-31; no channel filter, because store.resolution.the_channel_is_the_location_sentinel carries
+    `applies: subject` and this question''s subject is a measure, not a store — so the base is the 218,814,471.66
+    the operator''s 2026-10-18 ruling fixed for unqualified revenue, not the 132,024,417.53 physical-only
+    total; and no dropping of revenue with an unknown customer or country, because there is none — 0 lines
+    have a null customer_key and no customer carries the `--` sentinel, so country.exclusion.sentinel_is_not_a_country''s
+    `real` default removes nothing on this path. The single restriction that is a reading rather than
+    a default: attribution by the customer''s own country instead of the shop''s, which is what the question''s
+    words name.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: one figure
+    columns_the_answer_step_asks_for: []
+    figures_the_answer_step_computes: []
+    answer_step: '5'
+    verb: compute
+    said: what percentage of total net revenue
+    stage1_confidence: 0.62
+  canonical_question: &id001
+    understood_as: 'Of all net revenue (no period restriction — everything on record), what share of it
+      is attributable to customers whose country of residence is Germany. The answer is a single percentage:
+      German-resident customers'' net revenue divided by net revenue from all customers everywhere, with
+      no customers excluded from the denominator.'
+    steps:
+    - id: '1'
+      do: from
+      thing: net revenue
+      said: net revenue
+    - id: '2'
+      do: aggregate
+      of: '1'
+      said: total net revenue
+      figures:
+      - how: sum
+        of: net revenue
+        said: total net revenue
+    - id: '3'
+      do: where
+      of: '1'
+      thing: customers resident in Germany
+      said: comes from customers resident in Germany
+      op: '='
+      value: Germany
+    - id: '4'
+      do: aggregate
+      of: '3'
+      said: net revenue from customers resident in Germany
+      figures:
+      - how: sum
+        of: net revenue
+        said: net revenue
+    - id: '5'
+      do: compute
+      how: share of the total
+      as: percentage of total net revenue from customers resident in Germany
+      said: what percentage of total net revenue
+      inputs: &id002
+      - step: '4'
+        said: customers resident in Germany
+      - step: '2'
+        said: total net revenue
+    answer: '5'
+    output_shape: &id003
+      shape: one figure
+      rows: one
+      said: What percentage of total net revenue comes from customers resident in Germany?
+      key_columns: &id005 []
+      figure_columns: &id006
+      - percentage of total net revenue
+    ambiguities:
+    - words: customers resident in Germany
+      question: Should 'resident in Germany' mean the country recorded on the customer's own record (where
+        they live), or the country on the individual order's billing or shipping address?
+      readings:
+      - Customers whose own country of residence on file is Germany — all their revenue counts, wherever
+        it was shipped or billed
+      - Revenue on orders billed or shipped to a German address, regardless of where the customer is recorded
+        as living
+      assumed: The country of residence recorded on the customer, not the order address
+    - words: net revenue
+      question: What should net revenue mean here — gross sales less returns and discounts, and is tax
+        and shipping in or out?
+      readings:
+      - Gross sales minus returns, credits and discounts, excluding tax and shipping
+      - Whatever figure is already labelled 'net revenue' in the reporting, taken as-is
+      - The invoiced amount including tax and shipping
+      assumed: The figure already labelled 'net revenue', taken as-is
+    - words: total net revenue
+      question: Over what period should this be measured — all time, the current year to date, or the
+        last full financial year?
+      readings:
+      - All time, every period on record
+      - The current year to date
+      - The last completed financial year
+      assumed: All time, no period restriction
+    - words: total net revenue
+      question: Should the bottom of the percentage be net revenue from every customer everywhere, including
+        revenue whose customer or country is unknown?
+      readings:
+      - All net revenue on record, including revenue with no customer or no country recorded
+      - Only net revenue that can be attributed to a customer with a known country of residence
+      assumed: All net revenue on record, nothing excluded
+    cannot_express: []
+    confidence: 0.62
+  steps: 5
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: net_revenue_germany
+      type: string
+    - name: total_net_revenue
+      type: string
+    - name: pct_of_total_net_revenue
+      type: number
+    rows:
+    - - '24638830.17950'
+      - '218814471.65866'
+      - 11.26
+  value: 11.26
+  raw: '11.26'
+  reading: one figure
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "net revenue → `net_amount` on the sales line — what the customer was actually charged after\
+      \ discount, in USD, summed: 218,814,471.66\n        could also mean: gross before discount (`gross_amount`),\
+      \ which is a different and larger figure"
+    ref: net_revenue.default.revenue_means_net — a question saying revenue or sales without saying net
+      or gross is answered on `net_amount` and must say NET; the column itself is declared THE DEFAULT
+      MONEY COLUMN
+  - kind: ''
+    text: "net revenue (period) → all time — the full extent of `order_date`, 2016-05-18 to 2025-12-31,\
+      \ no window applied\n        could also mean: the current year to date, or the last completed financial\
+      \ year, either of which would be a far smaller pool"
+    ref: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30)
+      — cover the full extent and state the first and last date included
+  - kind: ''
+    text: "net revenue (channel) → both channels together, shops and web shop: 218,814,471.66\n      \
+      \  could also mean: physical shops only, which would be 132,024,417.53 — the web shop is 86,790,054.13,\
+      \ or 40% of the pool"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel carries `applies: subject`, so the `physical`
+      default belongs to questions whose SUBJECT is a store; this question''s subject is a MEASURE and
+      never reaches it. The operator''s ruling of 2026-10-18 fixed unqualified revenue at both channels
+      combined'
+  - kind: ''
+    text: "total net revenue (what is in the denominator) → all net revenue on record, nothing excluded\
+      \ — and this needs no choice, because it is measured identical to the narrower reading: 0 of 223,974\
+      \ lines lack a customer_key, so revenue with no customer attached does not exist in this bundle\n\
+      \        could also mean: only revenue attributable to a customer with a known country — the same\
+      \ 218,814,471.66, since the customer register also carries no null country_code and no customer\
+      \ holds the `--` sentinel"
+    ref: measured just now (lines_with_no_customer = 0) plus customer__based_in__country, declared as
+      104,990 customers over 8 of the 9 codes with no nulls — the two readings of the denominator agree
+      to the cent, so the fork is priced and closed
+  - kind: ''
+    text: "total net revenue → the unfiltered sum of `net_amount` over all time and both channels — 218,814,471.66\n\
+      \        could also mean: physical shops only (132,024,417.53), or only revenue attributable to\
+      \ a customer with a known country — which is measured identical to the figure taken, since 0 of\
+      \ 223,974 lines lack a customer"
+    ref: 'net_revenue.default.revenue_means_net for the column; order.default.an_unscoped_question_covers_all_time
+      for the window; store.resolution.the_channel_is_the_location_sentinel `applies: subject` for the
+      channel, a measure question never reaching the physical default'
+  - kind: ''
+    text: "customers resident in Germany → the country on the CUSTOMER's own record — `dim_customer.country_code`\
+      \ = DE, reached by `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD\n        could\
+      \ also mean: revenue rung up by shops standing in Germany — `dim_store.country_code` = DE, which\
+      \ is 14,382,768.44, or 10.3 million less. That reading also cannot place the web shop anywhere:\
+      \ 86,790,054.13, 40% of all revenue, falls into the `--` sentinel that dim_country names 'Online'\
+      \ and that country.exclusion.sentinel_is_not_a_country declares is not a place"
+    ref: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22) forbids
+      picking between the store and the customer SILENTLY and declares both paths askable by name. The
+      question names one — 'customers resident in' is the `customer` path's own surface, 'customer country'
+      / 'where our customers are' — so the choice is the reader's, not mine, and both figures are stated
+      above. dim_customer.country_code is further declared 'the only column that can place an internet
+      sale in a real country'
+  - kind: ''
+    text: "resident → where the customer is recorded as living on their current register row — one row\
+      \ per customer, 104,990 of them, so no sale is counted twice and no sale is missed\n        could\
+      \ also mean: where the customer lived ON THE ORDER DATE. I could not price this one: `valid_from`/`valid_to`\
+      \ say the register is kept as a history, but this bundle serves exactly one row per customer_key,\
+      \ so there is no earlier address in it to compare against — the as-at-order-date reading is not\
+      \ expressible here"
+    ref: 'dim_customer.valid_from, verbatim: ''a sale could in principle be attributed to where the customer
+      lived ON THE ORDER DATE — nothing in this bundle declares that it should be'''
+  - kind: ''
+    text: "Germany → resolved through dim_country by the reader-facing name, `country_name = 'Germany'`\
+      \ → code DE\n        could also mean: nothing else — 'Germany' matches exactly one of the nine stored\
+      \ codes, and the one code that is not a country (`--`, named 'Online') is not it"
+    ref: 'dim_country.country_name is the `naming: long` column declared as what an answer should show
+      for `country_code`'
+  - kind: ''
+    text: "net revenue from customers resident in Germany → sum of `net_amount` for lines whose customer's\
+      \ register country is DE, all time, both channels — 24,638,830.18\n        could also mean: revenue\
+      \ taken by shops in Germany, 14,382,768.44 — stated in full on step 3 and not chosen, because the\
+      \ question says customers"
+    ref: net_revenue.default.revenue_means_net for the money column; country.default.whose_country_is_asked_never_assumed,
+      whose `customer` path the question names
+  - kind: ''
+    text: "customers resident in Germany → the country on the customer's own record — 24,638,830.18, giving\
+      \ 11.26%\n        could also mean: revenue taken by shops standing in Germany — 14,382,768.44, giving\
+      \ 6.57%. Both are measured and disclosed; nothing was picked blind. The question names the customer,\
+      \ which is this path's declared surface ('customer country', 'where our customers are'), and it\
+      \ is the only reading that can place the web shop's 86,790,054.13 in a real country — by shop country\
+      \ that 40% of revenue falls into the `--` sentinel dim_country names 'Online'"
+    ref: 'country.default.whose_country_is_asked_never_assumed (C, RULING-2026-10-22): never pick between
+      the store and the customer silently, and never average the two — both paths are askable by name,
+      and this question asked one'
+  - kind: ''
+    text: "net revenue → `net_amount`, after discount, in USD — the declared default money column, and\
+      \ the answer says NET\n        could also mean: gross before discount (`gross_amount`): both figures\
+      \ would be larger, and since discount is an integer percent from a closed 15-step set applied line\
+      \ by line, the ratio would move only slightly"
+    ref: 'net_revenue.default.revenue_means_net (P): a question saying revenue or sales without saying
+      net or gross is answered on `net_amount` and must say net'
+  - kind: ''
+    text: "total net revenue → all time, both channels, every row — 218,814,471.66, nothing excluded from\
+      \ the bottom of the percentage\n        could also mean: physical shops only (132,024,417.53), the\
+      \ current year to date, or the last full financial year — any of which would change both parts of\
+      \ the ratio"
+    ref: 'order.default.an_unscoped_question_covers_all_time (C), which also obliges me to state the window
+      covered: 2016-05-18 to 2025-12-31; store.resolution.the_channel_is_the_location_sentinel `applies:
+      subject` for the channel'
+  - kind: ''
+    text: "percentage → a share of money: German-resident net revenue over all net revenue, 11.26%\n \
+      \       could also mean: a share of lines, orders, customers or units — by sales lines Germany is\
+      \ 25,552 of 223,974, which is 11.41%"
+    ref: the question asks what percentage of total net REVENUE, so the ratio is money over money
+  concepts: []
+  rules:
+  - id: net_revenue.default.revenue_means_net — a question saying revenue or sales without saying net
+      or gross is answered on `net_amount` and must say NET
+    why: '''net revenue'' = `net_amount` on the sales line — what the customer was actually charged after
+      discount, in USD, summed: 218,814,471.66'
+  - id: the column itself is declared THE DEFAULT MONEY COLUMN
+    why: '''net revenue'' = `net_amount` on the sales line — what the customer was actually charged after
+      discount, in USD, summed: 218,814,471.66'
+  - id: order.default.an_unscoped_question_covers_all_time (confidence C
+    why: '''net revenue (period)'' = all time — the full extent of `order_date`, 2016-05-18 to 2025-12-31,
+      no window applied'
+  - id: operator ruling 2026-09-30) — cover the full extent and state the first and last date included
+    why: '''net revenue (period)'' = all time — the full extent of `order_date`, 2016-05-18 to 2025-12-31,
+      no window applied'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel carries `applies: subject`'
+    why: '''net revenue (channel)'' = both channels together, shops and web shop: 218,814,471.66'
+  - id: so the `physical` default belongs to questions whose SUBJECT is a store
+    why: '''net revenue (channel)'' = both channels together, shops and web shop: 218,814,471.66'
+  - id: this question's subject is a MEASURE and never reaches it. The operator's ruling of 2026-10-18
+      fixed unqualified revenue at both channels combined
+    why: '''net revenue (channel)'' = both channels together, shops and web shop: 218,814,471.66'
+  - id: measured just now (lines_with_no_customer = 0) plus customer__based_in__country
+    why: '''total net revenue (what is in the denominator)'' = all net revenue on record, nothing excluded
+      — and this needs no choice, because it is measured identical to the narrower reading: 0 of 223,974
+      lines lack a customer_key, so revenue with no customer attached does not exist in this bundle'
+  - id: declared as 104
+    why: '''total net revenue (what is in the denominator)'' = all net revenue on record, nothing excluded
+      — and this needs no choice, because it is measured identical to the narrower reading: 0 of 223,974
+      lines lack a customer_key, so revenue with no customer attached does not exist in this bundle'
+  - id: 990 customers over 8 of the 9 codes with no nulls — the two readings of the denominator agree
+      to the cent
+    why: '''total net revenue (what is in the denominator)'' = all net revenue on record, nothing excluded
+      — and this needs no choice, because it is measured identical to the narrower reading: 0 of 223,974
+      lines lack a customer_key, so revenue with no customer attached does not exist in this bundle'
+  - id: so the fork is priced and closed
+    why: '''total net revenue (what is in the denominator)'' = all net revenue on record, nothing excluded
+      — and this needs no choice, because it is measured identical to the narrower reading: 0 of 223,974
+      lines lack a customer_key, so revenue with no customer attached does not exist in this bundle'
+  - id: net_revenue.default.revenue_means_net for the column
+    why: '''total net revenue'' = the unfiltered sum of `net_amount` over all time and both channels —
+      218,814,471.66'
+  - id: order.default.an_unscoped_question_covers_all_time for the window
+    why: '''total net revenue'' = the unfiltered sum of `net_amount` over all time and both channels —
+      218,814,471.66'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel `applies: subject` for the channel'
+    why: '''total net revenue'' = the unfiltered sum of `net_amount` over all time and both channels —
+      218,814,471.66'
+  - id: a measure question never reaching the physical default
+    why: '''total net revenue'' = the unfiltered sum of `net_amount` over all time and both channels —
+      218,814,471.66'
+  - id: country.default.whose_country_is_asked_never_assumed (confidence C
+    why: '''customers resident in Germany'' = the country on the CUSTOMER''s own record — `dim_customer.country_code`
+      = DE, reached by `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+  - id: RULING-2026-10-22) forbids picking between the store and the customer SILENTLY and declares both
+      paths askable by name. The question names one — 'customers resident in' is the `customer` path's
+      own surface
+    why: '''customers resident in Germany'' = the country on the CUSTOMER''s own record — `dim_customer.country_code`
+      = DE, reached by `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+  - id: '''customer country'' / ''where our customers are'' — so the choice is the reader''s'
+    why: '''customers resident in Germany'' = the country on the CUSTOMER''s own record — `dim_customer.country_code`
+      = DE, reached by `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+  - id: not mine
+    why: '''customers resident in Germany'' = the country on the CUSTOMER''s own record — `dim_customer.country_code`
+      = DE, reached by `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+  - id: and both figures are stated above. dim_customer.country_code is further declared 'the only column
+      that can place an internet sale in a real country'
+    why: '''customers resident in Germany'' = the country on the CUSTOMER''s own record — `dim_customer.country_code`
+      = DE, reached by `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+  - id: dim_customer.valid_from
+    why: '''resident'' = where the customer is recorded as living on their current register row — one
+      row per customer, 104,990 of them, so no sale is counted twice and no sale is missed'
+  - id: 'verbatim: ''a sale could in principle be attributed to where the customer lived ON THE ORDER
+      DATE — nothing in this bundle declares that it should be'''
+    why: '''resident'' = where the customer is recorded as living on their current register row — one
+      row per customer, 104,990 of them, so no sale is counted twice and no sale is missed'
+  - id: 'dim_country.country_name is the `naming: long` column declared as what an answer should show
+      for `country_code`'
+    why: '''Germany'' = resolved through dim_country by the reader-facing name, `country_name = ''Germany''`
+      → code DE'
+  - id: net_revenue.default.revenue_means_net for the money column
+    why: '''net revenue from customers resident in Germany'' = sum of `net_amount` for lines whose customer''s
+      register country is DE, all time, both channels — 24,638,830.18'
+  - id: country.default.whose_country_is_asked_never_assumed
+    why: '''net revenue from customers resident in Germany'' = sum of `net_amount` for lines whose customer''s
+      register country is DE, all time, both channels — 24,638,830.18'
+  - id: whose `customer` path the question names
+    why: '''net revenue from customers resident in Germany'' = sum of `net_amount` for lines whose customer''s
+      register country is DE, all time, both channels — 24,638,830.18'
+  - id: country.default.whose_country_is_asked_never_assumed (C
+    why: '''customers resident in Germany'' = the country on the customer''s own record — 24,638,830.18,
+      giving 11.26%'
+  - id: 'RULING-2026-10-22): never pick between the store and the customer silently'
+    why: '''customers resident in Germany'' = the country on the customer''s own record — 24,638,830.18,
+      giving 11.26%'
+  - id: and never average the two — both paths are askable by name
+    why: '''customers resident in Germany'' = the country on the customer''s own record — 24,638,830.18,
+      giving 11.26%'
+  - id: and this question asked one
+    why: '''customers resident in Germany'' = the country on the customer''s own record — 24,638,830.18,
+      giving 11.26%'
+  - id: 'net_revenue.default.revenue_means_net (P): a question saying revenue or sales without saying
+      net or gross is answered on `net_amount` and must say net'
+    why: '''net revenue'' = `net_amount`, after discount, in USD — the declared default money column,
+      and the answer says NET'
+  - id: order.default.an_unscoped_question_covers_all_time (C)
+    why: '''total net revenue'' = all time, both channels, every row — 218,814,471.66, nothing excluded
+      from the bottom of the percentage'
+  - id: 'which also obliges me to state the window covered: 2016-05-18 to 2025-12-31'
+    why: '''total net revenue'' = all time, both channels, every row — 218,814,471.66, nothing excluded
+      from the bottom of the percentage'
+  - id: the question asks what percentage of total net REVENUE
+    why: '''percentage'' = a share of money: German-resident net revenue over all net revenue, 11.26%'
+  - id: so the ratio is money over money
+    why: '''percentage'' = a share of money: German-resident net revenue over all net revenue, 11.26%'
+  edges: []
+sql:
+- "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+  \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name = $country\
+  \ THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+  \ AS co\n  ON c.country_code = co.country_code"
+- "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  SUM(net_amount) AS total_net_amount,\n\
+  \  MIN(order_date) AS first_order_date,\n  MAX(order_date) AS last_order_date,\n  SUM(CASE WHEN customer_key\
+  \ IS NULL THEN 1 ELSE 0 END) AS lines_with_no_customer\nFROM contoso_served.v_contoso5_sales_line"
+- "SELECT\n  SUM(net_amount) AS total_net_revenue\nFROM contoso_served.v_contoso5_sales_line"
+- "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT l.customer_key)\
+  \ AS customers,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS l\n\
+  JOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+  \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+- "SELECT\n  SUM(l.net_amount) AS net_revenue_germany\nFROM contoso_served.v_contoso5_sales_line AS l\n\
+  JOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+  \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+answer_sql: "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+  \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name = $country\
+  \ THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+  \ AS co\n  ON c.country_code = co.country_code"
+sql_valid: true
+result:
+  status: ok
+  rows: 1
+  cols: &id010
+  - net_revenue_germany
+  - total_net_revenue
+  - pct_of_total_net_revenue
+  sample_rows:
+  - - '24638830.17950'
+    - '218814471.65866'
+    - 11.26
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id001
+  canonical_question_simplified: "  1         FROM       net revenue                                 \
+    \                                              “net revenue”\n  2  ← 1    AGGREGATE  sum of net revenue\
+    \                                                                        “total net revenue”\n  3\
+    \  ← 1    WHERE      customers resident in Germany = 'Germany'                                   \
+    \              “comes from customers resident in Germany”\n  4  ← 3    AGGREGATE  sum of net revenue\
+    \                                                                        “net revenue from customers\
+    \ resident in Germany”\n  5  ← 4+2  COMPUTE    share of the total -> percentage of total net revenue\
+    \ from customers resident in Germany  “what percentage of total net revenue”\n  answer: step 5   confidence:\
+    \ 0.62   A DAG   step(s) 1 feed more than one   converging at 5\n  UNDERSTOOD AS: Of all net revenue\
+    \ (no period restriction — everything on record), what share of it is attributable to customers whose\
+    \ country of residence is Germany. The answer is a single percentage: German-resident customers' net\
+    \ revenue divided by net revenue from all customers everywhere, with no customers excluded from the\
+    \ denominator.\n  AMBIGUOUS 'customers resident in Germany' — ASKS: Should 'resident in Germany' mean\
+    \ the country recorded on the customer's own record (where they live), or the country on the individual\
+    \ order's billing or shipping address?\n      could mean: Customers whose own country of residence\
+    \ on file is Germany — all their revenue counts, wherever it was shipped or billed\n      could mean:\
+    \ Revenue on orders billed or shipped to a German address, regardless of where the customer is recorded\
+    \ as living\n      took: The country of residence recorded on the customer, not the order address\n\
+    \  AMBIGUOUS 'net revenue' — ASKS: What should net revenue mean here — gross sales less returns and\
+    \ discounts, and is tax and shipping in or out?\n      could mean: Gross sales minus returns, credits\
+    \ and discounts, excluding tax and shipping\n      could mean: Whatever figure is already labelled\
+    \ 'net revenue' in the reporting, taken as-is\n      could mean: The invoiced amount including tax\
+    \ and shipping\n      took: The figure already labelled 'net revenue', taken as-is\n  AMBIGUOUS 'total\
+    \ net revenue' — ASKS: Over what period should this be measured — all time, the current year to date,\
+    \ or the last full financial year?\n      could mean: All time, every period on record\n      could\
+    \ mean: The current year to date\n      could mean: The last completed financial year\n      took:\
+    \ All time, no period restriction\n  AMBIGUOUS 'total net revenue' — ASKS: Should the bottom of the\
+    \ percentage be net revenue from every customer everywhere, including revenue whose customer or country\
+    \ is unknown?\n      could mean: All net revenue on record, including revenue with no customer or\
+    \ no country recorded\n      could mean: Only net revenue that can be attributed to a customer with\
+    \ a known country of residence\n      took: All net revenue on record, nothing excluded\n  OUTPUT\
+    \ SHAPE: one figure · one row(s) · carrying percentage of total net revenue"
+  understood_as: 'Of all net revenue (no period restriction — everything on record), what share of it
+    is attributable to customers whose country of residence is Germany. The answer is a single percentage:
+    German-resident customers'' net revenue divided by net revenue from all customers everywhere, with
+    no customers excluded from the denominator.'
+  ambiguities_it_saw:
+  - words: customers resident in Germany
+    asks: Should 'resident in Germany' mean the country recorded on the customer's own record (where they
+      live), or the country on the individual order's billing or shipping address?
+    readings:
+    - Customers whose own country of residence on file is Germany — all their revenue counts, wherever
+      it was shipped or billed
+    - Revenue on orders billed or shipped to a German address, regardless of where the customer is recorded
+      as living
+    took: The country of residence recorded on the customer, not the order address
+  - words: net revenue
+    asks: What should net revenue mean here — gross sales less returns and discounts, and is tax and shipping
+      in or out?
+    readings:
+    - Gross sales minus returns, credits and discounts, excluding tax and shipping
+    - Whatever figure is already labelled 'net revenue' in the reporting, taken as-is
+    - The invoiced amount including tax and shipping
+    took: The figure already labelled 'net revenue', taken as-is
+  - words: total net revenue
+    asks: Over what period should this be measured — all time, the current year to date, or the last full
+      financial year?
+    readings:
+    - All time, every period on record
+    - The current year to date
+    - The last completed financial year
+    took: All time, no period restriction
+  - words: total net revenue
+    asks: Should the bottom of the percentage be net revenue from every customer everywhere, including
+      revenue whose customer or country is unknown?
+    readings:
+    - All net revenue on record, including revenue with no customer or no country recorded
+    - Only net revenue that can be attributed to a customer with a known country of residence
+    took: All net revenue on record, nothing excluded
+  presentation:
+    claimed_answer_is: one figure
+    answer_step: '5'
+    answer_step_asks:
+      do: compute
+      how: share of the total
+      as: percentage of total net revenue from customers resident in Germany
+      said: what percentage of total net revenue
+      inputs: *id002
+    confidence_stage1: 0.62
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  SUM(net_amount) AS total_net_amount,\n\
+      \  MIN(order_date) AS first_order_date,\n  MAX(order_date) AS last_order_date,\n  SUM(CASE WHEN\
+      \ customer_key IS NULL THEN 1 ELSE 0 END) AS lines_with_no_customer\nFROM contoso_served.v_contoso5_sales_line"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  SUM(net_amount) AS total_net_revenue\nFROM contoso_served.v_contoso5_sales_line"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT l.customer_key)\
+      \ AS customers,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS\
+      \ l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+      \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+    params: &id007
+      country: Germany
+  - step: '4'
+    sql: "SELECT\n  SUM(l.net_amount) AS net_revenue_germany\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+      \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+    params: &id008
+      country: Germany
+  - step: '5'
+    sql: "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+      \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name\
+      \ = $country THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\n\
+      FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key\
+      \ = c.customer_key\nJOIN contoso_served.dim_country AS co\n  ON c.country_code = co.country_code"
+    params: &id009
+      country: Germany
+  what_it_calculated: '11.26 per cent. Of every dollar Contoso has ever charged customers after discount,
+    11.26% was charged to a customer whose register record says they live in Germany: 24,638,830.18 USD
+    out of 218,814,471.66, across 25,552 of 223,974 sales lines. That makes Germany the second largest
+    home country behind the United States at 111,862,187.56 (51.1%). WHAT IS IN THE FIGURE: all ten years
+    of sales, 18 May 2016 to 31 December 2025, no period cut; both channels, with the web shop''s 86,790,054.13
+    included and attributed to the real countries its buyers live in; every sale on record in the denominator,
+    none dropped for want of a customer or a country. WHAT IT IS NOT: not the share taken by shops standing
+    in Germany, which is 14,382,768.44 or 6.57% — a reading that strands 40% of all revenue in a sentinel
+    belonging to no country. Not a share of gross, which is before discount. Not a share of customers,
+    orders or units — by lines Germany is 11.41%. And not residence as at the order date: the register
+    serves one current address per customer, so anyone who has since moved counts wholly where they are
+    recorded now.'
+  rows_returned: &id004
+  - net_revenue_germany: '24638830.17950'
+    total_net_revenue: '218814471.65866'
+    pct_of_total_net_revenue: 11.26
+  synthesis:
+    claimed: '11.26'
+    shape: one figure
+    answered_population: 'Numerator: the 25,552 sales lines (of 223,974) whose buying customer carries
+      `dim_customer.country_code` = DE, resolved from the word "Germany" via `dim_country.country_name`.
+      Denominator: ALL 223,974 lines of v_contoso5_sales_line — no restriction applied, and confirmed
+      by the row itself at 218,814,471.65866, identical to the unjoined total measured on step 1. Three
+      restrictions I did NOT apply, each on a declaration: no period filter, because order.default.an_unscoped_question_covers_all_time
+      (C, operator 2026-09-30) makes an unscoped question cover the full extent of order_date, 2016-05-18
+      to 2025-12-31; no channel filter, because store.resolution.the_channel_is_the_location_sentinel
+      carries `applies: subject` and this question''s subject is a measure, not a store — so the base
+      is the 218,814,471.66 the operator''s 2026-10-18 ruling fixed for unqualified revenue, not the 132,024,417.53
+      physical-only total; and no dropping of revenue with an unknown customer or country, because there
+      is none — 0 lines have a null customer_key and no customer carries the `--` sentinel, so country.exclusion.sentinel_is_not_a_country''s
+      `real` default removes nothing on this path. The single restriction that is a reading rather than
+      a default: attribution by the customer''s own country instead of the shop''s, which is what the
+      question''s words name.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: net revenue
+    turns:
+    - why: Establish the base relation for "net revenue" — the sales-line grain with net_amount, unfiltered
+        — and check its row count, total and date extent against the declared figures.
+      did: 'probe ''v_contoso5_sales_line.channel'' AND ALSO: SELECT COUNT(*) AS lines, COUNT(DISTINCT
+        order_key) AS orders, SUM(net_amount) AS total_net_amount, MIN(order_date) AS first_order_date,
+        MAX(order_date) AS last_order_date, SUM(CASE WHEN customer_key IS NULL THEN 1 ELSE 0 END) AS lines_with_no_customer
+        FROM contoso_served.v_contoso5_sales_line'
+      came_back: 'v_contoso5_sales_line.channel (varchar) holds 2 distinct value(s): ''online'', ''physical''   AND
+        ALSO: 1 row(s): [{"lines": 223974, "orders": 93470, "total_net_amount": "218814471.65866", "first_order_date":
+        "2016-05-18", "last_order_date": "2025-12-31", "lines_with_no_customer": 0}]'
+    settled_on: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  SUM(net_amount)\
+      \ AS total_net_amount,\n  MIN(order_date) AS first_order_date,\n  MAX(order_date) AS last_order_date,\n\
+      \  SUM(CASE WHEN customer_key IS NULL THEN 1 ELSE 0 END) AS lines_with_no_customer\nFROM contoso_served.v_contoso5_sales_line"
+    means: 'One row describing the whole body of net revenue this question will be divided up: every one
+      of the 223,974 sales lines Contoso has on record, making up 93,470 orders, carrying 218,814,471.66
+      USD of what customers were actually charged after discount, placed between 18 May 2016 and 31 December
+      2025 — all ten years, no period cut — and covering both the physical shops and the web shop together.
+      Every single line names a customer, so nothing in this body of revenue is unattributable to a person.
+      This is the denominator of the eventual percentage, and the pool the Germany filter will be applied
+      to.'
+    readings_taken:
+    - word: net revenue
+      took: '`net_amount` on the sales line — what the customer was actually charged after discount, in
+        USD, summed: 218,814,471.66'
+      could_also_mean: gross before discount (`gross_amount`), which is a different and larger figure
+      declaration: net_revenue.default.revenue_means_net — a question saying revenue or sales without
+        saying net or gross is answered on `net_amount` and must say NET; the column itself is declared
+        THE DEFAULT MONEY COLUMN
+    - word: net revenue (period)
+      took: all time — the full extent of `order_date`, 2016-05-18 to 2025-12-31, no window applied
+      could_also_mean: the current year to date, or the last completed financial year, either of which
+        would be a far smaller pool
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30)
+        — cover the full extent and state the first and last date included
+    - word: net revenue (channel)
+      took: 'both channels together, shops and web shop: 218,814,471.66'
+      could_also_mean: physical shops only, which would be 132,024,417.53 — the web shop is 86,790,054.13,
+        or 40% of the pool
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel carries `applies: subject`,
+        so the `physical` default belongs to questions whose SUBJECT is a store; this question''s subject
+        is a MEASURE and never reaches it. The operator''s ruling of 2026-10-18 fixed unqualified revenue
+        at both channels combined'
+    - word: total net revenue (what is in the denominator)
+      took: 'all net revenue on record, nothing excluded — and this needs no choice, because it is measured
+        identical to the narrower reading: 0 of 223,974 lines lack a customer_key, so revenue with no
+        customer attached does not exist in this bundle'
+      could_also_mean: only revenue attributable to a customer with a known country — the same 218,814,471.66,
+        since the customer register also carries no null country_code and no customer holds the `--` sentinel
+      declaration: measured just now (lines_with_no_customer = 0) plus customer__based_in__country, declared
+        as 104,990 customers over 8 of the 9 codes with no nulls — the two readings of the denominator
+        agree to the cent, so the fork is priced and closed
+    blocked_by: []
+  - step: '2'
+    step_asks: total net revenue
+    turns: []
+    settled_on: "SELECT\n  SUM(net_amount) AS total_net_revenue\nFROM contoso_served.v_contoso5_sales_line"
+    means: 'One row, one figure: all the money Contoso actually charged customers after discount, across
+      every sale it has on record — 218,814,471.66 USD over 223,974 lines and 93,470 orders, placed between
+      18 May 2016 and 31 December 2025, covering the physical shops and the web shop together. This is
+      the bottom of the percentage. Nothing is held out of it: no period cut, no channel cut, and no revenue
+      dropped for want of a customer or a country, because every line carries both.'
+    readings_taken:
+    - word: total net revenue
+      took: the unfiltered sum of `net_amount` over all time and both channels — 218,814,471.66
+      could_also_mean: physical shops only (132,024,417.53), or only revenue attributable to a customer
+        with a known country — which is measured identical to the figure taken, since 0 of 223,974 lines
+        lack a customer
+      declaration: 'net_revenue.default.revenue_means_net for the column; order.default.an_unscoped_question_covers_all_time
+        for the window; store.resolution.the_channel_is_the_location_sentinel `applies: subject` for the
+        channel, a measure question never reaching the physical default'
+    blocked_by: []
+  - step: '3'
+    step_asks: comes from customers resident in Germany
+    turns:
+    - why: Find Germany's code and price both readings of "resident in Germany" in one query — the country
+        on the customer's own record (which the question's wording names) against the country the store
+        traded in (the only other country this bundle carries), with every country listed so the parts
+        can be checked against the 218,814,471.66 total.
+      did: "SELECT\n  'customer_residence' AS reading,\n  c.country_code AS code,\n  co.country_name AS\
+        \ country,\n  COUNT(*) AS lines,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON c.country_code = co.country_code\nGROUP BY\n  1,\n  2,\n  3\nUNION ALL\nSELECT\n\
+        \  'store_country' AS reading,\n  s.country_code AS code,\n  co.country_name AS country,\n  COUNT(*)\
+        \ AS lines,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS\
+        \ l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON s.country_code = co.country_code\nGROUP BY\n  1,\n  2,\n  3\nORDER BY\n  reading,\n\
+        \  net_revenue DESC"
+      came_back: '17 row(s) (first 8 of 17): [{"reading": "customer_residence", "code": "US", "country":
+        "United States", "lines": 113614, "net_revenue": "111862187.56017"}, {"reading": "customer_residence",
+        "code": "DE", "country": "Germany", "lines": 25552, "net_revenue": "24638830.17950"}, {"reading":
+        "customer_residence", "code": "CA", "country": "Canada", "lines": 24250, "net_revenue": "23242027.53228"},
+        {"reading": "customer_residence", "code": "GB", "country": "United Kingdom", "lines": 22829, "net_revenue":
+        "23049533.37116"}, {"reading": "customer_residence", "code": "AU", "country": "Australia", "lines":
+        14078, "net_revenue": "13360672.60516"}, {"reading": "customer_residence", "code": "NL", "country":
+        "Netherlands", "lines": 10256, "net_revenue": "9421520.47136"}, {"reading": "customer_residence",
+        "code": "FR", "country": "France", "lines": 7098, "net_revenue": "6674724.84859"}, {"reading":
+        "customer_residence", "code": "IT", "country": "Italy", "lines": 6297, "net_revenue": "6564975.09044"}]'
+    - why: The customer-residence rows are complete and add back exactly to the 218,814,471.66 total,
+        with Germany at 24,638,830.18; the store-country half was truncated, so fetch just Germany and
+        the online sentinel from it to price the alternative reading before settling.
+      did: "SELECT\n  s.country_code AS code,\n  co.country_name AS country,\n  COUNT(*) AS lines,\n \
+        \ SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store\
+        \ AS s\n  ON l.store_key = s.store_key\nJOIN contoso_served.dim_country AS co\n  ON s.country_code\
+        \ = co.country_code\nWHERE\n  s.country_code IN ('DE', '--')\nGROUP BY\n  1,\n  2\nORDER BY\n\
+        \  net_revenue DESC"
+      came_back: '2 row(s): [{"code": "--", "country": "Online", "lines": 93550, "net_revenue": "86790054.12699"},
+        {"code": "DE", "country": "Germany", "lines": 14190, "net_revenue": "14382768.43893"}]'
+    settled_on: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT\
+      \ l.customer_key) AS customers,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+      \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+    means: 'The German slice of the same ten years of sales: every sales line bought by a customer whose
+      own register record says they live in Germany (country code DE), wherever the goods were actually
+      sold or sent — 25,552 lines carrying 24,638,830.18 USD of net revenue after discount, out of the
+      218,814,471.66 on record. It spans both the shops and the web shop, and it is counted all time,
+      2016-05-18 to 2025-12-31. This is the top of the percentage. It is NOT revenue taken by German shops:
+      that is a different and smaller 14,382,768.44.'
+    readings_taken:
+    - word: customers resident in Germany
+      took: 'the country on the CUSTOMER''s own record — `dim_customer.country_code` = DE, reached by
+        `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+      could_also_mean: 'revenue rung up by shops standing in Germany — `dim_store.country_code` = DE,
+        which is 14,382,768.44, or 10.3 million less. That reading also cannot place the web shop anywhere:
+        86,790,054.13, 40% of all revenue, falls into the `--` sentinel that dim_country names ''Online''
+        and that country.exclusion.sentinel_is_not_a_country declares is not a place'
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22)
+        forbids picking between the store and the customer SILENTLY and declares both paths askable by
+        name. The question names one — 'customers resident in' is the `customer` path's own surface, 'customer
+        country' / 'where our customers are' — so the choice is the reader's, not mine, and both figures
+        are stated above. dim_customer.country_code is further declared 'the only column that can place
+        an internet sale in a real country'
+    - word: resident
+      took: where the customer is recorded as living on their current register row — one row per customer,
+        104,990 of them, so no sale is counted twice and no sale is missed
+      could_also_mean: 'where the customer lived ON THE ORDER DATE. I could not price this one: `valid_from`/`valid_to`
+        say the register is kept as a history, but this bundle serves exactly one row per customer_key,
+        so there is no earlier address in it to compare against — the as-at-order-date reading is not
+        expressible here'
+      declaration: 'dim_customer.valid_from, verbatim: ''a sale could in principle be attributed to where
+        the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should be'''
+    - word: Germany
+      took: resolved through dim_country by the reader-facing name, `country_name = 'Germany'` → code
+        DE
+      could_also_mean: nothing else — 'Germany' matches exactly one of the nine stored codes, and the
+        one code that is not a country (`--`, named 'Online') is not it
+      declaration: 'dim_country.country_name is the `naming: long` column declared as what an answer should
+        show for `country_code`'
+    blocked_by: []
+  - step: '4'
+    step_asks: net revenue from customers resident in Germany
+    turns: []
+    settled_on: "SELECT\n  SUM(l.net_amount) AS net_revenue_germany\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+      \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+    means: 'One row, one figure: all the money customers who live in Germany were actually charged after
+      discount, across every sale Contoso has on record — 24,638,830.18 USD over 25,552 sales lines, placed
+      between 18 May 2016 and 31 December 2025, covering both the physical shops and the web shop. Attribution
+      is by where the buyer lives, not by where the shop stands and not by where the goods went. This
+      is the top of the percentage.'
+    readings_taken:
+    - word: net revenue from customers resident in Germany
+      took: sum of `net_amount` for lines whose customer's register country is DE, all time, both channels
+        — 24,638,830.18
+      could_also_mean: revenue taken by shops in Germany, 14,382,768.44 — stated in full on step 3 and
+        not chosen, because the question says customers
+      declaration: net_revenue.default.revenue_means_net for the money column; country.default.whose_country_is_asked_never_assumed,
+        whose `customer` path the question names
+    blocked_by: []
+  - step: '5'
+    step_asks: what percentage of total net revenue
+    turns:
+    - why: Compute the ratio itself in one query rather than claiming a figure I divided by hand, so the
+        answer step reads the row it claims — German-resident customers' net revenue over all net revenue,
+        with both parts shown beside it.
+      did: 'SELECT SUM(CASE WHEN co.country_name = :country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,
+        SUM(l.net_amount) AS total_net_revenue, ROUND(100.0 * SUM(CASE WHEN co.country_name = :country
+        THEN l.net_amount ELSE 0 END) / SUM(l.net_amount), 2) AS pct_of_total_net_revenue FROM contoso_served.v_contoso5_sales_line
+        l JOIN contoso_served.dim_customer c ON l.customer_key = c.customer_key JOIN contoso_served.dim_country
+        co ON c.country_code = co.country_code params {"country": "Germany"}'
+      came_back: '1 row(s): [{"net_revenue_germany": "24638830.17950", "total_net_revenue": "218814471.65866",
+        "pct_of_total_net_revenue": 11.26}]'
+    - why: 'The denominator reached through the customer join is the same 218,814,471.65866 as the unjoined
+        total, so nothing was lost and the ratio stands: 11.26% of all net revenue comes from customers
+        who live in Germany.'
+      did: "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+        \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name\
+        \ = $country THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key\
+        \ = c.customer_key\nJOIN contoso_served.dim_country AS co\n  ON c.country_code = co.country_code"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 1 row(s): [{"net_revenue_germany": "24638830.17950",
+        "total_net_revenue": "218814471.65866", "pct_of_total_net_revenue": 11.26}]  Give `claimed_answer`
+        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+        rows settle the question, do not decline.'
+    settled_on: "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+      \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name\
+      \ = $country THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\n\
+      FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key\
+      \ = c.customer_key\nJOIN contoso_served.dim_country AS co\n  ON c.country_code = co.country_code"
+    means: '11.26 per cent. Of every dollar Contoso has ever charged customers after discount, 11.26%
+      was charged to a customer whose register record says they live in Germany: 24,638,830.18 USD out
+      of 218,814,471.66, across 25,552 of 223,974 sales lines. That makes Germany the second largest home
+      country behind the United States at 111,862,187.56 (51.1%). WHAT IS IN THE FIGURE: all ten years
+      of sales, 18 May 2016 to 31 December 2025, no period cut; both channels, with the web shop''s 86,790,054.13
+      included and attributed to the real countries its buyers live in; every sale on record in the denominator,
+      none dropped for want of a customer or a country. WHAT IT IS NOT: not the share taken by shops standing
+      in Germany, which is 14,382,768.44 or 6.57% — a reading that strands 40% of all revenue in a sentinel
+      belonging to no country. Not a share of gross, which is before discount. Not a share of customers,
+      orders or units — by lines Germany is 11.41%. And not residence as at the order date: the register
+      serves one current address per customer, so anyone who has since moved counts wholly where they
+      are recorded now.'
+    readings_taken:
+    - word: customers resident in Germany
+      took: the country on the customer's own record — 24,638,830.18, giving 11.26%
+      could_also_mean: revenue taken by shops standing in Germany — 14,382,768.44, giving 6.57%. Both
+        are measured and disclosed; nothing was picked blind. The question names the customer, which is
+        this path's declared surface ('customer country', 'where our customers are'), and it is the only
+        reading that can place the web shop's 86,790,054.13 in a real country — by shop country that 40%
+        of revenue falls into the `--` sentinel dim_country names 'Online'
+      declaration: 'country.default.whose_country_is_asked_never_assumed (C, RULING-2026-10-22): never
+        pick between the store and the customer silently, and never average the two — both paths are askable
+        by name, and this question asked one'
+    - word: net revenue
+      took: '`net_amount`, after discount, in USD — the declared default money column, and the answer
+        says NET'
+      could_also_mean: 'gross before discount (`gross_amount`): both figures would be larger, and since
+        discount is an integer percent from a closed 15-step set applied line by line, the ratio would
+        move only slightly'
+      declaration: 'net_revenue.default.revenue_means_net (P): a question saying revenue or sales without
+        saying net or gross is answered on `net_amount` and must say net'
+    - word: total net revenue
+      took: all time, both channels, every row — 218,814,471.66, nothing excluded from the bottom of the
+        percentage
+      could_also_mean: physical shops only (132,024,417.53), the current year to date, or the last full
+        financial year — any of which would change both parts of the ratio
+      declaration: 'order.default.an_unscoped_question_covers_all_time (C), which also obliges me to state
+        the window covered: 2016-05-18 to 2025-12-31; store.resolution.the_channel_is_the_location_sentinel
+        `applies: subject` for the channel'
+    - word: percentage
+      took: 'a share of money: German-resident net revenue over all net revenue, 11.26%'
+      could_also_mean: a share of lines, orders, customers or units — by sales lines Germany is 25,552
+        of 223,974, which is 11.41%
+      declaration: the question asks what percentage of total net REVENUE, so the ratio is money over
+        money
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: 'Of all net revenue (no period restriction — everything on record), what share of it is attributable
+      to customers whose country of residence is Germany. The answer is a single percentage: German-resident
+      customers'' net revenue divided by net revenue from all customers everywhere, with no customers
+      excluded from the denominator.'
+    population: 'Numerator: the 25,552 sales lines (of 223,974) whose buying customer carries `dim_customer.country_code`
+      = DE, resolved from the word "Germany" via `dim_country.country_name`. Denominator: ALL 223,974
+      lines of v_contoso5_sales_line — no restriction applied, and confirmed by the row itself at 218,814,471.65866,
+      identical to the unjoined total measured on step 1. Three restrictions I did NOT apply, each on
+      a declaration: no period filter, because order.default.an_unscoped_question_covers_all_time (C,
+      operator 2026-09-30) makes an unscoped question cover the full extent of order_date, 2016-05-18
+      to 2025-12-31; no channel filter, because store.resolution.the_channel_is_the_location_sentinel
+      carries `applies: subject` and this question''s subject is a measure, not a store — so the base
+      is the 218,814,471.66 the operator''s 2026-10-18 ruling fixed for unqualified revenue, not the 132,024,417.53
+      physical-only total; and no dropping of revenue with an unknown customer or country, because there
+      is none — 0 lines have a null customer_key and no customer carries the `--` sentinel, so country.exclusion.sentinel_is_not_a_country''s
+      `real` default removes nothing on this path. The single restriction that is a reading rather than
+      a default: attribution by the customer''s own country instead of the shop''s, which is what the
+      question''s words name.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1         FROM       net revenue                                              \
+      \                                 “net revenue”\n  2  ← 1    AGGREGATE  sum of net revenue     \
+      \                                                                   “total net revenue”\n  3  ←\
+      \ 1    WHERE      customers resident in Germany = 'Germany'                                    \
+      \             “comes from customers resident in Germany”\n  4  ← 3    AGGREGATE  sum of net revenue\
+      \                                                                        “net revenue from customers\
+      \ resident in Germany”\n  5  ← 4+2  COMPUTE    share of the total -> percentage of total net revenue\
+      \ from customers resident in Germany  “what percentage of total net revenue”\n  answer: step 5 \
+      \  confidence: 0.62   A DAG   step(s) 1 feed more than one   converging at 5"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: customers resident in Germany
+      asks: Should 'resident in Germany' mean the country recorded on the customer's own record (where
+        they live), or the country on the individual order's billing or shipping address?
+      readings:
+      - Customers whose own country of residence on file is Germany — all their revenue counts, wherever
+        it was shipped or billed
+      - Revenue on orders billed or shipped to a German address, regardless of where the customer is recorded
+        as living
+      took: The country of residence recorded on the customer, not the order address
+    - words: net revenue
+      asks: What should net revenue mean here — gross sales less returns and discounts, and is tax and
+        shipping in or out?
+      readings:
+      - Gross sales minus returns, credits and discounts, excluding tax and shipping
+      - Whatever figure is already labelled 'net revenue' in the reporting, taken as-is
+      - The invoiced amount including tax and shipping
+      took: The figure already labelled 'net revenue', taken as-is
+    - words: total net revenue
+      asks: Over what period should this be measured — all time, the current year to date, or the last
+        full financial year?
+      readings:
+      - All time, every period on record
+      - The current year to date
+      - The last completed financial year
+      took: All time, no period restriction
+    - words: total net revenue
+      asks: Should the bottom of the percentage be net revenue from every customer everywhere, including
+        revenue whose customer or country is unknown?
+      readings:
+      - All net revenue on record, including revenue with no customer or no country recorded
+      - Only net revenue that can be attributed to a customer with a known country of residence
+      took: All net revenue on record, nothing excluded
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.62 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id001
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: net revenue
+      took: '`net_amount` on the sales line — what the customer was actually charged after discount, in
+        USD, summed: 218,814,471.66'
+      could_also_mean: gross before discount (`gross_amount`), which is a different and larger figure
+      declaration: net_revenue.default.revenue_means_net — a question saying revenue or sales without
+        saying net or gross is answered on `net_amount` and must say NET; the column itself is declared
+        THE DEFAULT MONEY COLUMN
+    - word: net revenue (period)
+      took: all time — the full extent of `order_date`, 2016-05-18 to 2025-12-31, no window applied
+      could_also_mean: the current year to date, or the last completed financial year, either of which
+        would be a far smaller pool
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30)
+        — cover the full extent and state the first and last date included
+    - word: net revenue (channel)
+      took: 'both channels together, shops and web shop: 218,814,471.66'
+      could_also_mean: physical shops only, which would be 132,024,417.53 — the web shop is 86,790,054.13,
+        or 40% of the pool
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel carries `applies: subject`,
+        so the `physical` default belongs to questions whose SUBJECT is a store; this question''s subject
+        is a MEASURE and never reaches it. The operator''s ruling of 2026-10-18 fixed unqualified revenue
+        at both channels combined'
+    - word: total net revenue (what is in the denominator)
+      took: 'all net revenue on record, nothing excluded — and this needs no choice, because it is measured
+        identical to the narrower reading: 0 of 223,974 lines lack a customer_key, so revenue with no
+        customer attached does not exist in this bundle'
+      could_also_mean: only revenue attributable to a customer with a known country — the same 218,814,471.66,
+        since the customer register also carries no null country_code and no customer holds the `--` sentinel
+      declaration: measured just now (lines_with_no_customer = 0) plus customer__based_in__country, declared
+        as 104,990 customers over 8 of the 9 codes with no nulls — the two readings of the denominator
+        agree to the cent, so the fork is priced and closed
+    - word: total net revenue
+      took: the unfiltered sum of `net_amount` over all time and both channels — 218,814,471.66
+      could_also_mean: physical shops only (132,024,417.53), or only revenue attributable to a customer
+        with a known country — which is measured identical to the figure taken, since 0 of 223,974 lines
+        lack a customer
+      declaration: 'net_revenue.default.revenue_means_net for the column; order.default.an_unscoped_question_covers_all_time
+        for the window; store.resolution.the_channel_is_the_location_sentinel `applies: subject` for the
+        channel, a measure question never reaching the physical default'
+    - word: customers resident in Germany
+      took: 'the country on the CUSTOMER''s own record — `dim_customer.country_code` = DE, reached by
+        `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+      could_also_mean: 'revenue rung up by shops standing in Germany — `dim_store.country_code` = DE,
+        which is 14,382,768.44, or 10.3 million less. That reading also cannot place the web shop anywhere:
+        86,790,054.13, 40% of all revenue, falls into the `--` sentinel that dim_country names ''Online''
+        and that country.exclusion.sentinel_is_not_a_country declares is not a place'
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22)
+        forbids picking between the store and the customer SILENTLY and declares both paths askable by
+        name. The question names one — 'customers resident in' is the `customer` path's own surface, 'customer
+        country' / 'where our customers are' — so the choice is the reader's, not mine, and both figures
+        are stated above. dim_customer.country_code is further declared 'the only column that can place
+        an internet sale in a real country'
+    - word: resident
+      took: where the customer is recorded as living on their current register row — one row per customer,
+        104,990 of them, so no sale is counted twice and no sale is missed
+      could_also_mean: 'where the customer lived ON THE ORDER DATE. I could not price this one: `valid_from`/`valid_to`
+        say the register is kept as a history, but this bundle serves exactly one row per customer_key,
+        so there is no earlier address in it to compare against — the as-at-order-date reading is not
+        expressible here'
+      declaration: 'dim_customer.valid_from, verbatim: ''a sale could in principle be attributed to where
+        the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should be'''
+    - word: Germany
+      took: resolved through dim_country by the reader-facing name, `country_name = 'Germany'` → code
+        DE
+      could_also_mean: nothing else — 'Germany' matches exactly one of the nine stored codes, and the
+        one code that is not a country (`--`, named 'Online') is not it
+      declaration: 'dim_country.country_name is the `naming: long` column declared as what an answer should
+        show for `country_code`'
+    - word: net revenue from customers resident in Germany
+      took: sum of `net_amount` for lines whose customer's register country is DE, all time, both channels
+        — 24,638,830.18
+      could_also_mean: revenue taken by shops in Germany, 14,382,768.44 — stated in full on step 3 and
+        not chosen, because the question says customers
+      declaration: net_revenue.default.revenue_means_net for the money column; country.default.whose_country_is_asked_never_assumed,
+        whose `customer` path the question names
+    - word: customers resident in Germany
+      took: the country on the customer's own record — 24,638,830.18, giving 11.26%
+      could_also_mean: revenue taken by shops standing in Germany — 14,382,768.44, giving 6.57%. Both
+        are measured and disclosed; nothing was picked blind. The question names the customer, which is
+        this path's declared surface ('customer country', 'where our customers are'), and it is the only
+        reading that can place the web shop's 86,790,054.13 in a real country — by shop country that 40%
+        of revenue falls into the `--` sentinel dim_country names 'Online'
+      declaration: 'country.default.whose_country_is_asked_never_assumed (C, RULING-2026-10-22): never
+        pick between the store and the customer silently, and never average the two — both paths are askable
+        by name, and this question asked one'
+    - word: net revenue
+      took: '`net_amount`, after discount, in USD — the declared default money column, and the answer
+        says NET'
+      could_also_mean: 'gross before discount (`gross_amount`): both figures would be larger, and since
+        discount is an integer percent from a closed 15-step set applied line by line, the ratio would
+        move only slightly'
+      declaration: 'net_revenue.default.revenue_means_net (P): a question saying revenue or sales without
+        saying net or gross is answered on `net_amount` and must say net'
+    - word: total net revenue
+      took: all time, both channels, every row — 218,814,471.66, nothing excluded from the bottom of the
+        percentage
+      could_also_mean: physical shops only (132,024,417.53), the current year to date, or the last full
+        financial year — any of which would change both parts of the ratio
+      declaration: 'order.default.an_unscoped_question_covers_all_time (C), which also obliges me to state
+        the window covered: 2016-05-18 to 2025-12-31; store.resolution.the_channel_is_the_location_sentinel
+        `applies: subject` for the channel'
+    - word: percentage
+      took: 'a share of money: German-resident net revenue over all net revenue, 11.26%'
+      could_also_mean: a share of lines, orders, customers or units — by sales lines Germany is 25,552
+        of 223,974, which is 11.41%
+      declaration: the question asks what percentage of total net REVENUE, so the ratio is money over
+        money
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 5 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  SUM(net_amount)\
+        \ AS total_net_amount,\n  MIN(order_date) AS first_order_date,\n  MAX(order_date) AS last_order_date,\n\
+        \  SUM(CASE WHEN customer_key IS NULL THEN 1 ELSE 0 END) AS lines_with_no_customer\nFROM contoso_served.v_contoso5_sales_line\n\
+        \n-- step 2\nSELECT\n  SUM(net_amount) AS total_net_revenue\nFROM contoso_served.v_contoso5_sales_line\n\
+        \n-- step 3\nSELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT\
+        \ l.customer_key) AS customers,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country\n\n-- step\
+        \ 4\nSELECT\n  SUM(l.net_amount) AS net_revenue_germany\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country\n\n-- step\
+        \ 5\nSELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+        \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name\
+        \ = $country THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key\
+        \ = c.customer_key\nJOIN contoso_served.dim_country AS co\n  ON c.country_code = co.country_code"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: '11.26 per cent. Of every dollar Contoso has ever charged customers after discount,
+      11.26% was charged to a customer whose register record says they live in Germany: 24,638,830.18
+      USD out of 218,814,471.66, across 25,552 of 223,974 sales lines. That makes Germany the second largest
+      home country behind the United States at 111,862,187.56 (51.1%). WHAT IS IN THE FIGURE: all ten
+      years of sales, 18 May 2016 to 31 December 2025, no period cut; both channels, with the web shop''s
+      86,790,054.13 included and attributed to the real countries its buyers live in; every sale on record
+      in the denominator, none dropped for want of a customer or a country. WHAT IT IS NOT: not the share
+      taken by shops standing in Germany, which is 14,382,768.44 or 6.57% — a reading that strands 40%
+      of all revenue in a sentinel belonging to no country. Not a share of gross, which is before discount.
+      Not a share of customers, orders or units — by lines Germany is 11.41%. And not residence as at
+      the order date: the register serves one current address per customer, so anyone who has since moved
+      counts wholly where they are recorded now.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'one figure' · graded EXACT
+  detail:
+    claimed_answer: '11.26'
+    walk_bucket: EXACT
+    walk_why: '''11.26'' within rounding of 11.2601 (differs by 0.0001)'
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: What percentage of total net revenue comes from customers resident in Germany?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'Of all net revenue (no period restriction — everything on record), what share of it is attributable
+      to customers whose country of residence is Germany. The answer is a single percentage: German-resident
+      customers'' net revenue divided by net revenue from all customers everywhere, with no customers
+      excluded from the denominator.'
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1         FROM       net revenue                                                                               “net
+      revenue”'
+    - '  2  ← 1    AGGREGATE  sum of net revenue                                                                        “total
+      net revenue”'
+    - '  3  ← 1    WHERE      customers resident in Germany = ''Germany''                                                 “comes
+      from customers resident in Germany”'
+    - '  4  ← 3    AGGREGATE  sum of net revenue                                                                        “net
+      revenue from customers resident in Germany”'
+    - '  5  ← 4+2  COMPUTE    share of the total -> percentage of total net revenue from customers resident
+      in Germany  “what percentage of total net revenue”'
+    - '  answer: step 5   confidence: 0.62   A DAG   step(s) 1 feed more than one   converging at 5'
+    - '  UNDERSTOOD AS: Of all net revenue (no period restriction — everything on record), what share
+      of it is attributable to customers whose country of residence is Germany. The answer is a single
+      percentage: German-resident customers'' net revenue divided by net revenue from all customers everywhere,
+      with no customers excluded from the denominator.'
+    - '  AMBIGUOUS ''customers resident in Germany'' — ASKS: Should ''resident in Germany'' mean the country
+      recorded on the customer''s own record (where they live), or the country on the individual order''s
+      billing or shipping address?'
+    - '      could mean: Customers whose own country of residence on file is Germany — all their revenue
+      counts, wherever it was shipped or billed'
+    - '      could mean: Revenue on orders billed or shipped to a German address, regardless of where
+      the customer is recorded as living'
+    - '      took: The country of residence recorded on the customer, not the order address'
+    - '  AMBIGUOUS ''net revenue'' — ASKS: What should net revenue mean here — gross sales less returns
+      and discounts, and is tax and shipping in or out?'
+    - '      could mean: Gross sales minus returns, credits and discounts, excluding tax and shipping'
+    - '      could mean: Whatever figure is already labelled ''net revenue'' in the reporting, taken as-is'
+    - '      could mean: The invoiced amount including tax and shipping'
+    - '      took: The figure already labelled ''net revenue'', taken as-is'
+    - '  AMBIGUOUS ''total net revenue'' — ASKS: Over what period should this be measured — all time,
+      the current year to date, or the last full financial year?'
+    - '      could mean: All time, every period on record'
+    - '      could mean: The current year to date'
+    - '      could mean: The last completed financial year'
+    - '      took: All time, no period restriction'
+    - '  AMBIGUOUS ''total net revenue'' — ASKS: Should the bottom of the percentage be net revenue from
+      every customer everywhere, including revenue whose customer or country is unknown?'
+    - '      could mean: All net revenue on record, including revenue with no customer or no country recorded'
+    - '      could mean: Only net revenue that can be attributed to a customer with a known country of
+      residence'
+    - '      took: All net revenue on record, nothing excluded'
+    - '  OUTPUT SHAPE: one figure · one row(s) · carrying percentage of total net revenue'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - one figure
+    - - rows
+      - one
+    - - said
+      - What percentage of total net revenue comes from customers resident in Germany?
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: customers resident in Germany
+      asks: Should 'resident in Germany' mean the country recorded on the customer's own record (where
+        they live), or the country on the individual order's billing or shipping address?
+      readings:
+      - Customers whose own country of residence on file is Germany — all their revenue counts, wherever
+        it was shipped or billed
+      - Revenue on orders billed or shipped to a German address, regardless of where the customer is recorded
+        as living
+      took: The country of residence recorded on the customer, not the order address
+    - words: net revenue
+      asks: What should net revenue mean here — gross sales less returns and discounts, and is tax and
+        shipping in or out?
+      readings:
+      - Gross sales minus returns, credits and discounts, excluding tax and shipping
+      - Whatever figure is already labelled 'net revenue' in the reporting, taken as-is
+      - The invoiced amount including tax and shipping
+      took: The figure already labelled 'net revenue', taken as-is
+    - words: total net revenue
+      asks: Over what period should this be measured — all time, the current year to date, or the last
+        full financial year?
+      readings:
+      - All time, every period on record
+      - The current year to date
+      - The last completed financial year
+      took: All time, no period restriction
+    - words: total net revenue
+      asks: Should the bottom of the percentage be net revenue from every customer everywhere, including
+        revenue whose customer or country is unknown?
+      readings:
+      - All net revenue on record, including revenue with no customer or no country recorded
+      - Only net revenue that can be attributed to a customer with a known country of residence
+      took: All net revenue on record, nothing excluded
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  SUM(net_amount) AS\
+        \ total_net_amount,\n  MIN(order_date) AS first_order_date,\n  MAX(order_date) AS last_order_date,\n\
+        \  SUM(CASE WHEN customer_key IS NULL THEN 1 ELSE 0 END) AS lines_with_no_customer\nFROM contoso_served.v_contoso5_sales_line"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  SUM(net_amount) AS total_net_revenue\nFROM contoso_served.v_contoso5_sales_line"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT l.customer_key)\
+        \ AS customers,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+      params: *id007
+    - step: '4'
+      sql: "SELECT\n  SUM(l.net_amount) AS net_revenue_germany\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+      params: *id008
+    - step: '5'
+      sql: "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+        \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name\
+        \ = $country THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key\
+        \ = c.customer_key\nJOIN contoso_served.dim_country AS co\n  ON c.country_code = co.country_code"
+      params: *id009
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: '11.26 per cent. Of every dollar Contoso has ever charged customers after discount, 11.26%
+      was charged to a customer whose register record says they live in Germany: 24,638,830.18 USD out
+      of 218,814,471.66, across 25,552 of 223,974 sales lines. That makes Germany the second largest home
+      country behind the United States at 111,862,187.56 (51.1%). WHAT IS IN THE FIGURE: all ten years
+      of sales, 18 May 2016 to 31 December 2025, no period cut; both channels, with the web shop''s 86,790,054.13
+      included and attributed to the real countries its buyers live in; every sale on record in the denominator,
+      none dropped for want of a customer or a country. WHAT IT IS NOT: not the share taken by shops standing
+      in Germany, which is 14,382,768.44 or 6.57% — a reading that strands 40% of all revenue in a sentinel
+      belonging to no country. Not a share of gross, which is before discount. Not a share of customers,
+      orders or units — by lines Germany is 11.41%. And not residence as at the order date: the register
+      serves one current address per customer, so anyone who has since moved counts wholly where they
+      are recorded now.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id010
+      rows: *id004
+      row_count: 1
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '11.26'
+    - - shape
+      - one figure
+    - - population it answered over
+      - 'Numerator: the 25,552 sales lines (of 223,974) whose buying customer carries `dim_customer.country_code`
+        = DE, resolved from the word "Germany" via `dim_country.country_name`. Denominator: ALL 223,974
+        lines of v_contoso5_sales_line — no restriction applied, and confirmed by the row itself at 218,814,471.65866,
+        identical to the unjoined total measured on step 1. Three restrictions I did NOT apply, each on
+        a declaration: no period filter, because order.default.an_unscoped_question_covers_all_time (C,
+        operator 2026-09-30) makes an unscoped question cover the full extent of order_date, 2016-05-18
+        to 2025-12-31; no channel filter, because store.resolution.the_channel_is_the_location_sentinel
+        carries `applies: subject` and this question''s subject is a measure, not a store — so the base
+        is the 218,814,471.66 the operator''s 2026-10-18 ruling fixed for unqualified revenue, not the
+        132,024,417.53 physical-only total; and no dropping of revenue with an unknown customer or country,
+        because there is none — 0 lines have a null customer_key and no customer carries the `--` sentinel,
+        so country.exclusion.sentinel_is_not_a_country''s `real` default removes nothing on this path.
+        The single restriction that is a reading rather than a default: attribution by the customer''s
+        own country instead of the shop''s, which is what the question''s words name.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: net revenue
+      turns:
+      - why: Establish the base relation for "net revenue" — the sales-line grain with net_amount, unfiltered
+          — and check its row count, total and date extent against the declared figures.
+        did: 'probe ''v_contoso5_sales_line.channel'' AND ALSO: SELECT COUNT(*) AS lines, COUNT(DISTINCT
+          order_key) AS orders, SUM(net_amount) AS total_net_amount, MIN(order_date) AS first_order_date,
+          MAX(order_date) AS last_order_date, SUM(CASE WHEN customer_key IS NULL THEN 1 ELSE 0 END) AS
+          lines_with_no_customer FROM contoso_served.v_contoso5_sales_line'
+        came_back: 'v_contoso5_sales_line.channel (varchar) holds 2 distinct value(s): ''online'', ''physical''   AND
+          ALSO: 1 row(s): [{"lines": 223974, "orders": 93470, "total_net_amount": "218814471.65866", "first_order_date":
+          "2016-05-18", "last_order_date": "2025-12-31", "lines_with_no_customer": 0}]'
+      settled_on: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  SUM(net_amount)\
+        \ AS total_net_amount,\n  MIN(order_date) AS first_order_date,\n  MAX(order_date) AS last_order_date,\n\
+        \  SUM(CASE WHEN customer_key IS NULL THEN 1 ELSE 0 END) AS lines_with_no_customer\nFROM contoso_served.v_contoso5_sales_line"
+      means: 'One row describing the whole body of net revenue this question will be divided up: every
+        one of the 223,974 sales lines Contoso has on record, making up 93,470 orders, carrying 218,814,471.66
+        USD of what customers were actually charged after discount, placed between 18 May 2016 and 31
+        December 2025 — all ten years, no period cut — and covering both the physical shops and the web
+        shop together. Every single line names a customer, so nothing in this body of revenue is unattributable
+        to a person. This is the denominator of the eventual percentage, and the pool the Germany filter
+        will be applied to.'
+      readings_taken:
+      - word: net revenue
+        took: '`net_amount` on the sales line — what the customer was actually charged after discount,
+          in USD, summed: 218,814,471.66'
+        could_also_mean: gross before discount (`gross_amount`), which is a different and larger figure
+        declaration: net_revenue.default.revenue_means_net — a question saying revenue or sales without
+          saying net or gross is answered on `net_amount` and must say NET; the column itself is declared
+          THE DEFAULT MONEY COLUMN
+      - word: net revenue (period)
+        took: all time — the full extent of `order_date`, 2016-05-18 to 2025-12-31, no window applied
+        could_also_mean: the current year to date, or the last completed financial year, either of which
+          would be a far smaller pool
+        declaration: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+          2026-09-30) — cover the full extent and state the first and last date included
+      - word: net revenue (channel)
+        took: 'both channels together, shops and web shop: 218,814,471.66'
+        could_also_mean: physical shops only, which would be 132,024,417.53 — the web shop is 86,790,054.13,
+          or 40% of the pool
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel carries `applies: subject`,
+          so the `physical` default belongs to questions whose SUBJECT is a store; this question''s subject
+          is a MEASURE and never reaches it. The operator''s ruling of 2026-10-18 fixed unqualified revenue
+          at both channels combined'
+      - word: total net revenue (what is in the denominator)
+        took: 'all net revenue on record, nothing excluded — and this needs no choice, because it is measured
+          identical to the narrower reading: 0 of 223,974 lines lack a customer_key, so revenue with no
+          customer attached does not exist in this bundle'
+        could_also_mean: only revenue attributable to a customer with a known country — the same 218,814,471.66,
+          since the customer register also carries no null country_code and no customer holds the `--`
+          sentinel
+        declaration: measured just now (lines_with_no_customer = 0) plus customer__based_in__country,
+          declared as 104,990 customers over 8 of the 9 codes with no nulls — the two readings of the
+          denominator agree to the cent, so the fork is priced and closed
+      blocked_by: []
+    - step: '2'
+      step_asks: total net revenue
+      turns: []
+      settled_on: "SELECT\n  SUM(net_amount) AS total_net_revenue\nFROM contoso_served.v_contoso5_sales_line"
+      means: 'One row, one figure: all the money Contoso actually charged customers after discount, across
+        every sale it has on record — 218,814,471.66 USD over 223,974 lines and 93,470 orders, placed
+        between 18 May 2016 and 31 December 2025, covering the physical shops and the web shop together.
+        This is the bottom of the percentage. Nothing is held out of it: no period cut, no channel cut,
+        and no revenue dropped for want of a customer or a country, because every line carries both.'
+      readings_taken:
+      - word: total net revenue
+        took: the unfiltered sum of `net_amount` over all time and both channels — 218,814,471.66
+        could_also_mean: physical shops only (132,024,417.53), or only revenue attributable to a customer
+          with a known country — which is measured identical to the figure taken, since 0 of 223,974 lines
+          lack a customer
+        declaration: 'net_revenue.default.revenue_means_net for the column; order.default.an_unscoped_question_covers_all_time
+          for the window; store.resolution.the_channel_is_the_location_sentinel `applies: subject` for
+          the channel, a measure question never reaching the physical default'
+      blocked_by: []
+    - step: '3'
+      step_asks: comes from customers resident in Germany
+      turns:
+      - why: Find Germany's code and price both readings of "resident in Germany" in one query — the country
+          on the customer's own record (which the question's wording names) against the country the store
+          traded in (the only other country this bundle carries), with every country listed so the parts
+          can be checked against the 218,814,471.66 total.
+        did: "SELECT\n  'customer_residence' AS reading,\n  c.country_code AS code,\n  co.country_name\
+          \ AS country,\n  COUNT(*) AS lines,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+          \ AS co\n  ON c.country_code = co.country_code\nGROUP BY\n  1,\n  2,\n  3\nUNION ALL\nSELECT\n\
+          \  'store_country' AS reading,\n  s.country_code AS code,\n  co.country_name AS country,\n \
+          \ COUNT(*) AS lines,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nJOIN contoso_served.dim_country\
+          \ AS co\n  ON s.country_code = co.country_code\nGROUP BY\n  1,\n  2,\n  3\nORDER BY\n  reading,\n\
+          \  net_revenue DESC"
+        came_back: '17 row(s) (first 8 of 17): [{"reading": "customer_residence", "code": "US", "country":
+          "United States", "lines": 113614, "net_revenue": "111862187.56017"}, {"reading": "customer_residence",
+          "code": "DE", "country": "Germany", "lines": 25552, "net_revenue": "24638830.17950"}, {"reading":
+          "customer_residence", "code": "CA", "country": "Canada", "lines": 24250, "net_revenue": "23242027.53228"},
+          {"reading": "customer_residence", "code": "GB", "country": "United Kingdom", "lines": 22829,
+          "net_revenue": "23049533.37116"}, {"reading": "customer_residence", "code": "AU", "country":
+          "Australia", "lines": 14078, "net_revenue": "13360672.60516"}, {"reading": "customer_residence",
+          "code": "NL", "country": "Netherlands", "lines": 10256, "net_revenue": "9421520.47136"}, {"reading":
+          "customer_residence", "code": "FR", "country": "France", "lines": 7098, "net_revenue": "6674724.84859"},
+          {"reading": "customer_residence", "code": "IT", "country": "Italy", "lines": 6297, "net_revenue":
+          "6564975.09044"}]'
+      - why: The customer-residence rows are complete and add back exactly to the 218,814,471.66 total,
+          with Germany at 24,638,830.18; the store-country half was truncated, so fetch just Germany and
+          the online sentinel from it to price the alternative reading before settling.
+        did: "SELECT\n  s.country_code AS code,\n  co.country_name AS country,\n  COUNT(*) AS lines,\n\
+          \  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store\
+          \ AS s\n  ON l.store_key = s.store_key\nJOIN contoso_served.dim_country AS co\n  ON s.country_code\
+          \ = co.country_code\nWHERE\n  s.country_code IN ('DE', '--')\nGROUP BY\n  1,\n  2\nORDER BY\n\
+          \  net_revenue DESC"
+        came_back: '2 row(s): [{"code": "--", "country": "Online", "lines": 93550, "net_revenue": "86790054.12699"},
+          {"code": "DE", "country": "Germany", "lines": 14190, "net_revenue": "14382768.43893"}]'
+      settled_on: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT l.order_key) AS orders,\n  COUNT(DISTINCT\
+        \ l.customer_key) AS customers,\n  SUM(l.net_amount) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+      means: 'The German slice of the same ten years of sales: every sales line bought by a customer whose
+        own register record says they live in Germany (country code DE), wherever the goods were actually
+        sold or sent — 25,552 lines carrying 24,638,830.18 USD of net revenue after discount, out of the
+        218,814,471.66 on record. It spans both the shops and the web shop, and it is counted all time,
+        2016-05-18 to 2025-12-31. This is the top of the percentage. It is NOT revenue taken by German
+        shops: that is a different and smaller 14,382,768.44.'
+      readings_taken:
+      - word: customers resident in Germany
+        took: 'the country on the CUSTOMER''s own record — `dim_customer.country_code` = DE, reached by
+          `customer__based_in__country`: 25,552 lines, 24,638,830.18 USD'
+        could_also_mean: 'revenue rung up by shops standing in Germany — `dim_store.country_code` = DE,
+          which is 14,382,768.44, or 10.3 million less. That reading also cannot place the web shop anywhere:
+          86,790,054.13, 40% of all revenue, falls into the `--` sentinel that dim_country names ''Online''
+          and that country.exclusion.sentinel_is_not_a_country declares is not a place'
+        declaration: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22)
+          forbids picking between the store and the customer SILENTLY and declares both paths askable
+          by name. The question names one — 'customers resident in' is the `customer` path's own surface,
+          'customer country' / 'where our customers are' — so the choice is the reader's, not mine, and
+          both figures are stated above. dim_customer.country_code is further declared 'the only column
+          that can place an internet sale in a real country'
+      - word: resident
+        took: where the customer is recorded as living on their current register row — one row per customer,
+          104,990 of them, so no sale is counted twice and no sale is missed
+        could_also_mean: 'where the customer lived ON THE ORDER DATE. I could not price this one: `valid_from`/`valid_to`
+          say the register is kept as a history, but this bundle serves exactly one row per customer_key,
+          so there is no earlier address in it to compare against — the as-at-order-date reading is not
+          expressible here'
+        declaration: 'dim_customer.valid_from, verbatim: ''a sale could in principle be attributed to
+          where the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should
+          be'''
+      - word: Germany
+        took: resolved through dim_country by the reader-facing name, `country_name = 'Germany'` → code
+          DE
+        could_also_mean: nothing else — 'Germany' matches exactly one of the nine stored codes, and the
+          one code that is not a country (`--`, named 'Online') is not it
+        declaration: 'dim_country.country_name is the `naming: long` column declared as what an answer
+          should show for `country_code`'
+      blocked_by: []
+    - step: '4'
+      step_asks: net revenue from customers resident in Germany
+      turns: []
+      settled_on: "SELECT\n  SUM(l.net_amount) AS net_revenue_germany\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS co\n  ON c.country_code = co.country_code\nWHERE\n  co.country_name = $country"
+      means: 'One row, one figure: all the money customers who live in Germany were actually charged after
+        discount, across every sale Contoso has on record — 24,638,830.18 USD over 25,552 sales lines,
+        placed between 18 May 2016 and 31 December 2025, covering both the physical shops and the web
+        shop. Attribution is by where the buyer lives, not by where the shop stands and not by where the
+        goods went. This is the top of the percentage.'
+      readings_taken:
+      - word: net revenue from customers resident in Germany
+        took: sum of `net_amount` for lines whose customer's register country is DE, all time, both channels
+          — 24,638,830.18
+        could_also_mean: revenue taken by shops in Germany, 14,382,768.44 — stated in full on step 3 and
+          not chosen, because the question says customers
+        declaration: net_revenue.default.revenue_means_net for the money column; country.default.whose_country_is_asked_never_assumed,
+          whose `customer` path the question names
+      blocked_by: []
+    - step: '5'
+      step_asks: what percentage of total net revenue
+      turns:
+      - why: Compute the ratio itself in one query rather than claiming a figure I divided by hand, so
+          the answer step reads the row it claims — German-resident customers' net revenue over all net
+          revenue, with both parts shown beside it.
+        did: 'SELECT SUM(CASE WHEN co.country_name = :country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,
+          SUM(l.net_amount) AS total_net_revenue, ROUND(100.0 * SUM(CASE WHEN co.country_name = :country
+          THEN l.net_amount ELSE 0 END) / SUM(l.net_amount), 2) AS pct_of_total_net_revenue FROM contoso_served.v_contoso5_sales_line
+          l JOIN contoso_served.dim_customer c ON l.customer_key = c.customer_key JOIN contoso_served.dim_country
+          co ON c.country_code = co.country_code params {"country": "Germany"}'
+        came_back: '1 row(s): [{"net_revenue_germany": "24638830.17950", "total_net_revenue": "218814471.65866",
+          "pct_of_total_net_revenue": 11.26}]'
+      - why: 'The denominator reached through the customer join is the same 218,814,471.65866 as the unjoined
+          total, so nothing was lost and the ratio stands: 11.26% of all net revenue comes from customers
+          who live in Germany.'
+        did: "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS net_revenue_germany,\n\
+          \  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE WHEN co.country_name\
+          \ = $country THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n  ) AS pct_of_total_net_revenue\n\
+          FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS c\n  ON\
+          \ l.customer_key = c.customer_key\nJOIN contoso_served.dim_country AS co\n  ON c.country_code\
+          \ = co.country_code"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 1 row(s): [{"net_revenue_germany": "24638830.17950",
+          "total_net_revenue": "218814471.65866", "pct_of_total_net_revenue": 11.26}]  Give `claimed_answer`
+          as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+          rows settle the question, do not decline.'
+      settled_on: "SELECT\n  SUM(CASE WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) AS\
+        \ net_revenue_germany,\n  SUM(l.net_amount) AS total_net_revenue,\n  ROUND(\n    100.0 * SUM(CASE\
+        \ WHEN co.country_name = $country THEN l.net_amount ELSE 0 END) / SUM(l.net_amount),\n    2\n\
+        \  ) AS pct_of_total_net_revenue\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+        \ AS c\n  ON l.customer_key = c.customer_key\nJOIN contoso_served.dim_country AS co\n  ON c.country_code\
+        \ = co.country_code"
+      means: '11.26 per cent. Of every dollar Contoso has ever charged customers after discount, 11.26%
+        was charged to a customer whose register record says they live in Germany: 24,638,830.18 USD out
+        of 218,814,471.66, across 25,552 of 223,974 sales lines. That makes Germany the second largest
+        home country behind the United States at 111,862,187.56 (51.1%). WHAT IS IN THE FIGURE: all ten
+        years of sales, 18 May 2016 to 31 December 2025, no period cut; both channels, with the web shop''s
+        86,790,054.13 included and attributed to the real countries its buyers live in; every sale on
+        record in the denominator, none dropped for want of a customer or a country. WHAT IT IS NOT: not
+        the share taken by shops standing in Germany, which is 14,382,768.44 or 6.57% — a reading that
+        strands 40% of all revenue in a sentinel belonging to no country. Not a share of gross, which
+        is before discount. Not a share of customers, orders or units — by lines Germany is 11.41%. And
+        not residence as at the order date: the register serves one current address per customer, so anyone
+        who has since moved counts wholly where they are recorded now.'
+      readings_taken:
+      - word: customers resident in Germany
+        took: the country on the customer's own record — 24,638,830.18, giving 11.26%
+        could_also_mean: revenue taken by shops standing in Germany — 14,382,768.44, giving 6.57%. Both
+          are measured and disclosed; nothing was picked blind. The question names the customer, which
+          is this path's declared surface ('customer country', 'where our customers are'), and it is the
+          only reading that can place the web shop's 86,790,054.13 in a real country — by shop country
+          that 40% of revenue falls into the `--` sentinel dim_country names 'Online'
+        declaration: 'country.default.whose_country_is_asked_never_assumed (C, RULING-2026-10-22): never
+          pick between the store and the customer silently, and never average the two — both paths are
+          askable by name, and this question asked one'
+      - word: net revenue
+        took: '`net_amount`, after discount, in USD — the declared default money column, and the answer
+          says NET'
+        could_also_mean: 'gross before discount (`gross_amount`): both figures would be larger, and since
+          discount is an integer percent from a closed 15-step set applied line by line, the ratio would
+          move only slightly'
+        declaration: 'net_revenue.default.revenue_means_net (P): a question saying revenue or sales without
+          saying net or gross is answered on `net_amount` and must say net'
+      - word: total net revenue
+        took: all time, both channels, every row — 218,814,471.66, nothing excluded from the bottom of
+          the percentage
+        could_also_mean: physical shops only (132,024,417.53), the current year to date, or the last full
+          financial year — any of which would change both parts of the ratio
+        declaration: 'order.default.an_unscoped_question_covers_all_time (C), which also obliges me to
+          state the window covered: 2016-05-18 to 2025-12-31; store.resolution.the_channel_is_the_location_sentinel
+          `applies: subject` for the channel'
+      - word: percentage
+        took: 'a share of money: German-resident net revenue over all net revenue, 11.26%'
+        could_also_mean: a share of lines, orders, customers or units — by sales lines Germany is 25,552
+          of 223,974, which is 11.41%
+        declaration: the question asks what percentage of total net REVENUE, so the ratio is money over
+          money
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id001
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+v3_answer_step: '5'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: '''11.26'' within rounding of 11.2601 (differs by 0.0001)'
+v3_seconds: 244.5

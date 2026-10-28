@@ -1,0 +1,319 @@
+# ontology/edges.yaml — how the concepts relate, named for what the relation MEANS.
+#
+# THE VERBS ARE THE ROW'S OWN STORY. "Customer 1293529 bought 2 of product 153 at store 430 on
+# 2016-05-18, in USD" — read aloud, that sentence is this file. An id carrying a column name
+# (`Sale__product_key__to__Product`) restates the foreign key the data plane already measured and
+# says nothing new; the verb is the ontology's contribution. MODELLING-LOG entry 10.
+#
+# ONE RELATIONSHIP, ONE EDGE, AND ONE FACT NODE PER GRAIN. Order is the centre of the sales line: it
+# owns every edge from the fact to a dimension, and the measures are COLUMNS it serves, not concepts
+# with edges of their own. Fifteen edges, one per distinct join.
+#
+# FOLDED 2026-10-26, operator ruling ("i rule to move it in"), ontology version 1.1. The history,
+# from MODELLING-LOG entries 10, 12 and 16: entry 10 drew a 16-edge star around a `Sale` centre;
+# entry 12 corrected it to CONFORMANCE §2.3 ("one foreign key fans out to many edges" — every
+# concept declaring a column `identity: reference` owns an edge), and because SIX measure concepts
+# each declared the sales line's foreign keys, §2.3 derived a copy of every join per measure;
+# entry 16 merged Sale into Order. By 2026-10-25 that was 45 edges over 15 distinct joins, and the
+# cost was measured: the territory default reached revenue questions and not margin, cost,
+# discount or units ones, because a reading names one edge and the attribution had seven copies.
+#
+# §2.3 IS STILL OBEYED, and that is the point of the fold. The rule is unchanged; what changed is
+# how many concepts declare the keys. The measures are now COLUMNS that Order serves, so one
+# concept declares each foreign key and §2.3 derives one edge per key. Record:
+# meaning-as-code#decisions/HANDOVER-2026-10-26_one-fact-node-per-grain.md; the retired concepts
+# and edges are tombstoned in governance/tombstones.yaml.
+#
+# EVERY PHYSICAL CARDINALITY WAS READ from data/references_served/*.yaml, participation included:
+# `1..N` on a from-end means the measurement found every parent has at least one child.
+metadata:
+  source: CONTOSO5
+  schema_version: '0.3.0-develop'
+  status: draft
+  generated_by: authored, from data/references_served/*.yaml (measured cardinality)
+edges:
+  #: `order__through__channel` REMOVED 2026-10-01 with the Channel concept. Operator ruling: "if
+  #: channel has no reason for being ... then lets remove it".
+  #:
+  #: It was `type: shared_attribute` with `resolved_by` pointing at Channel's resolution rule — i.e.
+  #: it declared no join key and said "a rule computes this". That rule was prose, so the edge was
+  #: never emittable: measured 2026-10-01, the only path to Channel was
+  #: `NetRevenue -> Customer -> Order -> Channel`, and the assembler refused the plan because
+  #: `dim_store.location_code` landed in the WHERE with nothing binding `dim_store`.
+  #:
+  #: Nothing is lost. The channel IS `dim_store.location_code = -1`, and `dim_store` is reached in
+  #: ONE emittable hop by `net_revenue__by__store` (since 2026-10-26, `order__placed_at__store`:
+  #: the per-measure copies are tombstoned). The predicate now lives on Store as the
+  #: `physical`/`online` population axis, and "what is the revenue from the online store?" answers
+  #: 86 790 054.13 through it.
+  - edge_id: order__converts_at__exchange_rate
+    level: business
+    type: shared_attribute
+    endpoints:
+      from:
+        concept: Order
+        cardinality: 0..N
+      to:
+        concept: ExchangeRate
+        cardinality: '1'
+    join_rule: >-
+      v_contoso5_sales_line.order_date = v_contoso5_fx_rate.date_day AND
+      v_contoso5_sales_line.currency_code = v_contoso5_fx_rate.to_currency AND
+      v_contoso5_fx_rate.from_currency = 'USD'
+    resolved_by: "ontology/concepts/order.yaml#contract.rules.order.resolution.rate_on_order_date"
+    notes: >-
+      THE PREDICATE IS DECLARED, AND THE `1` IS MEASURED — operator-approved 2026-10-08. It was
+      prose until today, held out of `join_rule` so it would not "stand as an unmeasured claim";
+      the cost of that was larger than the claim. `planner/sql.py` reads an edge with no
+      `join_rule` as a SAME-TABLE edge ("no physical JOIN needed"), marks both relations joined and
+      emits NO ON clause — so the predicate was not merely unverified, it was unreachable, and the
+      `composite_key_guard` bound on the rule can only fire on SQL that mentions `to_currency`,
+      which such a plan never does. An enforcement half with no realization half.
+
+      MEASURED 2026-10-08 against contoso5.duckdb, all 223 974 served lines: the triple returns
+      EXACTLY ONE rate per line — rows_out 223 974, min 1, max 1, 0 violations, 0 unmatched on
+      every one of the five currencies (USD 113 614, EUR 49 203, CAD 24 250, GBP 22 829,
+      AUD 14 078). That 1:1 is what `cardinality: '1'` now asserts, and it replaces the rule's
+      former `never: join on currency alone` with a number: on currency alone the join returns up
+      to 20 090 rates per line (every day that currency was quoted), on date alone 25 (the 25
+      ordered pairs quoted that day). The rule's old prose cited "100 450 rows of it", which is the
+      relation's SIZE and not any fan-out.
+
+      `from_currency = 'USD'` IS NOT A CHOSEN LITERAL. It is the amounts' declared unit —
+      net_revenue.yaml#grounding.source.columns.net_amount.offers.aggregate.unit — so the pin is
+      checkable against a declaration rather than being magic. Confirmed independently 2026-10-08
+      (acceptance/verification/manual_value_check_2026-10-08.md): net_amount is USD on every line
+      regardless of `currency_code`, which is the currency TRANSACTED IN and not the unit of the
+      figure. This edge therefore converts USD amounts OUT to a local currency on request; it is
+      never the way to "get USD", and nothing should multiply net_amount by this rate to obtain one.
+
+      STILL OWED: `tools/mac_measure_edges.py` matches `a.x = b.y` only (its own refusal text), so
+      this edge stays in the generator's `unmeasurable` list with a new reason and carries no
+      `verified_by` yet — a ref to a record that does not exist would be the dangling-reference
+      defect. The measurement above is reproducible from the SQL in the commit message.
+
+  - edge_id: product__sold_under__brand
+    level: business
+    verified_by: "evidence/edge_measurements.json#product__sold_under__brand"
+    type: shared_attribute
+    resolved_by_construction: true
+    endpoints:
+      from:
+        concept: Product
+        cardinality: 1..N
+      to:
+        concept: Brand
+        cardinality: '1'
+
+  - edge_id: product__belongs_to__product_category
+    level: business
+    verified_by: "evidence/edge_measurements.json#product__belongs_to__product_category"
+    type: shared_attribute
+    endpoints:
+      from:
+        concept: Product
+        cardinality: 1..N
+      to:
+        concept: ProductCategory
+        cardinality: '1'
+    resolved_by_construction: true
+
+  - edge_id: product__comes_in__color
+    level: business
+    verified_by: "evidence/edge_measurements.json#product__comes_in__color"
+    type: shared_attribute
+    endpoints:
+      from:
+        concept: Product
+        cardinality: 1..N
+      to:
+        concept: Color
+        cardinality: '1'
+    resolved_by_construction: true
+  # THE COUNTRY IS A DIMENSION OF ITS OWN, and these three edges are why it was made one
+  # (operator ruling, 2026-09-30). The code sat on three relations and pointed at nothing, so the
+  # long name — carried once, on Location, ruled `label_of: country_code` — was unreachable from a
+  # customer. Every cardinality below was measured on 2026-09-30 before it was written.
+
+  - edge_id: customer__based_in__country
+    level: physical
+    verified_by: "evidence/edge_measurements.json#customer__based_in__country"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Customer
+        cardinality: 0..N
+      to:
+        concept: Country
+        cardinality: '1'
+    join_rule: dim_customer.country_code = dim_country.country_code
+    notes: >-
+      104,990 customers over 8 of the 9 codes, no nulls; the ninth is `--`, the online sentinel,
+      which no customer carries. PARENT OPTIONAL, hence `0..N` and not `1..N`: a country with no
+      customer exists, and check_edge_claims_proved refused the stronger claim (2026-09-30).
+
+  - edge_id: store__trades_in__country
+    level: physical
+    verified_by: "evidence/edge_measurements.json#store__trades_in__country"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Store
+        cardinality: 1..N
+      to:
+        concept: Country
+        cardinality: '1'
+    join_rule: dim_store.country_code = dim_country.country_code
+    notes: >-
+      74 store rows over all 9 codes, no nulls, mandatory both ways — the store table is where the
+      country set comes from, the online row's `--` included.
+
+  - edge_id: location__in__country
+    level: physical
+    verified_by: "evidence/edge_measurements.json#location__in__country"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Location
+        cardinality: 1..N
+      to:
+        concept: Country
+        cardinality: '1'
+    join_rule: dim_location.country_code = dim_country.country_code
+    notes: >-
+      67 locations over all 9 codes, mandatory both ways. Location keeps its own `country_name`
+      column, which is the SAME fact one hop closer; the name's home is Country.
+
+  # ── THE COUNTRY OF THE SALE: ONE edge, ONE ruling ───────────────────────────────────────────────
+  # Operator ruling 2026-10-25 ("ok go B1 now"), recorded in
+  # meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md: a shop sale is
+  # trade in the country the SHOP stands in, a web sale in the country the CUSTOMER lives in. That
+  # attribution is pre-derived on the fact as `sale_country_code`, so the edge below is ONE HOP —
+  # there is no choice left to make at query time.
+  #
+  # ONE, NOT SEVEN, since 2026-10-26. Until then a fact-to-dimension edge was declared PER MEASURE
+  # CONCEPT, and this attribution was seven copies of one join. With the measures folded into Order
+  # as columns there is one fact node, so there is one attribution edge, and every measure reaches
+  # the country through it.
+  #
+  # WHAT IT MAKES POSSIBLE: every sales line reaches a country, none lands on the `--` sentinel, and
+  # the parts sum to the whole with nothing double counted. The figures live in the ruling named
+  # above, which is their one home.
+  #
+  # CARDINALITY IS THE WEAKER CLAIM: `0..N -> 1`. Every line carries a real country (0 nulls,
+  # 0 unmatched), but a declared country with no sale is possible, so the parent-mandatory claim is
+  # not made — the same restraint `customer__based_in__country` records, where
+  # check_edge_claims_proved refused the stronger form.
+  - edge_id: order__attributed_to__country
+    level: physical
+    verified_by: "evidence/edge_measurements.json#order__attributed_to__country"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Order
+        cardinality: 0..N
+      to:
+        concept: Country
+        cardinality: '1'
+    join_rule: v_contoso5_sales_line.sale_country_code = dim_country.country_code
+
+  - edge_id: store__sited_in__location
+    level: physical
+    verified_by: "evidence/edge_measurements.json#store__sited_in__location"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Store
+        cardinality: 1..N
+      to:
+        concept: Location
+        cardinality: '1'
+    join_rule: dim_store.store_code = dim_location.location_code
+    notes: >-
+      67 locations behind 74 store rows, mandatory both ways.
+
+  - edge_id: exchange_rate__quotes_from__currency
+    level: physical
+    verified_by: "evidence/edge_measurements.json#exchange_rate__quotes_from__currency"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: ExchangeRate
+        cardinality: 1..N
+      to:
+        concept: Currency
+        cardinality: '1'
+    join_rule: v_contoso5_fx_rate.from_currency = dim_currency.currency_code
+
+  - edge_id: exchange_rate__quotes_to__currency
+    level: physical
+    verified_by: "evidence/edge_measurements.json#exchange_rate__quotes_to__currency"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: ExchangeRate
+        cardinality: 1..N
+      to:
+        concept: Currency
+        cardinality: '1'
+    join_rule: v_contoso5_fx_rate.to_currency = dim_currency.currency_code
+    notes: >-
+      Two edges to Currency because the pair is ORDERED and inverting it is wrong by the rate squared.
+
+  # ── §2.3: ONE FOREIGN KEY FANS OUT TO MANY EDGES. Every concept declaring a column
+  # `identity: reference` owns an edge to the concept whose canonical key it is — derived from the
+  # declarations, as the standard prescribes. Entry 12 of the log records that the first version
+  # of this file refused these as duplicates, and why that was wrong. Since 2026-10-26 only ONE
+  # concept serves the sales line's foreign keys — Order, the fact node — so the fan-out is one
+  # edge per key, and the per-measure copies it used to produce are tombstoned.
+  - edge_id: order__placed_by__customer
+    level: physical
+    verified_by: "evidence/edge_measurements.json#order__placed_by__customer"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Order
+        cardinality: 0..N
+      to:
+        concept: Customer
+        cardinality: '1'
+    join_rule: v_contoso5_sales_line.customer_key = dim_customer.customer_key
+
+  - edge_id: order__placed_at__store
+    level: physical
+    verified_by: "evidence/edge_measurements.json#order__placed_at__store"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Order
+        cardinality: 0..N
+      to:
+        concept: Store
+        cardinality: '1'
+    join_rule: v_contoso5_sales_line.store_key = dim_store.store_key
+
+  - edge_id: order__paid_in__currency
+    level: physical
+    verified_by: "evidence/edge_measurements.json#order__paid_in__currency"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Order
+        cardinality: 1..N
+      to:
+        concept: Currency
+        cardinality: '1'
+    join_rule: v_contoso5_sales_line.currency_code = dim_currency.currency_code
+
+  - edge_id: order__of__product
+    level: physical
+    verified_by: "evidence/edge_measurements.json#order__of__product"
+    type: foreign_key
+    endpoints:
+      from:
+        concept: Order
+        cardinality: 0..N
+      to:
+        concept: Product
+        cardinality: 0..N
+    join_rule: v_contoso5_sales_line.product_key = dim_product.product_key

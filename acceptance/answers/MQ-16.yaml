@@ -1,0 +1,2251 @@
+id: MQ-16
+captured_at: '2026-10-24T21:44:51+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: revenue
+  operation: select
+  qdmr_simplified: "  1       FROM       revenue               “revenue”\n  2  ← 1  WHERE      Germany\
+    \ = None        “in Germany”\n  3  ← 2  WHERE      Internet shop = None  “only from Internet shop”\n\
+    \  4  ← 3  DURING     by year               “in 2024”\n  5  ← 4  GROUP_BY   by None              \
+    \ “monthly”\n  6  ← 5  AGGREGATE  sum of revenue        “revenue”\n  7  ← 6  ORDER_BY   month asc\
+    \             “monthly trend”\n  8  ← 7  SELECT     month, revenue        “monthly revenue trend”\n\
+    \  answer: step 8   confidence: 0.62\n  UNDERSTOOD AS: You want revenue for Germany in 2024, broken\
+    \ out one row per calendar month, counting only business that came through the Internet shop — nothing\
+    \ from other shops or channels, and nothing from other countries or other years. Twelve rows (one\
+    \ per month of 2024), each with that month's revenue, in month order so the trend is readable.\n \
+    \ AMBIGUOUS 'in Germany' — ASKS: Does \"in Germany\" mean the customer is in Germany, the goods were\
+    \ shipped to Germany, or the selling entity/shop is the German one?\n      could mean: customers located\
+    \ in Germany\n      could mean: orders shipped to a German address\n      could mean: sales booked\
+    \ by the German company/branch\n      took: the sale is attributed to Germany as the country of the\
+    \ business recorded on it\n  AMBIGUOUS 'only from Internet shop' — ASKS: Is \"Internet shop\" one\
+    \ specific shop by that name, or all online/web sales however they were placed?\n      could mean:\
+    \ one particular shop called \"Internet shop\"\n      could mean: the online sales channel as a whole,\
+    \ including any web or app orders\n      took: one particular shop/channel named \"Internet shop\"\
+    \n  AMBIGUOUS 'revenue' — ASKS: Should revenue be the gross amount invoiced, or net of discounts,\
+    \ returns and tax?\n      could mean: gross sales amount\n      could mean: net revenue after discounts\
+    \ and returns, excluding tax\n      took: revenue as it is normally reported, without my adding or\
+    \ removing any adjustment\n  AMBIGUOUS 'in 2024' — ASKS: Is 2024 the calendar year January–December,\
+    \ or your fiscal year 2024?\n      could mean: calendar 2024\n      could mean: fiscal year 2024\n\
+    \      took: calendar year 2024\n  AMBIGUOUS 'monthly revenue trend' — ASKS: Do you want just revenue\
+    \ per month, or also the change versus the previous month?\n      could mean: one revenue figure per\
+    \ month, in month order\n      could mean: revenue per month plus the month-over-month change or growth\
+    \ %\n      took: one revenue figure per month, in month order\n  cannot_express: a single growth rate\
+    \ or fitted trend line for the year as a whole (these steps give the month-by-month series only)\n\
+    \  OUTPUT SHAPE: a list of names and figures · many row(s) · named by month · carrying revenue"
+  understood_as_in_human_words: You want revenue for Germany in 2024, broken out one row per calendar
+    month, counting only business that came through the Internet shop — nothing from other shops or channels,
+    and nothing from other countries or other years. Twelve rows (one per month of 2024), each with that
+    month's revenue, in month order so the trend is readable.
+  population_actually_answered: 'The 2,905 sales lines meeting all three restrictions together: the CUSTOMER''s
+    registered country is Germany (dim_customer.country_code = ''DE'', matched by name through dim_country)
+    — not the shop''s country, which for this channel is the ''--'' sentinel and yields zero rows; the
+    sale came through channel = ''online'', which here is the one outlet store_key 999999 ''Online store''
+    (every German online line also satisfies the declared location_code = -1 test, so "the one named shop"
+    and "the online channel" are identical rows); and order_date lies in calendar 2024, read on order_date
+    not delivery_date. Grouped into twelve exhaustive, disjoint months, all occupied with 20–28 trading
+    days each, so no row is padded and no dip is a coverage artefact. The figure is SUM(net_amount) —
+    net of discount, in USD.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: a list of names and figures
+    columns_the_answer_step_asks_for: &id001
+    - month
+    - revenue
+    figures_the_answer_step_computes: []
+    answer_step: '8'
+    verb: select
+    said: monthly revenue trend
+    stage1_confidence: 0.62
+  canonical_question: &id002
+    understood_as: You want revenue for Germany in 2024, broken out one row per calendar month, counting
+      only business that came through the Internet shop — nothing from other shops or channels, and nothing
+      from other countries or other years. Twelve rows (one per month of 2024), each with that month's
+      revenue, in month order so the trend is readable.
+    steps:
+    - id: '1'
+      do: from
+      thing: revenue
+      said: revenue
+    - id: '2'
+      do: where
+      of: '1'
+      thing: Germany
+      op: '='
+      than:
+        value: Germany
+        said: in Germany
+      said: in Germany
+    - id: '3'
+      do: where
+      of: '2'
+      thing: Internet shop
+      op: '='
+      than:
+        value: Internet shop
+        said: only from Internet shop
+      said: only from Internet shop
+    - id: '4'
+      do: during
+      of: '3'
+      grain: year
+      said: in 2024
+    - id: '5'
+      do: group_by
+      of: '4'
+      grain: month
+      said: monthly
+    - id: '6'
+      do: aggregate
+      of: '5'
+      figures:
+      - how: sum
+        of: revenue
+        said: revenue
+      said: revenue
+    - id: '7'
+      do: order_by
+      of: '6'
+      by: month
+      direction: asc
+      said: monthly trend
+    - id: '8'
+      do: select
+      of: '7'
+      columns: *id001
+      said: monthly revenue trend
+    answer: '8'
+    output_shape: &id004
+      shape: a list of names and figures
+      rows: many
+      key_columns: &id006
+      - month
+      figure_columns: &id007
+      - revenue
+      said: monthly revenue trend in Germany in 2024 only from Internet shop
+    ambiguities:
+    - words: in Germany
+      question: Does "in Germany" mean the customer is in Germany, the goods were shipped to Germany,
+        or the selling entity/shop is the German one?
+      readings:
+      - customers located in Germany
+      - orders shipped to a German address
+      - sales booked by the German company/branch
+      assumed: the sale is attributed to Germany as the country of the business recorded on it
+    - words: only from Internet shop
+      question: Is "Internet shop" one specific shop by that name, or all online/web sales however they
+        were placed?
+      readings:
+      - one particular shop called "Internet shop"
+      - the online sales channel as a whole, including any web or app orders
+      assumed: one particular shop/channel named "Internet shop"
+    - words: revenue
+      question: Should revenue be the gross amount invoiced, or net of discounts, returns and tax?
+      readings:
+      - gross sales amount
+      - net revenue after discounts and returns, excluding tax
+      assumed: revenue as it is normally reported, without my adding or removing any adjustment
+    - words: in 2024
+      question: Is 2024 the calendar year January–December, or your fiscal year 2024?
+      readings:
+      - calendar 2024
+      - fiscal year 2024
+      assumed: calendar year 2024
+    - words: monthly revenue trend
+      question: Do you want just revenue per month, or also the change versus the previous month?
+      readings:
+      - one revenue figure per month, in month order
+      - revenue per month plus the month-over-month change or growth %
+      assumed: one revenue figure per month, in month order
+    cannot_express: &id003
+    - a single growth rate or fitted trend line for the year as a whole (these steps give the month-by-month
+      series only)
+    confidence: 0.62
+  steps: 8
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: month
+      type: string
+    - name: revenue
+      type: string
+    rows:
+    - - 2024-01
+      - '278799.15'
+    - - 2024-02
+      - '276613.40'
+    - - 2024-03
+      - '124514.27'
+    - - 2024-04
+      - '100946.49'
+    - - 2024-05
+      - '201005.49'
+    - - 2024-06
+      - '169667.33'
+    - - 2024-07
+      - '96103.50'
+    - - 2024-08
+      - '256343.04'
+    - - 2024-09
+      - '191269.53'
+    - - 2024-10
+      - '247252.79'
+    - - 2024-11
+      - '282082.99'
+    - - 2024-12
+      - '203972.56'
+  value: null
+  raw: '[{"month": "2024-01", "revenue": 278799.15}, {"month": "2024-02", "revenue": 276613.40}, {"month":
+    "2024-03", "revenue": 124514.27}, {"month": "2024-04", "revenue": 100946.49}, {"month": "2024-05",
+    "revenue": 201005.49}, {"month": "2024-06", "revenue": 169667.33}, {"month": "2024-07", "revenue":
+    96103.50}, {"month": "2024-08", "revenue": 256343.04}, {"month": "2024-09", "revenue": 191269.53},
+    {"month": "2024-10", "revenue": 247252.79}, {"month": "2024-11", "revenue": 282082.99}, {"month":
+    "2024-12", "revenue": 203972.56}]'
+  reading: a list of names and figures
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "revenue → net_amount — what the customer was actually charged, after discount, in USD; reported\
+      \ as NET\n        could also mean: gross_amount, the list value before discount (the gap between\
+      \ them is the discount)"
+    ref: net_revenue.default.revenue_means_net — a question saying "revenue" without saying net or gross
+      is answered on net_amount and must say NET
+  - kind: ''
+    text: "the period column → order_date, so 2024 will mean orders placed in 2024\n        could also\
+      \ mean: delivery_date — which moves revenue between periods without changing the total, and deliveries\
+      \ run to 2026-01-06"
+    ref: order.default.period_is_order_date, default `ordered`
+  - kind: ''
+    text: "the unit of the amounts → USD on every line regardless of currency_code\n        could also\
+      \ mean: the currency each sale was transacted in — but currency_code is the transaction currency,\
+      \ not the unit of the figure"
+    ref: currency.ambiguity.code_is_not_the_unit_of_the_amounts; net_amount's declared unit is USD
+  - kind: ''
+    text: "in Germany → the customer's registered country is Germany\n        could also mean: the shop's\
+      \ country or the shop's site country — measured on 2024: identical to this reading for physical\
+      \ sales (1,540,736.67 over 1,812 lines, all three paths agreeing), and empty for internet sales\
+      \ (0.00 over 0 lines), because the web shop's country is the '--' sentinel"
+    ref: country.default.whose_country_is_asked_never_assumed — disclosed rather than chosen silently;
+      dim_customer.country_code is the declared only route from an internet sale to a real country
+  - kind: ''
+    text: "Germany → the one country code whose name is Germany, confirmed to be 'DE' and confirmed single\n\
+      \        could also mean: a second German spelling, had dim_country carried one — it does not"
+    ref: declaration://none
+  - kind: ''
+    text: "where the customer lives → the customer register as it stands now\n        could also mean:\
+      \ where the customer lived on the order date — dim_customer carries valid_from/valid_to history"
+    ref: the valid_from column states a sale could in principle be attributed to where the customer lived
+      on the order date, and that nothing in this bundle declares that it should be — so the current row
+      is used
+  - kind: ''
+    text: "Internet shop → channel = 'online' — which on this population is the single store 'Online store'\
+      \ (store_key 999999)\n        could also mean: a shop literally named 'Internet shop' — no such\
+      \ store exists; measured, the two candidate readings select byte-identical rows, 11,362 lines and\
+      \ 10,256,061.74 USD either way"
+    ref: '''internet shop'' is a declared surface of the channel column; the channel is declared MEASURED
+      EQUIVALENT to the location_code = -1 sentinel, re-confirmed here at 11,362 of 11,362'
+  - kind: ''
+    text: "in Germany → the customer's country (carried forward from step 2)\n        could also mean:\
+      \ the shop's country — which for this population is the '--' sentinel and yields nothing at all,\
+      \ not a different figure"
+    ref: country.default.whose_country_is_asked_never_assumed; dim_customer.country_code is the declared
+      only route from an internet sale to a real country
+  - kind: ''
+    text: "in 2024 → order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD\n        could also\
+      \ mean: delivered in 2024 — measured: 2,908 lines, 2,429,955.62 USD, a difference of 1,385.10 or\
+      \ 0.06% of the year, so the two readings agree for any practical purpose at year level"
+    ref: order.default.period_is_order_date fixes the column to order_date; the delivery figure is disclosed,
+      not chosen
+  - kind: ''
+    text: "2024 → calendar January–December\n        could also mean: a fiscal 2024"
+    ref: no fiscal calendar is declared in this bundle, so only the calendar reading is expressible
+  - kind: ''
+    text: "monthly → calendar months of order_date, twelve groups\n        could also mean: months of\
+      \ delivery_date, or rolling 30-day windows"
+    ref: 'order_date carries `period_binding: True`, so a month grain is computed on that column; order.default.period_is_order_date
+      makes it the date read'
+  - kind: ''
+    text: "month → carrying both a date month_start for ordering and a 'YYYY-MM' label for reading\n \
+      \       could also mean: a month name or number, which would sort wrongly and drop the year"
+    ref: declaration://none
+  - kind: ''
+    text: "revenue → net — SUM(net_amount), what was actually charged after discount, 2,428,570.52 USD\
+      \ across the year\n        could also mean: gross, before discount — measured: 2,428,570.52 net\
+      \ against a gross that is 6–8% higher month by month, e.g. January 278,799.15 net vs 294,851.64\
+      \ gross; the shape of the trend survives the choice but every figure moves by its discount"
+    ref: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+  - kind: ''
+    text: "sum → plain addition within each month\n        could also mean: nothing — no weighting is\
+      \ at stake"
+    ref: 'net_amount is declared a FLOW: SUM over any period and any grouping is correct, unit USD'
+  - kind: ''
+    text: "monthly trend → one net revenue figure per month in chronological order\n        could also\
+      \ mean: the same series plus month-over-month change or growth %"
+    ref: none — the decomposition settled on one figure per month in month order, and records that a single
+      yearly growth rate or fitted trend line is not expressible by these steps
+  - kind: ''
+    text: "rounding → each month rounded to cents for presentation\n        could also mean: carrying\
+      \ full precision — the twelve rounded months sum to 2,428,570.54 against the 2,428,570.52 the year\
+      \ rounds to, a two-cent presentation artefact with no bearing on any month's figure"
+    ref: declaration://none
+  - kind: ''
+    text: "in Germany → the CUSTOMER lives in Germany — 2,428,570.52 for 2024\n        could also mean:\
+      \ the selling shop is German, or its site is — both measured, both give 0.00 over 0 lines for internet\
+      \ sales because the web shop's country is the '--' sentinel. Not a live fork: the alternative is\
+      \ an empty result, not a rival figure. On 2024 physical sales all three readings agree exactly (1,540,736.67\
+      \ over 1,812 lines), so they diverge only on the channel this question asks about"
+    ref: country.default.whose_country_is_asked_never_assumed (C) forbids choosing between store and customer
+      SILENTLY — hence this disclosure; dim_customer.country_code is declared the only column that can
+      place an internet sale in a real country
+  - kind: ''
+    text: "Internet shop → channel = 'online' — the single store 'Online store'\n        could also mean:\
+      \ a store literally named 'Internet shop'; none exists, and measured, both readings select identical\
+      \ rows"
+    ref: '''internet shop'' is a declared surface of the channel column; a question naming a channel gets
+      exactly that channel'
+  - kind: ''
+    text: "revenue → NET — SUM(net_amount), after discount, USD\n        could also mean: gross, before\
+      \ discount — 6–8% higher monthly (January 294,851.64 against 278,799.15)"
+    ref: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+  - kind: ''
+    text: "in 2024 → orders PLACED in calendar 2024\n        could also mean: orders DELIVERED in 2024\
+      \ — 2,908 lines and 2,429,955.62, a 0.06% difference"
+    ref: order.default.period_is_order_date; no fiscal calendar is declared, so calendar 2024 is the only
+      expressible reading
+  - kind: ''
+    text: "monthly trend → one net figure per month in chronological order\n        could also mean: the\
+      \ series plus month-over-month growth, or one fitted yearly growth rate — which the decomposition\
+      \ records as inexpressible by these steps"
+    ref: declaration://none
+  - kind: ''
+    text: "where the customer lives → the register as it now stands\n        could also mean: where they\
+      \ lived on the order date — the register keeps valid_from/valid_to history"
+    ref: valid_from states a sale could in principle be attributed to where the customer lived on the
+      order date, and that nothing in this bundle declares it should be
+  concepts: []
+  rules:
+  - id: net_revenue.default.revenue_means_net — a question saying "revenue" without saying net or gross
+      is answered on net_amount and must say NET
+    why: '''revenue'' = net_amount — what the customer was actually charged, after discount, in USD; reported
+      as NET'
+  - id: order.default.period_is_order_date
+    why: '''the period column'' = order_date, so 2024 will mean orders placed in 2024'
+  - id: default `ordered`
+    why: '''the period column'' = order_date, so 2024 will mean orders placed in 2024'
+  - id: currency.ambiguity.code_is_not_the_unit_of_the_amounts
+    why: '''the unit of the amounts'' = USD on every line regardless of currency_code'
+  - id: net_amount's declared unit is USD
+    why: '''the unit of the amounts'' = USD on every line regardless of currency_code'
+  - id: country.default.whose_country_is_asked_never_assumed — disclosed rather than chosen silently
+    why: '''in Germany'' = the customer''s registered country is Germany'
+  - id: dim_customer.country_code is the declared only route from an internet sale to a real country
+    why: '''in Germany'' = the customer''s registered country is Germany'
+  - id: the valid_from column states a sale could in principle be attributed to where the customer lived
+      on the order date
+    why: '''where the customer lives'' = the customer register as it stands now'
+  - id: and that nothing in this bundle declares that it should be — so the current row is used
+    why: '''where the customer lives'' = the customer register as it stands now'
+  - id: '''internet shop'' is a declared surface of the channel column'
+    why: '''Internet shop'' = channel = ''online'' — which on this population is the single store ''Online
+      store'' (store_key 999999)'
+  - id: the channel is declared MEASURED EQUIVALENT to the location_code = -1 sentinel
+    why: '''Internet shop'' = channel = ''online'' — which on this population is the single store ''Online
+      store'' (store_key 999999)'
+  - id: re-confirmed here at 11
+    why: '''Internet shop'' = channel = ''online'' — which on this population is the single store ''Online
+      store'' (store_key 999999)'
+  - id: 362 of 11
+    why: '''Internet shop'' = channel = ''online'' — which on this population is the single store ''Online
+      store'' (store_key 999999)'
+  - id: '362'
+    why: '''Internet shop'' = channel = ''online'' — which on this population is the single store ''Online
+      store'' (store_key 999999)'
+  - id: country.default.whose_country_is_asked_never_assumed
+    why: '''in Germany'' = the customer''s country (carried forward from step 2)'
+  - id: order.default.period_is_order_date fixes the column to order_date
+    why: '''in 2024'' = order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD'
+  - id: the delivery figure is disclosed
+    why: '''in 2024'' = order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD'
+  - id: not chosen
+    why: '''in 2024'' = order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD'
+  - id: no fiscal calendar is declared in this bundle
+    why: '''2024'' = calendar January–December'
+  - id: so only the calendar reading is expressible
+    why: '''2024'' = calendar January–December'
+  - id: 'order_date carries `period_binding: True`'
+    why: '''monthly'' = calendar months of order_date, twelve groups'
+  - id: so a month grain is computed on that column
+    why: '''monthly'' = calendar months of order_date, twelve groups'
+  - id: order.default.period_is_order_date makes it the date read
+    why: '''monthly'' = calendar months of order_date, twelve groups'
+  - id: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+    why: '''revenue'' = net — SUM(net_amount), what was actually charged after discount, 2,428,570.52
+      USD across the year'
+  - id: 'net_amount is declared a FLOW: SUM over any period and any grouping is correct'
+    why: '''sum'' = plain addition within each month'
+  - id: unit USD
+    why: '''sum'' = plain addition within each month'
+  - id: none — the decomposition settled on one figure per month in month order
+    why: '''monthly trend'' = one net revenue figure per month in chronological order'
+  - id: and records that a single yearly growth rate or fitted trend line is not expressible by these
+      steps
+    why: '''monthly trend'' = one net revenue figure per month in chronological order'
+  - id: country.default.whose_country_is_asked_never_assumed (C) forbids choosing between store and customer
+      SILENTLY — hence this disclosure
+    why: '''in Germany'' = the CUSTOMER lives in Germany — 2,428,570.52 for 2024'
+  - id: dim_customer.country_code is declared the only column that can place an internet sale in a real
+      country
+    why: '''in Germany'' = the CUSTOMER lives in Germany — 2,428,570.52 for 2024'
+  - id: a question naming a channel gets exactly that channel
+    why: '''Internet shop'' = channel = ''online'' — the single store ''Online store'''
+  - id: no fiscal calendar is declared
+    why: '''in 2024'' = orders PLACED in calendar 2024'
+  - id: so calendar 2024 is the only expressible reading
+    why: '''in 2024'' = orders PLACED in calendar 2024'
+  - id: valid_from states a sale could in principle be attributed to where the customer lived on the order
+      date
+    why: '''where the customer lives'' = the register as it now stands'
+  - id: and that nothing in this bundle declares it should be
+    why: '''where the customer lives'' = the register as it now stands'
+  edges: []
+sql:
+- "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country\
+  \ AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel\
+  \ = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01'\
+  \ AS DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+  FROM g\nGROUP BY\n  1\nORDER BY\n  month ASC"
+- "SELECT\n  order_key,\n  line_number,\n  order_date,\n  store_key,\n  channel,\n  customer_key,\n  net_amount\n\
+  FROM contoso_served.v_contoso5_sales_line"
+- "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n  l.customer_key,\n\
+  \  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS\
+  \ cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+  \ = c.country_code\nWHERE\n  c.country_name = 'Germany'"
+- "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n  l.customer_key,\n\
+  \  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS\
+  \ cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+  \ = c.country_code\nWHERE\n  c.country_name = 'Germany' AND l.channel = 'online'"
+- "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country\
+  \ AS c\n  ON cu.country_code = c.country_code\nWHERE\n  c.country_name = 'Germany'\n  AND l.channel\
+  \ = 'online'\n  AND l.order_date >= CAST('2024-01-01' AS DATE)\n  AND l.order_date < CAST('2025-01-01'\
+  \ AS DATE)"
+- "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country\
+  \ AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel\
+  \ = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01'\
+  \ AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date) AS month_start,\n  STRFTIME(order_date, '%Y-%m')\
+  \ AS month,\n  net_amount\nFROM g"
+- "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country\
+  \ AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel\
+  \ = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01'\
+  \ AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date) AS month_start,\n  STRFTIME(order_date, '%Y-%m')\
+  \ AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1,\n  2"
+- "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country\
+  \ AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel\
+  \ = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01'\
+  \ AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date) AS month_start,\n  STRFTIME(order_date, '%Y-%m')\
+  \ AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start\
+  \ ASC"
+answer_sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country\
+  \ AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel\
+  \ = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01'\
+  \ AS DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+  FROM g\nGROUP BY\n  1\nORDER BY\n  month ASC"
+sql_valid: true
+result:
+  status: ok
+  rows: 12
+  cols: &id008
+  - month
+  - revenue
+  sample_rows:
+  - - 2024-01
+    - '278799.15'
+  - - 2024-02
+    - '276613.40'
+  - - 2024-03
+    - '124514.27'
+  - - 2024-04
+    - '100946.49'
+  - - 2024-05
+    - '201005.49'
+  - - 2024-06
+    - '169667.33'
+  - - 2024-07
+    - '96103.50'
+  - - 2024-08
+    - '256343.04'
+  - - 2024-09
+    - '191269.53'
+  - - 2024-10
+    - '247252.79'
+  - - 2024-11
+    - '282082.99'
+  - - 2024-12
+    - '203972.56'
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1       FROM       revenue               “revenue”\n  2  ← 1  WHERE\
+    \      Germany = None        “in Germany”\n  3  ← 2  WHERE      Internet shop = None  “only from Internet\
+    \ shop”\n  4  ← 3  DURING     by year               “in 2024”\n  5  ← 4  GROUP_BY   by None      \
+    \         “monthly”\n  6  ← 5  AGGREGATE  sum of revenue        “revenue”\n  7  ← 6  ORDER_BY   month\
+    \ asc             “monthly trend”\n  8  ← 7  SELECT     month, revenue        “monthly revenue trend”\n\
+    \  answer: step 8   confidence: 0.62\n  UNDERSTOOD AS: You want revenue for Germany in 2024, broken\
+    \ out one row per calendar month, counting only business that came through the Internet shop — nothing\
+    \ from other shops or channels, and nothing from other countries or other years. Twelve rows (one\
+    \ per month of 2024), each with that month's revenue, in month order so the trend is readable.\n \
+    \ AMBIGUOUS 'in Germany' — ASKS: Does \"in Germany\" mean the customer is in Germany, the goods were\
+    \ shipped to Germany, or the selling entity/shop is the German one?\n      could mean: customers located\
+    \ in Germany\n      could mean: orders shipped to a German address\n      could mean: sales booked\
+    \ by the German company/branch\n      took: the sale is attributed to Germany as the country of the\
+    \ business recorded on it\n  AMBIGUOUS 'only from Internet shop' — ASKS: Is \"Internet shop\" one\
+    \ specific shop by that name, or all online/web sales however they were placed?\n      could mean:\
+    \ one particular shop called \"Internet shop\"\n      could mean: the online sales channel as a whole,\
+    \ including any web or app orders\n      took: one particular shop/channel named \"Internet shop\"\
+    \n  AMBIGUOUS 'revenue' — ASKS: Should revenue be the gross amount invoiced, or net of discounts,\
+    \ returns and tax?\n      could mean: gross sales amount\n      could mean: net revenue after discounts\
+    \ and returns, excluding tax\n      took: revenue as it is normally reported, without my adding or\
+    \ removing any adjustment\n  AMBIGUOUS 'in 2024' — ASKS: Is 2024 the calendar year January–December,\
+    \ or your fiscal year 2024?\n      could mean: calendar 2024\n      could mean: fiscal year 2024\n\
+    \      took: calendar year 2024\n  AMBIGUOUS 'monthly revenue trend' — ASKS: Do you want just revenue\
+    \ per month, or also the change versus the previous month?\n      could mean: one revenue figure per\
+    \ month, in month order\n      could mean: revenue per month plus the month-over-month change or growth\
+    \ %\n      took: one revenue figure per month, in month order\n  cannot_express: a single growth rate\
+    \ or fitted trend line for the year as a whole (these steps give the month-by-month series only)\n\
+    \  OUTPUT SHAPE: a list of names and figures · many row(s) · named by month · carrying revenue"
+  understood_as: You want revenue for Germany in 2024, broken out one row per calendar month, counting
+    only business that came through the Internet shop — nothing from other shops or channels, and nothing
+    from other countries or other years. Twelve rows (one per month of 2024), each with that month's revenue,
+    in month order so the trend is readable.
+  ambiguities_it_saw:
+  - words: in Germany
+    asks: Does "in Germany" mean the customer is in Germany, the goods were shipped to Germany, or the
+      selling entity/shop is the German one?
+    readings:
+    - customers located in Germany
+    - orders shipped to a German address
+    - sales booked by the German company/branch
+    took: the sale is attributed to Germany as the country of the business recorded on it
+  - words: only from Internet shop
+    asks: Is "Internet shop" one specific shop by that name, or all online/web sales however they were
+      placed?
+    readings:
+    - one particular shop called "Internet shop"
+    - the online sales channel as a whole, including any web or app orders
+    took: one particular shop/channel named "Internet shop"
+  - words: revenue
+    asks: Should revenue be the gross amount invoiced, or net of discounts, returns and tax?
+    readings:
+    - gross sales amount
+    - net revenue after discounts and returns, excluding tax
+    took: revenue as it is normally reported, without my adding or removing any adjustment
+  - words: in 2024
+    asks: Is 2024 the calendar year January–December, or your fiscal year 2024?
+    readings:
+    - calendar 2024
+    - fiscal year 2024
+    took: calendar year 2024
+  - words: monthly revenue trend
+    asks: Do you want just revenue per month, or also the change versus the previous month?
+    readings:
+    - one revenue figure per month, in month order
+    - revenue per month plus the month-over-month change or growth %
+    took: one revenue figure per month, in month order
+  presentation:
+    claimed_answer_is: a list of names and figures
+    answer_step: '8'
+    answer_step_asks:
+      do: select
+      of: '7'
+      columns: *id001
+      said: monthly revenue trend
+    confidence_stage1: 0.62
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  store_key,\n  channel,\n  customer_key,\n\
+      \  net_amount\nFROM contoso_served.v_contoso5_sales_line"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n  l.customer_key,\n\
+      \  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+      \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+      \ = c.country_code\nWHERE\n  c.country_name = 'Germany'"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n  l.customer_key,\n\
+      \  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+      \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+      \ = c.country_code\nWHERE\n  c.country_name = 'Germany' AND l.channel = 'online'"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country\
+      \ AS c\n  ON cu.country_code = c.country_code\nWHERE\n  c.country_name = 'Germany'\n  AND l.channel\
+      \ = 'online'\n  AND l.order_date >= CAST('2024-01-01' AS DATE)\n  AND l.order_date < CAST('2025-01-01'\
+      \ AS DATE)"
+    params: {}
+  - step: '5'
+    sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+      \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  net_amount\nFROM g"
+    params: {}
+  - step: '6'
+    sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+      \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+      FROM g\nGROUP BY\n  1,\n  2"
+    params: {}
+  - step: '7'
+    sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+      \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+      FROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start ASC"
+    params: {}
+  - step: '8'
+    sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m') AS\
+      \ month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1\nORDER BY\n  month ASC"
+    params: {}
+  what_it_calculated: 'Twelve rows, one per calendar month of 2024, each the money customers resident
+    in Germany actually paid Contoso''s web shop — after discount, in US dollars — for orders they placed
+    in that month. The year comes to 2,428,570.52 USD (the twelve rounded figures add to 2,428,570.54;
+    the two cents are per-month rounding). The trend: January and February strong at 278,799.15 and 276,613.40,
+    a sharp slump to 124,514.27 in March and 100,946.49 in April, the year''s trough at 96,103.50 in July,
+    then recovery through August to a November peak of 282,082.99, easing to 203,972.56 in December. NOT
+    INCLUDED: physical-shop sales (German shops took a further 1,540,736.67 in 2024); customers living
+    outside Germany, whatever shop they used; orders placed outside 2024 even if delivered inside it;
+    gross revenue — these are net, with gross running 6–8% higher each month; any conversion to euros,
+    the amounts being USD as stored; and any month-over-month change column, which was not asked for.'
+  rows_returned: &id005
+  - month: 2024-01
+    revenue: '278799.15'
+  - month: 2024-02
+    revenue: '276613.40'
+  - month: 2024-03
+    revenue: '124514.27'
+  - month: 2024-04
+    revenue: '100946.49'
+  - month: 2024-05
+    revenue: '201005.49'
+  - month: 2024-06
+    revenue: '169667.33'
+  - month: 2024-07
+    revenue: '96103.50'
+  - month: 2024-08
+    revenue: '256343.04'
+  - month: 2024-09
+    revenue: '191269.53'
+  - month: 2024-10
+    revenue: '247252.79'
+  - month: 2024-11
+    revenue: '282082.99'
+  - month: 2024-12
+    revenue: '203972.56'
+  synthesis:
+    claimed: '[{"month": "2024-01", "revenue": 278799.15}, {"month": "2024-02", "revenue": 276613.40},
+      {"month": "2024-03", "revenue": 124514.27}, {"month": "2024-04", "revenue": 100946.49}, {"month":
+      "2024-05", "revenue": 201005.49}, {"month": "2024-06", "revenue": 169667.33}, {"month": "2024-07",
+      "revenue": 96103.50}, {"month": "2024-08", "revenue": 256343.04}, {"month": "2024-09", "revenue":
+      191269.53}, {"month": "2024-10", "revenue": 247252.79}, {"month": "2024-11", "revenue": 282082.99},
+      {"month": "2024-12", "revenue": 203972.56}]'
+    shape: a list of names and figures
+    answered_population: 'The 2,905 sales lines meeting all three restrictions together: the CUSTOMER''s
+      registered country is Germany (dim_customer.country_code = ''DE'', matched by name through dim_country)
+      — not the shop''s country, which for this channel is the ''--'' sentinel and yields zero rows; the
+      sale came through channel = ''online'', which here is the one outlet store_key 999999 ''Online store''
+      (every German online line also satisfies the declared location_code = -1 test, so "the one named
+      shop" and "the online channel" are identical rows); and order_date lies in calendar 2024, read on
+      order_date not delivery_date. Grouped into twelve exhaustive, disjoint months, all occupied with
+      20–28 trading days each, so no row is padded and no dip is a coverage artefact. The figure is SUM(net_amount)
+      — net of discount, in USD.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: revenue
+    turns:
+    - why: Establish step 1's base relation and measure column — revenue = net_amount on the sales-line
+        fact, unrestricted — and confirm its extent before any filter is applied.
+      did: 'probe ''v_contoso5_sales_line.channel'' AND ALSO: SELECT COUNT(*) AS lines, MIN(order_date)
+        AS first_order, MAX(order_date) AS last_order, ROUND(SUM(net_amount), 2) AS net_revenue FROM contoso_served.v_contoso5_sales_line'
+      came_back: 'v_contoso5_sales_line.channel (varchar) holds 2 distinct value(s): ''online'', ''physical''   AND
+        ALSO: 1 row(s): [{"lines": 223974, "first_order": "2016-05-18", "last_order": "2025-12-31", "net_revenue":
+        "218814471.66"}]'
+    settled_on: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  store_key,\n  channel,\n  customer_key,\n\
+      \  net_amount\nFROM contoso_served.v_contoso5_sales_line"
+    means: 'One row per line of one order — 223,974 of them — each carrying the money that line actually
+      took from the customer after discount, in USD, together with the day the order was placed, which
+      channel it came through, which store rang it up and who bought it. Summed whole, that is 218,814,471.66
+      USD of net revenue over every order from 2016-05-18 to 2025-12-31, both channels and all countries.
+      This is the unnarrowed pool: nothing has yet been restricted to Germany, to the Internet shop or
+      to 2024.'
+    readings_taken:
+    - word: revenue
+      took: net_amount — what the customer was actually charged, after discount, in USD; reported as NET
+      could_also_mean: gross_amount, the list value before discount (the gap between them is the discount)
+      declaration: net_revenue.default.revenue_means_net — a question saying "revenue" without saying
+        net or gross is answered on net_amount and must say NET
+    - word: the period column
+      took: order_date, so 2024 will mean orders placed in 2024
+      could_also_mean: delivery_date — which moves revenue between periods without changing the total,
+        and deliveries run to 2026-01-06
+      declaration: order.default.period_is_order_date, default `ordered`
+    - word: the unit of the amounts
+      took: USD on every line regardless of currency_code
+      could_also_mean: the currency each sale was transacted in — but currency_code is the transaction
+        currency, not the unit of the figure
+      declaration: currency.ambiguity.code_is_not_the_unit_of_the_amounts; net_amount's declared unit
+        is USD
+    blocked_by: []
+  - step: '2'
+    step_asks: in Germany
+    turns:
+    - why: 'Measure every declared reading of "in Germany" before deciding whether to ask: country.default.whose_country_is_asked_never_assumed
+        offers store, customer and location paths and forbids picking between them silently, so I compute
+        all three side by side and split by channel — because the Internet shop''s store row carries the
+        ''--'' sentinel, I expect the store and location readings to vanish on exactly the channel this
+        question asks for.'
+      did: "WITH de AS (\n  SELECT\n    country_code\n  FROM contoso_served.dim_country\n  WHERE\n   \
+        \ country_name ILIKE '%german%'\n), base AS (\n  SELECT\n    l.net_amount,\n    l.channel,\n \
+        \   ds.country_code AS store_cc,\n    cu.country_code AS cust_cc,\n    dl.country_code AS loc_cc\n\
+        \  FROM contoso_served.v_contoso5_sales_line AS l\n  LEFT JOIN contoso_served.dim_store AS ds\n\
+        \    ON l.store_key = ds.store_key\n  LEFT JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key\
+        \ = cu.customer_key\n  LEFT JOIN contoso_served.dim_location AS dl\n    ON ds.location_code =\
+        \ dl.location_code\n  WHERE\n    l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date\
+        \ < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  channel,\n  COUNT(*) AS lines_in_channel,\n  COUNT(CASE\
+        \ WHEN store_cc IN (\n    SELECT\n      country_code\n    FROM de\n  ) THEN 1 END) AS lines_store_de,\n\
+        \  ROUND(\n    SUM(\n      CASE\n        WHEN store_cc IN (\n          SELECT\n            country_code\n\
+        \          FROM de\n        )\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n  \
+        \  2\n  ) AS revenue_store_de,\n  COUNT(CASE WHEN cust_cc IN (\n    SELECT\n      country_code\n\
+        \    FROM de\n  ) THEN 1 END) AS lines_customer_de,\n  ROUND(\n    SUM(\n      CASE\n        WHEN\
+        \ cust_cc IN (\n          SELECT\n            country_code\n          FROM de\n        )\n   \
+        \     THEN net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_customer_de,\n\
+        \  COUNT(CASE WHEN loc_cc IN (\n    SELECT\n      country_code\n    FROM de\n  ) THEN 1 END) AS\
+        \ lines_location_de,\n  ROUND(\n    SUM(\n      CASE\n        WHEN loc_cc IN (\n          SELECT\n\
+        \            country_code\n          FROM de\n        )\n        THEN net_amount\n        ELSE\
+        \ 0\n      END\n    ),\n    2\n  ) AS revenue_location_de\nFROM base\nGROUP BY\n  channel\nORDER\
+        \ BY\n  channel"
+      came_back: '2 row(s): [{"channel": "online", "lines_in_channel": 23187, "lines_store_de": 0, "revenue_store_de":
+        "0.00", "lines_customer_de": 2905, "revenue_customer_de": "2428570.52", "lines_location_de": 0,
+        "revenue_location_de": "0.00"}, {"channel": "physical", "lines_in_channel": 14922, "lines_store_de":
+        1812, "revenue_store_de": "1540736.67", "lines_customer_de": 1812, "revenue_customer_de": "1540736.67",
+        "lines_location_de": 1812, "revenue_location_de": "1540736.67"}]'
+    - why: 'THIS CHANGES THE QUESTION: the document assumed Germany meant "the country of the business
+        recorded on the sale", and that reading returns 0.00 over 0 lines for the Internet shop — the
+        online store''s country is the ''--'' sentinel, so the store and site paths cannot express a German
+        internet sale at all; what is now being answered is 2024 monthly internet-shop revenue from customers
+        who live in Germany. The three readings agree exactly on physical sales (1,812 lines, 1,540,736.67
+        all three ways) and only the customer path yields anything online (2,905 lines, 2,428,570.52),
+        so I apply it, disclose it, and do not ask — the choice is between a figure and an empty result,
+        not between two rival figures. This move confirms Germany''s code is single (the relation notes
+        one duplicate spelling among nine) and fixes step 2''s population.'
+      did: "WITH de AS (\n  SELECT\n    country_code\n  FROM contoso_served.dim_country\n  WHERE\n   \
+        \ country_name ILIKE '%german%'\n)\nSELECT\n  (\n    SELECT\n      LISTAGG(DISTINCT country_code,\
+        \ ',')\n    FROM de\n  ) AS german_codes,\n  l.channel,\n  COUNT(*) AS lines,\n  MIN(l.order_date)\
+        \ AS first_order,\n  MAX(l.order_date) AS last_order,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key\
+        \ = cu.customer_key\nWHERE\n  cu.country_code IN (\n    SELECT\n      country_code\n    FROM de\n\
+        \  )\nGROUP BY\n  l.channel\nORDER BY\n  l.channel"
+      came_back: '2 row(s): [{"german_codes": "DE", "channel": "online", "lines": 11362, "first_order":
+        "2016-05-26", "last_order": "2025-12-31", "net_revenue": "10256061.74"}, {"german_codes": "DE",
+        "channel": "physical", "lines": 14190, "first_order": "2016-05-19", "last_order": "2025-12-31",
+        "net_revenue": "14382768.44"}]'
+    settled_on: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n\
+      \  l.customer_key,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+      \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+      \ = c.country_code\nWHERE\n  c.country_name = 'Germany'"
+    means: 'One row per order line bought by somebody whose registered home is Germany — 25,552 lines
+      in all, spanning 2016-05-19 to 2025-12-31 — each carrying what that line actually took from the
+      customer after discount, in USD. Summed whole it is 24,638,830.18 USD of net German revenue over
+      all ten years, of which 10,256,061.74 came through the web shop and 14,382,768.44 through shops
+      people walk into. Still unnarrowed by year and by channel: 2024 and the Internet shop are the next
+      two steps.'
+    readings_taken:
+    - word: in Germany
+      took: the customer's registered country is Germany
+      could_also_mean: 'the shop''s country or the shop''s site country — measured on 2024: identical
+        to this reading for physical sales (1,540,736.67 over 1,812 lines, all three paths agreeing),
+        and empty for internet sales (0.00 over 0 lines), because the web shop''s country is the ''--''
+        sentinel'
+      declaration: country.default.whose_country_is_asked_never_assumed — disclosed rather than chosen
+        silently; dim_customer.country_code is the declared only route from an internet sale to a real
+        country
+    - word: Germany
+      took: the one country code whose name is Germany, confirmed to be 'DE' and confirmed single
+      could_also_mean: a second German spelling, had dim_country carried one — it does not
+      declaration: null
+    - word: where the customer lives
+      took: the customer register as it stands now
+      could_also_mean: where the customer lived on the order date — dim_customer carries valid_from/valid_to
+        history
+      declaration: the valid_from column states a sale could in principle be attributed to where the customer
+        lived on the order date, and that nothing in this bundle declares that it should be — so the current
+        row is used
+    blocked_by: []
+  - step: '3'
+    step_asks: only from Internet shop
+    turns:
+    - why: 'Settle step 3 and test the document''s open question about "Internet shop" at the same time:
+        ''internet shop'' is a declared surface of v_contoso5_sales_line.channel = ''online'', and if
+        that channel turns out to be a single store row then the two rival readings — one shop by that
+        name, versus the online channel as a whole — select the identical rows and the ambiguity costs
+        nothing.'
+      did: "SELECT\n  ds.store_key,\n  ds.store_name,\n  ds.location_code,\n  (\n    SELECT\n      LISTAGG(DISTINCT\
+        \ store_name, ' | ')\n    FROM contoso_served.dim_store\n    WHERE\n      store_name ILIKE '%internet%'\n\
+        \      OR store_name ILIKE '%online%'\n      OR store_name ILIKE '%web%'\n  ) AS stores_named_online_ish,\n\
+        \  COUNT(*) AS lines_all_time,\n  ROUND(SUM(l.net_amount), 2) AS revenue_all_time,\n  COUNT(\n\
+        \    CASE\n      WHEN l.order_date >= CAST('2024-01-01' AS DATE)\n      AND l.order_date < CAST('2025-01-01'\
+        \ AS DATE)\n      THEN 1\n    END\n  ) AS lines_2024,\n  ROUND(\n    SUM(\n      CASE\n      \
+        \  WHEN l.order_date >= CAST('2024-01-01' AS DATE)\n        AND l.order_date < CAST('2025-01-01'\
+        \ AS DATE)\n        THEN l.net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_2024,\n\
+        \  COUNT(CASE WHEN ds.location_code = -1 THEN 1 END) AS lines_also_sentinel\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country\
+        \ AS c\n  ON cu.country_code = c.country_code\nJOIN contoso_served.dim_store AS ds\n  ON l.store_key\
+        \ = ds.store_key\nWHERE\n  c.country_name = 'Germany' AND l.channel = 'online'\nGROUP BY\n  1,\n\
+        \  2,\n  3\nORDER BY\n  revenue_all_time DESC"
+      came_back: '1 row(s): [{"store_key": 999999, "store_name": "Online store", "location_code": -1,
+        "stores_named_online_ish": "Online store", "lines_all_time": 11362, "revenue_all_time": "10256061.74",
+        "lines_2024": 2905, "revenue_2024": "2428570.52", "lines_also_sentinel": 11362}]'
+    settled_on: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n\
+      \  l.customer_key,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+      \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+      \ = c.country_code\nWHERE\n  c.country_name = 'Germany' AND l.channel = 'online'"
+    means: One row per order line that a German-resident customer bought through the web shop — 11,362
+      lines over the full ten years, every one of them rung up against the single outlet 'Online store'
+      — each carrying what the customer was actually charged after discount, in USD. Summed whole that
+      is 10,256,061.74 USD; the 2,905 of those lines placed during calendar 2024 carry 2,428,570.52 USD,
+      which is the money the final twelve monthly rows will divide up. Nothing from physical shops is
+      in here, and nothing from customers living outside Germany.
+    readings_taken:
+    - word: Internet shop
+      took: channel = 'online' — which on this population is the single store 'Online store' (store_key
+        999999)
+      could_also_mean: a shop literally named 'Internet shop' — no such store exists; measured, the two
+        candidate readings select byte-identical rows, 11,362 lines and 10,256,061.74 USD either way
+      declaration: '''internet shop'' is a declared surface of the channel column; the channel is declared
+        MEASURED EQUIVALENT to the location_code = -1 sentinel, re-confirmed here at 11,362 of 11,362'
+    - word: in Germany
+      took: the customer's country (carried forward from step 2)
+      could_also_mean: the shop's country — which for this population is the '--' sentinel and yields
+        nothing at all, not a different figure
+      declaration: country.default.whose_country_is_asked_never_assumed; dim_customer.country_code is
+        the declared only route from an internet sale to a real country
+    blocked_by: []
+  - step: '4'
+    step_asks: in 2024
+    turns:
+    - why: 'Apply the 2024 restriction and price the one date fork at the same time: order_date is the
+        declared default, but delivery_date would move revenue between periods without changing any total,
+        so I measure both — and I check that all twelve months of 2024 actually carry orders, because
+        a short or partial year would make the requested trend misleading no matter how the figures were
+        computed.'
+      did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.delivery_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany' AND l.channel = 'online'\n)\nSELECT\n  COUNT(\n    CASE\n      WHEN order_date >=\
+        \ CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN 1\n\
+        \    END\n  ) AS lines_by_order_date,\n  ROUND(\n    SUM(\n      CASE\n        WHEN order_date\
+        \ >= CAST('2024-01-01' AS DATE)\n        AND order_date < CAST('2025-01-01' AS DATE)\n       \
+        \ THEN net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_by_order_date,\n \
+        \ COUNT(\n    DISTINCT CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date\
+        \ < CAST('2025-01-01' AS DATE)\n      THEN DATE_TRUNC('MONTH', order_date)\n    END\n  ) AS months_with_orders,\n\
+        \  MIN(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date <\
+        \ CAST('2025-01-01' AS DATE)\n      THEN order_date\n    END\n  ) AS first_order_2024,\n  MAX(\n\
+        \    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+        \ AS DATE)\n      THEN order_date\n    END\n  ) AS last_order_2024,\n  COUNT(\n    CASE\n    \
+        \  WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n      AND delivery_date < CAST('2025-01-01'\
+        \ AS DATE)\n      THEN 1\n    END\n  ) AS lines_by_delivery_date,\n  ROUND(\n    SUM(\n      CASE\n\
+        \        WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n        AND delivery_date < CAST('2025-01-01'\
+        \ AS DATE)\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_by_delivery_date\n\
+        FROM g"
+      came_back: '1 row(s): [{"lines_by_order_date": 2905, "revenue_by_order_date": "2428570.52", "months_with_orders":
+        12, "first_order_2024": "2024-01-01", "last_order_2024": "2024-12-31", "lines_by_delivery_date":
+        2908, "revenue_by_delivery_date": "2429955.62"}]'
+    settled_on: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country\
+      \ AS c\n  ON cu.country_code = c.country_code\nWHERE\n  c.country_name = 'Germany'\n  AND l.channel\
+      \ = 'online'\n  AND l.order_date >= CAST('2024-01-01' AS DATE)\n  AND l.order_date < CAST('2025-01-01'\
+      \ AS DATE)"
+    means: 'One row per order line that a German-resident customer placed through the web shop during
+      calendar 2024 — 2,905 lines, spread across all twelve months — each carrying what the customer was
+      actually charged for it after discount, in USD. Summed whole it is 2,428,570.52 USD: the full pot
+      of money that the twelve monthly figures must add back up to. Excluded: physical-shop sales, customers
+      living anywhere but Germany, and any order placed before 2024 or after it even if it was delivered
+      inside the year.'
+    readings_taken:
+    - word: in 2024
+      took: order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD
+      could_also_mean: 'delivered in 2024 — measured: 2,908 lines, 2,429,955.62 USD, a difference of 1,385.10
+        or 0.06% of the year, so the two readings agree for any practical purpose at year level'
+      declaration: order.default.period_is_order_date fixes the column to order_date; the delivery figure
+        is disclosed, not chosen
+    - word: '2024'
+      took: calendar January–December
+      could_also_mean: a fiscal 2024
+      declaration: no fiscal calendar is declared in this bundle, so only the calendar reading is expressible
+    blocked_by: []
+  - step: '5'
+    step_asks: monthly
+    turns:
+    - why: 'Establish the monthly grain on order_date — the column declared as the time axis''s binding
+        point, where period grains are computed — and confirm the axis is clean before any money lands
+        on it: twelve groups, no null month, and every month carrying lines, so the twelve requested rows
+        are real groups rather than a shape I pad out later.'
+      did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  COUNT(*) AS lines,\n  COUNT(DISTINCT\
+        \ order_date) AS trading_days,\n  MIN(order_date) AS first_order,\n  MAX(order_date) AS last_order\n\
+        FROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start"
+      came_back: '12 row(s) (first 8 of 12): [{"month_start": "2024-01-01 00:00:00", "month": "2024-01",
+        "lines": 363, "trading_days": 28, "first_order": "2024-01-01", "last_order": "2024-01-31"}, {"month_start":
+        "2024-02-01 00:00:00", "month": "2024-02", "lines": 360, "trading_days": 27, "first_order": "2024-02-01",
+        "last_order": "2024-02-29"}, {"month_start": "2024-03-01 00:00:00", "month": "2024-03", "lines":
+        156, "trading_days": 23, "first_order": "2024-03-01", "last_order": "2024-03-30"}, {"month_start":
+        "2024-04-01 00:00:00", "month": "2024-04", "lines": 123, "trading_days": 20, "first_order": "2024-04-01",
+        "last_order": "2024-04-30"}, {"month_start": "2024-05-01 00:00:00", "month": "2024-05", "lines":
+        259, "trading_days": 28, "first_order": "2024-05-01", "last_order": "2024-05-31"}, {"month_start":
+        "2024-06-01 00:00:00", "month": "2024-06", "lines": 224, "trading_days": 26, "first_order": "2024-06-01",
+        "last_order": "2024-06-29"}, {"month_start": "2024-07-01 00:00:00", "month": "2024-07", "lines":
+        148, "trading_days": 23, "first_order": "2024-07-02", "last_order": "2024-07-31"}, {"month_start":
+        "2024-08-01 00:00:00", "month": "2024-08", "lines": 263, "trading_days": 27, "first_order": "2024-0'
+    settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+      \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  net_amount\nFROM g"
+    means: The 2,905 German web-shop order lines of 2024, each now tagged with the calendar month its
+      order fell in — twelve distinct months, each holding between 123 and 363 lines and each seeing orders
+      on 20 to 28 separate days. Every line belongs to exactly one month, so the groups partition the
+      2,428,570.52 USD of step 4 without overlap or loss. No money has been summed yet; this is the axis
+      the next step aggregates on.
+    readings_taken:
+    - word: monthly
+      took: calendar months of order_date, twelve groups
+      could_also_mean: months of delivery_date, or rolling 30-day windows
+      declaration: 'order_date carries `period_binding: True`, so a month grain is computed on that column;
+        order.default.period_is_order_date makes it the date read'
+    - word: month
+      took: carrying both a date month_start for ordering and a 'YYYY-MM' label for reading
+      could_also_mean: a month name or number, which would sort wrongly and drop the year
+      declaration: null
+    blocked_by: []
+  - step: '6'
+    step_asks: revenue
+    turns:
+    - why: Sum the revenue per month — net_amount is declared a FLOW, so SUM over any period and any grouping
+        is the declared-correct aggregation — and carry the gross figure in a side column so the document's
+        net-vs-gross question can be answered with numbers rather than asked; the year total is repeated
+        on every row so I can see the twelve months close back onto step 4's 2,428,570.52 rather than
+        assuming they do.
+      did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount,\n    l.gross_amount,\n    l.discount_amount\n\
+        \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_customer AS cu\n\
+        \    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country AS c\n    ON cu.country_code\
+        \ = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel = 'online'\n  \
+        \  AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01' AS\
+        \ DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date) AS month_start,\n  STRFTIME(order_date,\
+        \ '%Y-%m') AS month,\n  COUNT(*) AS lines,\n  ROUND(SUM(net_amount), 2) AS revenue,\n  ROUND(SUM(gross_amount),\
+        \ 2) AS gross_if_asked,\n  ROUND(SUM(discount_amount), 2) AS discount_given,\n  ROUND(SUM(SUM(net_amount))\
+        \ OVER (), 2) AS year_total_check\nFROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start"
+      came_back: '12 row(s) (first 8 of 12): [{"month_start": "2024-01-01 00:00:00", "month": "2024-01",
+        "lines": 363, "revenue": "278799.15", "gross_if_asked": "294851.64", "discount_given": "16052.49",
+        "year_total_check": "2428570.52"}, {"month_start": "2024-02-01 00:00:00", "month": "2024-02",
+        "lines": 360, "revenue": "276613.40", "gross_if_asked": "297070.55", "discount_given": "20457.16",
+        "year_total_check": "2428570.52"}, {"month_start": "2024-03-01 00:00:00", "month": "2024-03",
+        "lines": 156, "revenue": "124514.27", "gross_if_asked": "130476.14", "discount_given": "5961.87",
+        "year_total_check": "2428570.52"}, {"month_start": "2024-04-01 00:00:00", "month": "2024-04",
+        "lines": 123, "revenue": "100946.49", "gross_if_asked": "108671.93", "discount_given": "7725.44",
+        "year_total_check": "2428570.52"}, {"month_start": "2024-05-01 00:00:00", "month": "2024-05",
+        "lines": 259, "revenue": "201005.49", "gross_if_asked": "212140.44", "discount_given": "11134.95",
+        "year_total_check": "2428570.52"}, {"month_start": "2024-06-01 00:00:00", "month": "2024-06",
+        "lines": 224, "revenue": "169667.33", "gross_if_asked": "181590.74", "discount_given": "11923.41",
+        "year_total_check": "2428570.52"}, {"month_start": '
+    settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+      \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+      FROM g\nGROUP BY\n  1,\n  2"
+    means: 'Twelve rows, one per calendar month of 2024, each holding the money German-resident customers
+      actually paid the web shop for the orders they placed in that month — after discount, in USD. January
+      278,799.15, February 276,613.40, March 124,514.27, April 100,946.49, May 201,005.49, June 169,667.33,
+      July 96,103.50, August 256,343.04, and four further months to December; the twelve together are
+      exactly 2,428,570.52 USD. Not included: anything bought in a physical shop, anything bought by a
+      customer living outside Germany, and any order placed outside 2024 even where it was delivered inside
+      it.'
+    readings_taken:
+    - word: revenue
+      took: net — SUM(net_amount), what was actually charged after discount, 2,428,570.52 USD across the
+        year
+      could_also_mean: 'gross, before discount — measured: 2,428,570.52 net against a gross that is 6–8%
+        higher month by month, e.g. January 278,799.15 net vs 294,851.64 gross; the shape of the trend
+        survives the choice but every figure moves by its discount'
+      declaration: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+    - word: sum
+      took: plain addition within each month
+      could_also_mean: nothing — no weighting is at stake
+      declaration: 'net_amount is declared a FLOW: SUM over any period and any grouping is correct, unit
+        USD'
+    blocked_by: []
+  - step: '7'
+    step_asks: monthly trend
+    turns:
+    - why: Put the twelve months into chronological order on month_start so the trend reads left to right,
+        and carry the entire ordered series in a single extra column — because the result display truncates
+        to the first eight rows, and I will not claim a twelve-row answer whose last four values I have
+        not actually read.
+      did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n), m AS (\n  SELECT\n    DATE_TRUNC('MONTH',\
+        \ order_date) AS month_start,\n    STRFTIME(order_date, '%Y-%m') AS month,\n    ROUND(SUM(net_amount),\
+        \ 2) AS revenue\n  FROM g\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  month_start,\n  month,\n  revenue,\n\
+        \  (\n    SELECT\n      LISTAGG(month || '=' || CAST(revenue AS TEXT), ' | '\n      ORDER BY\n\
+        \        month_start)\n    FROM m\n  ) AS all_twelve_in_order\nFROM m\nORDER BY\n  month_start\
+        \ ASC"
+      came_back: '12 row(s) (first 8 of 12): [{"month_start": "2024-01-01 00:00:00", "month": "2024-01",
+        "revenue": "278799.15", "all_twelve_in_order": "2024-01=278799.15 | 2024-02=276613.40 | 2024-03=124514.27
+        | 2024-04=100946.49 | 2024-05=201005.49 | 2024-06=169667.33 | 2024-07=96103.50 | 2024-08=256343.04
+        | 2024-09=191269.53 | 2024-10=247252.79 | 2024-11=282082.99 | 2024-12=203972.56"}, {"month_start":
+        "2024-02-01 00:00:00", "month": "2024-02", "revenue": "276613.40", "all_twelve_in_order": "2024-01=278799.15
+        | 2024-02=276613.40 | 2024-03=124514.27 | 2024-04=100946.49 | 2024-05=201005.49 | 2024-06=169667.33
+        | 2024-07=96103.50 | 2024-08=256343.04 | 2024-09=191269.53 | 2024-10=247252.79 | 2024-11=282082.99
+        | 2024-12=203972.56"}, {"month_start": "2024-03-01 00:00:00", "month": "2024-03", "revenue": "124514.27",
+        "all_twelve_in_order": "2024-01=278799.15 | 2024-02=276613.40 | 2024-03=124514.27 | 2024-04=100946.49
+        | 2024-05=201005.49 | 2024-06=169667.33 | 2024-07=96103.50 | 2024-08=256343.04 | 2024-09=191269.53
+        | 2024-10=247252.79 | 2024-11=282082.99 | 2024-12=203972.56"}, {"month_start": "2024-04-01 00:00:00",
+        "month": "2024-04", "revenue": "100946.49", "all_twelve_in_order": "2024-01=278799.15 | 2024'
+    settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+      \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+      FROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start ASC"
+    means: 'Twelve rows in calendar order, January to December 2024, each the net money German-resident
+      customers paid the web shop for orders they placed that month, after discount, in USD: 278,799.15;
+      276,613.40; 124,514.27; 100,946.49; 201,005.49; 169,667.33; 96,103.50; 256,343.04; 191,269.53; 247,252.79;
+      282,082.99; 203,972.56. Read down the column that is the 2024 trend — a strong start, a slump through
+      March and April, a trough in July at 96,103.50, then recovery to a November peak of 282,082.99 before
+      easing in December. Excluded: physical-shop sales, customers living outside Germany, and orders
+      placed outside 2024.'
+    readings_taken:
+    - word: monthly trend
+      took: one net revenue figure per month in chronological order
+      could_also_mean: the same series plus month-over-month change or growth %
+      declaration: none — the decomposition settled on one figure per month in month order, and records
+        that a single yearly growth rate or fitted trend line is not expressible by these steps
+    - word: rounding
+      took: each month rounded to cents for presentation
+      could_also_mean: carrying full precision — the twelve rounded months sum to 2,428,570.54 against
+        the 2,428,570.52 the year rounds to, a two-cent presentation artefact with no bearing on any month's
+        figure
+      declaration: null
+    blocked_by: []
+  - step: '8'
+    step_asks: monthly revenue trend
+    turns:
+    - why: 'Settle the answer: twelve rows, month and net revenue, January to December 2024. Restating
+        what changed at step 2, because it is the one thing a reader must know: "in Germany" is read as
+        WHERE THE BUYER LIVES, not as the country of the shop — the document assumed the shop''s country,
+        and that reading returns nothing at all for an internet sale, since the web shop''s country is
+        the ''--'' sentinel.'
+      did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m')\
+        \ AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1\nORDER BY\n  month\
+        \ ASC"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 12 row(s) (first 8 of 12): [{"month": "2024-01", "revenue":
+        "278799.15"}, {"month": "2024-02", "revenue": "276613.40"}, {"month": "2024-03", "revenue": "124514.27"},
+        {"month": "2024-04", "revenue": "100946.49"}, {"month": "2024-05", "revenue": "201005.49"}, {"month":
+        "2024-06", "revenue": "169667.33"}, {"month": "2024-07", "revenue": "96103.50"}, {"month": "2024-08",
+        "revenue": "256343.04"}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is`
+        from the closed list. If these rows settle the question, do not decline.'
+    settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+      \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+      \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+      \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m') AS\
+      \ month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1\nORDER BY\n  month ASC"
+    means: 'Twelve rows, one per calendar month of 2024, each the money customers resident in Germany
+      actually paid Contoso''s web shop — after discount, in US dollars — for orders they placed in that
+      month. The year comes to 2,428,570.52 USD (the twelve rounded figures add to 2,428,570.54; the two
+      cents are per-month rounding). The trend: January and February strong at 278,799.15 and 276,613.40,
+      a sharp slump to 124,514.27 in March and 100,946.49 in April, the year''s trough at 96,103.50 in
+      July, then recovery through August to a November peak of 282,082.99, easing to 203,972.56 in December.
+      NOT INCLUDED: physical-shop sales (German shops took a further 1,540,736.67 in 2024); customers
+      living outside Germany, whatever shop they used; orders placed outside 2024 even if delivered inside
+      it; gross revenue — these are net, with gross running 6–8% higher each month; any conversion to
+      euros, the amounts being USD as stored; and any month-over-month change column, which was not asked
+      for.'
+    readings_taken:
+    - word: in Germany
+      took: the CUSTOMER lives in Germany — 2,428,570.52 for 2024
+      could_also_mean: 'the selling shop is German, or its site is — both measured, both give 0.00 over
+        0 lines for internet sales because the web shop''s country is the ''--'' sentinel. Not a live
+        fork: the alternative is an empty result, not a rival figure. On 2024 physical sales all three
+        readings agree exactly (1,540,736.67 over 1,812 lines), so they diverge only on the channel this
+        question asks about'
+      declaration: country.default.whose_country_is_asked_never_assumed (C) forbids choosing between store
+        and customer SILENTLY — hence this disclosure; dim_customer.country_code is declared the only
+        column that can place an internet sale in a real country
+    - word: Internet shop
+      took: channel = 'online' — the single store 'Online store'
+      could_also_mean: a store literally named 'Internet shop'; none exists, and measured, both readings
+        select identical rows
+      declaration: '''internet shop'' is a declared surface of the channel column; a question naming a
+        channel gets exactly that channel'
+    - word: revenue
+      took: NET — SUM(net_amount), after discount, USD
+      could_also_mean: gross, before discount — 6–8% higher monthly (January 294,851.64 against 278,799.15)
+      declaration: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+    - word: in 2024
+      took: orders PLACED in calendar 2024
+      could_also_mean: orders DELIVERED in 2024 — 2,908 lines and 2,429,955.62, a 0.06% difference
+      declaration: order.default.period_is_order_date; no fiscal calendar is declared, so calendar 2024
+        is the only expressible reading
+    - word: monthly trend
+      took: one net figure per month in chronological order
+      could_also_mean: the series plus month-over-month growth, or one fitted yearly growth rate — which
+        the decomposition records as inexpressible by these steps
+      declaration: null
+    - word: where the customer lives
+      took: the register as it now stands
+      could_also_mean: where they lived on the order date — the register keeps valid_from/valid_to history
+      declaration: valid_from states a sale could in principle be attributed to where the customer lived
+        on the order date, and that nothing in this bundle declares it should be
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: You want revenue for Germany in 2024, broken out one row per calendar month, counting only
+      business that came through the Internet shop — nothing from other shops or channels, and nothing
+      from other countries or other years. Twelve rows (one per month of 2024), each with that month's
+      revenue, in month order so the trend is readable.
+    population: 'The 2,905 sales lines meeting all three restrictions together: the CUSTOMER''s registered
+      country is Germany (dim_customer.country_code = ''DE'', matched by name through dim_country) — not
+      the shop''s country, which for this channel is the ''--'' sentinel and yields zero rows; the sale
+      came through channel = ''online'', which here is the one outlet store_key 999999 ''Online store''
+      (every German online line also satisfies the declared location_code = -1 test, so "the one named
+      shop" and "the online channel" are identical rows); and order_date lies in calendar 2024, read on
+      order_date not delivery_date. Grouped into twelve exhaustive, disjoint months, all occupied with
+      20–28 trading days each, so no row is padded and no dip is a coverage artefact. The figure is SUM(net_amount)
+      — net of discount, in USD.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       revenue               “revenue”\n  2  ← 1  WHERE      Germany\
+      \ = None        “in Germany”\n  3  ← 2  WHERE      Internet shop = None  “only from Internet shop”\n\
+      \  4  ← 3  DURING     by year               “in 2024”\n  5  ← 4  GROUP_BY   by None            \
+      \   “monthly”\n  6  ← 5  AGGREGATE  sum of revenue        “revenue”\n  7  ← 6  ORDER_BY   month\
+      \ asc             “monthly trend”\n  8  ← 7  SELECT     month, revenue        “monthly revenue trend”\n\
+      \  answer: step 8   confidence: 0.62"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: in Germany
+      asks: Does "in Germany" mean the customer is in Germany, the goods were shipped to Germany, or the
+        selling entity/shop is the German one?
+      readings:
+      - customers located in Germany
+      - orders shipped to a German address
+      - sales booked by the German company/branch
+      took: the sale is attributed to Germany as the country of the business recorded on it
+    - words: only from Internet shop
+      asks: Is "Internet shop" one specific shop by that name, or all online/web sales however they were
+        placed?
+      readings:
+      - one particular shop called "Internet shop"
+      - the online sales channel as a whole, including any web or app orders
+      took: one particular shop/channel named "Internet shop"
+    - words: revenue
+      asks: Should revenue be the gross amount invoiced, or net of discounts, returns and tax?
+      readings:
+      - gross sales amount
+      - net revenue after discounts and returns, excluding tax
+      took: revenue as it is normally reported, without my adding or removing any adjustment
+    - words: in 2024
+      asks: Is 2024 the calendar year January–December, or your fiscal year 2024?
+      readings:
+      - calendar 2024
+      - fiscal year 2024
+      took: calendar year 2024
+    - words: monthly revenue trend
+      asks: Do you want just revenue per month, or also the change versus the previous month?
+      readings:
+      - one revenue figure per month, in month order
+      - revenue per month plus the month-over-month change or growth %
+      took: one revenue figure per month, in month order
+- stage: cannot_express
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: *id003
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id004
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.62 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: revenue
+      took: net_amount — what the customer was actually charged, after discount, in USD; reported as NET
+      could_also_mean: gross_amount, the list value before discount (the gap between them is the discount)
+      declaration: net_revenue.default.revenue_means_net — a question saying "revenue" without saying
+        net or gross is answered on net_amount and must say NET
+    - word: the period column
+      took: order_date, so 2024 will mean orders placed in 2024
+      could_also_mean: delivery_date — which moves revenue between periods without changing the total,
+        and deliveries run to 2026-01-06
+      declaration: order.default.period_is_order_date, default `ordered`
+    - word: the unit of the amounts
+      took: USD on every line regardless of currency_code
+      could_also_mean: the currency each sale was transacted in — but currency_code is the transaction
+        currency, not the unit of the figure
+      declaration: currency.ambiguity.code_is_not_the_unit_of_the_amounts; net_amount's declared unit
+        is USD
+    - word: in Germany
+      took: the customer's registered country is Germany
+      could_also_mean: 'the shop''s country or the shop''s site country — measured on 2024: identical
+        to this reading for physical sales (1,540,736.67 over 1,812 lines, all three paths agreeing),
+        and empty for internet sales (0.00 over 0 lines), because the web shop''s country is the ''--''
+        sentinel'
+      declaration: country.default.whose_country_is_asked_never_assumed — disclosed rather than chosen
+        silently; dim_customer.country_code is the declared only route from an internet sale to a real
+        country
+    - word: Germany
+      took: the one country code whose name is Germany, confirmed to be 'DE' and confirmed single
+      could_also_mean: a second German spelling, had dim_country carried one — it does not
+      declaration: null
+    - word: where the customer lives
+      took: the customer register as it stands now
+      could_also_mean: where the customer lived on the order date — dim_customer carries valid_from/valid_to
+        history
+      declaration: the valid_from column states a sale could in principle be attributed to where the customer
+        lived on the order date, and that nothing in this bundle declares that it should be — so the current
+        row is used
+    - word: Internet shop
+      took: channel = 'online' — which on this population is the single store 'Online store' (store_key
+        999999)
+      could_also_mean: a shop literally named 'Internet shop' — no such store exists; measured, the two
+        candidate readings select byte-identical rows, 11,362 lines and 10,256,061.74 USD either way
+      declaration: '''internet shop'' is a declared surface of the channel column; the channel is declared
+        MEASURED EQUIVALENT to the location_code = -1 sentinel, re-confirmed here at 11,362 of 11,362'
+    - word: in Germany
+      took: the customer's country (carried forward from step 2)
+      could_also_mean: the shop's country — which for this population is the '--' sentinel and yields
+        nothing at all, not a different figure
+      declaration: country.default.whose_country_is_asked_never_assumed; dim_customer.country_code is
+        the declared only route from an internet sale to a real country
+    - word: in 2024
+      took: order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD
+      could_also_mean: 'delivered in 2024 — measured: 2,908 lines, 2,429,955.62 USD, a difference of 1,385.10
+        or 0.06% of the year, so the two readings agree for any practical purpose at year level'
+      declaration: order.default.period_is_order_date fixes the column to order_date; the delivery figure
+        is disclosed, not chosen
+    - word: '2024'
+      took: calendar January–December
+      could_also_mean: a fiscal 2024
+      declaration: no fiscal calendar is declared in this bundle, so only the calendar reading is expressible
+    - word: monthly
+      took: calendar months of order_date, twelve groups
+      could_also_mean: months of delivery_date, or rolling 30-day windows
+      declaration: 'order_date carries `period_binding: True`, so a month grain is computed on that column;
+        order.default.period_is_order_date makes it the date read'
+    - word: month
+      took: carrying both a date month_start for ordering and a 'YYYY-MM' label for reading
+      could_also_mean: a month name or number, which would sort wrongly and drop the year
+      declaration: null
+    - word: revenue
+      took: net — SUM(net_amount), what was actually charged after discount, 2,428,570.52 USD across the
+        year
+      could_also_mean: 'gross, before discount — measured: 2,428,570.52 net against a gross that is 6–8%
+        higher month by month, e.g. January 278,799.15 net vs 294,851.64 gross; the shape of the trend
+        survives the choice but every figure moves by its discount'
+      declaration: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+    - word: sum
+      took: plain addition within each month
+      could_also_mean: nothing — no weighting is at stake
+      declaration: 'net_amount is declared a FLOW: SUM over any period and any grouping is correct, unit
+        USD'
+    - word: monthly trend
+      took: one net revenue figure per month in chronological order
+      could_also_mean: the same series plus month-over-month change or growth %
+      declaration: none — the decomposition settled on one figure per month in month order, and records
+        that a single yearly growth rate or fitted trend line is not expressible by these steps
+    - word: rounding
+      took: each month rounded to cents for presentation
+      could_also_mean: carrying full precision — the twelve rounded months sum to 2,428,570.54 against
+        the 2,428,570.52 the year rounds to, a two-cent presentation artefact with no bearing on any month's
+        figure
+      declaration: null
+    - word: in Germany
+      took: the CUSTOMER lives in Germany — 2,428,570.52 for 2024
+      could_also_mean: 'the selling shop is German, or its site is — both measured, both give 0.00 over
+        0 lines for internet sales because the web shop''s country is the ''--'' sentinel. Not a live
+        fork: the alternative is an empty result, not a rival figure. On 2024 physical sales all three
+        readings agree exactly (1,540,736.67 over 1,812 lines), so they diverge only on the channel this
+        question asks about'
+      declaration: country.default.whose_country_is_asked_never_assumed (C) forbids choosing between store
+        and customer SILENTLY — hence this disclosure; dim_customer.country_code is declared the only
+        column that can place an internet sale in a real country
+    - word: Internet shop
+      took: channel = 'online' — the single store 'Online store'
+      could_also_mean: a store literally named 'Internet shop'; none exists, and measured, both readings
+        select identical rows
+      declaration: '''internet shop'' is a declared surface of the channel column; a question naming a
+        channel gets exactly that channel'
+    - word: revenue
+      took: NET — SUM(net_amount), after discount, USD
+      could_also_mean: gross, before discount — 6–8% higher monthly (January 294,851.64 against 278,799.15)
+      declaration: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+    - word: in 2024
+      took: orders PLACED in calendar 2024
+      could_also_mean: orders DELIVERED in 2024 — 2,908 lines and 2,429,955.62, a 0.06% difference
+      declaration: order.default.period_is_order_date; no fiscal calendar is declared, so calendar 2024
+        is the only expressible reading
+    - word: monthly trend
+      took: one net figure per month in chronological order
+      could_also_mean: the series plus month-over-month growth, or one fitted yearly growth rate — which
+        the decomposition records as inexpressible by these steps
+      declaration: null
+    - word: where the customer lives
+      took: the register as it now stands
+      could_also_mean: where they lived on the order date — the register keeps valid_from/valid_to history
+      declaration: valid_from states a sale could in principle be attributed to where the customer lived
+        on the order date, and that nothing in this bundle declares it should be
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 8 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  order_key,\n  line_number,\n  order_date,\n  store_key,\n  channel,\n\
+        \  customer_key,\n  net_amount\nFROM contoso_served.v_contoso5_sales_line\n\n-- step 2\nSELECT\n\
+        \  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n  l.customer_key,\n\
+        \  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+        \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+        \ = c.country_code\nWHERE\n  c.country_name = 'Germany'\n\n-- step 3\nSELECT\n  l.order_key,\n\
+        \  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n  l.customer_key,\n  l.net_amount\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key\
+        \ = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code = c.country_code\n\
+        WHERE\n  c.country_name = 'Germany' AND l.channel = 'online'\n\n-- step 4\nSELECT\n  l.order_key,\n\
+        \  l.line_number,\n  l.order_date,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country\
+        \ AS c\n  ON cu.country_code = c.country_code\nWHERE\n  c.country_name = 'Germany'\n  AND l.channel\
+        \ = 'online'\n  AND l.order_date >= CAST('2024-01-01' AS DATE)\n  AND l.order_date < CAST('2025-01-01'\
+        \ AS DATE)\n\n-- step 5\nWITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  net_amount\nFROM g\n\n-- step\
+        \ 6\nWITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+        FROM g\nGROUP BY\n  1,\n  2\n\n-- step 7\nWITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n\
+        \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_customer AS cu\n\
+        \    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country AS c\n    ON cu.country_code\
+        \ = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel = 'online'\n  \
+        \  AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01' AS\
+        \ DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date) AS month_start,\n  STRFTIME(order_date,\
+        \ '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1,\n  2\nORDER\
+        \ BY\n  month_start ASC\n\n-- step 8\nWITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n\
+        \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_customer AS cu\n\
+        \    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country AS c\n    ON cu.country_code\
+        \ = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel = 'online'\n  \
+        \  AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01' AS\
+        \ DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS\
+        \ revenue\nFROM g\nGROUP BY\n  1\nORDER BY\n  month ASC"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id005
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'Twelve rows, one per calendar month of 2024, each the money customers resident
+      in Germany actually paid Contoso''s web shop — after discount, in US dollars — for orders they placed
+      in that month. The year comes to 2,428,570.52 USD (the twelve rounded figures add to 2,428,570.54;
+      the two cents are per-month rounding). The trend: January and February strong at 278,799.15 and
+      276,613.40, a sharp slump to 124,514.27 in March and 100,946.49 in April, the year''s trough at
+      96,103.50 in July, then recovery through August to a November peak of 282,082.99, easing to 203,972.56
+      in December. NOT INCLUDED: physical-shop sales (German shops took a further 1,540,736.67 in 2024);
+      customers living outside Germany, whatever shop they used; orders placed outside 2024 even if delivered
+      inside it; gross revenue — these are net, with gross running 6–8% higher each month; any conversion
+      to euros, the amounts being USD as stored; and any month-over-month change column, which was not
+      asked for.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'a list of names and figures' · graded EXACT
+  detail:
+    claimed_answer: '[{"month": "2024-01", "revenue": 278799.15}, {"month": "2024-02", "revenue": 276613.40},
+      {"month": "2024-03", "revenue": 124514.27}, {"month": "2024-04", "revenue": 100946.49}, {"month":
+      "2024-05", "revenue": 201005.49}, {"month": "2024-06", "revenue": 169667.33}, {"month": "2024-07",
+      "revenue": 96103.50}, {"month": "2024-08", "revenue": 256343.04}, {"month": "2024-09", "revenue":
+      191269.53}, {"month": "2024-10", "revenue": 247252.79}, {"month": "2024-11", "revenue": 282082.99},
+      {"month": "2024-12", "revenue": 203972.56}]'
+    walk_bucket: EXACT
+    walk_why: 12 row(s) match, in the reference's order
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: What is monthly revenue trend in Germany in 2024 only from Internet shop?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: You want revenue for Germany in 2024, broken out one row per calendar month, counting only
+      business that came through the Internet shop — nothing from other shops or channels, and nothing
+      from other countries or other years. Twelve rows (one per month of 2024), each with that month's
+      revenue, in month order so the trend is readable.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       revenue               “revenue”'
+    - '  2  ← 1  WHERE      Germany = None        “in Germany”'
+    - '  3  ← 2  WHERE      Internet shop = None  “only from Internet shop”'
+    - '  4  ← 3  DURING     by year               “in 2024”'
+    - '  5  ← 4  GROUP_BY   by None               “monthly”'
+    - '  6  ← 5  AGGREGATE  sum of revenue        “revenue”'
+    - '  7  ← 6  ORDER_BY   month asc             “monthly trend”'
+    - '  8  ← 7  SELECT     month, revenue        “monthly revenue trend”'
+    - '  answer: step 8   confidence: 0.62'
+    - '  UNDERSTOOD AS: You want revenue for Germany in 2024, broken out one row per calendar month, counting
+      only business that came through the Internet shop — nothing from other shops or channels, and nothing
+      from other countries or other years. Twelve rows (one per month of 2024), each with that month''s
+      revenue, in month order so the trend is readable.'
+    - '  AMBIGUOUS ''in Germany'' — ASKS: Does "in Germany" mean the customer is in Germany, the goods
+      were shipped to Germany, or the selling entity/shop is the German one?'
+    - '      could mean: customers located in Germany'
+    - '      could mean: orders shipped to a German address'
+    - '      could mean: sales booked by the German company/branch'
+    - '      took: the sale is attributed to Germany as the country of the business recorded on it'
+    - '  AMBIGUOUS ''only from Internet shop'' — ASKS: Is "Internet shop" one specific shop by that name,
+      or all online/web sales however they were placed?'
+    - '      could mean: one particular shop called "Internet shop"'
+    - '      could mean: the online sales channel as a whole, including any web or app orders'
+    - '      took: one particular shop/channel named "Internet shop"'
+    - '  AMBIGUOUS ''revenue'' — ASKS: Should revenue be the gross amount invoiced, or net of discounts,
+      returns and tax?'
+    - '      could mean: gross sales amount'
+    - '      could mean: net revenue after discounts and returns, excluding tax'
+    - '      took: revenue as it is normally reported, without my adding or removing any adjustment'
+    - '  AMBIGUOUS ''in 2024'' — ASKS: Is 2024 the calendar year January–December, or your fiscal year
+      2024?'
+    - '      could mean: calendar 2024'
+    - '      could mean: fiscal year 2024'
+    - '      took: calendar year 2024'
+    - '  AMBIGUOUS ''monthly revenue trend'' — ASKS: Do you want just revenue per month, or also the change
+      versus the previous month?'
+    - '      could mean: one revenue figure per month, in month order'
+    - '      could mean: revenue per month plus the month-over-month change or growth %'
+    - '      took: one revenue figure per month, in month order'
+    - '  cannot_express: a single growth rate or fitted trend line for the year as a whole (these steps
+      give the month-by-month series only)'
+    - '  OUTPUT SHAPE: a list of names and figures · many row(s) · named by month · carrying revenue'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a list of names and figures
+    - - rows
+      - many
+    - - key_columns
+      - *id006
+    - - figure_columns
+      - *id007
+    - - said
+      - monthly revenue trend in Germany in 2024 only from Internet shop
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: in Germany
+      asks: Does "in Germany" mean the customer is in Germany, the goods were shipped to Germany, or the
+        selling entity/shop is the German one?
+      readings:
+      - customers located in Germany
+      - orders shipped to a German address
+      - sales booked by the German company/branch
+      took: the sale is attributed to Germany as the country of the business recorded on it
+    - words: only from Internet shop
+      asks: Is "Internet shop" one specific shop by that name, or all online/web sales however they were
+        placed?
+      readings:
+      - one particular shop called "Internet shop"
+      - the online sales channel as a whole, including any web or app orders
+      took: one particular shop/channel named "Internet shop"
+    - words: revenue
+      asks: Should revenue be the gross amount invoiced, or net of discounts, returns and tax?
+      readings:
+      - gross sales amount
+      - net revenue after discounts and returns, excluding tax
+      took: revenue as it is normally reported, without my adding or removing any adjustment
+    - words: in 2024
+      asks: Is 2024 the calendar year January–December, or your fiscal year 2024?
+      readings:
+      - calendar 2024
+      - fiscal year 2024
+      took: calendar year 2024
+    - words: monthly revenue trend
+      asks: Do you want just revenue per month, or also the change versus the previous month?
+      readings:
+      - one revenue figure per month, in month order
+      - revenue per month plus the month-over-month change or growth %
+      took: one revenue figure per month, in month order
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  store_key,\n  channel,\n  customer_key,\n\
+        \  net_amount\nFROM contoso_served.v_contoso5_sales_line"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n\
+        \  l.customer_key,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+        \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+        \ = c.country_code\nWHERE\n  c.country_name = 'Germany'"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n\
+        \  l.customer_key,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+        \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+        \ = c.country_code\nWHERE\n  c.country_name = 'Germany' AND l.channel = 'online'"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country\
+        \ AS c\n  ON cu.country_code = c.country_code\nWHERE\n  c.country_name = 'Germany'\n  AND l.channel\
+        \ = 'online'\n  AND l.order_date >= CAST('2024-01-01' AS DATE)\n  AND l.order_date < CAST('2025-01-01'\
+        \ AS DATE)"
+      params: {}
+    - step: '5'
+      sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  net_amount\nFROM g"
+      params: {}
+    - step: '6'
+      sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+        FROM g\nGROUP BY\n  1,\n  2"
+      params: {}
+    - step: '7'
+      sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+        FROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start ASC"
+      params: {}
+    - step: '8'
+      sql: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m')\
+        \ AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1\nORDER BY\n  month\
+        \ ASC"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'Twelve rows, one per calendar month of 2024, each the money customers resident in Germany
+      actually paid Contoso''s web shop — after discount, in US dollars — for orders they placed in that
+      month. The year comes to 2,428,570.52 USD (the twelve rounded figures add to 2,428,570.54; the two
+      cents are per-month rounding). The trend: January and February strong at 278,799.15 and 276,613.40,
+      a sharp slump to 124,514.27 in March and 100,946.49 in April, the year''s trough at 96,103.50 in
+      July, then recovery through August to a November peak of 282,082.99, easing to 203,972.56 in December.
+      NOT INCLUDED: physical-shop sales (German shops took a further 1,540,736.67 in 2024); customers
+      living outside Germany, whatever shop they used; orders placed outside 2024 even if delivered inside
+      it; gross revenue — these are net, with gross running 6–8% higher each month; any conversion to
+      euros, the amounts being USD as stored; and any month-over-month change column, which was not asked
+      for.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id008
+      rows: *id005
+      row_count: 12
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '[{"month": "2024-01", "revenue": 278799.15}, {"month": "2024-02", "revenue": 276613.40}, {"month":
+        "2024-03", "revenue": 124514.27}, {"month": "2024-04", "revenue": 100946.49}, {"month": "2024-05",
+        "revenue": 201005.49}, {"month": "2024-06", "revenue": 169667.33}, {"month": "2024-07", "revenue":
+        96103.50}, {"month": "2024-08", "revenue": 256343.04}, {"month": "2024-09", "revenue": 191269.53},
+        {"month": "2024-10", "revenue": 247252.79}, {"month": "2024-11", "revenue": 282082.99}, {"month":
+        "2024-12", "revenue": 203972.56}]'
+    - - shape
+      - a list of names and figures
+    - - population it answered over
+      - 'The 2,905 sales lines meeting all three restrictions together: the CUSTOMER''s registered country
+        is Germany (dim_customer.country_code = ''DE'', matched by name through dim_country) — not the
+        shop''s country, which for this channel is the ''--'' sentinel and yields zero rows; the sale
+        came through channel = ''online'', which here is the one outlet store_key 999999 ''Online store''
+        (every German online line also satisfies the declared location_code = -1 test, so "the one named
+        shop" and "the online channel" are identical rows); and order_date lies in calendar 2024, read
+        on order_date not delivery_date. Grouped into twelve exhaustive, disjoint months, all occupied
+        with 20–28 trading days each, so no row is padded and no dip is a coverage artefact. The figure
+        is SUM(net_amount) — net of discount, in USD.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: revenue
+      turns:
+      - why: Establish step 1's base relation and measure column — revenue = net_amount on the sales-line
+          fact, unrestricted — and confirm its extent before any filter is applied.
+        did: 'probe ''v_contoso5_sales_line.channel'' AND ALSO: SELECT COUNT(*) AS lines, MIN(order_date)
+          AS first_order, MAX(order_date) AS last_order, ROUND(SUM(net_amount), 2) AS net_revenue FROM
+          contoso_served.v_contoso5_sales_line'
+        came_back: 'v_contoso5_sales_line.channel (varchar) holds 2 distinct value(s): ''online'', ''physical''   AND
+          ALSO: 1 row(s): [{"lines": 223974, "first_order": "2016-05-18", "last_order": "2025-12-31",
+          "net_revenue": "218814471.66"}]'
+      settled_on: "SELECT\n  order_key,\n  line_number,\n  order_date,\n  store_key,\n  channel,\n  customer_key,\n\
+        \  net_amount\nFROM contoso_served.v_contoso5_sales_line"
+      means: 'One row per line of one order — 223,974 of them — each carrying the money that line actually
+        took from the customer after discount, in USD, together with the day the order was placed, which
+        channel it came through, which store rang it up and who bought it. Summed whole, that is 218,814,471.66
+        USD of net revenue over every order from 2016-05-18 to 2025-12-31, both channels and all countries.
+        This is the unnarrowed pool: nothing has yet been restricted to Germany, to the Internet shop
+        or to 2024.'
+      readings_taken:
+      - word: revenue
+        took: net_amount — what the customer was actually charged, after discount, in USD; reported as
+          NET
+        could_also_mean: gross_amount, the list value before discount (the gap between them is the discount)
+        declaration: net_revenue.default.revenue_means_net — a question saying "revenue" without saying
+          net or gross is answered on net_amount and must say NET
+      - word: the period column
+        took: order_date, so 2024 will mean orders placed in 2024
+        could_also_mean: delivery_date — which moves revenue between periods without changing the total,
+          and deliveries run to 2026-01-06
+        declaration: order.default.period_is_order_date, default `ordered`
+      - word: the unit of the amounts
+        took: USD on every line regardless of currency_code
+        could_also_mean: the currency each sale was transacted in — but currency_code is the transaction
+          currency, not the unit of the figure
+        declaration: currency.ambiguity.code_is_not_the_unit_of_the_amounts; net_amount's declared unit
+          is USD
+      blocked_by: []
+    - step: '2'
+      step_asks: in Germany
+      turns:
+      - why: 'Measure every declared reading of "in Germany" before deciding whether to ask: country.default.whose_country_is_asked_never_assumed
+          offers store, customer and location paths and forbids picking between them silently, so I compute
+          all three side by side and split by channel — because the Internet shop''s store row carries
+          the ''--'' sentinel, I expect the store and location readings to vanish on exactly the channel
+          this question asks for.'
+        did: "WITH de AS (\n  SELECT\n    country_code\n  FROM contoso_served.dim_country\n  WHERE\n \
+          \   country_name ILIKE '%german%'\n), base AS (\n  SELECT\n    l.net_amount,\n    l.channel,\n\
+          \    ds.country_code AS store_cc,\n    cu.country_code AS cust_cc,\n    dl.country_code AS loc_cc\n\
+          \  FROM contoso_served.v_contoso5_sales_line AS l\n  LEFT JOIN contoso_served.dim_store AS ds\n\
+          \    ON l.store_key = ds.store_key\n  LEFT JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key\
+          \ = cu.customer_key\n  LEFT JOIN contoso_served.dim_location AS dl\n    ON ds.location_code\
+          \ = dl.location_code\n  WHERE\n    l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date\
+          \ < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  channel,\n  COUNT(*) AS lines_in_channel,\n  COUNT(CASE\
+          \ WHEN store_cc IN (\n    SELECT\n      country_code\n    FROM de\n  ) THEN 1 END) AS lines_store_de,\n\
+          \  ROUND(\n    SUM(\n      CASE\n        WHEN store_cc IN (\n          SELECT\n            country_code\n\
+          \          FROM de\n        )\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n\
+          \    2\n  ) AS revenue_store_de,\n  COUNT(CASE WHEN cust_cc IN (\n    SELECT\n      country_code\n\
+          \    FROM de\n  ) THEN 1 END) AS lines_customer_de,\n  ROUND(\n    SUM(\n      CASE\n      \
+          \  WHEN cust_cc IN (\n          SELECT\n            country_code\n          FROM de\n      \
+          \  )\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_customer_de,\n\
+          \  COUNT(CASE WHEN loc_cc IN (\n    SELECT\n      country_code\n    FROM de\n  ) THEN 1 END)\
+          \ AS lines_location_de,\n  ROUND(\n    SUM(\n      CASE\n        WHEN loc_cc IN (\n        \
+          \  SELECT\n            country_code\n          FROM de\n        )\n        THEN net_amount\n\
+          \        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_location_de\nFROM base\nGROUP BY\n\
+          \  channel\nORDER BY\n  channel"
+        came_back: '2 row(s): [{"channel": "online", "lines_in_channel": 23187, "lines_store_de": 0, "revenue_store_de":
+          "0.00", "lines_customer_de": 2905, "revenue_customer_de": "2428570.52", "lines_location_de":
+          0, "revenue_location_de": "0.00"}, {"channel": "physical", "lines_in_channel": 14922, "lines_store_de":
+          1812, "revenue_store_de": "1540736.67", "lines_customer_de": 1812, "revenue_customer_de": "1540736.67",
+          "lines_location_de": 1812, "revenue_location_de": "1540736.67"}]'
+      - why: 'THIS CHANGES THE QUESTION: the document assumed Germany meant "the country of the business
+          recorded on the sale", and that reading returns 0.00 over 0 lines for the Internet shop — the
+          online store''s country is the ''--'' sentinel, so the store and site paths cannot express a
+          German internet sale at all; what is now being answered is 2024 monthly internet-shop revenue
+          from customers who live in Germany. The three readings agree exactly on physical sales (1,812
+          lines, 1,540,736.67 all three ways) and only the customer path yields anything online (2,905
+          lines, 2,428,570.52), so I apply it, disclose it, and do not ask — the choice is between a figure
+          and an empty result, not between two rival figures. This move confirms Germany''s code is single
+          (the relation notes one duplicate spelling among nine) and fixes step 2''s population.'
+        did: "WITH de AS (\n  SELECT\n    country_code\n  FROM contoso_served.dim_country\n  WHERE\n \
+          \   country_name ILIKE '%german%'\n)\nSELECT\n  (\n    SELECT\n      LISTAGG(DISTINCT country_code,\
+          \ ',')\n    FROM de\n  ) AS german_codes,\n  l.channel,\n  COUNT(*) AS lines,\n  MIN(l.order_date)\
+          \ AS first_order,\n  MAX(l.order_date) AS last_order,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\n\
+          FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer AS cu\n  ON\
+          \ l.customer_key = cu.customer_key\nWHERE\n  cu.country_code IN (\n    SELECT\n      country_code\n\
+          \    FROM de\n  )\nGROUP BY\n  l.channel\nORDER BY\n  l.channel"
+        came_back: '2 row(s): [{"german_codes": "DE", "channel": "online", "lines": 11362, "first_order":
+          "2016-05-26", "last_order": "2025-12-31", "net_revenue": "10256061.74"}, {"german_codes": "DE",
+          "channel": "physical", "lines": 14190, "first_order": "2016-05-19", "last_order": "2025-12-31",
+          "net_revenue": "14382768.44"}]'
+      settled_on: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n\
+        \  l.customer_key,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+        \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+        \ = c.country_code\nWHERE\n  c.country_name = 'Germany'"
+      means: 'One row per order line bought by somebody whose registered home is Germany — 25,552 lines
+        in all, spanning 2016-05-19 to 2025-12-31 — each carrying what that line actually took from the
+        customer after discount, in USD. Summed whole it is 24,638,830.18 USD of net German revenue over
+        all ten years, of which 10,256,061.74 came through the web shop and 14,382,768.44 through shops
+        people walk into. Still unnarrowed by year and by channel: 2024 and the Internet shop are the
+        next two steps.'
+      readings_taken:
+      - word: in Germany
+        took: the customer's registered country is Germany
+        could_also_mean: 'the shop''s country or the shop''s site country — measured on 2024: identical
+          to this reading for physical sales (1,540,736.67 over 1,812 lines, all three paths agreeing),
+          and empty for internet sales (0.00 over 0 lines), because the web shop''s country is the ''--''
+          sentinel'
+        declaration: country.default.whose_country_is_asked_never_assumed — disclosed rather than chosen
+          silently; dim_customer.country_code is the declared only route from an internet sale to a real
+          country
+      - word: Germany
+        took: the one country code whose name is Germany, confirmed to be 'DE' and confirmed single
+        could_also_mean: a second German spelling, had dim_country carried one — it does not
+        declaration: null
+      - word: where the customer lives
+        took: the customer register as it stands now
+        could_also_mean: where the customer lived on the order date — dim_customer carries valid_from/valid_to
+          history
+        declaration: the valid_from column states a sale could in principle be attributed to where the
+          customer lived on the order date, and that nothing in this bundle declares that it should be
+          — so the current row is used
+      blocked_by: []
+    - step: '3'
+      step_asks: only from Internet shop
+      turns:
+      - why: 'Settle step 3 and test the document''s open question about "Internet shop" at the same time:
+          ''internet shop'' is a declared surface of v_contoso5_sales_line.channel = ''online'', and if
+          that channel turns out to be a single store row then the two rival readings — one shop by that
+          name, versus the online channel as a whole — select the identical rows and the ambiguity costs
+          nothing.'
+        did: "SELECT\n  ds.store_key,\n  ds.store_name,\n  ds.location_code,\n  (\n    SELECT\n      LISTAGG(DISTINCT\
+          \ store_name, ' | ')\n    FROM contoso_served.dim_store\n    WHERE\n      store_name ILIKE '%internet%'\n\
+          \      OR store_name ILIKE '%online%'\n      OR store_name ILIKE '%web%'\n  ) AS stores_named_online_ish,\n\
+          \  COUNT(*) AS lines_all_time,\n  ROUND(SUM(l.net_amount), 2) AS revenue_all_time,\n  COUNT(\n\
+          \    CASE\n      WHEN l.order_date >= CAST('2024-01-01' AS DATE)\n      AND l.order_date < CAST('2025-01-01'\
+          \ AS DATE)\n      THEN 1\n    END\n  ) AS lines_2024,\n  ROUND(\n    SUM(\n      CASE\n    \
+          \    WHEN l.order_date >= CAST('2024-01-01' AS DATE)\n        AND l.order_date < CAST('2025-01-01'\
+          \ AS DATE)\n        THEN l.net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_2024,\n\
+          \  COUNT(CASE WHEN ds.location_code = -1 THEN 1 END) AS lines_also_sentinel\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN\
+          \ contoso_served.dim_country AS c\n  ON cu.country_code = c.country_code\nJOIN contoso_served.dim_store\
+          \ AS ds\n  ON l.store_key = ds.store_key\nWHERE\n  c.country_name = 'Germany' AND l.channel\
+          \ = 'online'\nGROUP BY\n  1,\n  2,\n  3\nORDER BY\n  revenue_all_time DESC"
+        came_back: '1 row(s): [{"store_key": 999999, "store_name": "Online store", "location_code": -1,
+          "stores_named_online_ish": "Online store", "lines_all_time": 11362, "revenue_all_time": "10256061.74",
+          "lines_2024": 2905, "revenue_2024": "2428570.52", "lines_also_sentinel": 11362}]'
+      settled_on: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.channel,\n  l.store_key,\n\
+        \  l.customer_key,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_customer\
+        \ AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country AS c\n  ON cu.country_code\
+        \ = c.country_code\nWHERE\n  c.country_name = 'Germany' AND l.channel = 'online'"
+      means: One row per order line that a German-resident customer bought through the web shop — 11,362
+        lines over the full ten years, every one of them rung up against the single outlet 'Online store'
+        — each carrying what the customer was actually charged after discount, in USD. Summed whole that
+        is 10,256,061.74 USD; the 2,905 of those lines placed during calendar 2024 carry 2,428,570.52
+        USD, which is the money the final twelve monthly rows will divide up. Nothing from physical shops
+        is in here, and nothing from customers living outside Germany.
+      readings_taken:
+      - word: Internet shop
+        took: channel = 'online' — which on this population is the single store 'Online store' (store_key
+          999999)
+        could_also_mean: a shop literally named 'Internet shop' — no such store exists; measured, the
+          two candidate readings select byte-identical rows, 11,362 lines and 10,256,061.74 USD either
+          way
+        declaration: '''internet shop'' is a declared surface of the channel column; the channel is declared
+          MEASURED EQUIVALENT to the location_code = -1 sentinel, re-confirmed here at 11,362 of 11,362'
+      - word: in Germany
+        took: the customer's country (carried forward from step 2)
+        could_also_mean: the shop's country — which for this population is the '--' sentinel and yields
+          nothing at all, not a different figure
+        declaration: country.default.whose_country_is_asked_never_assumed; dim_customer.country_code is
+          the declared only route from an internet sale to a real country
+      blocked_by: []
+    - step: '4'
+      step_asks: in 2024
+      turns:
+      - why: 'Apply the 2024 restriction and price the one date fork at the same time: order_date is the
+          declared default, but delivery_date would move revenue between periods without changing any
+          total, so I measure both — and I check that all twelve months of 2024 actually carry orders,
+          because a short or partial year would make the requested trend misleading no matter how the
+          figures were computed.'
+        did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.delivery_date,\n    l.net_amount\n  FROM\
+          \ contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON\
+          \ l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country AS c\n    ON cu.country_code\
+          \ = c.country_code\n  WHERE\n    c.country_name = 'Germany' AND l.channel = 'online'\n)\nSELECT\n\
+          \  COUNT(\n    CASE\n      WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date\
+          \ < CAST('2025-01-01' AS DATE)\n      THEN 1\n    END\n  ) AS lines_by_order_date,\n  ROUND(\n\
+          \    SUM(\n      CASE\n        WHEN order_date >= CAST('2024-01-01' AS DATE)\n        AND order_date\
+          \ < CAST('2025-01-01' AS DATE)\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n\
+          \    2\n  ) AS revenue_by_order_date,\n  COUNT(\n    DISTINCT CASE\n      WHEN order_date >=\
+          \ CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01' AS DATE)\n      THEN\
+          \ DATE_TRUNC('MONTH', order_date)\n    END\n  ) AS months_with_orders,\n  MIN(\n    CASE\n \
+          \     WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+          \ AS DATE)\n      THEN order_date\n    END\n  ) AS first_order_2024,\n  MAX(\n    CASE\n   \
+          \   WHEN order_date >= CAST('2024-01-01' AS DATE)\n      AND order_date < CAST('2025-01-01'\
+          \ AS DATE)\n      THEN order_date\n    END\n  ) AS last_order_2024,\n  COUNT(\n    CASE\n  \
+          \    WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n      AND delivery_date < CAST('2025-01-01'\
+          \ AS DATE)\n      THEN 1\n    END\n  ) AS lines_by_delivery_date,\n  ROUND(\n    SUM(\n    \
+          \  CASE\n        WHEN delivery_date >= CAST('2024-01-01' AS DATE)\n        AND delivery_date\
+          \ < CAST('2025-01-01' AS DATE)\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n\
+          \    2\n  ) AS revenue_by_delivery_date\nFROM g"
+        came_back: '1 row(s): [{"lines_by_order_date": 2905, "revenue_by_order_date": "2428570.52", "months_with_orders":
+          12, "first_order_2024": "2024-01-01", "last_order_2024": "2024-12-31", "lines_by_delivery_date":
+          2908, "revenue_by_delivery_date": "2429955.62"}]'
+      settled_on: "SELECT\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.net_amount\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_customer AS cu\n  ON l.customer_key = cu.customer_key\nJOIN contoso_served.dim_country\
+        \ AS c\n  ON cu.country_code = c.country_code\nWHERE\n  c.country_name = 'Germany'\n  AND l.channel\
+        \ = 'online'\n  AND l.order_date >= CAST('2024-01-01' AS DATE)\n  AND l.order_date < CAST('2025-01-01'\
+        \ AS DATE)"
+      means: 'One row per order line that a German-resident customer placed through the web shop during
+        calendar 2024 — 2,905 lines, spread across all twelve months — each carrying what the customer
+        was actually charged for it after discount, in USD. Summed whole it is 2,428,570.52 USD: the full
+        pot of money that the twelve monthly figures must add back up to. Excluded: physical-shop sales,
+        customers living anywhere but Germany, and any order placed before 2024 or after it even if it
+        was delivered inside the year.'
+      readings_taken:
+      - word: in 2024
+        took: order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD
+        could_also_mean: 'delivered in 2024 — measured: 2,908 lines, 2,429,955.62 USD, a difference of
+          1,385.10 or 0.06% of the year, so the two readings agree for any practical purpose at year level'
+        declaration: order.default.period_is_order_date fixes the column to order_date; the delivery figure
+          is disclosed, not chosen
+      - word: '2024'
+        took: calendar January–December
+        could_also_mean: a fiscal 2024
+        declaration: no fiscal calendar is declared in this bundle, so only the calendar reading is expressible
+      blocked_by: []
+    - step: '5'
+      step_asks: monthly
+      turns:
+      - why: 'Establish the monthly grain on order_date — the column declared as the time axis''s binding
+          point, where period grains are computed — and confirm the axis is clean before any money lands
+          on it: twelve groups, no null month, and every month carrying lines, so the twelve requested
+          rows are real groups rather than a shape I pad out later.'
+        did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+          \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n\
+          \  JOIN contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n\
+          \    c.country_name = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01'\
+          \ AS DATE)\n    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH',\
+          \ order_date) AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  COUNT(*) AS lines,\n\
+          \  COUNT(DISTINCT order_date) AS trading_days,\n  MIN(order_date) AS first_order,\n  MAX(order_date)\
+          \ AS last_order\nFROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start"
+        came_back: '12 row(s) (first 8 of 12): [{"month_start": "2024-01-01 00:00:00", "month": "2024-01",
+          "lines": 363, "trading_days": 28, "first_order": "2024-01-01", "last_order": "2024-01-31"},
+          {"month_start": "2024-02-01 00:00:00", "month": "2024-02", "lines": 360, "trading_days": 27,
+          "first_order": "2024-02-01", "last_order": "2024-02-29"}, {"month_start": "2024-03-01 00:00:00",
+          "month": "2024-03", "lines": 156, "trading_days": 23, "first_order": "2024-03-01", "last_order":
+          "2024-03-30"}, {"month_start": "2024-04-01 00:00:00", "month": "2024-04", "lines": 123, "trading_days":
+          20, "first_order": "2024-04-01", "last_order": "2024-04-30"}, {"month_start": "2024-05-01 00:00:00",
+          "month": "2024-05", "lines": 259, "trading_days": 28, "first_order": "2024-05-01", "last_order":
+          "2024-05-31"}, {"month_start": "2024-06-01 00:00:00", "month": "2024-06", "lines": 224, "trading_days":
+          26, "first_order": "2024-06-01", "last_order": "2024-06-29"}, {"month_start": "2024-07-01 00:00:00",
+          "month": "2024-07", "lines": 148, "trading_days": 23, "first_order": "2024-07-02", "last_order":
+          "2024-07-31"}, {"month_start": "2024-08-01 00:00:00", "month": "2024-08", "lines": 263, "trading_days":
+          27, "first_order": "2024-0'
+      settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  net_amount\nFROM g"
+      means: The 2,905 German web-shop order lines of 2024, each now tagged with the calendar month its
+        order fell in — twelve distinct months, each holding between 123 and 363 lines and each seeing
+        orders on 20 to 28 separate days. Every line belongs to exactly one month, so the groups partition
+        the 2,428,570.52 USD of step 4 without overlap or loss. No money has been summed yet; this is
+        the axis the next step aggregates on.
+      readings_taken:
+      - word: monthly
+        took: calendar months of order_date, twelve groups
+        could_also_mean: months of delivery_date, or rolling 30-day windows
+        declaration: 'order_date carries `period_binding: True`, so a month grain is computed on that
+          column; order.default.period_is_order_date makes it the date read'
+      - word: month
+        took: carrying both a date month_start for ordering and a 'YYYY-MM' label for reading
+        could_also_mean: a month name or number, which would sort wrongly and drop the year
+        declaration: null
+      blocked_by: []
+    - step: '6'
+      step_asks: revenue
+      turns:
+      - why: Sum the revenue per month — net_amount is declared a FLOW, so SUM over any period and any
+          grouping is the declared-correct aggregation — and carry the gross figure in a side column so
+          the document's net-vs-gross question can be answered with numbers rather than asked; the year
+          total is repeated on every row so I can see the twelve months close back onto step 4's 2,428,570.52
+          rather than assuming they do.
+        did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount,\n    l.gross_amount,\n    l.discount_amount\n\
+          \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_customer AS cu\n\
+          \    ON l.customer_key = cu.customer_key\n  JOIN contoso_served.dim_country AS c\n    ON cu.country_code\
+          \ = c.country_code\n  WHERE\n    c.country_name = 'Germany'\n    AND l.channel = 'online'\n\
+          \    AND l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01'\
+          \ AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date) AS month_start,\n  STRFTIME(order_date,\
+          \ '%Y-%m') AS month,\n  COUNT(*) AS lines,\n  ROUND(SUM(net_amount), 2) AS revenue,\n  ROUND(SUM(gross_amount),\
+          \ 2) AS gross_if_asked,\n  ROUND(SUM(discount_amount), 2) AS discount_given,\n  ROUND(SUM(SUM(net_amount))\
+          \ OVER (), 2) AS year_total_check\nFROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start"
+        came_back: '12 row(s) (first 8 of 12): [{"month_start": "2024-01-01 00:00:00", "month": "2024-01",
+          "lines": 363, "revenue": "278799.15", "gross_if_asked": "294851.64", "discount_given": "16052.49",
+          "year_total_check": "2428570.52"}, {"month_start": "2024-02-01 00:00:00", "month": "2024-02",
+          "lines": 360, "revenue": "276613.40", "gross_if_asked": "297070.55", "discount_given": "20457.16",
+          "year_total_check": "2428570.52"}, {"month_start": "2024-03-01 00:00:00", "month": "2024-03",
+          "lines": 156, "revenue": "124514.27", "gross_if_asked": "130476.14", "discount_given": "5961.87",
+          "year_total_check": "2428570.52"}, {"month_start": "2024-04-01 00:00:00", "month": "2024-04",
+          "lines": 123, "revenue": "100946.49", "gross_if_asked": "108671.93", "discount_given": "7725.44",
+          "year_total_check": "2428570.52"}, {"month_start": "2024-05-01 00:00:00", "month": "2024-05",
+          "lines": 259, "revenue": "201005.49", "gross_if_asked": "212140.44", "discount_given": "11134.95",
+          "year_total_check": "2428570.52"}, {"month_start": "2024-06-01 00:00:00", "month": "2024-06",
+          "lines": 224, "revenue": "169667.33", "gross_if_asked": "181590.74", "discount_given": "11923.41",
+          "year_total_check": "2428570.52"}, {"month_start": '
+      settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+        FROM g\nGROUP BY\n  1,\n  2"
+      means: 'Twelve rows, one per calendar month of 2024, each holding the money German-resident customers
+        actually paid the web shop for the orders they placed in that month — after discount, in USD.
+        January 278,799.15, February 276,613.40, March 124,514.27, April 100,946.49, May 201,005.49, June
+        169,667.33, July 96,103.50, August 256,343.04, and four further months to December; the twelve
+        together are exactly 2,428,570.52 USD. Not included: anything bought in a physical shop, anything
+        bought by a customer living outside Germany, and any order placed outside 2024 even where it was
+        delivered inside it.'
+      readings_taken:
+      - word: revenue
+        took: net — SUM(net_amount), what was actually charged after discount, 2,428,570.52 USD across
+          the year
+        could_also_mean: 'gross, before discount — measured: 2,428,570.52 net against a gross that is
+          6–8% higher month by month, e.g. January 278,799.15 net vs 294,851.64 gross; the shape of the
+          trend survives the choice but every figure moves by its discount'
+        declaration: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+      - word: sum
+        took: plain addition within each month
+        could_also_mean: nothing — no weighting is at stake
+        declaration: 'net_amount is declared a FLOW: SUM over any period and any grouping is correct,
+          unit USD'
+      blocked_by: []
+    - step: '7'
+      step_asks: monthly trend
+      turns:
+      - why: Put the twelve months into chronological order on month_start so the trend reads left to
+          right, and carry the entire ordered series in a single extra column — because the result display
+          truncates to the first eight rows, and I will not claim a twelve-row answer whose last four
+          values I have not actually read.
+        did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+          \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n\
+          \  JOIN contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n\
+          \    c.country_name = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01'\
+          \ AS DATE)\n    AND l.order_date < CAST('2025-01-01' AS DATE)\n), m AS (\n  SELECT\n    DATE_TRUNC('MONTH',\
+          \ order_date) AS month_start,\n    STRFTIME(order_date, '%Y-%m') AS month,\n    ROUND(SUM(net_amount),\
+          \ 2) AS revenue\n  FROM g\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  month_start,\n  month,\n\
+          \  revenue,\n  (\n    SELECT\n      LISTAGG(month || '=' || CAST(revenue AS TEXT), ' | '\n \
+          \     ORDER BY\n        month_start)\n    FROM m\n  ) AS all_twelve_in_order\nFROM m\nORDER\
+          \ BY\n  month_start ASC"
+        came_back: '12 row(s) (first 8 of 12): [{"month_start": "2024-01-01 00:00:00", "month": "2024-01",
+          "revenue": "278799.15", "all_twelve_in_order": "2024-01=278799.15 | 2024-02=276613.40 | 2024-03=124514.27
+          | 2024-04=100946.49 | 2024-05=201005.49 | 2024-06=169667.33 | 2024-07=96103.50 | 2024-08=256343.04
+          | 2024-09=191269.53 | 2024-10=247252.79 | 2024-11=282082.99 | 2024-12=203972.56"}, {"month_start":
+          "2024-02-01 00:00:00", "month": "2024-02", "revenue": "276613.40", "all_twelve_in_order": "2024-01=278799.15
+          | 2024-02=276613.40 | 2024-03=124514.27 | 2024-04=100946.49 | 2024-05=201005.49 | 2024-06=169667.33
+          | 2024-07=96103.50 | 2024-08=256343.04 | 2024-09=191269.53 | 2024-10=247252.79 | 2024-11=282082.99
+          | 2024-12=203972.56"}, {"month_start": "2024-03-01 00:00:00", "month": "2024-03", "revenue":
+          "124514.27", "all_twelve_in_order": "2024-01=278799.15 | 2024-02=276613.40 | 2024-03=124514.27
+          | 2024-04=100946.49 | 2024-05=201005.49 | 2024-06=169667.33 | 2024-07=96103.50 | 2024-08=256343.04
+          | 2024-09=191269.53 | 2024-10=247252.79 | 2024-11=282082.99 | 2024-12=203972.56"}, {"month_start":
+          "2024-04-01 00:00:00", "month": "2024-04", "revenue": "100946.49", "all_twelve_in_order": "2024-01=278799.15
+          | 2024'
+      settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  DATE_TRUNC('MONTH', order_date)\
+        \ AS month_start,\n  STRFTIME(order_date, '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\n\
+        FROM g\nGROUP BY\n  1,\n  2\nORDER BY\n  month_start ASC"
+      means: 'Twelve rows in calendar order, January to December 2024, each the net money German-resident
+        customers paid the web shop for orders they placed that month, after discount, in USD: 278,799.15;
+        276,613.40; 124,514.27; 100,946.49; 201,005.49; 169,667.33; 96,103.50; 256,343.04; 191,269.53;
+        247,252.79; 282,082.99; 203,972.56. Read down the column that is the 2024 trend — a strong start,
+        a slump through March and April, a trough in July at 96,103.50, then recovery to a November peak
+        of 282,082.99 before easing in December. Excluded: physical-shop sales, customers living outside
+        Germany, and orders placed outside 2024.'
+      readings_taken:
+      - word: monthly trend
+        took: one net revenue figure per month in chronological order
+        could_also_mean: the same series plus month-over-month change or growth %
+        declaration: none — the decomposition settled on one figure per month in month order, and records
+          that a single yearly growth rate or fitted trend line is not expressible by these steps
+      - word: rounding
+        took: each month rounded to cents for presentation
+        could_also_mean: carrying full precision — the twelve rounded months sum to 2,428,570.54 against
+          the 2,428,570.52 the year rounds to, a two-cent presentation artefact with no bearing on any
+          month's figure
+        declaration: null
+      blocked_by: []
+    - step: '8'
+      step_asks: monthly revenue trend
+      turns:
+      - why: 'Settle the answer: twelve rows, month and net revenue, January to December 2024. Restating
+          what changed at step 2, because it is the one thing a reader must know: "in Germany" is read
+          as WHERE THE BUYER LIVES, not as the country of the shop — the document assumed the shop''s
+          country, and that reading returns nothing at all for an internet sale, since the web shop''s
+          country is the ''--'' sentinel.'
+        did: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+          \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n\
+          \  JOIN contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n\
+          \    c.country_name = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01'\
+          \ AS DATE)\n    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  STRFTIME(order_date,\
+          \ '%Y-%m') AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1\nORDER BY\n\
+          \  month ASC"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 12 row(s) (first 8 of 12): [{"month": "2024-01",
+          "revenue": "278799.15"}, {"month": "2024-02", "revenue": "276613.40"}, {"month": "2024-03",
+          "revenue": "124514.27"}, {"month": "2024-04", "revenue": "100946.49"}, {"month": "2024-05",
+          "revenue": "201005.49"}, {"month": "2024-06", "revenue": "169667.33"}, {"month": "2024-07",
+          "revenue": "96103.50"}, {"month": "2024-08", "revenue": "256343.04"}]  Give `claimed_answer`
+          as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+          rows settle the question, do not decline.'
+      settled_on: "WITH g AS (\n  SELECT\n    l.order_date,\n    l.net_amount\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  JOIN\
+        \ contoso_served.dim_country AS c\n    ON cu.country_code = c.country_code\n  WHERE\n    c.country_name\
+        \ = 'Germany'\n    AND l.channel = 'online'\n    AND l.order_date >= CAST('2024-01-01' AS DATE)\n\
+        \    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  STRFTIME(order_date, '%Y-%m')\
+        \ AS month,\n  ROUND(SUM(net_amount), 2) AS revenue\nFROM g\nGROUP BY\n  1\nORDER BY\n  month\
+        \ ASC"
+      means: 'Twelve rows, one per calendar month of 2024, each the money customers resident in Germany
+        actually paid Contoso''s web shop — after discount, in US dollars — for orders they placed in
+        that month. The year comes to 2,428,570.52 USD (the twelve rounded figures add to 2,428,570.54;
+        the two cents are per-month rounding). The trend: January and February strong at 278,799.15 and
+        276,613.40, a sharp slump to 124,514.27 in March and 100,946.49 in April, the year''s trough at
+        96,103.50 in July, then recovery through August to a November peak of 282,082.99, easing to 203,972.56
+        in December. NOT INCLUDED: physical-shop sales (German shops took a further 1,540,736.67 in 2024);
+        customers living outside Germany, whatever shop they used; orders placed outside 2024 even if
+        delivered inside it; gross revenue — these are net, with gross running 6–8% higher each month;
+        any conversion to euros, the amounts being USD as stored; and any month-over-month change column,
+        which was not asked for.'
+      readings_taken:
+      - word: in Germany
+        took: the CUSTOMER lives in Germany — 2,428,570.52 for 2024
+        could_also_mean: 'the selling shop is German, or its site is — both measured, both give 0.00 over
+          0 lines for internet sales because the web shop''s country is the ''--'' sentinel. Not a live
+          fork: the alternative is an empty result, not a rival figure. On 2024 physical sales all three
+          readings agree exactly (1,540,736.67 over 1,812 lines), so they diverge only on the channel
+          this question asks about'
+        declaration: country.default.whose_country_is_asked_never_assumed (C) forbids choosing between
+          store and customer SILENTLY — hence this disclosure; dim_customer.country_code is declared the
+          only column that can place an internet sale in a real country
+      - word: Internet shop
+        took: channel = 'online' — the single store 'Online store'
+        could_also_mean: a store literally named 'Internet shop'; none exists, and measured, both readings
+          select identical rows
+        declaration: '''internet shop'' is a declared surface of the channel column; a question naming
+          a channel gets exactly that channel'
+      - word: revenue
+        took: NET — SUM(net_amount), after discount, USD
+        could_also_mean: gross, before discount — 6–8% higher monthly (January 294,851.64 against 278,799.15)
+        declaration: net_revenue.default.revenue_means_net — answer on net_amount and say NET
+      - word: in 2024
+        took: orders PLACED in calendar 2024
+        could_also_mean: orders DELIVERED in 2024 — 2,908 lines and 2,429,955.62, a 0.06% difference
+        declaration: order.default.period_is_order_date; no fiscal calendar is declared, so calendar 2024
+          is the only expressible reading
+      - word: monthly trend
+        took: one net figure per month in chronological order
+        could_also_mean: the series plus month-over-month growth, or one fitted yearly growth rate — which
+          the decomposition records as inexpressible by these steps
+        declaration: null
+      - word: where the customer lives
+        took: the register as it now stands
+        could_also_mean: where they lived on the order date — the register keeps valid_from/valid_to history
+        declaration: valid_from states a sale could in principle be attributed to where the customer lived
+          on the order date, and that nothing in this bundle declares it should be
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+- '6'
+- '7'
+- '8'
+v3_answer_step: '8'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: 12 row(s) match, in the reference's order
+v3_seconds: 494.4

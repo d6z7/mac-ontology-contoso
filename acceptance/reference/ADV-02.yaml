@@ -1,0 +1,105 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: ADV-02
+question: >-
+  Which brand has the highest margin (gross minus net) in Europe?
+expected:
+  rows: 1
+  cols: [brand, gross_minus_net]
+  values:
+  - - Adventure Works
+    - 998156.72329
+sql: >-
+  SELECT p.brand, SUM(l.gross_amount) - SUM(l.net_amount) AS gross_minus_net
+  FROM contoso_served.v_contoso5_sales_line l
+  JOIN contoso_served.dim_customer cu ON l.customer_key = cu.customer_key
+  JOIN contoso_served.dim_product p ON l.product_key = p.product_key
+  WHERE cu.continent = 'Europe'
+  GROUP BY p.brand ORDER BY gross_minus_net DESC LIMIT 1
+note: >-
+  INDEPENDENTLY VERIFIED 2026-10-18, not read back from the engine: the SQL below was written by
+  hand against contoso5.duckdb and returns this figure exactly. BOTH CHANNELS, AND THE STATEMENT ABOVE APPLIES NO `location_code` RESTRICTION AT ALL. The sentence
+  that stood here claimed a shop-only population and that shop-only was the bundle''s default for
+  Store, and on 2026-10-24 neither half was true of this reference: the statement never carried
+  the filter, and the default was reversed by the operator on 2026-10-18 -- "now i am for
+  correctnes and correctness is both" -- so an unqualified revenue question spans the online
+  channel too. THE APPROVED FIGURE IS UNCHANGED and was always the both-channels figure; only the
+  sentence describing it was wrong, which is why this is a prose repair and not a re-approval. AND THE
+  SUPERLATIVE WAS CHECKED, not just the figure: Adventure Works is the MAXIMUM over all 11 brands
+  in Europe, so the answer is the right brand and not merely a right number.
+
+  READ THIS BEFORE CALLING THE ENGINE WRONG ON THIS CASE. **THE QUESTION CONTRADICTS ITSELF IN THIS
+  ONTOLOGY**, and the contradiction is in the corpus text, not in any answer. The noun says
+  *margin*; the parenthetical defines *gross minus net*; those are TWO DIFFERENT DECLARED MEASURES
+  here. From `data/transforms/v_contoso5_sales_line.sql`:
+
+      gross_amount     Quantity * UnitPrice
+      net_amount       Quantity * NetPrice
+      discount_amount  Quantity * (UnitPrice - NetPrice)   <- IS gross minus net
+      margin_amount    Quantity * (NetPrice - UnitCost)    <- is net minus COST
+
+  So `Discount` is the measure the parenthetical names, and `Margin` is a different number
+  entirely. THIS REFERENCE APPROVES THE DEFINITION OVER THE LABEL: the figure below is gross minus
+  net, and an engine answering `measure: Discount` is AGREEING with this reference, not failing it.
+
+  THIS WAS WORTH SPELLING OUT BECAUSE IT HAS ALREADY COST A DAY. On 2026-10-19 the previous
+  sentence here said only "'Margin' here is gross minus net, which the served row carries as the
+  discount" -- true, at the end of a long note -- and `measure: Discount` was nonetheless reported
+  to the operator as the day's sharpest interpreter defect, "`Margin` declared and named 10 times
+  in the prompt, and the model picked Discount at 0.85 confidence", from a predicate written
+  against the question's WORDING. The model was right and the predicate encoded the misreading.
+  A note that does not stop that is not doing its job, which is why this one now leads with it.
+
+  WHAT ONLY THE OPERATOR CAN DO: re-word the question, or rule that it stays as a deliberate test
+  of a self-contradicting request. Both the question and this reference are approved as they stand,
+  so neither is changed here. `acceptance/questions.yaml` carries exactly `id`/`question`/`tags`/
+  `regression` on all 81 entries and no note field; adding one for this would be a declaration
+  nothing reads, so the warning lives here, where the grader and the next reader both arrive.
+  ALIGNED 2026-10-23, AND ONLY THE EXPECTATION WAS ALIGNED. Operator: "if the quesiton is which
+  brand, then the expected answer cannot be number ... unless this number is the name of the
+  'brand'!!! so to expect a figure is wrong" and "if the name is delivered then beside the name it
+  would be logical to delive also the figure ... with how much was that margin". The question, the
+  rules and the transforms are untouched by this edit.
+
+  WHAT WAS WRONG WITH THE OLD EXPECTATION, and it was not the arithmetic. It held `625678.3612`,
+  a figure, for a question that asks WHICH BRAND. A run that answered `Adventure Works` -- the
+  brand this note already certified as the maximum -- was graded WRONG for answering the question
+  as asked. A reference whose expected answer is a different KIND of thing from what its question
+  asks cannot be satisfied by a correct answer.
+
+  THE FIGURE IS NOW BOTH CHANNELS, by the operator's ruling of 2026-10-18 and confirmed for this
+  question on 2026-10-23. A margin question's SUBJECT is Margin, not Store, so the channel default
+  does not reach it (`planner/populations.py` skips a `subject`-scoped default when the concept is
+  only on the route) and the answer spans both channels. The old SQL's
+  `location_code IS DISTINCT FROM -1` was the channel default of 2026-10-10, reversed since.
+
+  AND THE COUNTRY PATH HAD TO MOVE WITH IT, which is the part worth keeping. The old SQL read
+  Europe off the STORE. The web shop's `country_code` is the '--' sentinel that dim_country names
+  'Online', so a store-country predicate CANNOT reach the online channel at all -- measured
+  2026-10-23: `country_code IN ('DE','FR','GB','IT','NL')` selects 0 online lines, structurally,
+  while the customer path reaches all 93,550 of them. Store-country Europe is therefore a
+  physical-only reading however the channel is declared. The customer continent is the only
+  reading of "in Europe" that can hold both channels, and it is what the operator confirmed.
+
+  THE ANSWER IS THE SAME BRAND UNDER EVERY READING, measured on all three, which is why this
+  alignment changes the figure and not the verdict:
+      store country, physical shops      625,678.3612      Adventure Works
+      customer continent, both channels  998,156.72329     Adventure Works   <- this reference
+      the declared Margin (net - cost)   8,837,878.36731   Adventure Works
+
+approved_by: operator
+approved_at: '2026-10-17'
+approved_here: true
+reapproved:
+  by: operator
+  at: '2026-10-23'
+  what_changed: the SHAPE of the expected answer — from a bare figure to the brand with its figure —
+    and the figure itself, from the physical/store-country reading to both channels over the
+    customer continent. The question is unchanged and no rule or transform was touched.
+  why: 'the question asks WHICH BRAND and the expectation held only a number, so a run that named
+    the right brand was graded wrong. Verbatim: "to expect a figure is wrong" and "beside the name
+    it would be logical to delive also the figure". The channel half follows the ruling of
+    2026-10-18 that both channels make revenue, which reaches every financial measure and not only
+    revenue.
+
+    '

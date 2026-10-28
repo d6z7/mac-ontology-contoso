@@ -1,0 +1,2258 @@
+id: ADV-08
+captured_at: '2026-10-24T21:44:54+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: 'Which country do you mean — where the customer lives, or where the shop that took the order stood?
+  There is no country written on an order itself, so one can only be reached by choosing, and the choice
+  decides whether 38,968 internet orders are in the answer or absent from it.
+
+
+  IF YOU MEAN WHERE THE CUSTOMER LIVES — all 93,470 orders counted, internet included (average order value,
+  net, USD):
+
+  Italy 2,459.71 · United Kingdom 2,413.06 · United States 2,356.13 · Germany 2,319.60 · Canada 2,307.13
+  · Australia 2,288.96 · France 2,250.41 · Netherlands 2,204.90
+
+
+  IF YOU MEAN WHERE THE SHOP STOOD — only the 54,502 orders rung up in a physical shop; the 38,968 web-shop
+  orders (86,790,054.13 USD) belong to no country and drop out entirely:
+
+  Italy 2,617.62 · United Kingdom 2,498.53 · United States 2,430.24 · Germany 2,427.47 · Canada 2,396.95
+  · Australia 2,348.50 · France 2,272.68 · Netherlands 2,239.53
+
+
+  WHAT THE CHOICE DOES NOT CHANGE: the league table. Both readings give the same eight countries in the
+  same order — Italy highest, Netherlands lowest, United States third either way. Every store figure is
+  simply higher than its customer counterpart, by 22.27 (France) to 157.91 (Italy), because the internet
+  orders the store reading omits are cheaper on average (2,227.21) than shop orders. So if you want to
+  know WHERE ORDERS ARE BIGGEST, you have your answer already and need not choose. If you want to quote
+  a FIGURE, you must.
+
+
+  ONE PLACE THE CHOICE BITES HARDER: the United States and Germany sit 36.53 apart under the customer
+  reading but 2.77 apart under the store reading — effectively tied. Do not call that gap real without
+  saying which reading produced it.'
+verdict:
+  disposition: GOVERNED_REFUSAL
+intent:
+  subject: order value
+  operation: select
+  qdmr_simplified: "  1       FROM       orders                        “order”\n  2  ← 1  PIVOT_TO   country\
+    \                       “by country”\n  3  ← 1  GROUP_BY   by country                    “by country”\n\
+    \  4  ← 3  AGGREGATE  avg of order value            “average order value”\n  5  ← 4  SELECT     country,\
+    \ average order value  “average order value by country”\n  answer: step 5   confidence: 0.62   A DAG\
+    \   step(s) 1 feed more than one\n  UNDERSTOOD AS: For every country, the average value of one order\
+    \ — all orders grouped by their country, with each row showing one country and the average value of\
+    \ an order placed there. No time window was given, so this covers all orders on record, and no orders\
+    \ are excluded (cancelled or refunded ones are included).\n  AMBIGUOUS 'by country' — ASKS: Which\
+    \ country do you mean — where the customer is based, where the order was shipped, or the country of\
+    \ the store or site that took the order?\n      could mean: the customer's own country\n      could\
+    \ mean: the country the order was shipped to\n      could mean: the billing country on the order\n\
+    \      could mean: the country of the store or site that sold it\n      took: the country recorded\
+    \ on the order itself\n  AMBIGUOUS 'Average order value' — ASKS: Should 'average order value' be the\
+    \ average of the order totals, or total sales divided by something else such as the number of customers?\n\
+    \      could mean: the average of each order's total value\n      could mean: total sales divided\
+    \ by the number of customers\n      could mean: total sales divided by the number of items\n     \
+    \ took: the average of each order's total value\n  AMBIGUOUS 'order value' — ASKS: Should an order's\
+    \ value include tax and shipping, and should discounts and refunds be taken off?\n      could mean:\
+    \ gross value before discounts\n      could mean: net value after discounts\n      could mean: including\
+    \ tax and shipping\n      could mean: excluding tax and shipping\n      took: the order value as recorded,\
+    \ whatever it includes\n  AMBIGUOUS 'Average order value by country' — ASKS: Over what period — all\
+    \ orders ever, or a recent window such as this year or the last 12 months?\n      could mean: all\
+    \ orders on record\n      could mean: orders in the current year\n      could mean: orders in the\
+    \ last 12 months\n      took: all orders on record\n  AMBIGUOUS 'orders' — ASKS: Should cancelled,\
+    \ returned or fully refunded orders be left out of the average?\n      could mean: count every order\n\
+    \      could mean: only completed orders\n      could mean: exclude cancelled and refunded orders\n\
+    \      took: count every order\n  OUTPUT SHAPE: a list of names and figures · many row(s) · named\
+    \ by country · carrying average order value"
+  understood_as_in_human_words: For every country, the average value of one order — all orders grouped
+    by their country, with each row showing one country and the average value of an order placed there.
+    No time window was given, so this covers all orders on record, and no orders are excluded (cancelled
+    or refunded ones are included).
+  population_actually_answered: 'Two populations, because I declined to collapse them into one. COMMON
+    TO BOTH: all 93,470 distinct orders, collapsed from 223,974 sales lines by order_key per Order''s
+    declared grounding; the full extent of order_date, 2016-05-18 to 2025-12-31, because the question
+    named no period (order.default.an_unscoped_question_covers_all_time, confidence C); both sales channels,
+    because the subject here is a money measure and store.resolution.the_channel_is_the_location_sentinel
+    scopes its `physical` default to questions whose subject is a store; no order-status exclusion, because
+    none is expressible in this bundle; and reporting over the 8 real country codes only, `--` excluded
+    per country.exclusion.sentinel_is_not_a_country. THE CUSTOMER-COUNTRY COLUMN is computed over all
+    93,470 of those orders. THE STORE-COUNTRY COLUMN is computed over 54,502 — the 38,968 web-shop orders
+    carry `--` as their store country and are therefore absent, which is a consequence of that reading
+    rather than a filter I applied.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: I will not choose
+    columns_the_answer_step_asks_for: &id001
+    - country
+    - average order value
+    figures_the_answer_step_computes: []
+    answer_step: '5'
+    verb: select
+    said: average order value by country
+    stage1_confidence: 0.62
+  canonical_question: &id002
+    understood_as: For every country, the average value of one order — all orders grouped by their country,
+      with each row showing one country and the average value of an order placed there. No time window
+      was given, so this covers all orders on record, and no orders are excluded (cancelled or refunded
+      ones are included).
+    steps:
+    - id: '1'
+      do: from
+      thing: orders
+      said: order
+    - id: '2'
+      do: pivot_to
+      of: '1'
+      to: country
+      said: by country
+    - id: '3'
+      do: group_by
+      of: '1'
+      thing: country
+      said: by country
+    - id: '4'
+      do: aggregate
+      of: '3'
+      figures:
+      - how: avg
+        of: order value
+        said: average order value
+      said: average order value
+    - id: '5'
+      do: select
+      of: '4'
+      columns: *id001
+      said: average order value by country
+    answer: '5'
+    output_shape: &id003
+      shape: a list of names and figures
+      rows: many
+      key_columns: &id005
+      - country
+      figure_columns: &id006
+      - average order value
+      said: Average order value by country
+    ambiguities:
+    - words: by country
+      question: Which country do you mean — where the customer is based, where the order was shipped,
+        or the country of the store or site that took the order?
+      readings:
+      - the customer's own country
+      - the country the order was shipped to
+      - the billing country on the order
+      - the country of the store or site that sold it
+      assumed: the country recorded on the order itself
+    - words: Average order value
+      question: Should 'average order value' be the average of the order totals, or total sales divided
+        by something else such as the number of customers?
+      readings:
+      - the average of each order's total value
+      - total sales divided by the number of customers
+      - total sales divided by the number of items
+      assumed: the average of each order's total value
+    - words: order value
+      question: Should an order's value include tax and shipping, and should discounts and refunds be
+        taken off?
+      readings:
+      - gross value before discounts
+      - net value after discounts
+      - including tax and shipping
+      - excluding tax and shipping
+      assumed: the order value as recorded, whatever it includes
+    - words: Average order value by country
+      question: Over what period — all orders ever, or a recent window such as this year or the last 12
+        months?
+      readings:
+      - all orders on record
+      - orders in the current year
+      - orders in the last 12 months
+      assumed: all orders on record
+    - words: orders
+      question: Should cancelled, returned or fully refunded orders be left out of the average?
+      readings:
+      - count every order
+      - only completed orders
+      - exclude cancelled and refunded orders
+      assumed: count every order
+    cannot_express: []
+    confidence: 0.62
+  steps: 5
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: country
+      type: string
+    - name: avg_order_value_customer_country
+      type: number
+    - name: avg_order_value_store_country
+      type: number
+    rows:
+    - - Italy
+      - 2459.71
+      - 2617.62
+    - - United Kingdom
+      - 2413.06
+      - 2498.53
+    - - United States
+      - 2356.13
+      - 2430.24
+    - - Germany
+      - 2319.6
+      - 2427.47
+    - - Canada
+      - 2307.13
+      - 2396.95
+    - - Australia
+      - 2288.96
+      - 2348.5
+    - - France
+      - 2250.41
+      - 2272.68
+    - - Netherlands
+      - 2204.9
+      - 2239.53
+  value: null
+  raw: 'Which country do you mean — where the customer lives, or where the shop that took the order stood?
+    There is no country written on an order itself, so one can only be reached by choosing, and the choice
+    decides whether 38,968 internet orders are in the answer or absent from it.
+
+
+    IF YOU MEAN WHERE THE CUSTOMER LIVES — all 93,470 orders counted, internet included (average order
+    value, net, USD):
+
+    Italy 2,459.71 · United Kingdom 2,413.06 · United States 2,356.13 · Germany 2,319.60 · Canada 2,307.13
+    · Australia 2,288.96 · France 2,250.41 · Netherlands 2,204.90
+
+
+    IF YOU MEAN WHERE THE SHOP STOOD — only the 54,502 orders rung up in a physical shop; the 38,968 web-shop
+    orders (86,790,054.13 USD) belong to no country and drop out entirely:
+
+    Italy 2,617.62 · United Kingdom 2,498.53 · United States 2,430.24 · Germany 2,427.47 · Canada 2,396.95
+    · Australia 2,348.50 · France 2,272.68 · Netherlands 2,239.53
+
+
+    WHAT THE CHOICE DOES NOT CHANGE: the league table. Both readings give the same eight countries in
+    the same order — Italy highest, Netherlands lowest, United States third either way. Every store figure
+    is simply higher than its customer counterpart, by 22.27 (France) to 157.91 (Italy), because the internet
+    orders the store reading omits are cheaper on average (2,227.21) than shop orders. So if you want
+    to know WHERE ORDERS ARE BIGGEST, you have your answer already and need not choose. If you want to
+    quote a FIGURE, you must.
+
+
+    ONE PLACE THE CHOICE BITES HARDER: the United States and Germany sit 36.53 apart under the customer
+    reading but 2.77 apart under the store reading — effectively tied. Do not call that gap real without
+    saying which reading produced it.'
+  reading: I will not choose
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "orders → distinct order_key over the sales line relation — 93,470 orders behind 223,974 lines,\
+      \ as Order's grounding declares (counts order_key)\n        could also mean: the 223,974 individual\
+      \ order lines, which would make the 'average order value' a per-line average of 976.96 rather than\
+      \ a per-order 2,341.01"
+    ref: 'Order [event] grounded in v_contoso5_sales_line, counts order_key: ''One customer''s purchase
+      on one date, counted by distinct order_key over the line relation'''
+  - kind: ''
+    text: "order value → net_amount summed over the order's lines — what the customer was actually charged,\
+      \ after discount\n        could also mean: gross_amount, the value before discount, which I have\
+      \ carried on the row beside it so the fork can be priced at the aggregate step rather than re-queried"
+    ref: net_revenue.default.revenue_means_net — an unqualified 'value'/'sales' figure is net, and must
+      be reported as net
+  - kind: ''
+    text: "orders (cancelled or refunded) → every order, with no status exclusion\n        could also\
+      \ mean: completed orders only — but this is not a reading I declined, it is one the data cannot\
+      \ express: v_contoso5_sales_line carries no status, cancellation or refund column, and neither does\
+      \ any declared relation. There is nothing to exclude."
+    ref: the question document's own assumption 'count every order', which the schema here happens to
+      make the only possible reading
+  - kind: ''
+    text: "all orders on record → the full extent of order_date, 2016-05-18 to 2025-12-31 — ten years,\
+      \ nothing narrowed\n        could also mean: a recent window such as the current year or last 12\
+      \ months, which the question did not name"
+    ref: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30):
+      cover the full extent and state the first and last date'
+  - kind: ''
+    text: "by country → no choice — I carried both the store's country and the customer's country forward,\
+      \ because the declaration binding this word has three paths and NO default, and explicitly forbids\
+      \ picking one silently or averaging them\n        could also mean: the store's country (8 countries\
+      \ over 54,502 orders, 86,790,054.13 of net revenue stranded on the sentinel and excluded) or the\
+      \ customer's country (8 countries over all 93,470 orders). Measured: the two agree on the ORDER\
+      \ of the countries — Italy, United Kingdom, United States, Germany, Canada, Australia, France, Netherlands,\
+      \ identical under both — but disagree on every figure, by 22.27 (France) to 157.91 (Italy), the\
+      \ store reading always higher"
+    ref: 'country.default.whose_country_is_asked_never_assumed, confidence C, scope CONTOSO5: ''never
+      pick between the store and the customer silently, and never average the two'', realized by mac.canon.path_select
+      with paths store / customer / location and no declared default'
+  - kind: ''
+    text: "the country recorded on the order itself → nothing — this reading, which the question document\
+      \ assumed, has no referent: v_contoso5_sales_line carries order_key, line_number, dates, store_key,\
+      \ customer_key, channel, product_key, currency_code and the amounts, and no country column\n   \
+      \     could also mean: nothing else; there is no billing country and no ship-to country in this\
+      \ bundle either, so two of the document's four listed readings of 'by country' cannot be expressed\
+      \ at all"
+    ref: declaration://none
+  - kind: ''
+    text: "the site the store stands on → dropped as a distinct reading\n        could also mean: a third\
+      \ answer — but measured over all 93,470 orders it returns the same orders and the same averages\
+      \ as the store reading on all nine codes, because dim_store.country_code never disagrees with the\
+      \ country of its dim_location.location_code"
+    ref: the `location` path of country.default.whose_country_is_asked_never_assumed, measured here to
+      be immaterial rather than assumed to be
+  - kind: ''
+    text: "order value → net_amount — what the customer was actually charged, after discount\n       \
+      \ could also mean: gross_amount, before discount; the gap is the discount"
+    ref: net_revenue.default.revenue_means_net
+  - kind: ''
+    text: "country (as a group) → the eight real countries, dropping the `--` sentinel row\n        could\
+      \ also mean: nine groups including `--` labelled 'Online', which under the store reading would be\
+      \ the largest group of all at 38,968 orders and 2,227.21 average — bigger than every real country\
+      \ except the United States"
+    ref: 'country.exclusion.sentinel_is_not_a_country, scope CONTOSO5, default population `real`: ''never
+      report nine countries''; `--` is where the source wrote the online store''s country'
+  - kind: ''
+    text: "by country → both readings carried in parallel, still unchosen\n        could also mean: store\
+      \ country or customer country — the choice changes which orders are in the population at all, not\
+      \ merely how they are labelled"
+    ref: country.default.whose_country_is_asked_never_assumed
+  - kind: ''
+    text: "average order value → the average of each order's total — net money divided by the count of\
+      \ distinct orders\n        could also mean: total sales per buying customer, which I measured and\
+      \ which REORDERS THE COUNTRIES ENTIRELY: United States 4,505.30, Germany 4,437.83, Canada 4,313.67,\
+      \ Netherlands 3,877.17, United Kingdom 3,738.77, Italy 3,564.05, France 3,350.77, Australia 3,347.70\
+      \ — Italy falls from first to sixth. Or total sales per item sold: Italy 333.64, United Kingdom\
+      \ 322.78, United States 313.91, Canada 304.82, Germany 304.25, Australia 300.58, France 298.34,\
+      \ Netherlands 293.19. I did not treat these as rival readings of the phrase: 'average order value'\
+      \ names the Order, which is a declared concept of this bundle counted by distinct order_key, and\
+      \ money-per-customer and money-per-item are different measures that happen to be askable — not meanings\
+      \ of this one"
+    ref: declaration://none
+  - kind: ''
+    text: "order value → net_amount, after discount, and I am calling it NET\n        could also mean:\
+      \ gross, before discount, which is uniformly about 6.2% higher and changes no country's position:\
+      \ Italy 2,611.67, United Kingdom 2,566.23, United States 2,504.57, Germany 2,465.66, Canada 2,452.74,\
+      \ Australia 2,432.41, France 2,392.42, Netherlands 2,343.94 (customer reading)"
+    ref: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net; ''never pick one
+      silently'''
+  - kind: ''
+    text: "tax and shipping → neither is included or excluded by me — the bundle holds no tax or shipping\
+      \ column, so an order's value is quantity times price and nothing else\n        could also mean:\
+      \ a value inclusive of tax and delivery, which this warehouse cannot produce"
+    ref: declaration://none
+  - kind: ''
+    text: "by country → still unchosen — both columns carried forward\n        could also mean: either\
+      \ column alone"
+    ref: country.default.whose_country_is_asked_never_assumed
+  - kind: ''
+    text: "by country → NO CHOICE — both readings measured and handed back priced, because the rule binding\
+      \ this word is confidence C, declares no default, and says in terms never to pick between the store\
+      \ and the customer silently or to average the two\n        could also mean: the customer's country\
+      \ (8 countries, all 93,470 orders) or the store's country (8 countries, 54,502 orders). The third\
+      \ declared path, the site the store stands on, measured identical to the store path on all nine\
+      \ codes — same counts, same averages to the penny — so it is not a third option. The document's\
+      \ own assumption, 'the country recorded on the order itself', has no referent: the sales line carries\
+      \ no country column, and the bundle holds no billing country and no ship-to country, so two of the\
+      \ four readings the question imagined cannot be expressed at all"
+    ref: country.default.whose_country_is_asked_never_assumed, confidence C, realized by mac.canon.path_select
+      with paths store / customer / location and no default
+  - kind: ''
+    text: "average order value → net money divided by the number of orders\n        could also mean: per\
+      \ buying customer, which reorders the countries completely — United States 4,505.30, Germany 4,437.83,\
+      \ Canada 4,313.67, Netherlands 3,877.17, United Kingdom 3,738.77, Italy 3,564.05, France 3,350.77,\
+      \ Australia 3,347.70, with Italy falling from first to sixth — or per item sold: Italy 333.64, United\
+      \ Kingdom 322.78, United States 313.91, Canada 304.82, Germany 304.25, Australia 300.58, France\
+      \ 298.34, Netherlands 293.19. I did not raise this as a question because the phrase names the Order,\
+      \ a declared concept counted by distinct order_key; the other two are different measures, not other\
+      \ meanings of this phrase"
+    ref: declaration://none
+  - kind: ''
+    text: "order value → net — after discount — and said so rather than letting it pass unlabelled\n \
+      \       could also mean: gross, before discount: Italy 2,611.67, United Kingdom 2,566.23, United\
+      \ States 2,504.57, Germany 2,465.66, Canada 2,452.74, Australia 2,432.41, France 2,392.42, Netherlands\
+      \ 2,343.94 under the customer reading — about 6.2% higher everywhere, changing no country's position"
+    ref: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net'
+  - kind: ''
+    text: "orders → all of them, with no status filter\n        could also mean: completed orders only,\
+      \ excluding cancellations and refunds — not a reading I declined but one the data cannot hold: no\
+      \ relation in this bundle carries an order status, cancellation flag or refund column"
+    ref: declaration://none
+  - kind: ''
+    text: "all orders on record → 2016-05-18 to 2025-12-31, the full ten years\n        could also mean:\
+      \ the current year or the last 12 months, neither of which the question named"
+    ref: order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling 2026-09-30
+  concepts: []
+  rules:
+  - id: Order [event] grounded in v_contoso5_sales_line
+    why: '''orders'' = distinct order_key over the sales line relation — 93,470 orders behind 223,974
+      lines, as Order''s grounding declares (counts order_key)'
+  - id: 'counts order_key: ''One customer''s purchase on one date'
+    why: '''orders'' = distinct order_key over the sales line relation — 93,470 orders behind 223,974
+      lines, as Order''s grounding declares (counts order_key)'
+  - id: counted by distinct order_key over the line relation'
+    why: '''orders'' = distinct order_key over the sales line relation — 93,470 orders behind 223,974
+      lines, as Order''s grounding declares (counts order_key)'
+  - id: net_revenue.default.revenue_means_net — an unqualified 'value'/'sales' figure is net
+    why: '''order value'' = net_amount summed over the order''s lines — what the customer was actually
+      charged, after discount'
+  - id: and must be reported as net
+    why: '''order value'' = net_amount summed over the order''s lines — what the customer was actually
+      charged, after discount'
+  - id: the question document's own assumption 'count every order'
+    why: '''orders (cancelled or refunded)'' = every order, with no status exclusion'
+  - id: which the schema here happens to make the only possible reading
+    why: '''orders (cancelled or refunded)'' = every order, with no status exclusion'
+  - id: order.default.an_unscoped_question_covers_all_time (confidence C
+    why: '''all orders on record'' = the full extent of order_date, 2016-05-18 to 2025-12-31 — ten years,
+      nothing narrowed'
+  - id: 'operator ruling 2026-09-30): cover the full extent and state the first and last date'
+    why: '''all orders on record'' = the full extent of order_date, 2016-05-18 to 2025-12-31 — ten years,
+      nothing narrowed'
+  - id: country.default.whose_country_is_asked_never_assumed
+    why: '''by country'' = no choice — I carried both the store''s country and the customer''s country
+      forward, because the declaration binding this word has three paths and NO default, and explicitly
+      forbids picking one silently or averaging them'
+  - id: confidence C
+    why: '''by country'' = no choice — I carried both the store''s country and the customer''s country
+      forward, because the declaration binding this word has three paths and NO default, and explicitly
+      forbids picking one silently or averaging them'
+  - id: 'scope CONTOSO5: ''never pick between the store and the customer silently'
+    why: '''by country'' = no choice — I carried both the store''s country and the customer''s country
+      forward, because the declaration binding this word has three paths and NO default, and explicitly
+      forbids picking one silently or averaging them'
+  - id: and never average the two'
+    why: '''by country'' = no choice — I carried both the store''s country and the customer''s country
+      forward, because the declaration binding this word has three paths and NO default, and explicitly
+      forbids picking one silently or averaging them'
+  - id: realized by mac.canon.path_select with paths store / customer / location and no declared default
+    why: '''by country'' = no choice — I carried both the store''s country and the customer''s country
+      forward, because the declaration binding this word has three paths and NO default, and explicitly
+      forbids picking one silently or averaging them'
+  - id: the `location` path of country.default.whose_country_is_asked_never_assumed
+    why: '''the site the store stands on'' = dropped as a distinct reading'
+  - id: measured here to be immaterial rather than assumed to be
+    why: '''the site the store stands on'' = dropped as a distinct reading'
+  - id: net_revenue.default.revenue_means_net
+    why: '''order value'' = net_amount — what the customer was actually charged, after discount'
+  - id: country.exclusion.sentinel_is_not_a_country
+    why: '''country (as a group)'' = the eight real countries, dropping the `--` sentinel row'
+  - id: scope CONTOSO5
+    why: '''country (as a group)'' = the eight real countries, dropping the `--` sentinel row'
+  - id: 'default population `real`: ''never report nine countries'''
+    why: '''country (as a group)'' = the eight real countries, dropping the `--` sentinel row'
+  - id: '`--` is where the source wrote the online store''s country'
+    why: '''country (as a group)'' = the eight real countries, dropping the `--` sentinel row'
+  - id: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net'
+    why: '''order value'' = net_amount, after discount, and I am calling it NET'
+  - id: '''never pick one silently'''
+    why: '''order value'' = net_amount, after discount, and I am calling it NET'
+  - id: realized by mac.canon.path_select with paths store / customer / location and no default
+    why: '''by country'' = NO CHOICE — both readings measured and handed back priced, because the rule
+      binding this word is confidence C, declares no default, and says in terms never to pick between
+      the store and the customer silently or to average the two'
+  - id: order.default.an_unscoped_question_covers_all_time
+    why: '''all orders on record'' = 2016-05-18 to 2025-12-31, the full ten years'
+  - id: operator ruling 2026-09-30
+    why: '''all orders on record'' = 2016-05-18 to 2025-12-31, the full ten years'
+  edges: []
+sql:
+- "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key) AS\
+  \ store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP\
+  \ BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n    c.country_code\
+  \ AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN\
+  \ contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n)\nSELECT\n  dc.country_name\
+  \ AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS avg_order_value_customer_country,\n\
+  \  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\n\
+  FROM contoso_served.dim_country AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\n\
+  ORDER BY\n  avg_order_value_customer_country DESC"
+- "SELECT\n  order_key,\n  MIN(order_date) AS order_date,\n  MIN(customer_key) AS customer_key,\n  MIN(store_key)\
+  \ AS store_key,\n  SUM(net_amount) AS order_net_amount,\n  SUM(gross_amount) AS order_gross_amount\n\
+  FROM contoso_served.v_contoso5_sales_line\nGROUP BY\n  order_key"
+- "SELECT\n  o.order_key,\n  o.order_net_amount,\n  s.country_code AS store_country_code,\n  scc.country_name\
+  \ AS store_country_name,\n  c.country_code AS customer_country_code,\n  ccc.country_name AS customer_country_name\n\
+  FROM (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key) AS store_key,\n\
+  \    SUM(net_amount) AS order_net_amount\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP BY\n\
+  \    order_key\n) AS o\nJOIN contoso_served.dim_store AS s\n  ON o.store_key = s.store_key\nJOIN contoso_served.dim_customer\
+  \ AS c\n  ON o.customer_key = c.customer_key\nJOIN contoso_served.dim_country AS scc\n  ON s.country_code\
+  \ = scc.country_code\nJOIN contoso_served.dim_country AS ccc\n  ON c.country_code = ccc.country_code"
+- "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key) AS\
+  \ store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP\
+  \ BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n    c.country_code\
+  \ AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN\
+  \ contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n)\nSELECT\n  dc.country_name,\n\
+  \  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code) AS orders_store,\n  COUNT(*) FILTER(WHERE\n\
+  \    t.cust_cc = dc.country_code) AS orders_customer\nFROM contoso_served.dim_country AS dc\nCROSS JOIN\
+  \ t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  dc.country_name"
+- "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key) AS\
+  \ store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP\
+  \ BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n    c.country_code\
+  \ AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN\
+  \ contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n)\nSELECT\n  dc.country_name\
+  \ AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS avg_order_value_customer_country,\n\
+  \  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\n\
+  FROM contoso_served.dim_country AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\n\
+  ORDER BY\n  avg_order_value_customer_country DESC"
+answer_sql: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+  \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP\
+  \ BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n    c.country_code\
+  \ AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN\
+  \ contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n)\nSELECT\n  dc.country_name\
+  \ AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS avg_order_value_customer_country,\n\
+  \  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\n\
+  FROM contoso_served.dim_country AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\n\
+  ORDER BY\n  avg_order_value_customer_country DESC"
+sql_valid: true
+result:
+  status: ok
+  rows: 8
+  cols: &id007
+  - country
+  - avg_order_value_customer_country
+  - avg_order_value_store_country
+  sample_rows:
+  - - Italy
+    - 2459.71
+    - 2617.62
+  - - United Kingdom
+    - 2413.06
+    - 2498.53
+  - - United States
+    - 2356.13
+    - 2430.24
+  - - Germany
+    - 2319.6
+    - 2427.47
+  - - Canada
+    - 2307.13
+    - 2396.95
+  - - Australia
+    - 2288.96
+    - 2348.5
+  - - France
+    - 2250.41
+    - 2272.68
+  - - Netherlands
+    - 2204.9
+    - 2239.53
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1       FROM       orders                        “order”\n  2  ← 1\
+    \  PIVOT_TO   country                       “by country”\n  3  ← 1  GROUP_BY   by country        \
+    \            “by country”\n  4  ← 3  AGGREGATE  avg of order value            “average order value”\n\
+    \  5  ← 4  SELECT     country, average order value  “average order value by country”\n  answer: step\
+    \ 5   confidence: 0.62   A DAG   step(s) 1 feed more than one\n  UNDERSTOOD AS: For every country,\
+    \ the average value of one order — all orders grouped by their country, with each row showing one\
+    \ country and the average value of an order placed there. No time window was given, so this covers\
+    \ all orders on record, and no orders are excluded (cancelled or refunded ones are included).\n  AMBIGUOUS\
+    \ 'by country' — ASKS: Which country do you mean — where the customer is based, where the order was\
+    \ shipped, or the country of the store or site that took the order?\n      could mean: the customer's\
+    \ own country\n      could mean: the country the order was shipped to\n      could mean: the billing\
+    \ country on the order\n      could mean: the country of the store or site that sold it\n      took:\
+    \ the country recorded on the order itself\n  AMBIGUOUS 'Average order value' — ASKS: Should 'average\
+    \ order value' be the average of the order totals, or total sales divided by something else such as\
+    \ the number of customers?\n      could mean: the average of each order's total value\n      could\
+    \ mean: total sales divided by the number of customers\n      could mean: total sales divided by the\
+    \ number of items\n      took: the average of each order's total value\n  AMBIGUOUS 'order value'\
+    \ — ASKS: Should an order's value include tax and shipping, and should discounts and refunds be taken\
+    \ off?\n      could mean: gross value before discounts\n      could mean: net value after discounts\n\
+    \      could mean: including tax and shipping\n      could mean: excluding tax and shipping\n    \
+    \  took: the order value as recorded, whatever it includes\n  AMBIGUOUS 'Average order value by country'\
+    \ — ASKS: Over what period — all orders ever, or a recent window such as this year or the last 12\
+    \ months?\n      could mean: all orders on record\n      could mean: orders in the current year\n\
+    \      could mean: orders in the last 12 months\n      took: all orders on record\n  AMBIGUOUS 'orders'\
+    \ — ASKS: Should cancelled, returned or fully refunded orders be left out of the average?\n      could\
+    \ mean: count every order\n      could mean: only completed orders\n      could mean: exclude cancelled\
+    \ and refunded orders\n      took: count every order\n  OUTPUT SHAPE: a list of names and figures\
+    \ · many row(s) · named by country · carrying average order value"
+  understood_as: For every country, the average value of one order — all orders grouped by their country,
+    with each row showing one country and the average value of an order placed there. No time window was
+    given, so this covers all orders on record, and no orders are excluded (cancelled or refunded ones
+    are included).
+  ambiguities_it_saw:
+  - words: by country
+    asks: Which country do you mean — where the customer is based, where the order was shipped, or the
+      country of the store or site that took the order?
+    readings:
+    - the customer's own country
+    - the country the order was shipped to
+    - the billing country on the order
+    - the country of the store or site that sold it
+    took: the country recorded on the order itself
+  - words: Average order value
+    asks: Should 'average order value' be the average of the order totals, or total sales divided by something
+      else such as the number of customers?
+    readings:
+    - the average of each order's total value
+    - total sales divided by the number of customers
+    - total sales divided by the number of items
+    took: the average of each order's total value
+  - words: order value
+    asks: Should an order's value include tax and shipping, and should discounts and refunds be taken
+      off?
+    readings:
+    - gross value before discounts
+    - net value after discounts
+    - including tax and shipping
+    - excluding tax and shipping
+    took: the order value as recorded, whatever it includes
+  - words: Average order value by country
+    asks: Over what period — all orders ever, or a recent window such as this year or the last 12 months?
+    readings:
+    - all orders on record
+    - orders in the current year
+    - orders in the last 12 months
+    took: all orders on record
+  - words: orders
+    asks: Should cancelled, returned or fully refunded orders be left out of the average?
+    readings:
+    - count every order
+    - only completed orders
+    - exclude cancelled and refunded orders
+    took: count every order
+  presentation:
+    claimed_answer_is: I will not choose
+    answer_step: '5'
+    answer_step_asks:
+      do: select
+      of: '4'
+      columns: *id001
+      said: average order value by country
+    confidence_stage1: 0.62
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  order_key,\n  MIN(order_date) AS order_date,\n  MIN(customer_key) AS customer_key,\n\
+      \  MIN(store_key) AS store_key,\n  SUM(net_amount) AS order_net_amount,\n  SUM(gross_amount) AS\
+      \ order_gross_amount\nFROM contoso_served.v_contoso5_sales_line\nGROUP BY\n  order_key"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  o.order_key,\n  o.order_net_amount,\n  s.country_code AS store_country_code,\n  scc.country_name\
+      \ AS store_country_name,\n  c.country_code AS customer_country_code,\n  ccc.country_name AS customer_country_name\n\
+      FROM (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key) AS\
+      \ store_key,\n    SUM(net_amount) AS order_net_amount\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n) AS o\nJOIN contoso_served.dim_store AS s\n  ON o.store_key = s.store_key\n\
+      JOIN contoso_served.dim_customer AS c\n  ON o.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+      \ AS scc\n  ON s.country_code = scc.country_code\nJOIN contoso_served.dim_country AS ccc\n  ON c.country_code\
+      \ = ccc.country_code"
+    params: {}
+  - step: '3'
+    sql: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+      \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+      \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+      \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+      )\nSELECT\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code) AS orders_store,\n\
+      \  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer\nFROM contoso_served.dim_country\
+      \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  dc.country_name"
+    params: {}
+  - step: '4'
+    sql: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+      \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+      \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+      \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+      )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc =\
+      \ dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+      \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+      \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+      \ DESC"
+    params: {}
+  - step: '5'
+    sql: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+      \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+      \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+      \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+      )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc =\
+      \ dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+      \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+      \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+      \ DESC"
+    params: {}
+  what_it_calculated: 'Eight rows, one per country Contoso sells in, each holding two versions of one
+    quantity: the average value of a single order placed there, where an order''s value is the money actually
+    charged across all its lines after discount, and the average is taken over orders — 93,470 of them
+    — rather than over the 223,974 lines or over customers. The first figure attributes each order to
+    the country its buyer lives in and covers every order on record; the second attributes it to the country
+    the selling shop stood in and covers 54,502, every internet order having fallen out for want of a
+    country. Both span the full ten years of trading, 2016-05-18 to 2025-12-31. The returned rows match
+    the figures I claimed before seeing them, to the penny, and the store column descends in the same
+    sequence as the customer column, which is what makes the ranking claim safe. WHAT IS NOT IN THESE
+    FIGURES: no tax and no shipping, because the warehouse holds neither; no exclusion of cancelled, returned
+    or refunded orders, because no column in this bundle records an order''s status; no `--` sentinel
+    row, which under the store reading would otherwise stand as a ninth and second-largest "country" named
+    Online; and no currency conversion, the amounts being USD already whatever currency a sale was transacted
+    in.'
+  rows_returned: &id004
+  - country: Italy
+    avg_order_value_customer_country: 2459.71
+    avg_order_value_store_country: 2617.62
+  - country: United Kingdom
+    avg_order_value_customer_country: 2413.06
+    avg_order_value_store_country: 2498.53
+  - country: United States
+    avg_order_value_customer_country: 2356.13
+    avg_order_value_store_country: 2430.24
+  - country: Germany
+    avg_order_value_customer_country: 2319.6
+    avg_order_value_store_country: 2427.47
+  - country: Canada
+    avg_order_value_customer_country: 2307.13
+    avg_order_value_store_country: 2396.95
+  - country: Australia
+    avg_order_value_customer_country: 2288.96
+    avg_order_value_store_country: 2348.5
+  - country: France
+    avg_order_value_customer_country: 2250.41
+    avg_order_value_store_country: 2272.68
+  - country: Netherlands
+    avg_order_value_customer_country: 2204.9
+    avg_order_value_store_country: 2239.53
+  synthesis:
+    claimed: 'Which country do you mean — where the customer lives, or where the shop that took the order
+      stood? There is no country written on an order itself, so one can only be reached by choosing, and
+      the choice decides whether 38,968 internet orders are in the answer or absent from it.
+
+
+      IF YOU MEAN WHERE THE CUSTOMER LIVES — all 93,470 orders counted, internet included (average order
+      value, net, USD):
+
+      Italy 2,459.71 · United Kingdom 2,413.06 · United States 2,356.13 · Germany 2,319.60 · Canada 2,307.13
+      · Australia 2,288.96 · France 2,250.41 · Netherlands 2,204.90
+
+
+      IF YOU MEAN WHERE THE SHOP STOOD — only the 54,502 orders rung up in a physical shop; the 38,968
+      web-shop orders (86,790,054.13 USD) belong to no country and drop out entirely:
+
+      Italy 2,617.62 · United Kingdom 2,498.53 · United States 2,430.24 · Germany 2,427.47 · Canada 2,396.95
+      · Australia 2,348.50 · France 2,272.68 · Netherlands 2,239.53
+
+
+      WHAT THE CHOICE DOES NOT CHANGE: the league table. Both readings give the same eight countries in
+      the same order — Italy highest, Netherlands lowest, United States third either way. Every store
+      figure is simply higher than its customer counterpart, by 22.27 (France) to 157.91 (Italy), because
+      the internet orders the store reading omits are cheaper on average (2,227.21) than shop orders.
+      So if you want to know WHERE ORDERS ARE BIGGEST, you have your answer already and need not choose.
+      If you want to quote a FIGURE, you must.
+
+
+      ONE PLACE THE CHOICE BITES HARDER: the United States and Germany sit 36.53 apart under the customer
+      reading but 2.77 apart under the store reading — effectively tied. Do not call that gap real without
+      saying which reading produced it.'
+    shape: I will not choose
+    answered_population: 'Two populations, because I declined to collapse them into one. COMMON TO BOTH:
+      all 93,470 distinct orders, collapsed from 223,974 sales lines by order_key per Order''s declared
+      grounding; the full extent of order_date, 2016-05-18 to 2025-12-31, because the question named no
+      period (order.default.an_unscoped_question_covers_all_time, confidence C); both sales channels,
+      because the subject here is a money measure and store.resolution.the_channel_is_the_location_sentinel
+      scopes its `physical` default to questions whose subject is a store; no order-status exclusion,
+      because none is expressible in this bundle; and reporting over the 8 real country codes only, `--`
+      excluded per country.exclusion.sentinel_is_not_a_country. THE CUSTOMER-COUNTRY COLUMN is computed
+      over all 93,470 of those orders. THE STORE-COUNTRY COLUMN is computed over 54,502 — the 38,968 web-shop
+      orders carry `--` as their store country and are therefore absent, which is a consequence of that
+      reading rather than a filter I applied.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: order
+    turns:
+    - why: Establish the order population at order grain and check that one order has exactly one customer,
+        one store and one date, since later steps attach a country to the order.
+      did: "SELECT\n  COUNT(*) AS orders,\n  COUNT(*) FILTER(WHERE\n    n_cust > 1) AS orders_with_many_customers,\n\
+        \  COUNT(*) FILTER(WHERE\n    n_store > 1) AS orders_with_many_stores,\n  COUNT(*) FILTER(WHERE\n\
+        \    n_date > 1) AS orders_with_many_dates,\n  SUM(lines) AS total_lines,\n  MIN(first_date) AS\
+        \ first_order_date,\n  MAX(first_date) AS last_order_date,\n  SUM(order_net) AS total_net,\n \
+        \ AVG(order_net) AS avg_order_value_all\nFROM (\n  SELECT\n    order_key,\n    COUNT(*) AS lines,\n\
+        \    COUNT(DISTINCT customer_key) AS n_cust,\n    COUNT(DISTINCT store_key) AS n_store,\n    COUNT(DISTINCT\
+        \ order_date) AS n_date,\n    MIN(order_date) AS first_date,\n    SUM(net_amount) AS order_net\n\
+        \  FROM contoso_served.v_contoso5_sales_line\n  GROUP BY\n    order_key\n) AS t"
+      came_back: '1 row(s): [{"orders": 93470, "orders_with_many_customers": 0, "orders_with_many_stores":
+        0, "orders_with_many_dates": 0, "total_lines": 223974, "first_order_date": "2016-05-18", "last_order_date":
+        "2025-12-31", "total_net": "218814471.65866", "avg_order_value_all": 2341.0128560892267}]'
+    settled_on: "SELECT\n  order_key,\n  MIN(order_date) AS order_date,\n  MIN(customer_key) AS customer_key,\n\
+      \  MIN(store_key) AS store_key,\n  SUM(net_amount) AS order_net_amount,\n  SUM(gross_amount) AS\
+      \ order_gross_amount\nFROM contoso_served.v_contoso5_sales_line\nGROUP BY\n  order_key"
+    means: 'One row per order placed with Contoso — 93,470 of them, every order on record from 2016-05-18
+      to 2025-12-31, with no order left out. Each row carries what that single purchase was worth: the
+      money actually charged across all its lines after discount (218,814,471.66 USD over the whole set,
+      averaging 2,341.01 per order), and alongside it the figure before discount. Each row also carries
+      the one customer who placed it, the one store or web shop that took it, and the one day it was placed
+      — measured just now, no order spans two customers, two stores or two dates, so each of those is
+      a single fact about the order and not a choice between several.'
+    readings_taken:
+    - word: orders
+      took: distinct order_key over the sales line relation — 93,470 orders behind 223,974 lines, as Order's
+        grounding declares (counts order_key)
+      could_also_mean: the 223,974 individual order lines, which would make the 'average order value'
+        a per-line average of 976.96 rather than a per-order 2,341.01
+      declaration: 'Order [event] grounded in v_contoso5_sales_line, counts order_key: ''One customer''s
+        purchase on one date, counted by distinct order_key over the line relation'''
+    - word: order value
+      took: net_amount summed over the order's lines — what the customer was actually charged, after discount
+      could_also_mean: gross_amount, the value before discount, which I have carried on the row beside
+        it so the fork can be priced at the aggregate step rather than re-queried
+      declaration: net_revenue.default.revenue_means_net — an unqualified 'value'/'sales' figure is net,
+        and must be reported as net
+    - word: orders (cancelled or refunded)
+      took: every order, with no status exclusion
+      could_also_mean: 'completed orders only — but this is not a reading I declined, it is one the data
+        cannot express: v_contoso5_sales_line carries no status, cancellation or refund column, and neither
+        does any declared relation. There is nothing to exclude.'
+      declaration: the question document's own assumption 'count every order', which the schema here happens
+        to make the only possible reading
+    - word: all orders on record
+      took: the full extent of order_date, 2016-05-18 to 2025-12-31 — ten years, nothing narrowed
+      could_also_mean: a recent window such as the current year or last 12 months, which the question
+        did not name
+      declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+        2026-09-30): cover the full extent and state the first and last date'
+    blocked_by: []
+  - step: '2'
+    step_asks: by country
+    turns:
+    - why: Measure what each declared country path gives, since country.default.whose_country_is_asked_never_assumed
+        forbids choosing between store, location and customer silently — one query prices all three readings
+        at once.
+      did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_key,\n    o.order_net,\n    s.country_code\
+        \ AS store_cc,\n    l.country_code AS loc_cc,\n    c.country_code AS cust_cc\n  FROM o\n  JOIN\
+        \ contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_location\
+        \ AS l\n    ON s.location_code = l.location_code\n  JOIN contoso_served.dim_customer AS c\n  \
+        \  ON o.customer_key = c.customer_key\n), r AS (\n  SELECT\n    'store' AS reading,\n    store_cc\
+        \ AS cc,\n    order_net\n  FROM t\n  UNION ALL\n  SELECT\n    'location',\n    loc_cc,\n    order_net\n\
+        \  FROM t\n  UNION ALL\n  SELECT\n    'customer',\n    cust_cc,\n    order_net\n  FROM t\n)\n\
+        SELECT\n  r.reading,\n  r.cc AS country_code,\n  dc.country_name,\n  COUNT(*) AS orders,\n  ROUND(AVG(r.order_net),\
+        \ 2) AS avg_order_value,\n  ROUND(SUM(r.order_net), 2) AS net_revenue\nFROM r\nLEFT JOIN contoso_served.dim_country\
+        \ AS dc\n  ON r.cc = dc.country_code\nGROUP BY\n  1,\n  2,\n  3\nORDER BY\n  r.reading,\n  avg_order_value\
+        \ DESC"
+      came_back: '26 row(s) (first 8 of 26): [{"reading": "customer", "country_code": "IT", "country_name":
+        "Italy", "orders": 2669, "avg_order_value": 2459.71, "net_revenue": "6564975.09"}, {"reading":
+        "customer", "country_code": "GB", "country_name": "United Kingdom", "orders": 9552, "avg_order_value":
+        2413.06, "net_revenue": "23049533.37"}, {"reading": "customer", "country_code": "US", "country_name":
+        "United States", "orders": 47477, "avg_order_value": 2356.13, "net_revenue": "111862187.56"},
+        {"reading": "customer", "country_code": "DE", "country_name": "Germany", "orders": 10622, "avg_order_value":
+        2319.6, "net_revenue": "24638830.18"}, {"reading": "customer", "country_code": "CA", "country_name":
+        "Canada", "orders": 10074, "avg_order_value": 2307.13, "net_revenue": "23242027.53"}, {"reading":
+        "customer", "country_code": "AU", "country_name": "Australia", "orders": 5837, "avg_order_value":
+        2288.96, "net_revenue": "13360672.61"}, {"reading": "customer", "country_code": "FR", "country_name":
+        "France", "orders": 2966, "avg_order_value": 2250.41, "net_revenue": "6674724.85"}, {"reading":
+        "customer", "country_code": "NL", "country_name": "Netherlands", "orders": 4273, "avg_order_value":
+        2204.9, "net'
+    - why: Get all three country readings onto one row per country so the fork can be priced in a single
+        short result instead of a truncated 26-row list.
+      did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    l.country_code AS loc_cc,\n    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store\
+        \ AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_location AS l\n    ON s.location_code\
+        \ = l.location_code\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_code,\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code)\
+        \ AS orders_store,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.store_cc = dc.country_code),\
+        \ 2) AS avg_store,\n  COUNT(*) FILTER(WHERE\n    t.loc_cc = dc.country_code) AS orders_location,\n\
+        \  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.loc_cc = dc.country_code), 2) AS avg_location,\n\
+        \  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer,\n  ROUND(AVG(t.order_net)\
+        \ FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS avg_customer\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nGROUP BY\n  1,\n  2\nORDER BY\n  dc.country_code"
+      came_back: '9 row(s) (first 8 of 9): [{"country_code": "--", "country_name": "Online", "orders_store":
+        38968, "avg_store": 2227.21, "orders_location": 38968, "avg_location": 2227.21, "orders_customer":
+        0, "avg_customer": null}, {"country_code": "AU", "country_name": "Australia", "orders_store":
+        3194, "avg_store": 2348.5, "orders_location": 3194, "avg_location": 2348.5, "orders_customer":
+        5837, "avg_customer": 2288.96}, {"country_code": "CA", "country_name": "Canada", "orders_store":
+        5721, "avg_store": 2396.95, "orders_location": 5721, "avg_location": 2396.95, "orders_customer":
+        10074, "avg_customer": 2307.13}, {"country_code": "DE", "country_name": "Germany", "orders_store":
+        5925, "avg_store": 2427.47, "orders_location": 5925, "avg_location": 2427.47, "orders_customer":
+        10622, "avg_customer": 2319.6}, {"country_code": "FR", "country_name": "France", "orders_store":
+        1638, "avg_store": 2272.68, "orders_location": 1638, "avg_location": 2272.68, "orders_customer":
+        2966, "avg_customer": 2250.41}, {"country_code": "GB", "country_name": "United Kingdom", "orders_store":
+        6027, "avg_store": 2498.53, "orders_location": 6027, "avg_location": 2498.53, "orders_customer":
+        9552, "avg_customer": 2413.06}, {"c'
+    - why: Recover the United States row that truncation cut, by dropping the `--` sentinel and the location
+        columns that proved identical to store — leaving the eight real countries under both surviving
+        readings.
+      did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code) AS orders_store,\n\
+        \  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.store_cc = dc.country_code), 2) AS avg_store,\n\
+        \  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer,\n  ROUND(AVG(t.order_net)\
+        \ FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS avg_customer,\n  ROUND(\n    AVG(t.order_net)\
+        \ FILTER(WHERE\n      t.cust_cc = dc.country_code) - AVG(t.order_net) FILTER(WHERE\n      t.store_cc\
+        \ = dc.country_code),\n    2\n  ) AS customer_minus_store\nFROM contoso_served.dim_country AS\
+        \ dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_customer\
+        \ DESC"
+      came_back: '8 row(s): [{"country_name": "Italy", "orders_store": 1760, "avg_store": 2617.62, "orders_customer":
+        2669, "avg_customer": 2459.71, "customer_minus_store": -157.91}, {"country_name": "United Kingdom",
+        "orders_store": 6027, "avg_store": 2498.53, "orders_customer": 9552, "avg_customer": 2413.06,
+        "customer_minus_store": -85.48}, {"country_name": "United States", "orders_store": 27910, "avg_store":
+        2430.24, "orders_customer": 47477, "avg_customer": 2356.13, "customer_minus_store": -74.1}, {"country_name":
+        "Germany", "orders_store": 5925, "avg_store": 2427.47, "orders_customer": 10622, "avg_customer":
+        2319.6, "customer_minus_store": -107.87}, {"country_name": "Canada", "orders_store": 5721, "avg_store":
+        2396.95, "orders_customer": 10074, "avg_customer": 2307.13, "customer_minus_store": -89.82}, {"country_name":
+        "Australia", "orders_store": 3194, "avg_store": 2348.5, "orders_customer": 5837, "avg_customer":
+        2288.96, "customer_minus_store": -59.54}, {"country_name": "France", "orders_store": 1638, "avg_store":
+        2272.68, "orders_customer": 2966, "avg_customer": 2250.41, "customer_minus_store": -22.27}, {"country_name":
+        "Netherlands", "orders_store": 2327, "avg_store": 2239.53, "orders_custom'
+    settled_on: "SELECT\n  o.order_key,\n  o.order_net_amount,\n  s.country_code AS store_country_code,\n\
+      \  scc.country_name AS store_country_name,\n  c.country_code AS customer_country_code,\n  ccc.country_name\
+      \ AS customer_country_name\nFROM (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n\
+      \    MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net_amount\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n) AS o\nJOIN contoso_served.dim_store AS s\n  ON o.store_key = s.store_key\n\
+      JOIN contoso_served.dim_customer AS c\n  ON o.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+      \ AS scc\n  ON s.country_code = scc.country_code\nJOIN contoso_served.dim_country AS ccc\n  ON c.country_code\
+      \ = ccc.country_code"
+    means: 'One row per order — all 93,470 of them, over all ten years — each carrying what the customer
+      paid for it and TWO candidate countries, because the warehouse offers two and the question named
+      neither: the country of the shop that took the order, and the country the buyer lives in. For the
+      54,502 orders rung up in a physical shop the two are a genuine pair of facts; for the 38,968 internet
+      orders the store country is `--`, the online sentinel, which is not a place at all, so those orders
+      have a customer country and no store country. I measured the third declared path, the site the store
+      stands on, and it is identical to the store country on every one of the nine codes — same order
+      counts, same averages to the penny — so it is not a separate reading and I have dropped it.'
+    readings_taken:
+    - word: by country
+      took: no choice — I carried both the store's country and the customer's country forward, because
+        the declaration binding this word has three paths and NO default, and explicitly forbids picking
+        one silently or averaging them
+      could_also_mean: 'the store''s country (8 countries over 54,502 orders, 86,790,054.13 of net revenue
+        stranded on the sentinel and excluded) or the customer''s country (8 countries over all 93,470
+        orders). Measured: the two agree on the ORDER of the countries — Italy, United Kingdom, United
+        States, Germany, Canada, Australia, France, Netherlands, identical under both — but disagree on
+        every figure, by 22.27 (France) to 157.91 (Italy), the store reading always higher'
+      declaration: 'country.default.whose_country_is_asked_never_assumed, confidence C, scope CONTOSO5:
+        ''never pick between the store and the customer silently, and never average the two'', realized
+        by mac.canon.path_select with paths store / customer / location and no declared default'
+    - word: the country recorded on the order itself
+      took: 'nothing — this reading, which the question document assumed, has no referent: v_contoso5_sales_line
+        carries order_key, line_number, dates, store_key, customer_key, channel, product_key, currency_code
+        and the amounts, and no country column'
+      could_also_mean: nothing else; there is no billing country and no ship-to country in this bundle
+        either, so two of the document's four listed readings of 'by country' cannot be expressed at all
+      declaration: null
+    - word: the site the store stands on
+      took: dropped as a distinct reading
+      could_also_mean: a third answer — but measured over all 93,470 orders it returns the same orders
+        and the same averages as the store reading on all nine codes, because dim_store.country_code never
+        disagrees with the country of its dim_location.location_code
+      declaration: the `location` path of country.default.whose_country_is_asked_never_assumed, measured
+        here to be immaterial rather than assumed to be
+    - word: order value
+      took: net_amount — what the customer was actually charged, after discount
+      could_also_mean: gross_amount, before discount; the gap is the discount
+      declaration: net_revenue.default.revenue_means_net
+    blocked_by: []
+  - step: '3'
+    step_asks: by country
+    turns: []
+    settled_on: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+      \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+      \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+      \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+      )\nSELECT\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code) AS orders_store,\n\
+      \  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer\nFROM contoso_served.dim_country\
+      \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  dc.country_name"
+    means: 'The groups the average will be taken over: the eight countries Contoso actually sells in —
+      Australia, Canada, France, Germany, Italy, Netherlands, United Kingdom, United States — with how
+      many orders fall into each one under each reading. Under the customer reading the eight groups between
+      them hold all 93,470 orders, every order on record. Under the store reading they hold 54,502, because
+      the other 38,968 were rung up by the web shop, whose country is the `--` sentinel that the declarations
+      say is not a place; those orders are not in any group and will not be averaged. That missing 42%
+      is not a rounding difference, it is the single most important thing about the store reading.'
+    readings_taken:
+    - word: country (as a group)
+      took: the eight real countries, dropping the `--` sentinel row
+      could_also_mean: nine groups including `--` labelled 'Online', which under the store reading would
+        be the largest group of all at 38,968 orders and 2,227.21 average — bigger than every real country
+        except the United States
+      declaration: 'country.exclusion.sentinel_is_not_a_country, scope CONTOSO5, default population `real`:
+        ''never report nine countries''; `--` is where the source wrote the online store''s country'
+    - word: by country
+      took: both readings carried in parallel, still unchosen
+      could_also_mean: store country or customer country — the choice changes which orders are in the
+        population at all, not merely how they are labelled
+      declaration: country.default.whose_country_is_asked_never_assumed
+    blocked_by: []
+  - step: '4'
+    step_asks: average order value
+    turns:
+    - why: Measure the three candidate readings of "average order value" (per order, per customer, per
+        item) and the net/gross fork alongside the country fork, so every remaining ambiguity can be settled
+        by disclosure instead of a question.
+      did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net,\n    SUM(gross_amount) AS order_gross,\n  \
+        \  SUM(quantity) AS order_units\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP BY\n   \
+        \ order_key\n), t AS (\n  SELECT\n    o.order_net,\n    o.order_gross,\n    o.order_units,\n \
+        \   o.customer_key,\n    s.country_code AS store_cc,\n    c.country_code AS cust_cc\n  FROM o\n\
+        \  JOIN contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_customer\
+        \ AS c\n    ON o.customer_key = c.customer_key\n)\nSELECT\n  dc.country_name,\n  ROUND(AVG(t.order_net)\
+        \ FILTER(WHERE\n    t.store_cc = dc.country_code), 2) AS aov_net_store,\n  ROUND(AVG(t.order_net)\
+        \ FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS aov_net_customer,\n  ROUND(AVG(t.order_gross)\
+        \ FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS aov_gross_customer,\n  ROUND(\n    SUM(t.order_net)\
+        \ FILTER(WHERE\n      t.cust_cc = dc.country_code) / COUNT(DISTINCT t.customer_key) FILTER(WHERE\n\
+        \      t.cust_cc = dc.country_code),\n    2\n  ) AS net_per_customer,\n  ROUND(\n    SUM(t.order_net)\
+        \ FILTER(WHERE\n      t.cust_cc = dc.country_code) / SUM(t.order_units) FILTER(WHERE\n      t.cust_cc\
+        \ = dc.country_code),\n    2\n  ) AS net_per_item\nFROM contoso_served.dim_country AS dc\nCROSS\
+        \ JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  aov_net_customer DESC"
+      came_back: '8 row(s): [{"country_name": "Italy", "aov_net_store": 2617.62, "aov_net_customer": 2459.71,
+        "aov_gross_customer": 2611.67, "net_per_customer": 3564.05, "net_per_item": 333.64}, {"country_name":
+        "United Kingdom", "aov_net_store": 2498.53, "aov_net_customer": 2413.06, "aov_gross_customer":
+        2566.23, "net_per_customer": 3738.77, "net_per_item": 322.78}, {"country_name": "United States",
+        "aov_net_store": 2430.24, "aov_net_customer": 2356.13, "aov_gross_customer": 2504.57, "net_per_customer":
+        4505.3, "net_per_item": 313.91}, {"country_name": "Germany", "aov_net_store": 2427.47, "aov_net_customer":
+        2319.6, "aov_gross_customer": 2465.66, "net_per_customer": 4437.83, "net_per_item": 304.25}, {"country_name":
+        "Canada", "aov_net_store": 2396.95, "aov_net_customer": 2307.13, "aov_gross_customer": 2452.74,
+        "net_per_customer": 4313.67, "net_per_item": 304.82}, {"country_name": "Australia", "aov_net_store":
+        2348.5, "aov_net_customer": 2288.96, "aov_gross_customer": 2432.41, "net_per_customer": 3347.7,
+        "net_per_item": 300.58}, {"country_name": "France", "aov_net_store": 2272.68, "aov_net_customer":
+        2250.41, "aov_gross_customer": 2392.42, "net_per_customer": 3350.77, "net_per_item": 298.34},
+        {"coun'
+    settled_on: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+      \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+      \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+      \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+      )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc =\
+      \ dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+      \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+      \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+      \ DESC"
+    means: 'For each of the eight countries Contoso sells in, what a single order placed there was worth
+      on average — the money actually charged after discount, summed over the order''s lines, then averaged
+      across orders — over all ten years of trading, 2016-05-18 to 2025-12-31, with no order left out
+      for being cancelled or refunded because this warehouse records no such status. Two figures per country
+      because the warehouse offers two meanings of "there": where the buyer lives (covering all 93,470
+      orders) and where the shop stood (covering the 54,502 rung up in a physical shop, the 38,968 internet
+      orders having no country). The averages are of ORDER totals, not of line items: 93,470 orders, not
+      223,974 lines.'
+    readings_taken:
+    - word: average order value
+      took: the average of each order's total — net money divided by the count of distinct orders
+      could_also_mean: 'total sales per buying customer, which I measured and which REORDERS THE COUNTRIES
+        ENTIRELY: United States 4,505.30, Germany 4,437.83, Canada 4,313.67, Netherlands 3,877.17, United
+        Kingdom 3,738.77, Italy 3,564.05, France 3,350.77, Australia 3,347.70 — Italy falls from first
+        to sixth. Or total sales per item sold: Italy 333.64, United Kingdom 322.78, United States 313.91,
+        Canada 304.82, Germany 304.25, Australia 300.58, France 298.34, Netherlands 293.19. I did not
+        treat these as rival readings of the phrase: ''average order value'' names the Order, which is
+        a declared concept of this bundle counted by distinct order_key, and money-per-customer and money-per-item
+        are different measures that happen to be askable — not meanings of this one'
+      declaration: null
+    - word: order value
+      took: net_amount, after discount, and I am calling it NET
+      could_also_mean: 'gross, before discount, which is uniformly about 6.2% higher and changes no country''s
+        position: Italy 2,611.67, United Kingdom 2,566.23, United States 2,504.57, Germany 2,465.66, Canada
+        2,452.74, Australia 2,432.41, France 2,392.42, Netherlands 2,343.94 (customer reading)'
+      declaration: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net; ''never
+        pick one silently'''
+    - word: tax and shipping
+      took: neither is included or excluded by me — the bundle holds no tax or shipping column, so an
+        order's value is quantity times price and nothing else
+      could_also_mean: a value inclusive of tax and delivery, which this warehouse cannot produce
+      declaration: null
+    - word: by country
+      took: still unchosen — both columns carried forward
+      could_also_mean: either column alone
+      declaration: country.default.whose_country_is_asked_never_assumed
+    blocked_by: []
+  - step: '5'
+    step_asks: average order value by country
+    turns:
+    - why: 'Deliver the answer: both country readings are fully measured and differ materially in coverage
+        and in every figure, and a confidence-C operator ruling forbids me to pick one, so what the reader
+        gets is the choice with the numbers already attached.'
+      did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc\
+        \ = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+        \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+        \ DESC"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 8 row(s): [{"country": "Italy", "avg_order_value_customer_country":
+        2459.71, "avg_order_value_store_country": 2617.62}, {"country": "United Kingdom", "avg_order_value_customer_country":
+        2413.06, "avg_order_value_store_country": 2498.53}, {"country": "United States", "avg_order_value_customer_country":
+        2356.13, "avg_order_value_store_country": 2430.24}, {"country": "Germany", "avg_order_value_customer_country":
+        2319.6, "avg_order_value_store_country": 2427.47}, {"country": "Canada", "avg_order_value_customer_country":
+        2307.13, "avg_order_value_store_country": 2396.95}, {"country": "Australia", "avg_order_value_customer_country":
+        2288.96, "avg_order_value_store_country": 2348.5}, {"country": "France", "avg_order_value_customer_country":
+        2250.41, "avg_order_value_store_country": 2272.68}, {"country": "Netherlands", "avg_order_value_customer_country":
+        2204.9, "avg_order_value_store_country": 2239.53}]  Give `claimed_answer` as the value a person
+        would be handed, and `claimed_answer_is` from the closed list. If these rows settle the question,
+        do not decline.'
+    settled_on: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+      \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+      \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+      \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+      \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+      )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc =\
+      \ dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+      \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+      \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+      \ DESC"
+    means: 'Eight rows, one per country Contoso sells in, each holding two versions of one quantity: the
+      average value of a single order placed there, where an order''s value is the money actually charged
+      across all its lines after discount, and the average is taken over orders — 93,470 of them — rather
+      than over the 223,974 lines or over customers. The first figure attributes each order to the country
+      its buyer lives in and covers every order on record; the second attributes it to the country the
+      selling shop stood in and covers 54,502, every internet order having fallen out for want of a country.
+      Both span the full ten years of trading, 2016-05-18 to 2025-12-31. The returned rows match the figures
+      I claimed before seeing them, to the penny, and the store column descends in the same sequence as
+      the customer column, which is what makes the ranking claim safe. WHAT IS NOT IN THESE FIGURES: no
+      tax and no shipping, because the warehouse holds neither; no exclusion of cancelled, returned or
+      refunded orders, because no column in this bundle records an order''s status; no `--` sentinel row,
+      which under the store reading would otherwise stand as a ninth and second-largest "country" named
+      Online; and no currency conversion, the amounts being USD already whatever currency a sale was transacted
+      in.'
+    readings_taken:
+    - word: by country
+      took: NO CHOICE — both readings measured and handed back priced, because the rule binding this word
+        is confidence C, declares no default, and says in terms never to pick between the store and the
+        customer silently or to average the two
+      could_also_mean: 'the customer''s country (8 countries, all 93,470 orders) or the store''s country
+        (8 countries, 54,502 orders). The third declared path, the site the store stands on, measured
+        identical to the store path on all nine codes — same counts, same averages to the penny — so it
+        is not a third option. The document''s own assumption, ''the country recorded on the order itself'',
+        has no referent: the sales line carries no country column, and the bundle holds no billing country
+        and no ship-to country, so two of the four readings the question imagined cannot be expressed
+        at all'
+      declaration: country.default.whose_country_is_asked_never_assumed, confidence C, realized by mac.canon.path_select
+        with paths store / customer / location and no default
+    - word: average order value
+      took: net money divided by the number of orders
+      could_also_mean: 'per buying customer, which reorders the countries completely — United States 4,505.30,
+        Germany 4,437.83, Canada 4,313.67, Netherlands 3,877.17, United Kingdom 3,738.77, Italy 3,564.05,
+        France 3,350.77, Australia 3,347.70, with Italy falling from first to sixth — or per item sold:
+        Italy 333.64, United Kingdom 322.78, United States 313.91, Canada 304.82, Germany 304.25, Australia
+        300.58, France 298.34, Netherlands 293.19. I did not raise this as a question because the phrase
+        names the Order, a declared concept counted by distinct order_key; the other two are different
+        measures, not other meanings of this phrase'
+      declaration: null
+    - word: order value
+      took: net — after discount — and said so rather than letting it pass unlabelled
+      could_also_mean: 'gross, before discount: Italy 2,611.67, United Kingdom 2,566.23, United States
+        2,504.57, Germany 2,465.66, Canada 2,452.74, Australia 2,432.41, France 2,392.42, Netherlands
+        2,343.94 under the customer reading — about 6.2% higher everywhere, changing no country''s position'
+      declaration: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net'
+    - word: orders
+      took: all of them, with no status filter
+      could_also_mean: 'completed orders only, excluding cancellations and refunds — not a reading I declined
+        but one the data cannot hold: no relation in this bundle carries an order status, cancellation
+        flag or refund column'
+      declaration: null
+    - word: all orders on record
+      took: 2016-05-18 to 2025-12-31, the full ten years
+      could_also_mean: the current year or the last 12 months, neither of which the question named
+      declaration: order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling 2026-09-30
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: For every country, the average value of one order — all orders grouped by their country, with
+      each row showing one country and the average value of an order placed there. No time window was
+      given, so this covers all orders on record, and no orders are excluded (cancelled or refunded ones
+      are included).
+    population: 'Two populations, because I declined to collapse them into one. COMMON TO BOTH: all 93,470
+      distinct orders, collapsed from 223,974 sales lines by order_key per Order''s declared grounding;
+      the full extent of order_date, 2016-05-18 to 2025-12-31, because the question named no period (order.default.an_unscoped_question_covers_all_time,
+      confidence C); both sales channels, because the subject here is a money measure and store.resolution.the_channel_is_the_location_sentinel
+      scopes its `physical` default to questions whose subject is a store; no order-status exclusion,
+      because none is expressible in this bundle; and reporting over the 8 real country codes only, `--`
+      excluded per country.exclusion.sentinel_is_not_a_country. THE CUSTOMER-COUNTRY COLUMN is computed
+      over all 93,470 of those orders. THE STORE-COUNTRY COLUMN is computed over 54,502 — the 38,968 web-shop
+      orders carry `--` as their store country and are therefore absent, which is a consequence of that
+      reading rather than a filter I applied.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       orders                        “order”\n  2  ← 1  PIVOT_TO  \
+      \ country                       “by country”\n  3  ← 1  GROUP_BY   by country                  \
+      \  “by country”\n  4  ← 3  AGGREGATE  avg of order value            “average order value”\n  5 \
+      \ ← 4  SELECT     country, average order value  “average order value by country”\n  answer: step\
+      \ 5   confidence: 0.62   A DAG   step(s) 1 feed more than one"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: by country
+      asks: Which country do you mean — where the customer is based, where the order was shipped, or the
+        country of the store or site that took the order?
+      readings:
+      - the customer's own country
+      - the country the order was shipped to
+      - the billing country on the order
+      - the country of the store or site that sold it
+      took: the country recorded on the order itself
+    - words: Average order value
+      asks: Should 'average order value' be the average of the order totals, or total sales divided by
+        something else such as the number of customers?
+      readings:
+      - the average of each order's total value
+      - total sales divided by the number of customers
+      - total sales divided by the number of items
+      took: the average of each order's total value
+    - words: order value
+      asks: Should an order's value include tax and shipping, and should discounts and refunds be taken
+        off?
+      readings:
+      - gross value before discounts
+      - net value after discounts
+      - including tax and shipping
+      - excluding tax and shipping
+      took: the order value as recorded, whatever it includes
+    - words: Average order value by country
+      asks: Over what period — all orders ever, or a recent window such as this year or the last 12 months?
+      readings:
+      - all orders on record
+      - orders in the current year
+      - orders in the last 12 months
+      took: all orders on record
+    - words: orders
+      asks: Should cancelled, returned or fully refunded orders be left out of the average?
+      readings:
+      - count every order
+      - only completed orders
+      - exclude cancelled and refunded orders
+      took: count every order
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.62 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: orders
+      took: distinct order_key over the sales line relation — 93,470 orders behind 223,974 lines, as Order's
+        grounding declares (counts order_key)
+      could_also_mean: the 223,974 individual order lines, which would make the 'average order value'
+        a per-line average of 976.96 rather than a per-order 2,341.01
+      declaration: 'Order [event] grounded in v_contoso5_sales_line, counts order_key: ''One customer''s
+        purchase on one date, counted by distinct order_key over the line relation'''
+    - word: order value
+      took: net_amount summed over the order's lines — what the customer was actually charged, after discount
+      could_also_mean: gross_amount, the value before discount, which I have carried on the row beside
+        it so the fork can be priced at the aggregate step rather than re-queried
+      declaration: net_revenue.default.revenue_means_net — an unqualified 'value'/'sales' figure is net,
+        and must be reported as net
+    - word: orders (cancelled or refunded)
+      took: every order, with no status exclusion
+      could_also_mean: 'completed orders only — but this is not a reading I declined, it is one the data
+        cannot express: v_contoso5_sales_line carries no status, cancellation or refund column, and neither
+        does any declared relation. There is nothing to exclude.'
+      declaration: the question document's own assumption 'count every order', which the schema here happens
+        to make the only possible reading
+    - word: all orders on record
+      took: the full extent of order_date, 2016-05-18 to 2025-12-31 — ten years, nothing narrowed
+      could_also_mean: a recent window such as the current year or last 12 months, which the question
+        did not name
+      declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+        2026-09-30): cover the full extent and state the first and last date'
+    - word: by country
+      took: no choice — I carried both the store's country and the customer's country forward, because
+        the declaration binding this word has three paths and NO default, and explicitly forbids picking
+        one silently or averaging them
+      could_also_mean: 'the store''s country (8 countries over 54,502 orders, 86,790,054.13 of net revenue
+        stranded on the sentinel and excluded) or the customer''s country (8 countries over all 93,470
+        orders). Measured: the two agree on the ORDER of the countries — Italy, United Kingdom, United
+        States, Germany, Canada, Australia, France, Netherlands, identical under both — but disagree on
+        every figure, by 22.27 (France) to 157.91 (Italy), the store reading always higher'
+      declaration: 'country.default.whose_country_is_asked_never_assumed, confidence C, scope CONTOSO5:
+        ''never pick between the store and the customer silently, and never average the two'', realized
+        by mac.canon.path_select with paths store / customer / location and no declared default'
+    - word: the country recorded on the order itself
+      took: 'nothing — this reading, which the question document assumed, has no referent: v_contoso5_sales_line
+        carries order_key, line_number, dates, store_key, customer_key, channel, product_key, currency_code
+        and the amounts, and no country column'
+      could_also_mean: nothing else; there is no billing country and no ship-to country in this bundle
+        either, so two of the document's four listed readings of 'by country' cannot be expressed at all
+      declaration: null
+    - word: the site the store stands on
+      took: dropped as a distinct reading
+      could_also_mean: a third answer — but measured over all 93,470 orders it returns the same orders
+        and the same averages as the store reading on all nine codes, because dim_store.country_code never
+        disagrees with the country of its dim_location.location_code
+      declaration: the `location` path of country.default.whose_country_is_asked_never_assumed, measured
+        here to be immaterial rather than assumed to be
+    - word: order value
+      took: net_amount — what the customer was actually charged, after discount
+      could_also_mean: gross_amount, before discount; the gap is the discount
+      declaration: net_revenue.default.revenue_means_net
+    - word: country (as a group)
+      took: the eight real countries, dropping the `--` sentinel row
+      could_also_mean: nine groups including `--` labelled 'Online', which under the store reading would
+        be the largest group of all at 38,968 orders and 2,227.21 average — bigger than every real country
+        except the United States
+      declaration: 'country.exclusion.sentinel_is_not_a_country, scope CONTOSO5, default population `real`:
+        ''never report nine countries''; `--` is where the source wrote the online store''s country'
+    - word: by country
+      took: both readings carried in parallel, still unchosen
+      could_also_mean: store country or customer country — the choice changes which orders are in the
+        population at all, not merely how they are labelled
+      declaration: country.default.whose_country_is_asked_never_assumed
+    - word: average order value
+      took: the average of each order's total — net money divided by the count of distinct orders
+      could_also_mean: 'total sales per buying customer, which I measured and which REORDERS THE COUNTRIES
+        ENTIRELY: United States 4,505.30, Germany 4,437.83, Canada 4,313.67, Netherlands 3,877.17, United
+        Kingdom 3,738.77, Italy 3,564.05, France 3,350.77, Australia 3,347.70 — Italy falls from first
+        to sixth. Or total sales per item sold: Italy 333.64, United Kingdom 322.78, United States 313.91,
+        Canada 304.82, Germany 304.25, Australia 300.58, France 298.34, Netherlands 293.19. I did not
+        treat these as rival readings of the phrase: ''average order value'' names the Order, which is
+        a declared concept of this bundle counted by distinct order_key, and money-per-customer and money-per-item
+        are different measures that happen to be askable — not meanings of this one'
+      declaration: null
+    - word: order value
+      took: net_amount, after discount, and I am calling it NET
+      could_also_mean: 'gross, before discount, which is uniformly about 6.2% higher and changes no country''s
+        position: Italy 2,611.67, United Kingdom 2,566.23, United States 2,504.57, Germany 2,465.66, Canada
+        2,452.74, Australia 2,432.41, France 2,392.42, Netherlands 2,343.94 (customer reading)'
+      declaration: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net; ''never
+        pick one silently'''
+    - word: tax and shipping
+      took: neither is included or excluded by me — the bundle holds no tax or shipping column, so an
+        order's value is quantity times price and nothing else
+      could_also_mean: a value inclusive of tax and delivery, which this warehouse cannot produce
+      declaration: null
+    - word: by country
+      took: still unchosen — both columns carried forward
+      could_also_mean: either column alone
+      declaration: country.default.whose_country_is_asked_never_assumed
+    - word: by country
+      took: NO CHOICE — both readings measured and handed back priced, because the rule binding this word
+        is confidence C, declares no default, and says in terms never to pick between the store and the
+        customer silently or to average the two
+      could_also_mean: 'the customer''s country (8 countries, all 93,470 orders) or the store''s country
+        (8 countries, 54,502 orders). The third declared path, the site the store stands on, measured
+        identical to the store path on all nine codes — same counts, same averages to the penny — so it
+        is not a third option. The document''s own assumption, ''the country recorded on the order itself'',
+        has no referent: the sales line carries no country column, and the bundle holds no billing country
+        and no ship-to country, so two of the four readings the question imagined cannot be expressed
+        at all'
+      declaration: country.default.whose_country_is_asked_never_assumed, confidence C, realized by mac.canon.path_select
+        with paths store / customer / location and no default
+    - word: average order value
+      took: net money divided by the number of orders
+      could_also_mean: 'per buying customer, which reorders the countries completely — United States 4,505.30,
+        Germany 4,437.83, Canada 4,313.67, Netherlands 3,877.17, United Kingdom 3,738.77, Italy 3,564.05,
+        France 3,350.77, Australia 3,347.70, with Italy falling from first to sixth — or per item sold:
+        Italy 333.64, United Kingdom 322.78, United States 313.91, Canada 304.82, Germany 304.25, Australia
+        300.58, France 298.34, Netherlands 293.19. I did not raise this as a question because the phrase
+        names the Order, a declared concept counted by distinct order_key; the other two are different
+        measures, not other meanings of this phrase'
+      declaration: null
+    - word: order value
+      took: net — after discount — and said so rather than letting it pass unlabelled
+      could_also_mean: 'gross, before discount: Italy 2,611.67, United Kingdom 2,566.23, United States
+        2,504.57, Germany 2,465.66, Canada 2,452.74, Australia 2,432.41, France 2,392.42, Netherlands
+        2,343.94 under the customer reading — about 6.2% higher everywhere, changing no country''s position'
+      declaration: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net'
+    - word: orders
+      took: all of them, with no status filter
+      could_also_mean: 'completed orders only, excluding cancellations and refunds — not a reading I declined
+        but one the data cannot hold: no relation in this bundle carries an order status, cancellation
+        flag or refund column'
+      declaration: null
+    - word: all orders on record
+      took: 2016-05-18 to 2025-12-31, the full ten years
+      could_also_mean: the current year or the last 12 months, neither of which the question named
+      declaration: order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling 2026-09-30
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 5 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  order_key,\n  MIN(order_date) AS order_date,\n  MIN(customer_key) AS\
+        \ customer_key,\n  MIN(store_key) AS store_key,\n  SUM(net_amount) AS order_net_amount,\n  SUM(gross_amount)\
+        \ AS order_gross_amount\nFROM contoso_served.v_contoso5_sales_line\nGROUP BY\n  order_key\n\n\
+        -- step 2\nSELECT\n  o.order_key,\n  o.order_net_amount,\n  s.country_code AS store_country_code,\n\
+        \  scc.country_name AS store_country_name,\n  c.country_code AS customer_country_code,\n  ccc.country_name\
+        \ AS customer_country_name\nFROM (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n\
+        \    MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net_amount\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n) AS o\nJOIN contoso_served.dim_store AS s\n  ON o.store_key = s.store_key\n\
+        JOIN contoso_served.dim_customer AS c\n  ON o.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS scc\n  ON s.country_code = scc.country_code\nJOIN contoso_served.dim_country AS ccc\n  ON\
+        \ c.country_code = ccc.country_code\n\n-- step 3\nWITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key)\
+        \ AS customer_key,\n    MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net\n  FROM\
+        \ contoso_served.v_contoso5_sales_line\n  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n\
+        \    s.country_code AS store_cc,\n    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store\
+        \ AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key\
+        \ = c.customer_key\n)\nSELECT\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code)\
+        \ AS orders_store,\n  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer\n\
+        FROM contoso_served.dim_country AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n\
+        \  1\nORDER BY\n  dc.country_name\n\n-- step 4\nWITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key)\
+        \ AS customer_key,\n    MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net\n  FROM\
+        \ contoso_served.v_contoso5_sales_line\n  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n\
+        \    s.country_code AS store_cc,\n    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store\
+        \ AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key\
+        \ = c.customer_key\n)\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+        \    t.cust_cc = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net)\
+        \ FILTER(WHERE\n    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+        \ DESC\n\n-- step 5\nWITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n\
+        \    MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc\
+        \ = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+        \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+        \ DESC"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'Eight rows, one per country Contoso sells in, each holding two versions of one
+      quantity: the average value of a single order placed there, where an order''s value is the money
+      actually charged across all its lines after discount, and the average is taken over orders — 93,470
+      of them — rather than over the 223,974 lines or over customers. The first figure attributes each
+      order to the country its buyer lives in and covers every order on record; the second attributes
+      it to the country the selling shop stood in and covers 54,502, every internet order having fallen
+      out for want of a country. Both span the full ten years of trading, 2016-05-18 to 2025-12-31. The
+      returned rows match the figures I claimed before seeing them, to the penny, and the store column
+      descends in the same sequence as the customer column, which is what makes the ranking claim safe.
+      WHAT IS NOT IN THESE FIGURES: no tax and no shipping, because the warehouse holds neither; no exclusion
+      of cancelled, returned or refunded orders, because no column in this bundle records an order''s
+      status; no `--` sentinel row, which under the store reading would otherwise stand as a ninth and
+      second-largest "country" named Online; and no currency conversion, the amounts being USD already
+      whatever currency a sale was transacted in.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'I will not choose' · graded DECLINED
+  detail:
+    claimed_answer: 'Which country do you mean — where the customer lives, or where the shop that took
+      the order stood? There is no country written on an order itself, so one can only be reached by choosing,
+      and the choice decides whether 38,968 internet orders are in the answer or absent from it.
+
+
+      IF YOU MEAN WHERE THE CUSTOMER LIVES — all 93,470 orders counted, internet included (average order
+      value, net, USD):
+
+      Italy 2,459.71 · United Kingdom 2,413.06 · United States 2,356.13 · Germany 2,319.60 · Canada 2,307.13
+      · Australia 2,288.96 · France 2,250.41 · Netherlands 2,204.90
+
+
+      IF YOU MEAN WHERE THE SHOP STOOD — only the 54,502 orders rung up in a physical shop; the 38,968
+      web-shop orders (86,790,054.13 USD) belong to no country and drop out entirely:
+
+      Italy 2,617.62 · United Kingdom 2,498.53 · United States 2,430.24 · Germany 2,427.47 · Canada 2,396.95
+      · Australia 2,348.50 · France 2,272.68 · Netherlands 2,239.53
+
+
+      WHAT THE CHOICE DOES NOT CHANGE: the league table. Both readings give the same eight countries in
+      the same order — Italy highest, Netherlands lowest, United States third either way. Every store
+      figure is simply higher than its customer counterpart, by 22.27 (France) to 157.91 (Italy), because
+      the internet orders the store reading omits are cheaper on average (2,227.21) than shop orders.
+      So if you want to know WHERE ORDERS ARE BIGGEST, you have your answer already and need not choose.
+      If you want to quote a FIGURE, you must.
+
+
+      ONE PLACE THE CHOICE BITES HARDER: the United States and Germany sit 36.53 apart under the customer
+      reading but 2.77 apart under the store reading — effectively tied. Do not call that gap real without
+      saying which reading produced it.'
+    walk_bucket: DECLINED
+    walk_why: it refused to choose between readings the question did not name
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: Average order value by country
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: For every country, the average value of one order — all orders grouped by their country, with
+      each row showing one country and the average value of an order placed there. No time window was
+      given, so this covers all orders on record, and no orders are excluded (cancelled or refunded ones
+      are included).
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       orders                        “order”'
+    - '  2  ← 1  PIVOT_TO   country                       “by country”'
+    - '  3  ← 1  GROUP_BY   by country                    “by country”'
+    - '  4  ← 3  AGGREGATE  avg of order value            “average order value”'
+    - '  5  ← 4  SELECT     country, average order value  “average order value by country”'
+    - '  answer: step 5   confidence: 0.62   A DAG   step(s) 1 feed more than one'
+    - '  UNDERSTOOD AS: For every country, the average value of one order — all orders grouped by their
+      country, with each row showing one country and the average value of an order placed there. No time
+      window was given, so this covers all orders on record, and no orders are excluded (cancelled or
+      refunded ones are included).'
+    - '  AMBIGUOUS ''by country'' — ASKS: Which country do you mean — where the customer is based, where
+      the order was shipped, or the country of the store or site that took the order?'
+    - '      could mean: the customer''s own country'
+    - '      could mean: the country the order was shipped to'
+    - '      could mean: the billing country on the order'
+    - '      could mean: the country of the store or site that sold it'
+    - '      took: the country recorded on the order itself'
+    - '  AMBIGUOUS ''Average order value'' — ASKS: Should ''average order value'' be the average of the
+      order totals, or total sales divided by something else such as the number of customers?'
+    - '      could mean: the average of each order''s total value'
+    - '      could mean: total sales divided by the number of customers'
+    - '      could mean: total sales divided by the number of items'
+    - '      took: the average of each order''s total value'
+    - '  AMBIGUOUS ''order value'' — ASKS: Should an order''s value include tax and shipping, and should
+      discounts and refunds be taken off?'
+    - '      could mean: gross value before discounts'
+    - '      could mean: net value after discounts'
+    - '      could mean: including tax and shipping'
+    - '      could mean: excluding tax and shipping'
+    - '      took: the order value as recorded, whatever it includes'
+    - '  AMBIGUOUS ''Average order value by country'' — ASKS: Over what period — all orders ever, or a
+      recent window such as this year or the last 12 months?'
+    - '      could mean: all orders on record'
+    - '      could mean: orders in the current year'
+    - '      could mean: orders in the last 12 months'
+    - '      took: all orders on record'
+    - '  AMBIGUOUS ''orders'' — ASKS: Should cancelled, returned or fully refunded orders be left out
+      of the average?'
+    - '      could mean: count every order'
+    - '      could mean: only completed orders'
+    - '      could mean: exclude cancelled and refunded orders'
+    - '      took: count every order'
+    - '  OUTPUT SHAPE: a list of names and figures · many row(s) · named by country · carrying average
+      order value'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a list of names and figures
+    - - rows
+      - many
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+    - - said
+      - Average order value by country
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: by country
+      asks: Which country do you mean — where the customer is based, where the order was shipped, or the
+        country of the store or site that took the order?
+      readings:
+      - the customer's own country
+      - the country the order was shipped to
+      - the billing country on the order
+      - the country of the store or site that sold it
+      took: the country recorded on the order itself
+    - words: Average order value
+      asks: Should 'average order value' be the average of the order totals, or total sales divided by
+        something else such as the number of customers?
+      readings:
+      - the average of each order's total value
+      - total sales divided by the number of customers
+      - total sales divided by the number of items
+      took: the average of each order's total value
+    - words: order value
+      asks: Should an order's value include tax and shipping, and should discounts and refunds be taken
+        off?
+      readings:
+      - gross value before discounts
+      - net value after discounts
+      - including tax and shipping
+      - excluding tax and shipping
+      took: the order value as recorded, whatever it includes
+    - words: Average order value by country
+      asks: Over what period — all orders ever, or a recent window such as this year or the last 12 months?
+      readings:
+      - all orders on record
+      - orders in the current year
+      - orders in the last 12 months
+      took: all orders on record
+    - words: orders
+      asks: Should cancelled, returned or fully refunded orders be left out of the average?
+      readings:
+      - count every order
+      - only completed orders
+      - exclude cancelled and refunded orders
+      took: count every order
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  order_key,\n  MIN(order_date) AS order_date,\n  MIN(customer_key) AS customer_key,\n\
+        \  MIN(store_key) AS store_key,\n  SUM(net_amount) AS order_net_amount,\n  SUM(gross_amount) AS\
+        \ order_gross_amount\nFROM contoso_served.v_contoso5_sales_line\nGROUP BY\n  order_key"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  o.order_key,\n  o.order_net_amount,\n  s.country_code AS store_country_code,\n \
+        \ scc.country_name AS store_country_name,\n  c.country_code AS customer_country_code,\n  ccc.country_name\
+        \ AS customer_country_name\nFROM (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n\
+        \    MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net_amount\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n) AS o\nJOIN contoso_served.dim_store AS s\n  ON o.store_key = s.store_key\n\
+        JOIN contoso_served.dim_customer AS c\n  ON o.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS scc\n  ON s.country_code = scc.country_code\nJOIN contoso_served.dim_country AS ccc\n  ON\
+        \ c.country_code = ccc.country_code"
+      params: {}
+    - step: '3'
+      sql: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code) AS orders_store,\n\
+        \  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  dc.country_name"
+      params: {}
+    - step: '4'
+      sql: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc\
+        \ = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+        \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+        \ DESC"
+      params: {}
+    - step: '5'
+      sql: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+        \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc\
+        \ = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+        \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+        \ DESC"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'Eight rows, one per country Contoso sells in, each holding two versions of one quantity: the
+      average value of a single order placed there, where an order''s value is the money actually charged
+      across all its lines after discount, and the average is taken over orders — 93,470 of them — rather
+      than over the 223,974 lines or over customers. The first figure attributes each order to the country
+      its buyer lives in and covers every order on record; the second attributes it to the country the
+      selling shop stood in and covers 54,502, every internet order having fallen out for want of a country.
+      Both span the full ten years of trading, 2016-05-18 to 2025-12-31. The returned rows match the figures
+      I claimed before seeing them, to the penny, and the store column descends in the same sequence as
+      the customer column, which is what makes the ranking claim safe. WHAT IS NOT IN THESE FIGURES: no
+      tax and no shipping, because the warehouse holds neither; no exclusion of cancelled, returned or
+      refunded orders, because no column in this bundle records an order''s status; no `--` sentinel row,
+      which under the store reading would otherwise stand as a ninth and second-largest "country" named
+      Online; and no currency conversion, the amounts being USD already whatever currency a sale was transacted
+      in.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id007
+      rows: *id004
+      row_count: 8
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - 'Which country do you mean — where the customer lives, or where the shop that took the order stood?
+        There is no country written on an order itself, so one can only be reached by choosing, and the
+        choice decides whether 38,968 internet orders are in the answer or absent from it.
+
+
+        IF YOU MEAN WHERE THE CUSTOMER LIVES — all 93,470 orders counted, internet included (average order
+        value, net, USD):
+
+        Italy 2,459.71 · United Kingdom 2,413.06 · United States 2,356.13 · Germany 2,319.60 · Canada
+        2,307.13 · Australia 2,288.96 · France 2,250.41 · Netherlands 2,204.90
+
+
+        IF YOU MEAN WHERE THE SHOP STOOD — only the 54,502 orders rung up in a physical shop; the 38,968
+        web-shop orders (86,790,054.13 USD) belong to no country and drop out entirely:
+
+        Italy 2,617.62 · United Kingdom 2,498.53 · United States 2,430.24 · Germany 2,427.47 · Canada
+        2,396.95 · Australia 2,348.50 · France 2,272.68 · Netherlands 2,239.53
+
+
+        WHAT THE CHOICE DOES NOT CHANGE: the league table. Both readings give the same eight countries
+        in the same order — Italy highest, Netherlands lowest, United States third either way. Every store
+        figure is simply higher than its customer counterpart, by 22.27 (France) to 157.91 (Italy), because
+        the internet orders the store reading omits are cheaper on average (2,227.21) than shop orders.
+        So if you want to know WHERE ORDERS ARE BIGGEST, you have your answer already and need not choose.
+        If you want to quote a FIGURE, you must.
+
+
+        ONE PLACE THE CHOICE BITES HARDER: the United States and Germany sit 36.53 apart under the customer
+        reading but 2.77 apart under the store reading — effectively tied. Do not call that gap real without
+        saying which reading produced it.'
+    - - shape
+      - I will not choose
+    - - population it answered over
+      - 'Two populations, because I declined to collapse them into one. COMMON TO BOTH: all 93,470 distinct
+        orders, collapsed from 223,974 sales lines by order_key per Order''s declared grounding; the full
+        extent of order_date, 2016-05-18 to 2025-12-31, because the question named no period (order.default.an_unscoped_question_covers_all_time,
+        confidence C); both sales channels, because the subject here is a money measure and store.resolution.the_channel_is_the_location_sentinel
+        scopes its `physical` default to questions whose subject is a store; no order-status exclusion,
+        because none is expressible in this bundle; and reporting over the 8 real country codes only,
+        `--` excluded per country.exclusion.sentinel_is_not_a_country. THE CUSTOMER-COUNTRY COLUMN is
+        computed over all 93,470 of those orders. THE STORE-COUNTRY COLUMN is computed over 54,502 — the
+        38,968 web-shop orders carry `--` as their store country and are therefore absent, which is a
+        consequence of that reading rather than a filter I applied.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: order
+      turns:
+      - why: Establish the order population at order grain and check that one order has exactly one customer,
+          one store and one date, since later steps attach a country to the order.
+        did: "SELECT\n  COUNT(*) AS orders,\n  COUNT(*) FILTER(WHERE\n    n_cust > 1) AS orders_with_many_customers,\n\
+          \  COUNT(*) FILTER(WHERE\n    n_store > 1) AS orders_with_many_stores,\n  COUNT(*) FILTER(WHERE\n\
+          \    n_date > 1) AS orders_with_many_dates,\n  SUM(lines) AS total_lines,\n  MIN(first_date)\
+          \ AS first_order_date,\n  MAX(first_date) AS last_order_date,\n  SUM(order_net) AS total_net,\n\
+          \  AVG(order_net) AS avg_order_value_all\nFROM (\n  SELECT\n    order_key,\n    COUNT(*) AS\
+          \ lines,\n    COUNT(DISTINCT customer_key) AS n_cust,\n    COUNT(DISTINCT store_key) AS n_store,\n\
+          \    COUNT(DISTINCT order_date) AS n_date,\n    MIN(order_date) AS first_date,\n    SUM(net_amount)\
+          \ AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP BY\n    order_key\n) AS\
+          \ t"
+        came_back: '1 row(s): [{"orders": 93470, "orders_with_many_customers": 0, "orders_with_many_stores":
+          0, "orders_with_many_dates": 0, "total_lines": 223974, "first_order_date": "2016-05-18", "last_order_date":
+          "2025-12-31", "total_net": "218814471.65866", "avg_order_value_all": 2341.0128560892267}]'
+      settled_on: "SELECT\n  order_key,\n  MIN(order_date) AS order_date,\n  MIN(customer_key) AS customer_key,\n\
+        \  MIN(store_key) AS store_key,\n  SUM(net_amount) AS order_net_amount,\n  SUM(gross_amount) AS\
+        \ order_gross_amount\nFROM contoso_served.v_contoso5_sales_line\nGROUP BY\n  order_key"
+      means: 'One row per order placed with Contoso — 93,470 of them, every order on record from 2016-05-18
+        to 2025-12-31, with no order left out. Each row carries what that single purchase was worth: the
+        money actually charged across all its lines after discount (218,814,471.66 USD over the whole
+        set, averaging 2,341.01 per order), and alongside it the figure before discount. Each row also
+        carries the one customer who placed it, the one store or web shop that took it, and the one day
+        it was placed — measured just now, no order spans two customers, two stores or two dates, so each
+        of those is a single fact about the order and not a choice between several.'
+      readings_taken:
+      - word: orders
+        took: distinct order_key over the sales line relation — 93,470 orders behind 223,974 lines, as
+          Order's grounding declares (counts order_key)
+        could_also_mean: the 223,974 individual order lines, which would make the 'average order value'
+          a per-line average of 976.96 rather than a per-order 2,341.01
+        declaration: 'Order [event] grounded in v_contoso5_sales_line, counts order_key: ''One customer''s
+          purchase on one date, counted by distinct order_key over the line relation'''
+      - word: order value
+        took: net_amount summed over the order's lines — what the customer was actually charged, after
+          discount
+        could_also_mean: gross_amount, the value before discount, which I have carried on the row beside
+          it so the fork can be priced at the aggregate step rather than re-queried
+        declaration: net_revenue.default.revenue_means_net — an unqualified 'value'/'sales' figure is
+          net, and must be reported as net
+      - word: orders (cancelled or refunded)
+        took: every order, with no status exclusion
+        could_also_mean: 'completed orders only — but this is not a reading I declined, it is one the
+          data cannot express: v_contoso5_sales_line carries no status, cancellation or refund column,
+          and neither does any declared relation. There is nothing to exclude.'
+        declaration: the question document's own assumption 'count every order', which the schema here
+          happens to make the only possible reading
+      - word: all orders on record
+        took: the full extent of order_date, 2016-05-18 to 2025-12-31 — ten years, nothing narrowed
+        could_also_mean: a recent window such as the current year or last 12 months, which the question
+          did not name
+        declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+          2026-09-30): cover the full extent and state the first and last date'
+      blocked_by: []
+    - step: '2'
+      step_asks: by country
+      turns:
+      - why: Measure what each declared country path gives, since country.default.whose_country_is_asked_never_assumed
+          forbids choosing between store, location and customer silently — one query prices all three
+          readings at once.
+        did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+          \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+          \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_key,\n    o.order_net,\n    s.country_code\
+          \ AS store_cc,\n    l.country_code AS loc_cc,\n    c.country_code AS cust_cc\n  FROM o\n  JOIN\
+          \ contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_location\
+          \ AS l\n    ON s.location_code = l.location_code\n  JOIN contoso_served.dim_customer AS c\n\
+          \    ON o.customer_key = c.customer_key\n), r AS (\n  SELECT\n    'store' AS reading,\n    store_cc\
+          \ AS cc,\n    order_net\n  FROM t\n  UNION ALL\n  SELECT\n    'location',\n    loc_cc,\n   \
+          \ order_net\n  FROM t\n  UNION ALL\n  SELECT\n    'customer',\n    cust_cc,\n    order_net\n\
+          \  FROM t\n)\nSELECT\n  r.reading,\n  r.cc AS country_code,\n  dc.country_name,\n  COUNT(*)\
+          \ AS orders,\n  ROUND(AVG(r.order_net), 2) AS avg_order_value,\n  ROUND(SUM(r.order_net), 2)\
+          \ AS net_revenue\nFROM r\nLEFT JOIN contoso_served.dim_country AS dc\n  ON r.cc = dc.country_code\n\
+          GROUP BY\n  1,\n  2,\n  3\nORDER BY\n  r.reading,\n  avg_order_value DESC"
+        came_back: '26 row(s) (first 8 of 26): [{"reading": "customer", "country_code": "IT", "country_name":
+          "Italy", "orders": 2669, "avg_order_value": 2459.71, "net_revenue": "6564975.09"}, {"reading":
+          "customer", "country_code": "GB", "country_name": "United Kingdom", "orders": 9552, "avg_order_value":
+          2413.06, "net_revenue": "23049533.37"}, {"reading": "customer", "country_code": "US", "country_name":
+          "United States", "orders": 47477, "avg_order_value": 2356.13, "net_revenue": "111862187.56"},
+          {"reading": "customer", "country_code": "DE", "country_name": "Germany", "orders": 10622, "avg_order_value":
+          2319.6, "net_revenue": "24638830.18"}, {"reading": "customer", "country_code": "CA", "country_name":
+          "Canada", "orders": 10074, "avg_order_value": 2307.13, "net_revenue": "23242027.53"}, {"reading":
+          "customer", "country_code": "AU", "country_name": "Australia", "orders": 5837, "avg_order_value":
+          2288.96, "net_revenue": "13360672.61"}, {"reading": "customer", "country_code": "FR", "country_name":
+          "France", "orders": 2966, "avg_order_value": 2250.41, "net_revenue": "6674724.85"}, {"reading":
+          "customer", "country_code": "NL", "country_name": "Netherlands", "orders": 4273, "avg_order_value":
+          2204.9, "net'
+      - why: Get all three country readings onto one row per country so the fork can be priced in a single
+          short result instead of a truncated 26-row list.
+        did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+          \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+          \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+          \    l.country_code AS loc_cc,\n    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store\
+          \ AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_location AS l\n    ON s.location_code\
+          \ = l.location_code\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+          )\nSELECT\n  dc.country_code,\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc =\
+          \ dc.country_code) AS orders_store,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.store_cc =\
+          \ dc.country_code), 2) AS avg_store,\n  COUNT(*) FILTER(WHERE\n    t.loc_cc = dc.country_code)\
+          \ AS orders_location,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.loc_cc = dc.country_code),\
+          \ 2) AS avg_location,\n  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer,\n\
+          \  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS avg_customer\n\
+          FROM contoso_served.dim_country AS dc\nCROSS JOIN t\nGROUP BY\n  1,\n  2\nORDER BY\n  dc.country_code"
+        came_back: '9 row(s) (first 8 of 9): [{"country_code": "--", "country_name": "Online", "orders_store":
+          38968, "avg_store": 2227.21, "orders_location": 38968, "avg_location": 2227.21, "orders_customer":
+          0, "avg_customer": null}, {"country_code": "AU", "country_name": "Australia", "orders_store":
+          3194, "avg_store": 2348.5, "orders_location": 3194, "avg_location": 2348.5, "orders_customer":
+          5837, "avg_customer": 2288.96}, {"country_code": "CA", "country_name": "Canada", "orders_store":
+          5721, "avg_store": 2396.95, "orders_location": 5721, "avg_location": 2396.95, "orders_customer":
+          10074, "avg_customer": 2307.13}, {"country_code": "DE", "country_name": "Germany", "orders_store":
+          5925, "avg_store": 2427.47, "orders_location": 5925, "avg_location": 2427.47, "orders_customer":
+          10622, "avg_customer": 2319.6}, {"country_code": "FR", "country_name": "France", "orders_store":
+          1638, "avg_store": 2272.68, "orders_location": 1638, "avg_location": 2272.68, "orders_customer":
+          2966, "avg_customer": 2250.41}, {"country_code": "GB", "country_name": "United Kingdom", "orders_store":
+          6027, "avg_store": 2498.53, "orders_location": 6027, "avg_location": 2498.53, "orders_customer":
+          9552, "avg_customer": 2413.06}, {"c'
+      - why: Recover the United States row that truncation cut, by dropping the `--` sentinel and the
+          location columns that proved identical to store — leaving the eight real countries under both
+          surviving readings.
+        did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+          \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+          \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+          \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+          \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+          )\nSELECT\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code) AS\
+          \ orders_store,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.store_cc = dc.country_code), 2)\
+          \ AS avg_store,\n  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer,\n\
+          \  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS avg_customer,\n\
+          \  ROUND(\n    AVG(t.order_net) FILTER(WHERE\n      t.cust_cc = dc.country_code) - AVG(t.order_net)\
+          \ FILTER(WHERE\n      t.store_cc = dc.country_code),\n    2\n  ) AS customer_minus_store\nFROM\
+          \ contoso_served.dim_country AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n\
+          \  1\nORDER BY\n  avg_customer DESC"
+        came_back: '8 row(s): [{"country_name": "Italy", "orders_store": 1760, "avg_store": 2617.62, "orders_customer":
+          2669, "avg_customer": 2459.71, "customer_minus_store": -157.91}, {"country_name": "United Kingdom",
+          "orders_store": 6027, "avg_store": 2498.53, "orders_customer": 9552, "avg_customer": 2413.06,
+          "customer_minus_store": -85.48}, {"country_name": "United States", "orders_store": 27910, "avg_store":
+          2430.24, "orders_customer": 47477, "avg_customer": 2356.13, "customer_minus_store": -74.1},
+          {"country_name": "Germany", "orders_store": 5925, "avg_store": 2427.47, "orders_customer": 10622,
+          "avg_customer": 2319.6, "customer_minus_store": -107.87}, {"country_name": "Canada", "orders_store":
+          5721, "avg_store": 2396.95, "orders_customer": 10074, "avg_customer": 2307.13, "customer_minus_store":
+          -89.82}, {"country_name": "Australia", "orders_store": 3194, "avg_store": 2348.5, "orders_customer":
+          5837, "avg_customer": 2288.96, "customer_minus_store": -59.54}, {"country_name": "France", "orders_store":
+          1638, "avg_store": 2272.68, "orders_customer": 2966, "avg_customer": 2250.41, "customer_minus_store":
+          -22.27}, {"country_name": "Netherlands", "orders_store": 2327, "avg_store": 2239.53, "orders_custom'
+      settled_on: "SELECT\n  o.order_key,\n  o.order_net_amount,\n  s.country_code AS store_country_code,\n\
+        \  scc.country_name AS store_country_name,\n  c.country_code AS customer_country_code,\n  ccc.country_name\
+        \ AS customer_country_name\nFROM (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n\
+        \    MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net_amount\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n) AS o\nJOIN contoso_served.dim_store AS s\n  ON o.store_key = s.store_key\n\
+        JOIN contoso_served.dim_customer AS c\n  ON o.customer_key = c.customer_key\nJOIN contoso_served.dim_country\
+        \ AS scc\n  ON s.country_code = scc.country_code\nJOIN contoso_served.dim_country AS ccc\n  ON\
+        \ c.country_code = ccc.country_code"
+      means: 'One row per order — all 93,470 of them, over all ten years — each carrying what the customer
+        paid for it and TWO candidate countries, because the warehouse offers two and the question named
+        neither: the country of the shop that took the order, and the country the buyer lives in. For
+        the 54,502 orders rung up in a physical shop the two are a genuine pair of facts; for the 38,968
+        internet orders the store country is `--`, the online sentinel, which is not a place at all, so
+        those orders have a customer country and no store country. I measured the third declared path,
+        the site the store stands on, and it is identical to the store country on every one of the nine
+        codes — same order counts, same averages to the penny — so it is not a separate reading and I
+        have dropped it.'
+      readings_taken:
+      - word: by country
+        took: no choice — I carried both the store's country and the customer's country forward, because
+          the declaration binding this word has three paths and NO default, and explicitly forbids picking
+          one silently or averaging them
+        could_also_mean: 'the store''s country (8 countries over 54,502 orders, 86,790,054.13 of net revenue
+          stranded on the sentinel and excluded) or the customer''s country (8 countries over all 93,470
+          orders). Measured: the two agree on the ORDER of the countries — Italy, United Kingdom, United
+          States, Germany, Canada, Australia, France, Netherlands, identical under both — but disagree
+          on every figure, by 22.27 (France) to 157.91 (Italy), the store reading always higher'
+        declaration: 'country.default.whose_country_is_asked_never_assumed, confidence C, scope CONTOSO5:
+          ''never pick between the store and the customer silently, and never average the two'', realized
+          by mac.canon.path_select with paths store / customer / location and no declared default'
+      - word: the country recorded on the order itself
+        took: 'nothing — this reading, which the question document assumed, has no referent: v_contoso5_sales_line
+          carries order_key, line_number, dates, store_key, customer_key, channel, product_key, currency_code
+          and the amounts, and no country column'
+        could_also_mean: nothing else; there is no billing country and no ship-to country in this bundle
+          either, so two of the document's four listed readings of 'by country' cannot be expressed at
+          all
+        declaration: null
+      - word: the site the store stands on
+        took: dropped as a distinct reading
+        could_also_mean: a third answer — but measured over all 93,470 orders it returns the same orders
+          and the same averages as the store reading on all nine codes, because dim_store.country_code
+          never disagrees with the country of its dim_location.location_code
+        declaration: the `location` path of country.default.whose_country_is_asked_never_assumed, measured
+          here to be immaterial rather than assumed to be
+      - word: order value
+        took: net_amount — what the customer was actually charged, after discount
+        could_also_mean: gross_amount, before discount; the gap is the discount
+        declaration: net_revenue.default.revenue_means_net
+      blocked_by: []
+    - step: '3'
+      step_asks: by country
+      turns: []
+      settled_on: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n   \
+        \ MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name,\n  COUNT(*) FILTER(WHERE\n    t.store_cc = dc.country_code) AS orders_store,\n\
+        \  COUNT(*) FILTER(WHERE\n    t.cust_cc = dc.country_code) AS orders_customer\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  dc.country_name"
+      means: 'The groups the average will be taken over: the eight countries Contoso actually sells in
+        — Australia, Canada, France, Germany, Italy, Netherlands, United Kingdom, United States — with
+        how many orders fall into each one under each reading. Under the customer reading the eight groups
+        between them hold all 93,470 orders, every order on record. Under the store reading they hold
+        54,502, because the other 38,968 were rung up by the web shop, whose country is the `--` sentinel
+        that the declarations say is not a place; those orders are not in any group and will not be averaged.
+        That missing 42% is not a rounding difference, it is the single most important thing about the
+        store reading.'
+      readings_taken:
+      - word: country (as a group)
+        took: the eight real countries, dropping the `--` sentinel row
+        could_also_mean: nine groups including `--` labelled 'Online', which under the store reading would
+          be the largest group of all at 38,968 orders and 2,227.21 average — bigger than every real country
+          except the United States
+        declaration: 'country.exclusion.sentinel_is_not_a_country, scope CONTOSO5, default population
+          `real`: ''never report nine countries''; `--` is where the source wrote the online store''s
+          country'
+      - word: by country
+        took: both readings carried in parallel, still unchosen
+        could_also_mean: store country or customer country — the choice changes which orders are in the
+          population at all, not merely how they are labelled
+        declaration: country.default.whose_country_is_asked_never_assumed
+      blocked_by: []
+    - step: '4'
+      step_asks: average order value
+      turns:
+      - why: Measure the three candidate readings of "average order value" (per order, per customer, per
+          item) and the net/gross fork alongside the country fork, so every remaining ambiguity can be
+          settled by disclosure instead of a question.
+        did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+          \ AS store_key,\n    SUM(net_amount) AS order_net,\n    SUM(gross_amount) AS order_gross,\n\
+          \    SUM(quantity) AS order_units\n  FROM contoso_served.v_contoso5_sales_line\n  GROUP BY\n\
+          \    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    o.order_gross,\n    o.order_units,\n\
+          \    o.customer_key,\n    s.country_code AS store_cc,\n    c.country_code AS cust_cc\n  FROM\
+          \ o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key = s.store_key\n  JOIN contoso_served.dim_customer\
+          \ AS c\n    ON o.customer_key = c.customer_key\n)\nSELECT\n  dc.country_name,\n  ROUND(AVG(t.order_net)\
+          \ FILTER(WHERE\n    t.store_cc = dc.country_code), 2) AS aov_net_store,\n  ROUND(AVG(t.order_net)\
+          \ FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS aov_net_customer,\n  ROUND(AVG(t.order_gross)\
+          \ FILTER(WHERE\n    t.cust_cc = dc.country_code), 2) AS aov_gross_customer,\n  ROUND(\n    SUM(t.order_net)\
+          \ FILTER(WHERE\n      t.cust_cc = dc.country_code) / COUNT(DISTINCT t.customer_key) FILTER(WHERE\n\
+          \      t.cust_cc = dc.country_code),\n    2\n  ) AS net_per_customer,\n  ROUND(\n    SUM(t.order_net)\
+          \ FILTER(WHERE\n      t.cust_cc = dc.country_code) / SUM(t.order_units) FILTER(WHERE\n     \
+          \ t.cust_cc = dc.country_code),\n    2\n  ) AS net_per_item\nFROM contoso_served.dim_country\
+          \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  aov_net_customer\
+          \ DESC"
+        came_back: '8 row(s): [{"country_name": "Italy", "aov_net_store": 2617.62, "aov_net_customer":
+          2459.71, "aov_gross_customer": 2611.67, "net_per_customer": 3564.05, "net_per_item": 333.64},
+          {"country_name": "United Kingdom", "aov_net_store": 2498.53, "aov_net_customer": 2413.06, "aov_gross_customer":
+          2566.23, "net_per_customer": 3738.77, "net_per_item": 322.78}, {"country_name": "United States",
+          "aov_net_store": 2430.24, "aov_net_customer": 2356.13, "aov_gross_customer": 2504.57, "net_per_customer":
+          4505.3, "net_per_item": 313.91}, {"country_name": "Germany", "aov_net_store": 2427.47, "aov_net_customer":
+          2319.6, "aov_gross_customer": 2465.66, "net_per_customer": 4437.83, "net_per_item": 304.25},
+          {"country_name": "Canada", "aov_net_store": 2396.95, "aov_net_customer": 2307.13, "aov_gross_customer":
+          2452.74, "net_per_customer": 4313.67, "net_per_item": 304.82}, {"country_name": "Australia",
+          "aov_net_store": 2348.5, "aov_net_customer": 2288.96, "aov_gross_customer": 2432.41, "net_per_customer":
+          3347.7, "net_per_item": 300.58}, {"country_name": "France", "aov_net_store": 2272.68, "aov_net_customer":
+          2250.41, "aov_gross_customer": 2392.42, "net_per_customer": 3350.77, "net_per_item": 298.34},
+          {"coun'
+      settled_on: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n   \
+        \ MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc\
+        \ = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+        \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+        \ DESC"
+      means: 'For each of the eight countries Contoso sells in, what a single order placed there was worth
+        on average — the money actually charged after discount, summed over the order''s lines, then averaged
+        across orders — over all ten years of trading, 2016-05-18 to 2025-12-31, with no order left out
+        for being cancelled or refunded because this warehouse records no such status. Two figures per
+        country because the warehouse offers two meanings of "there": where the buyer lives (covering
+        all 93,470 orders) and where the shop stood (covering the 54,502 rung up in a physical shop, the
+        38,968 internet orders having no country). The averages are of ORDER totals, not of line items:
+        93,470 orders, not 223,974 lines.'
+      readings_taken:
+      - word: average order value
+        took: the average of each order's total — net money divided by the count of distinct orders
+        could_also_mean: 'total sales per buying customer, which I measured and which REORDERS THE COUNTRIES
+          ENTIRELY: United States 4,505.30, Germany 4,437.83, Canada 4,313.67, Netherlands 3,877.17, United
+          Kingdom 3,738.77, Italy 3,564.05, France 3,350.77, Australia 3,347.70 — Italy falls from first
+          to sixth. Or total sales per item sold: Italy 333.64, United Kingdom 322.78, United States 313.91,
+          Canada 304.82, Germany 304.25, Australia 300.58, France 298.34, Netherlands 293.19. I did not
+          treat these as rival readings of the phrase: ''average order value'' names the Order, which
+          is a declared concept of this bundle counted by distinct order_key, and money-per-customer and
+          money-per-item are different measures that happen to be askable — not meanings of this one'
+        declaration: null
+      - word: order value
+        took: net_amount, after discount, and I am calling it NET
+        could_also_mean: 'gross, before discount, which is uniformly about 6.2% higher and changes no
+          country''s position: Italy 2,611.67, United Kingdom 2,566.23, United States 2,504.57, Germany
+          2,465.66, Canada 2,452.74, Australia 2,432.41, France 2,392.42, Netherlands 2,343.94 (customer
+          reading)'
+        declaration: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net; ''never
+          pick one silently'''
+      - word: tax and shipping
+        took: neither is included or excluded by me — the bundle holds no tax or shipping column, so an
+          order's value is quantity times price and nothing else
+        could_also_mean: a value inclusive of tax and delivery, which this warehouse cannot produce
+        declaration: null
+      - word: by country
+        took: still unchosen — both columns carried forward
+        could_also_mean: either column alone
+        declaration: country.default.whose_country_is_asked_never_assumed
+      blocked_by: []
+    - step: '5'
+      step_asks: average order value by country
+      turns:
+      - why: 'Deliver the answer: both country readings are fully measured and differ materially in coverage
+          and in every figure, and a confidence-C operator ruling forbids me to pick one, so what the
+          reader gets is the choice with the numbers already attached.'
+        did: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n    MIN(store_key)\
+          \ AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+          \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+          \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+          \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+          )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc\
+          \ = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+          \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+          \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+          \ DESC"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 8 row(s): [{"country": "Italy", "avg_order_value_customer_country":
+          2459.71, "avg_order_value_store_country": 2617.62}, {"country": "United Kingdom", "avg_order_value_customer_country":
+          2413.06, "avg_order_value_store_country": 2498.53}, {"country": "United States", "avg_order_value_customer_country":
+          2356.13, "avg_order_value_store_country": 2430.24}, {"country": "Germany", "avg_order_value_customer_country":
+          2319.6, "avg_order_value_store_country": 2427.47}, {"country": "Canada", "avg_order_value_customer_country":
+          2307.13, "avg_order_value_store_country": 2396.95}, {"country": "Australia", "avg_order_value_customer_country":
+          2288.96, "avg_order_value_store_country": 2348.5}, {"country": "France", "avg_order_value_customer_country":
+          2250.41, "avg_order_value_store_country": 2272.68}, {"country": "Netherlands", "avg_order_value_customer_country":
+          2204.9, "avg_order_value_store_country": 2239.53}]  Give `claimed_answer` as the value a person
+          would be handed, and `claimed_answer_is` from the closed list. If these rows settle the question,
+          do not decline.'
+      settled_on: "WITH o AS (\n  SELECT\n    order_key,\n    MIN(customer_key) AS customer_key,\n   \
+        \ MIN(store_key) AS store_key,\n    SUM(net_amount) AS order_net\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  GROUP BY\n    order_key\n), t AS (\n  SELECT\n    o.order_net,\n    s.country_code AS store_cc,\n\
+        \    c.country_code AS cust_cc\n  FROM o\n  JOIN contoso_served.dim_store AS s\n    ON o.store_key\
+        \ = s.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON o.customer_key = c.customer_key\n\
+        )\nSELECT\n  dc.country_name AS country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n    t.cust_cc\
+        \ = dc.country_code), 2) AS avg_order_value_customer_country,\n  ROUND(AVG(t.order_net) FILTER(WHERE\n\
+        \    t.store_cc = dc.country_code), 2) AS avg_order_value_store_country\nFROM contoso_served.dim_country\
+        \ AS dc\nCROSS JOIN t\nWHERE\n  dc.country_code <> '--'\nGROUP BY\n  1\nORDER BY\n  avg_order_value_customer_country\
+        \ DESC"
+      means: 'Eight rows, one per country Contoso sells in, each holding two versions of one quantity:
+        the average value of a single order placed there, where an order''s value is the money actually
+        charged across all its lines after discount, and the average is taken over orders — 93,470 of
+        them — rather than over the 223,974 lines or over customers. The first figure attributes each
+        order to the country its buyer lives in and covers every order on record; the second attributes
+        it to the country the selling shop stood in and covers 54,502, every internet order having fallen
+        out for want of a country. Both span the full ten years of trading, 2016-05-18 to 2025-12-31.
+        The returned rows match the figures I claimed before seeing them, to the penny, and the store
+        column descends in the same sequence as the customer column, which is what makes the ranking claim
+        safe. WHAT IS NOT IN THESE FIGURES: no tax and no shipping, because the warehouse holds neither;
+        no exclusion of cancelled, returned or refunded orders, because no column in this bundle records
+        an order''s status; no `--` sentinel row, which under the store reading would otherwise stand
+        as a ninth and second-largest "country" named Online; and no currency conversion, the amounts
+        being USD already whatever currency a sale was transacted in.'
+      readings_taken:
+      - word: by country
+        took: NO CHOICE — both readings measured and handed back priced, because the rule binding this
+          word is confidence C, declares no default, and says in terms never to pick between the store
+          and the customer silently or to average the two
+        could_also_mean: 'the customer''s country (8 countries, all 93,470 orders) or the store''s country
+          (8 countries, 54,502 orders). The third declared path, the site the store stands on, measured
+          identical to the store path on all nine codes — same counts, same averages to the penny — so
+          it is not a third option. The document''s own assumption, ''the country recorded on the order
+          itself'', has no referent: the sales line carries no country column, and the bundle holds no
+          billing country and no ship-to country, so two of the four readings the question imagined cannot
+          be expressed at all'
+        declaration: country.default.whose_country_is_asked_never_assumed, confidence C, realized by mac.canon.path_select
+          with paths store / customer / location and no default
+      - word: average order value
+        took: net money divided by the number of orders
+        could_also_mean: 'per buying customer, which reorders the countries completely — United States
+          4,505.30, Germany 4,437.83, Canada 4,313.67, Netherlands 3,877.17, United Kingdom 3,738.77,
+          Italy 3,564.05, France 3,350.77, Australia 3,347.70, with Italy falling from first to sixth
+          — or per item sold: Italy 333.64, United Kingdom 322.78, United States 313.91, Canada 304.82,
+          Germany 304.25, Australia 300.58, France 298.34, Netherlands 293.19. I did not raise this as
+          a question because the phrase names the Order, a declared concept counted by distinct order_key;
+          the other two are different measures, not other meanings of this phrase'
+        declaration: null
+      - word: order value
+        took: net — after discount — and said so rather than letting it pass unlabelled
+        could_also_mean: 'gross, before discount: Italy 2,611.67, United Kingdom 2,566.23, United States
+          2,504.57, Germany 2,465.66, Canada 2,452.74, Australia 2,432.41, France 2,392.42, Netherlands
+          2,343.94 under the customer reading — about 6.2% higher everywhere, changing no country''s position'
+        declaration: 'net_revenue.default.revenue_means_net: answer with net_amount and SAY net'
+      - word: orders
+        took: all of them, with no status filter
+        could_also_mean: 'completed orders only, excluding cancellations and refunds — not a reading I
+          declined but one the data cannot hold: no relation in this bundle carries an order status, cancellation
+          flag or refund column'
+        declaration: null
+      - word: all orders on record
+        took: 2016-05-18 to 2025-12-31, the full ten years
+        could_also_mean: the current year or the last 12 months, neither of which the question named
+        declaration: order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling
+          2026-09-30
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+v3_answer_step: '5'
+v3_gaps: []
+v3_bucket: DECLINED
+v3_why: it refused to choose between readings the question did not name
+v3_seconds: 411.8

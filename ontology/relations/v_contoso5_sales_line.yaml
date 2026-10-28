@@ -1,0 +1,235 @@
+# CONTOSO5 > the sales line, SEMANTICALLY — what a question may do with each of its columns.
+#
+# THE RELATION-OWNED FORM (operator ruling 2026-10-08, "option A"). Seven concepts read this one
+# relation — Discount, GrossRevenue, Margin, NetRevenue, Order, SalesCost, UnitsSold — and until
+# this file existed each carried its own copy of these column facts. SINCE 2026-10-26 ONE concept
+# reads it: Order, the fact node, serves every measure column below (operator ruling, ontology 1.1;
+# the six measure concepts are tombstoned in governance/tombstones.yaml). Measured before the move:
+# three columns were declared two different ways and the key was declared two different ways.
+# The data plane's view of the same relation is data/datasets/v_contoso5_sales_line.yaml: it says
+# what each column IS (type, physical role, measured distincts). This says what a QUESTION may do.
+
+metadata:
+  source: CONTOSO5
+  schema_version: '0.3.0-develop'
+  confidence: C
+  provenance: authored
+
+relation:
+  name: v_contoso5_sales_line
+  # ONE HOME, AND IT HAD ALREADY DISAGREED. Six of the seven concepts declared
+  # `[order_key, line_number]`; `Order` declared `order_key` alone on a LINE-grained relation, so
+  # its `cell_key` — which reaches the SQL — was wrong. The relation is line-grained; a concept
+  # served COARSER than that says so with `bindings[].counts`, which is what Order now does.
+  key: [order_key, line_number]
+
+columns:
+  # ---- the cell key -------------------------------------------------------------------------
+  order_key:
+    description: >-
+      the order this line belongs to. 93,470 orders over 223,974 lines; with `line_number` it is
+      this relation's key. The order header is a degenerate dimension here, not a second fact.
+    surfaces: ['order', 'order number', 'orders']
+    offers: {}
+  line_number:
+    description: >-
+      which line of the order this is, 0 to 6. One order can hold several products, and the line
+      is the grain of this fact.
+    surfaces: ['line', 'order line', 'line item']
+    offers: {}
+
+  # ---- the two dates ------------------------------------------------------------------------
+  order_date:
+    description: >-
+      the day the order was placed. THE PERIOD COLUMN: an unqualified question about when is
+      answered on this and not on `delivery_date` (order.default.period_is_order_date).
+    surfaces: ['date', 'when']
+    offers:
+      axis: time
+      period_binding: true
+      extremum: [min, max]
+  delivery_date:
+    description: >-
+      the day the order was delivered. Measured: never before `order_date` and never null. NOT
+      the period a question is answered on unless it says delivery.
+    surfaces: ['delivery']
+    offers:
+      axis: time
+      extremum: [min, max]
+
+  # ---- the dimension keys -------------------------------------------------------------------
+  # AXIS, AND THE CONFLICT THIS SETTLES. Six concepts declared `axis: categorical` on each of
+  # these three; `Order` declared `offers: {}` — offered to no question. "Orders by store" is a
+  # legitimate question, so the empty map was an under-declaration suppressing three real axes by
+  # accident, not a narrower reading anyone intended. The axis is the relation's fact; a concept
+  # that does not want one simply does not serve the column.
+  store_key:
+    description: >-
+      the store the sale was rung up at, joining dim_store. Store key 999999 is the single
+      online outlet, and `channel` beside this column now states that split on the fact itself —
+      so a question no longer has to reach dim_store to learn which channel a sale was in.
+    surfaces: ['outlet', 'where it was sold']
+    offers:
+      axis: categorical
+    references: Store
+  customer_key:
+    description: >-
+      the customer who bought, joining dim_customer. The only route from a sale to a PERSON, and
+      so the only way to attribute internet sales to a country.
+    surfaces: ['customer', 'buyer', 'who bought']
+    offers:
+      axis: categorical
+    references: Customer
+  channel:
+    description: >-
+      WHICH CHANNEL THE SALE WAS IN — `physical` for a shop you can walk into, `online` for the
+      web shop. Derived on the fact from the store key (`store_key = 999999` is the web shop), so
+      it needs no join and is reachable from every question whatever route the question takes.
+      MEASURED EQUIVALENT to `dim_store.location_code = -1` over all 223,974 lines on 2026-10-23:
+      93,550 each way, zero disagreements. The value names are the ones
+      `store.resolution.the_channel_is_the_location_sentinel` already declares for its two
+      populations, so the axis has one vocabulary and not two.
+      A FINANCIAL QUESTION THAT NAMES NO CHANNEL COVERS BOTH, by the operator's ruling of
+      2026-10-18 — 218,814,471.66 net, of which 132,024,417.53 physical and 86,790,054.13 online.
+      Before this column that reading was the ABSENCE of a predicate, which no gate could check
+      and no answer could disclose; now it is a column, so it can be grouped, stated and verified.
+    surfaces: ['channel', 'sales channel', 'online', 'internet', 'web', 'web shop', 'internet shop',
+               'physical', 'in store', 'in a shop', 'bricks and mortar', 'walk-in']
+    offers:
+      axis: categorical
+  sale_country_code:
+    description: >-
+      THE COUNTRY OF THE SALE — the ISO code of the country this line is trade IN. A shop sale is
+      attributed to the country the SHOP stands in; a web sale to the country the CUSTOMER lives
+      in. Derived on the fact from `channel` and the two keys, so it needs no join and is reachable
+      from every question whatever route the question takes. This is the reading an unqualified
+      country question means (operator ruling 2026-10-25); the store's, the customer's and the
+      site's own country stay askable BY NAME through their own relations.
+      EVERY LINE REACHES A COUNTRY and none carries the `--` sentinel: the sentinel leaves the
+      country axis of a sale entirely, because a web sale is attributed to a person and a person has
+      a real country. The axis PARTITIONS the sales line — the parts sum to the whole, with no
+      leakage and nothing double counted. The figures that prove it are in the ruling, which is
+      their one home; a figure restated here would be a second home that goes stale on the next load.
+      WHY IT IS NOT `dim_customer.country_code` UNDER ANOTHER NAME, though it is row-for-row
+      identical to it here: no physical sale in this warehouse crosses a border, so
+      the two readings AGREE BY ACCIDENT OF THE DATA. They do not mean the same thing — a German
+      tourist buying in Paris is French trade on this column and German trade on the customer's —
+      and the operator refused `default: customer` on 2026-10-22 for exactly that reason.
+    surfaces: ['country', 'in']
+    offers:
+      axis: categorical
+    references: Country
+  product_key:
+    description: >-
+      the product sold, joining dim_product.
+    surfaces: ['item', 'article', 'what was sold']
+    offers:
+      axis: categorical
+    references: Product
+
+  currency_code:
+    description: >-
+      THE CURRENCY THE SALE WAS TRANSACTED IN, and NOT the unit of the amounts on this row. The
+      amounts are USD. Filtering on this and presenting the amounts as if they were in that
+      currency is forbidden by currency.ambiguity.code_is_not_the_unit_of_the_amounts.
+    surfaces: ['currency', 'transaction currency', 'currency of the sale']
+    offers:
+      axis: categorical
+
+  # ---- the measures: columns served by ONE concept, Order --------------------------------------
+  # NO `aggregate.default` HERE. Until 2026-10-26 "which measure does a bare question mean" was
+  # each measure concept's call, on its binding as `measure:` (net_amount for NetRevenue,
+  # gross_amount for GrossRevenue, cost_amount for SalesCost). With the measures folded into Order
+  # there is no per-concept choice left: a question reaches a figure by NAME, through each
+  # column's own `surfaces` ("revenue" and "sales" are on net_amount, "gross revenue" on
+  # gross_amount), and a question naming no figure at all is asked back rather than defaulted.
+  gross_amount:
+    description: >-
+      what the line would have cost at list price, in USD. Measured on all 223,974 lines:
+      exactly `quantity * unit_price`. The figure BEFORE discount.
+    surfaces: ['gross', 'gross revenue', 'gross sales', 'list value', 'before discount']
+    offers:
+      aggregate: { type: flow, unit: USD }
+      extremum: [min, max]
+  net_amount:
+    description: >-
+      what the customer was actually charged for the line, in USD, after discount. Measured:
+      exactly `quantity * net_price`. THE DEFAULT MONEY COLUMN: a question saying revenue or
+      sales without saying net or gross is answered here
+      (net_revenue.default.revenue_means_net). AN UNQUALIFIED PRICE means what the customer paid
+      per article: this column summed and divided by `quantity` summed, 310.98 USD (operator
+      ruling, 2026-09-30; the rule net_revenue.default.a_price_is_revenue_per_article on Order).
+      When a question says store, shop, product, or placed without naming a competing figure,
+      those words are read on this same sales-line figure.
+    surfaces: ['revenue', 'sales', 'net', 'net revenue', 'net sales', 'turnover', 'takings', 'what we charged']
+    offers:
+      # `default` carries in the declaration what the description above already claimed in prose:
+      # with the measures folded onto Order the concept offers nine aggregates in two units, and
+      # the loader refuses to pick one by key order.
+      aggregate: { type: flow, unit: USD, default: true }
+      extremum: [min, max]
+  cost_amount:
+    description: >-
+      what the goods on the line cost Contoso, in USD. Measured: exactly `quantity * unit_cost`.
+    surfaces: ['cost of goods', 'cogs', 'what it cost us']
+    offers:
+      aggregate: { type: flow, unit: USD }
+      extremum: [min, max]
+  margin_amount:
+    description: >-
+      the profit on the line, in USD. Measured: exactly `net_amount - cost_amount`, so it is
+      margin on the DISCOUNTED price and not on list.
+    surfaces: ['margin', 'profit', 'gross margin', 'contribution']
+    offers:
+      aggregate: { type: flow, unit: USD }
+      extremum: [min, max]
+  discount_amount:
+    description: >-
+      the money given away on the line, in USD. Measured: exactly `gross_amount - net_amount`.
+      Upstream the discount is an integer percent from a closed set of 15 steps, 0 to 14.
+    surfaces: ['discount', 'rebate', 'money off', 'reduction']
+    offers:
+      aggregate: { type: flow, unit: USD }
+      extremum: [min, max]
+  quantity:
+    description: >-
+      how many units of the product the line sold.
+    surfaces: ['units', 'units sold', 'how many', 'volume', 'pieces']
+    offers:
+      aggregate: { type: flow, unit: units }
+      extremum: [min, max]
+
+  # THE PER-UNIT FACTORS, intensive: a total of prices is not a price. Each is one factor of an
+  # amount above, and its unit is its own.
+  unit_price:
+    description: >-
+      what ONE UNIT ON THIS LINE was charged before discount, in USD. Measured against the source:
+      `unit_price = product.Price × f`, where `f` is the same per-line factor used for
+      `unit_cost = product.Cost × f`. From 2024 onward `f = 1.0`, so this is the current list
+      price level for all products sold in that period. `gross_amount` is exactly
+      `quantity * unit_price`.
+    surfaces: ['price before discount', 'full price', 'undiscounted price', 'list price', 'catalogue price', 'rrp', 'sticker price']
+    offers:
+      aggregate: { type: intensive, unit: USD }
+      extremum: [min, max]
+  net_price:
+    description: >-
+      the price actually paid for one unit, in USD, after discount. Upstream: `unit_price * (1 -
+      discount/100)`, and measured never above `unit_price`.
+    surfaces: ['net price', 'what one costs']
+    offers:
+      aggregate: { type: intensive, unit: USD }
+      extremum: [min, max]
+  unit_cost:
+    description: >-
+      what one unit cost Contoso, in USD. Upstream it is scaled by the same price factor as
+      `unit_price`, so margin PERCENT is stable within a category while absolute margin moves —
+      a margin-erosion story read off this data is an artefact of the generator.
+    surfaces: ['unit cost', 'cost per unit', 'cost per article', 'list cost', 'standard cost', 'catalogue cost']
+    offers:
+      aggregate: { type: intensive, unit: USD }
+      extremum: [min, max]
+
+governance:
+  owner: operator
+  last_reviewed: 2026-10-08

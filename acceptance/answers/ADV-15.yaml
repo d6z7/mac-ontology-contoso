@@ -1,0 +1,1581 @@
+id: ADV-15
+captured_at: '2026-10-24T21:44:55+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: '0'
+verdict:
+  disposition: GOVERNED_REFUSAL
+intent:
+  subject: customers
+  operation: aggregate
+  qdmr_simplified: "  1       FROM       customers bought                                      “customers\
+    \ bought”\n  2  ← 1  WHERE      brand = 'Contoso'                                     “Contoso brand\
+    \ products”\n  3  ← 2  PIVOT_TO   their home country                                    “their home\
+    \ country”\n  4  ← 2  WHERE      the country of the store where it was bought != None  “in stores\
+    \ outside their home country”\n  5  ← 4  AGGREGATE  count distinct of customers                  \
+    \         “How many customers”\n  answer: step 5   confidence: 0.62   A DAG   step(s) 2 feed more\
+    \ than one\n  UNDERSTOOD AS: How many distinct customers have at least one purchase of a Contoso-brand\
+    \ product made at a store located in a country other than the customer's own home country. One row,\
+    \ one number, covering all purchases on record (no date window was given). Customers who bought Contoso\
+    \ products only at home, and customers who shopped abroad but never bought Contoso, are not counted.\n\
+    \  AMBIGUOUS 'their home country' — ASKS: Should a customer's home country be the country on their\
+    \ own customer record (where they live), or the country where they do most of their shopping?\n  \
+    \    could mean: the country recorded for the customer themselves, i.e. where they live\n      could\
+    \ mean: the country of the store the customer shops at most often\n      took: the country recorded\
+    \ for the customer themselves\n  AMBIGUOUS 'in stores outside their home country' — ASKS: If a purchase\
+    \ wasn't made at a physical store in a country — for example an online or catalogue order — should\
+    \ it count as 'outside their home country', or be left out entirely?\n      could mean: only purchases\
+    \ at stores that have a country, and that country differs from the customer's\n      could mean: also\
+    \ count online/non-physical channels as being outside the home country\n      took: only purchases\
+    \ at stores that have a country different from the customer's\n  AMBIGUOUS 'Contoso brand' — ASKS:\
+    \ Does 'Contoso' mean exactly the brand named Contoso, or any brand whose name contains Contoso (such\
+    \ as 'Contoso, Ltd')?\n      could mean: the brand named exactly Contoso\n      could mean: every\
+    \ brand whose name starts with or contains Contoso\n      took: the brand named exactly Contoso\n\
+    \  AMBIGUOUS 'How many customers bought' — ASKS: Do you want every customer with at least one such\
+    \ cross-border Contoso purchase, or only customers who bought Contoso exclusively outside their home\
+    \ country?\n      could mean: any customer with at least one Contoso purchase abroad\n      could\
+    \ mean: customers who never bought Contoso at home at all\n      took: any customer with at least\
+    \ one Contoso purchase abroad\n  AMBIGUOUS 'bought' — ASKS: Over what period — all purchases ever\
+    \ recorded, or a particular year or recent window?\n      could mean: all time\n      could mean:\
+    \ a specific period you have in mind, e.g. last year\n      took: all time\n  OUTPUT SHAPE: one figure\
+    \ · one row(s) · carrying how many customers"
+  understood_as_in_human_words: How many distinct customers have at least one purchase of a Contoso-brand
+    product made at a store located in a country other than the customer's own home country. One row,
+    one number, covering all purchases on record (no date window was given). Customers who bought Contoso
+    products only at home, and customers who shopped abroad but never bought Contoso, are not counted.
+  population_actually_answered: 'Contoso-brand purchase lines (brand = ''Contoso'' on dim_product — measured
+    as the only one of the 11 brand values containing the word, so exact and contains readings coincide),
+    joined to the buyer via order__placed_by__customer and the premises via order__placed_at__store, restricted
+    to physical stores only (store country <> ''--'', the `real` default of country.exclusion.sentinel_is_not_a_country,
+    which removes 25,408 online lines) AND store country <> the buyer''s own country_code via the declared
+    `customer` path customer__based_in__country. No date restriction, per order.default.an_unscoped_question_covers_all_time:
+    the full 2016-05-18 to 2025-12-31 extent. Buyers only, since the walk starts from sales — the 52,801
+    registered customers who never ordered are absent by construction. This population holds zero rows,
+    which is why the figure is 0 and not merely small.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: there is none
+    columns_the_answer_step_asks_for: []
+    figures_the_answer_step_computes:
+    - count distinct of customers
+    answer_step: '5'
+    verb: aggregate
+    said: How many customers
+    stage1_confidence: 0.62
+  canonical_question: &id001
+    understood_as: How many distinct customers have at least one purchase of a Contoso-brand product made
+      at a store located in a country other than the customer's own home country. One row, one number,
+      covering all purchases on record (no date window was given). Customers who bought Contoso products
+      only at home, and customers who shopped abroad but never bought Contoso, are not counted.
+    steps:
+    - id: '1'
+      do: from
+      thing: customers bought
+      said: customers bought
+    - id: '2'
+      do: where
+      of: '1'
+      thing: brand
+      op: '='
+      value: Contoso
+      said: Contoso brand products
+    - id: '3'
+      do: pivot_to
+      of: '2'
+      to: their home country
+      said: their home country
+    - id: '4'
+      do: where
+      of: '2'
+      thing: the country of the store where it was bought
+      op: '!='
+      than:
+        step: '3'
+        said: their home country
+      said: in stores outside their home country
+    - id: '5'
+      do: aggregate
+      of: '4'
+      figures: &id002
+      - how: count distinct
+        of: customers
+        said: How many customers
+      said: How many customers
+    answer: '5'
+    output_shape: &id003
+      shape: one figure
+      said: How many customers
+      rows: one
+      key_columns: &id005 []
+      figure_columns: &id006
+      - how many customers
+    ambiguities:
+    - words: their home country
+      question: Should a customer's home country be the country on their own customer record (where they
+        live), or the country where they do most of their shopping?
+      readings:
+      - the country recorded for the customer themselves, i.e. where they live
+      - the country of the store the customer shops at most often
+      assumed: the country recorded for the customer themselves
+    - words: in stores outside their home country
+      question: If a purchase wasn't made at a physical store in a country — for example an online or
+        catalogue order — should it count as 'outside their home country', or be left out entirely?
+      readings:
+      - only purchases at stores that have a country, and that country differs from the customer's
+      - also count online/non-physical channels as being outside the home country
+      assumed: only purchases at stores that have a country different from the customer's
+    - words: Contoso brand
+      question: Does 'Contoso' mean exactly the brand named Contoso, or any brand whose name contains
+        Contoso (such as 'Contoso, Ltd')?
+      readings:
+      - the brand named exactly Contoso
+      - every brand whose name starts with or contains Contoso
+      assumed: the brand named exactly Contoso
+    - words: How many customers bought
+      question: Do you want every customer with at least one such cross-border Contoso purchase, or only
+        customers who bought Contoso exclusively outside their home country?
+      readings:
+      - any customer with at least one Contoso purchase abroad
+      - customers who never bought Contoso at home at all
+      assumed: any customer with at least one Contoso purchase abroad
+    - words: bought
+      question: Over what period — all purchases ever recorded, or a particular year or recent window?
+      readings:
+      - all time
+      - a specific period you have in mind, e.g. last year
+      assumed: all time
+    cannot_express: []
+    confidence: 0.62
+  steps: 5
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: how_many_customers
+      type: number
+    rows:
+    - - 0
+  value: 0
+  raw: '0'
+  reading: there is none
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "Contoso brand → the brand value 'Contoso' on dim_product.brand\n        could also mean: any\
+      \ brand name containing 'Contoso', e.g. 'Contoso, Ltd'"
+    ref: 'MEASURED, NOT ASSUMED: dim_product.brand holds exactly 11 values and only one contains ''Contoso''
+      — it is spelled ''Contoso''. Both readings select the identical set, so this fork costs nothing
+      and is not worth a question.'
+  - kind: ''
+    text: "bought → all purchases on record, 2016-05-18 to 2025-12-31\n        could also mean: a particular\
+      \ year or recent window"
+    ref: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30):
+      a question naming no period covers the full extent of order_date and must state the first and last
+      date included.'
+  - kind: ''
+    text: "customers bought → customers who appear on a sales line — 52,189 of them\n        could also\
+      \ mean: the customer register, 104,990 rows"
+    ref: 'Customer concept definition: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale,
+      so the register is not the buyer list.'' Starting from sales is what ''bought'' names.'
+  - kind: ''
+    text: "Contoso brand products → brand = 'Contoso' on the product row\n        could also mean: manufacturer,\
+      \ which is a separate column naming the same thing one step away"
+    ref: 'The Brand concept is grounded in dim_product.brand and counts brand; dim_product.manufacturer
+      is declared as naming `brand` at `naming: legal`, so brand is the nearer-to-common column and the
+      one a question saying ''brand'' reads.'
+  - kind: ''
+    text: "their home country → the country on the customer's own register row, dim_customer.country_code\n\
+      \        could also mean: the country of the store the customer shops at most often"
+    ref: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22) forbids
+      picking between the store and the customer silently and declares the named paths; the `customer`
+      path, customer__based_in__country, surfaces as 'customer country' / 'where our customers are'. The
+      question names both sides itself — 'their home country' against 'the country of the store' — so
+      the choice is made by the question, not by me. The modal-shopping-country reading is not a declared
+      path in this bundle at all.
+  - kind: ''
+    text: "home country → the single current country on the customer row\n        could also mean: where\
+      \ the customer lived on the order date, since the register is kept as a history"
+    ref: 'dim_customer.valid_from states it plainly: ''a sale could in principle be attributed to where
+      the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should be.'' So the
+      current row is what I read.'
+  - kind: ''
+    text: "in stores outside their home country → physical shops only, whose country differs from the\
+      \ buyer's — giving 0 customers\n        could also mean: also treating the web shop as 'outside\
+      \ their home country', since its country code `--` is literally not equal to any buyer's country\
+      \ — giving 16,584 customers"
+    ref: country.exclusion.sentinel_is_not_a_country (confidence P) declares `--` the online sentinel
+      and NOT a place, defaulting to the `real` population; dim_store.country_code states it directly
+      — 'the online store carries '--' ... so this column cannot attribute an internet sale to a real
+      country'. A sentinel that is not a country cannot be a country other than the buyer's, so the online
+      lines cannot satisfy the test. I apply the declared reading and disclose the other figure rather
+      than asking, because the declaration fixes it.
+  - kind: ''
+    text: "the country of the store where it was bought → dim_store.country_code, the country of the premises\
+      \ the sale was rung up against\n        could also mean: dim_location.country_code, the country\
+      \ of the site the premises stands on, one hop further out"
+    ref: 'The two agree here: store__trades_in__country is the declared store path and v_contoso5_sales_line.store_key
+      points at the premises, ''never at the site''. Either route gives the same 8 domestic pairings,
+      so the choice is immaterial to this answer.'
+  - kind: ''
+    text: "in stores outside their home country → physical shops whose country differs from the buyer's\
+      \ — 0 customers\n        could also mean: counting the web shop as 'outside their home country',\
+      \ since `--` is unequal to every real country — 16,584 customers"
+    ref: 'country.exclusion.sentinel_is_not_a_country (confidence P): `--` is the online sentinel and
+      NOT a place, default population `real`. dim_store.country_code states it directly — ''this column
+      cannot attribute an internet sale to a real country.'' The declaration settles it, so I applied
+      it and disclosed the alternative rather than asking; the reader should nonetheless know that this
+      one choice IS the answer, 0 against 16,584.'
+  - kind: ''
+    text: "their home country → the country on the customer's own register row\n        could also mean:\
+      \ the country they shop in most often"
+    ref: country.default.whose_country_is_asked_never_assumed (confidence C) declares the `customer` and
+      `store` paths separately and forbids silent choice; the question names both sides itself. Immaterial
+      regardless — every physical sale being domestic means a customer's modal shopping country IS their
+      home country, so this reading cannot move the 0.
+  - kind: ''
+    text: "bought → all time, 2016-05-18 to 2025-12-31\n        could also mean: a named year or a recent\
+      \ window"
+    ref: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30).
+      Any narrower window is a subset of a population that already holds no qualifying row, so it too
+      would give 0.
+  - kind: ''
+    text: "How many customers bought → any customer with at least one qualifying purchase\n        could\
+      \ also mean: only customers who bought Contoso exclusively abroad and never at home"
+    ref: 'Immaterial: ''at least one'' is the weaker reading and already returns 0, so the stricter one
+      cannot return more.'
+  concepts: []
+  rules:
+  - id: MEASURED
+    why: '''Contoso brand'' = the brand value ''Contoso'' on dim_product.brand'
+  - id: 'NOT ASSUMED: dim_product.brand holds exactly 11 values and only one contains ''Contoso'' — it
+      is spelled ''Contoso''. Both readings select the identical set'
+    why: '''Contoso brand'' = the brand value ''Contoso'' on dim_product.brand'
+  - id: so this fork costs nothing and is not worth a question.
+    why: '''Contoso brand'' = the brand value ''Contoso'' on dim_product.brand'
+  - id: order.default.an_unscoped_question_covers_all_time (confidence C
+    why: '''bought'' = all purchases on record, 2016-05-18 to 2025-12-31'
+  - id: 'operator ruling 2026-09-30): a question naming no period covers the full extent of order_date
+      and must state the first and last date included.'
+    why: '''bought'' = all purchases on record, 2016-05-18 to 2025-12-31'
+  - id: 'Customer concept definition: ''HALF HAVE NEVER ORDERED: 52'
+    why: '''customers bought'' = customers who appear on a sales line — 52,189 of them'
+  - id: 189 of the 104
+    why: '''customers bought'' = customers who appear on a sales line — 52,189 of them'
+  - id: 990 appear on a sale
+    why: '''customers bought'' = customers who appear on a sales line — 52,189 of them'
+  - id: so the register is not the buyer list.' Starting from sales is what 'bought' names.
+    why: '''customers bought'' = customers who appear on a sales line — 52,189 of them'
+  - id: The Brand concept is grounded in dim_product.brand and counts brand
+    why: '''Contoso brand products'' = brand = ''Contoso'' on the product row'
+  - id: 'dim_product.manufacturer is declared as naming `brand` at `naming: legal`'
+    why: '''Contoso brand products'' = brand = ''Contoso'' on the product row'
+  - id: so brand is the nearer-to-common column and the one a question saying 'brand' reads.
+    why: '''Contoso brand products'' = brand = ''Contoso'' on the product row'
+  - id: country.default.whose_country_is_asked_never_assumed (confidence C
+    why: '''their home country'' = the country on the customer''s own register row, dim_customer.country_code'
+  - id: RULING-2026-10-22) forbids picking between the store and the customer silently and declares the
+      named paths
+    why: '''their home country'' = the country on the customer''s own register row, dim_customer.country_code'
+  - id: the `customer` path
+    why: '''their home country'' = the country on the customer''s own register row, dim_customer.country_code'
+  - id: customer__based_in__country
+    why: '''their home country'' = the country on the customer''s own register row, dim_customer.country_code'
+  - id: surfaces as 'customer country' / 'where our customers are'. The question names both sides itself
+      — 'their home country' against 'the country of the store' — so the choice is made by the question
+    why: '''their home country'' = the country on the customer''s own register row, dim_customer.country_code'
+  - id: not by me. The modal-shopping-country reading is not a declared path in this bundle at all.
+    why: '''their home country'' = the country on the customer''s own register row, dim_customer.country_code'
+  - id: 'dim_customer.valid_from states it plainly: ''a sale could in principle be attributed to where
+      the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should be.'' So the
+      current row is what I read.'
+    why: '''home country'' = the single current country on the customer row'
+  - id: country.exclusion.sentinel_is_not_a_country (confidence P) declares `--` the online sentinel and
+      NOT a place
+    why: '''in stores outside their home country'' = physical shops only, whose country differs from the
+      buyer''s — giving 0 customers'
+  - id: defaulting to the `real` population
+    why: '''in stores outside their home country'' = physical shops only, whose country differs from the
+      buyer''s — giving 0 customers'
+  - id: dim_store.country_code states it directly — 'the online store carries '--' ... so this column
+      cannot attribute an internet sale to a real country'. A sentinel that is not a country cannot be
+      a country other than the buyer's
+    why: '''in stores outside their home country'' = physical shops only, whose country differs from the
+      buyer''s — giving 0 customers'
+  - id: so the online lines cannot satisfy the test. I apply the declared reading and disclose the other
+      figure rather than asking
+    why: '''in stores outside their home country'' = physical shops only, whose country differs from the
+      buyer''s — giving 0 customers'
+  - id: because the declaration fixes it.
+    why: '''in stores outside their home country'' = physical shops only, whose country differs from the
+      buyer''s — giving 0 customers'
+  - id: 'The two agree here: store__trades_in__country is the declared store path and v_contoso5_sales_line.store_key
+      points at the premises'
+    why: '''the country of the store where it was bought'' = dim_store.country_code, the country of the
+      premises the sale was rung up against'
+  - id: '''never at the site''. Either route gives the same 8 domestic pairings'
+    why: '''the country of the store where it was bought'' = dim_store.country_code, the country of the
+      premises the sale was rung up against'
+  - id: so the choice is immaterial to this answer.
+    why: '''the country of the store where it was bought'' = dim_store.country_code, the country of the
+      premises the sale was rung up against'
+  - id: 'country.exclusion.sentinel_is_not_a_country (confidence P): `--` is the online sentinel and NOT
+      a place'
+    why: '''in stores outside their home country'' = physical shops whose country differs from the buyer''s
+      — 0 customers'
+  - id: default population `real`. dim_store.country_code states it directly — 'this column cannot attribute
+      an internet sale to a real country.' The declaration settles it
+    why: '''in stores outside their home country'' = physical shops whose country differs from the buyer''s
+      — 0 customers'
+  - id: so I applied it and disclosed the alternative rather than asking
+    why: '''in stores outside their home country'' = physical shops whose country differs from the buyer''s
+      — 0 customers'
+  - id: the reader should nonetheless know that this one choice IS the answer
+    why: '''in stores outside their home country'' = physical shops whose country differs from the buyer''s
+      — 0 customers'
+  - id: 0 against 16
+    why: '''in stores outside their home country'' = physical shops whose country differs from the buyer''s
+      — 0 customers'
+  - id: '584.'
+    why: '''in stores outside their home country'' = physical shops whose country differs from the buyer''s
+      — 0 customers'
+  - id: country.default.whose_country_is_asked_never_assumed (confidence C) declares the `customer` and
+      `store` paths separately and forbids silent choice
+    why: '''their home country'' = the country on the customer''s own register row'
+  - id: the question names both sides itself. Immaterial regardless — every physical sale being domestic
+      means a customer's modal shopping country IS their home country
+    why: '''their home country'' = the country on the customer''s own register row'
+  - id: so this reading cannot move the 0.
+    why: '''their home country'' = the country on the customer''s own register row'
+  - id: operator ruling 2026-09-30). Any narrower window is a subset of a population that already holds
+      no qualifying row
+    why: '''bought'' = all time, 2016-05-18 to 2025-12-31'
+  - id: so it too would give 0.
+    why: '''bought'' = all time, 2016-05-18 to 2025-12-31'
+  - id: 'Immaterial: ''at least one'' is the weaker reading and already returns 0'
+    why: '''How many customers bought'' = any customer with at least one qualifying purchase'
+  - id: so the stricter one cannot return more.
+    why: '''How many customers bought'' = any customer with at least one qualifying purchase'
+  edges: []
+sql:
+- "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+  \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key =\
+  \ st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code <>\
+  \ c.country_code"
+- "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n  s.product_key,\n\
+  \  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+  \ AS c\n  ON s.customer_key = c.customer_key"
+- "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n  s.product_key,\n\
+  \  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+  \ AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+  \ = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+- "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n  s.product_key,\n\
+  \  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+  \ AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+  \ = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+- "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n  c.country_code\
+  \ AS customer_country_code,\n  st.country_code AS store_country_code\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+  \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key =\
+  \ st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code <>\
+  \ c.country_code"
+answer_sql: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+  \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key =\
+  \ st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code <>\
+  \ c.country_code"
+sql_valid: true
+result:
+  status: ok
+  rows: 1
+  cols: &id007
+  - how_many_customers
+  sample_rows:
+  - - 0
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id001
+  canonical_question_simplified: "  1       FROM       customers bought                              \
+    \        “customers bought”\n  2  ← 1  WHERE      brand = 'Contoso'                              \
+    \       “Contoso brand products”\n  3  ← 2  PIVOT_TO   their home country                        \
+    \            “their home country”\n  4  ← 2  WHERE      the country of the store where it was bought\
+    \ != None  “in stores outside their home country”\n  5  ← 4  AGGREGATE  count distinct of customers\
+    \                           “How many customers”\n  answer: step 5   confidence: 0.62   A DAG   step(s)\
+    \ 2 feed more than one\n  UNDERSTOOD AS: How many distinct customers have at least one purchase of\
+    \ a Contoso-brand product made at a store located in a country other than the customer's own home\
+    \ country. One row, one number, covering all purchases on record (no date window was given). Customers\
+    \ who bought Contoso products only at home, and customers who shopped abroad but never bought Contoso,\
+    \ are not counted.\n  AMBIGUOUS 'their home country' — ASKS: Should a customer's home country be the\
+    \ country on their own customer record (where they live), or the country where they do most of their\
+    \ shopping?\n      could mean: the country recorded for the customer themselves, i.e. where they live\n\
+    \      could mean: the country of the store the customer shops at most often\n      took: the country\
+    \ recorded for the customer themselves\n  AMBIGUOUS 'in stores outside their home country' — ASKS:\
+    \ If a purchase wasn't made at a physical store in a country — for example an online or catalogue\
+    \ order — should it count as 'outside their home country', or be left out entirely?\n      could mean:\
+    \ only purchases at stores that have a country, and that country differs from the customer's\n   \
+    \   could mean: also count online/non-physical channels as being outside the home country\n      took:\
+    \ only purchases at stores that have a country different from the customer's\n  AMBIGUOUS 'Contoso\
+    \ brand' — ASKS: Does 'Contoso' mean exactly the brand named Contoso, or any brand whose name contains\
+    \ Contoso (such as 'Contoso, Ltd')?\n      could mean: the brand named exactly Contoso\n      could\
+    \ mean: every brand whose name starts with or contains Contoso\n      took: the brand named exactly\
+    \ Contoso\n  AMBIGUOUS 'How many customers bought' — ASKS: Do you want every customer with at least\
+    \ one such cross-border Contoso purchase, or only customers who bought Contoso exclusively outside\
+    \ their home country?\n      could mean: any customer with at least one Contoso purchase abroad\n\
+    \      could mean: customers who never bought Contoso at home at all\n      took: any customer with\
+    \ at least one Contoso purchase abroad\n  AMBIGUOUS 'bought' — ASKS: Over what period — all purchases\
+    \ ever recorded, or a particular year or recent window?\n      could mean: all time\n      could mean:\
+    \ a specific period you have in mind, e.g. last year\n      took: all time\n  OUTPUT SHAPE: one figure\
+    \ · one row(s) · carrying how many customers"
+  understood_as: How many distinct customers have at least one purchase of a Contoso-brand product made
+    at a store located in a country other than the customer's own home country. One row, one number, covering
+    all purchases on record (no date window was given). Customers who bought Contoso products only at
+    home, and customers who shopped abroad but never bought Contoso, are not counted.
+  ambiguities_it_saw:
+  - words: their home country
+    asks: Should a customer's home country be the country on their own customer record (where they live),
+      or the country where they do most of their shopping?
+    readings:
+    - the country recorded for the customer themselves, i.e. where they live
+    - the country of the store the customer shops at most often
+    took: the country recorded for the customer themselves
+  - words: in stores outside their home country
+    asks: If a purchase wasn't made at a physical store in a country — for example an online or catalogue
+      order — should it count as 'outside their home country', or be left out entirely?
+    readings:
+    - only purchases at stores that have a country, and that country differs from the customer's
+    - also count online/non-physical channels as being outside the home country
+    took: only purchases at stores that have a country different from the customer's
+  - words: Contoso brand
+    asks: Does 'Contoso' mean exactly the brand named Contoso, or any brand whose name contains Contoso
+      (such as 'Contoso, Ltd')?
+    readings:
+    - the brand named exactly Contoso
+    - every brand whose name starts with or contains Contoso
+    took: the brand named exactly Contoso
+  - words: How many customers bought
+    asks: Do you want every customer with at least one such cross-border Contoso purchase, or only customers
+      who bought Contoso exclusively outside their home country?
+    readings:
+    - any customer with at least one Contoso purchase abroad
+    - customers who never bought Contoso at home at all
+    took: any customer with at least one Contoso purchase abroad
+  - words: bought
+    asks: Over what period — all purchases ever recorded, or a particular year or recent window?
+    readings:
+    - all time
+    - a specific period you have in mind, e.g. last year
+    took: all time
+  presentation:
+    claimed_answer_is: there is none
+    answer_step: '5'
+    answer_step_asks:
+      do: aggregate
+      of: '4'
+      figures: *id002
+      said: How many customers
+    confidence_stage1: 0.62
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  c.country_code AS customer_country_code,\n  st.country_code AS store_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+      \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+      \ <> c.country_code"
+    params: {}
+  - step: '5'
+    sql: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+      \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+      \ <> c.country_code"
+    params: {}
+  what_it_calculated: 'The single row returned 0: NO CUSTOMER has ever bought a Contoso-brand product
+    at a shop standing in a country other than the one they live in, over every purchase on record, 2016-05-18
+    to 2025-12-31. The zero is structural rather than anything to do with Contoso — across all 223,974
+    sales of all 11 brands, every one of the 130,424 physical purchase lines is domestic, with only 8
+    of 64 possible home-country→store-country pairings ever occurring, one per country. WHAT IS EXCLUDED
+    IS THE ENTIRE ALTERNATIVE: 25,408 Contoso lines bought by 16,584 customers went through the web shop,
+    whose country is the `--` sentinel; count that sentinel as ''a country that is not theirs'' and the
+    answer is 16,584 rather than 0. I excluded it because the declarations say `--` is not a place and
+    cannot attribute an internet sale to a real country, so those purchases have no store country to differ
+    from the buyer''s. Also not included, because not asked: the 21,791 customers who bought Contoso at
+    a physical shop at home, and the 33,229 who bought Contoso anywhere.'
+  rows_returned: &id004
+  - how_many_customers: 0
+  synthesis:
+    claimed: '0'
+    shape: there is none
+    answered_population: 'Contoso-brand purchase lines (brand = ''Contoso'' on dim_product — measured
+      as the only one of the 11 brand values containing the word, so exact and contains readings coincide),
+      joined to the buyer via order__placed_by__customer and the premises via order__placed_at__store,
+      restricted to physical stores only (store country <> ''--'', the `real` default of country.exclusion.sentinel_is_not_a_country,
+      which removes 25,408 online lines) AND store country <> the buyer''s own country_code via the declared
+      `customer` path customer__based_in__country. No date restriction, per order.default.an_unscoped_question_covers_all_time:
+      the full 2016-05-18 to 2025-12-31 extent. Buyers only, since the walk starts from sales — the 52,801
+      registered customers who never ordered are absent by construction. This population holds zero rows,
+      which is why the figure is 0 and not merely small.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: customers bought
+    turns:
+    - why: Establish the starting relation — sales lines with the customer who bought — and look at the
+        actual brand values so step 2's literal is checked before it is used.
+      did: 'probe ''dim_product.brand'' AND ALSO: SELECT count(*) AS lines, count(DISTINCT s.order_key)
+        AS orders, count(DISTINCT s.customer_key) AS customers, min(s.order_date) AS first_order, max(s.order_date)
+        AS last_order FROM contoso_served.v_contoso5_sales_line s JOIN contoso_served.dim_customer c ON
+        s.customer_key = c.customer_key'
+      came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure Works'',
+        ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge Video'',
+        ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s): [{"lines":
+        223974, "orders": 93470, "customers": 52189, "first_order": "2016-05-18", "last_order": "2025-12-31"}]'
+    settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key"
+    means: 'Every purchase line Contoso has on record, each carrying the person who bought it and the
+      country that person lives in: 223,974 lines across 93,470 orders, made by 52,189 distinct customers,
+      spanning 2016-05-18 to 2025-12-31 — all ten years, no period narrowed. One row is one product on
+      one order. This is the pool of "customers bought" before any brand or cross-border restriction;
+      the 52,789 registered customers who never ordered are absent by construction, because this starts
+      from sales and not from the register (the register holds 104,990, of whom only these 52,189 appear
+      on a sale).'
+    readings_taken:
+    - word: Contoso brand
+      took: the brand value 'Contoso' on dim_product.brand
+      could_also_mean: any brand name containing 'Contoso', e.g. 'Contoso, Ltd'
+      declaration: 'MEASURED, NOT ASSUMED: dim_product.brand holds exactly 11 values and only one contains
+        ''Contoso'' — it is spelled ''Contoso''. Both readings select the identical set, so this fork
+        costs nothing and is not worth a question.'
+    - word: bought
+      took: all purchases on record, 2016-05-18 to 2025-12-31
+      could_also_mean: a particular year or recent window
+      declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+        2026-09-30): a question naming no period covers the full extent of order_date and must state the
+        first and last date included.'
+    - word: customers bought
+      took: customers who appear on a sales line — 52,189 of them
+      could_also_mean: the customer register, 104,990 rows
+      declaration: 'Customer concept definition: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear
+        on a sale, so the register is not the buyer list.'' Starting from sales is what ''bought'' names.'
+    blocked_by: []
+  - step: '2'
+    step_asks: Contoso brand products
+    turns:
+    - why: Restrict the purchase pool to Contoso-brand products and measure what survives, so the later
+        cross-border count has a known denominator.
+      did: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT s.order_key) AS orders,\n  COUNT(DISTINCT s.customer_key)\
+        \ AS customers,\n  COUNT(DISTINCT s.product_key) AS products,\n  MIN(s.order_date) AS first_order,\n\
+        \  MAX(s.order_date) AS last_order\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+        \ AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+        \ = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+      came_back: '1 row(s): [{"lines": 59896, "orders": 45125, "customers": 33229, "products": 710, "first_order":
+        "2016-05-18", "last_order": "2025-12-31"}]'
+    settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+    means: 'Every purchase of a Contoso-brand product ever recorded, each row one Contoso product on one
+      order, carrying who bought it and the country they live in: 59,896 lines of the 223,974 (27%), sitting
+      on 45,125 orders, bought by 33,229 distinct customers of the 52,189 who ever ordered, across 710
+      of the 2,517 SKUs. The window is the full extent, 2016-05-18 to 2025-12-31, and both channels are
+      in — the web shop''s lines have not been removed. Nothing yet says anything about where the purchase
+      was made relative to where the customer lives.'
+    readings_taken:
+    - word: Contoso brand products
+      took: brand = 'Contoso' on the product row
+      could_also_mean: manufacturer, which is a separate column naming the same thing one step away
+      declaration: 'The Brand concept is grounded in dim_product.brand and counts brand; dim_product.manufacturer
+        is declared as naming `brand` at `naming: legal`, so brand is the nearer-to-common column and
+        the one a question saying ''brand'' reads.'
+    blocked_by: []
+  - step: '3'
+    step_asks: their home country
+    turns:
+    - why: Attach each Contoso purchase to the country its buyer lives in via the declared customer path,
+        and check that country is always present and never the online sentinel.
+      did: "SELECT\n  c.country_code,\n  co.country_name,\n  COUNT(*) AS contoso_lines,\n  COUNT(DISTINCT\
+        \ s.customer_key) AS customers\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+        \ AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+        \ = p.product_key\nLEFT JOIN contoso_served.dim_country AS co\n  ON c.country_code = co.country_code\n\
+        WHERE\n  p.brand = 'Contoso'\nGROUP BY\n  c.country_code,\n  co.country_name\nORDER BY\n  customers\
+        \ DESC"
+      came_back: '8 row(s): [{"country_code": "US", "country_name": "United States", "contoso_lines":
+        30309, "customers": 16296}, {"country_code": "GB", "country_name": "United Kingdom", "contoso_lines":
+        6091, "customers": 3668}, {"country_code": "DE", "country_name": "Germany", "contoso_lines": 6886,
+        "customers": 3627}, {"country_code": "CA", "country_name": "Canada", "contoso_lines": 6442, "customers":
+        3505}, {"country_code": "AU", "country_name": "Australia", "contoso_lines": 3781, "customers":
+        2350}, {"country_code": "NL", "country_name": "Netherlands", "contoso_lines": 2795, "customers":
+        1570}, {"country_code": "FR", "country_name": "France", "contoso_lines": 1898, "customers": 1146},
+        {"country_code": "IT", "country_name": "Italy", "contoso_lines": 1694, "customers": 1067}]'
+    settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+    means: 'Every Contoso purchase now carries the country its buyer lives in. The 33,229 Contoso buyers
+      live in exactly eight countries — the United States holds 16,296 of them (49%), then the United
+      Kingdom 3,668, Germany 3,627, Canada 3,505, Australia 2,350, the Netherlands 1,570, France 1,146,
+      Italy 1,067 — and their 59,896 purchase lines sum back to step 2 with nothing lost or duplicated.
+      No buyer carries the `--` sentinel and none has a missing country, so every purchase has a real
+      home country to compare a store against. This is residence, not shopping behaviour: it says where
+      the buyer lives, and nothing yet about where they bought.'
+    readings_taken:
+    - word: their home country
+      took: the country on the customer's own register row, dim_customer.country_code
+      could_also_mean: the country of the store the customer shops at most often
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22)
+        forbids picking between the store and the customer silently and declares the named paths; the
+        `customer` path, customer__based_in__country, surfaces as 'customer country' / 'where our customers
+        are'. The question names both sides itself — 'their home country' against 'the country of the
+        store' — so the choice is made by the question, not by me. The modal-shopping-country reading
+        is not a declared path in this bundle at all.
+    - word: home country
+      took: the single current country on the customer row
+      could_also_mean: where the customer lived on the order date, since the register is kept as a history
+      declaration: 'dim_customer.valid_from states it plainly: ''a sale could in principle be attributed
+        to where the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should
+        be.'' So the current row is what I read.'
+    blocked_by: []
+  - step: '4'
+    step_asks: in stores outside their home country
+    turns:
+    - why: Compare each Contoso purchase's store country against the buyer's home country, and price both
+        readings of the online rows — sentinel excluded as declared, versus counted as 'abroad' — in a
+        single pass.
+      did: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN st.country_code <> '--' AND st.country_code\
+        \ <> c.country_code\n      THEN s.customer_key\n    END\n  ) AS cust_abroad_physical,\n  COUNT(DISTINCT\
+        \ CASE WHEN st.country_code <> c.country_code THEN s.customer_key END) AS cust_abroad_incl_sentinel,\n\
+        \  COUNT(\n    DISTINCT CASE\n      WHEN st.country_code <> '--' AND st.country_code = c.country_code\n\
+        \      THEN s.customer_key\n    END\n  ) AS cust_at_home,\n  COUNT(DISTINCT CASE WHEN st.country_code\
+        \ = '--' THEN s.customer_key END) AS cust_online,\n  COUNT(\n    CASE WHEN st.country_code <>\
+        \ '--' AND st.country_code <> c.country_code THEN 1 END\n  ) AS lines_abroad_physical,\n  COUNT(CASE\
+        \ WHEN st.country_code = '--' THEN 1 END) AS lines_online,\n  COUNT(*) AS lines_total,\n  COUNT(CASE\
+        \ WHEN st.country_code IS NULL THEN 1 END) AS lines_no_store_country\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'"
+      came_back: '1 row(s): [{"cust_abroad_physical": 0, "cust_abroad_incl_sentinel": 16584, "cust_at_home":
+        21791, "cust_online": 16584, "lines_abroad_physical": 0, "lines_online": 25408, "lines_total":
+        59896, "lines_no_store_country": 0}]'
+    - why: Establish whether a physical cross-border sale exists ANYWHERE in the warehouse, because that
+        decides whether 'zero' is a fact about the Contoso brand or a structural property of the data.
+      did: "SELECT\n  COUNT(*) AS physical_lines_all_brands,\n  COUNT(CASE WHEN st.country_code <> c.country_code\
+        \ THEN 1 END) AS physical_lines_cross_border,\n  COUNT(DISTINCT CASE WHEN st.country_code <> c.country_code\
+        \ THEN s.customer_key END) AS customers_cross_border,\n  COUNT(DISTINCT c.country_code || '>'\
+        \ || st.country_code) AS distinct_home_store_pairs,\n  COUNT(DISTINCT c.country_code) AS home_countries,\n\
+        \  COUNT(DISTINCT st.country_code) AS store_countries\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_store\
+        \ AS st\n  ON s.store_key = st.store_key\nWHERE\n  st.country_code <> '--'"
+      came_back: '1 row(s): [{"physical_lines_all_brands": 130424, "physical_lines_cross_border": 0, "customers_cross_border":
+        0, "distinct_home_store_pairs": 8, "home_countries": 8, "store_countries": 8}]'
+    settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+      \  c.country_code AS customer_country_code,\n  st.country_code AS store_country_code\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+      \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+      \ <> c.country_code"
+    means: 'Contoso purchases made at a shop standing in a country the buyer does not live in: there are
+      NONE. Zero lines, zero customers, out of 59,896 Contoso lines of which 34,488 were at physical shops
+      and 25,408 online. And this is not about Contoso — across all 223,974 sales of all 11 brands, all
+      130,424 physical lines are domestic: only 8 distinct home-country→store-country pairings occur where
+      64 are possible across 8 home countries and 8 store countries, i.e. US buyers only ever appear in
+      US shops, German buyers only in German shops. A customer walking into a foreign shop is a thing
+      this warehouse never records. The 16,584 customers whose Contoso purchase was at a ''different''
+      country are entirely the web shop, whose country is the `--` sentinel — not a place, and declared
+      incapable of attributing an internet sale to any real country.'
+    readings_taken:
+    - word: in stores outside their home country
+      took: physical shops only, whose country differs from the buyer's — giving 0 customers
+      could_also_mean: also treating the web shop as 'outside their home country', since its country code
+        `--` is literally not equal to any buyer's country — giving 16,584 customers
+      declaration: country.exclusion.sentinel_is_not_a_country (confidence P) declares `--` the online
+        sentinel and NOT a place, defaulting to the `real` population; dim_store.country_code states it
+        directly — 'the online store carries '--' ... so this column cannot attribute an internet sale
+        to a real country'. A sentinel that is not a country cannot be a country other than the buyer's,
+        so the online lines cannot satisfy the test. I apply the declared reading and disclose the other
+        figure rather than asking, because the declaration fixes it.
+    - word: the country of the store where it was bought
+      took: dim_store.country_code, the country of the premises the sale was rung up against
+      could_also_mean: dim_location.country_code, the country of the site the premises stands on, one
+        hop further out
+      declaration: 'The two agree here: store__trades_in__country is the declared store path and v_contoso5_sales_line.store_key
+        points at the premises, ''never at the site''. Either route gives the same 8 domestic pairings,
+        so the choice is immaterial to this answer.'
+    blocked_by: []
+  - step: '5'
+    step_asks: How many customers
+    turns:
+    - why: Run the exact aggregate the answer claims — one row, one number — over the cross-border Contoso
+        population settled in step 4, rather than inferring it from an earlier diagnostic.
+      did: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+        \ <> c.country_code"
+      came_back: '1 row(s): [{"how_many_customers": 0}]'
+    - why: 'The answer is none, and the reason is structural rather than a quirk of Contoso: this warehouse
+        records no physical cross-border purchase by anyone, of any brand.'
+      did: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+        \ <> c.country_code"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 1 row(s): [{"how_many_customers": 0}]  Give `claimed_answer`
+        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+        rows settle the question, do not decline.'
+    settled_on: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+      \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+      \ <> c.country_code"
+    means: 'The single row returned 0: NO CUSTOMER has ever bought a Contoso-brand product at a shop standing
+      in a country other than the one they live in, over every purchase on record, 2016-05-18 to 2025-12-31.
+      The zero is structural rather than anything to do with Contoso — across all 223,974 sales of all
+      11 brands, every one of the 130,424 physical purchase lines is domestic, with only 8 of 64 possible
+      home-country→store-country pairings ever occurring, one per country. WHAT IS EXCLUDED IS THE ENTIRE
+      ALTERNATIVE: 25,408 Contoso lines bought by 16,584 customers went through the web shop, whose country
+      is the `--` sentinel; count that sentinel as ''a country that is not theirs'' and the answer is
+      16,584 rather than 0. I excluded it because the declarations say `--` is not a place and cannot
+      attribute an internet sale to a real country, so those purchases have no store country to differ
+      from the buyer''s. Also not included, because not asked: the 21,791 customers who bought Contoso
+      at a physical shop at home, and the 33,229 who bought Contoso anywhere.'
+    readings_taken:
+    - word: in stores outside their home country
+      took: physical shops whose country differs from the buyer's — 0 customers
+      could_also_mean: counting the web shop as 'outside their home country', since `--` is unequal to
+        every real country — 16,584 customers
+      declaration: 'country.exclusion.sentinel_is_not_a_country (confidence P): `--` is the online sentinel
+        and NOT a place, default population `real`. dim_store.country_code states it directly — ''this
+        column cannot attribute an internet sale to a real country.'' The declaration settles it, so I
+        applied it and disclosed the alternative rather than asking; the reader should nonetheless know
+        that this one choice IS the answer, 0 against 16,584.'
+    - word: their home country
+      took: the country on the customer's own register row
+      could_also_mean: the country they shop in most often
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C) declares the `customer`
+        and `store` paths separately and forbids silent choice; the question names both sides itself.
+        Immaterial regardless — every physical sale being domestic means a customer's modal shopping country
+        IS their home country, so this reading cannot move the 0.
+    - word: bought
+      took: all time, 2016-05-18 to 2025-12-31
+      could_also_mean: a named year or a recent window
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30).
+        Any narrower window is a subset of a population that already holds no qualifying row, so it too
+        would give 0.
+    - word: How many customers bought
+      took: any customer with at least one qualifying purchase
+      could_also_mean: only customers who bought Contoso exclusively abroad and never at home
+      declaration: 'Immaterial: ''at least one'' is the weaker reading and already returns 0, so the stricter
+        one cannot return more.'
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: How many distinct customers have at least one purchase of a Contoso-brand product made at a
+      store located in a country other than the customer's own home country. One row, one number, covering
+      all purchases on record (no date window was given). Customers who bought Contoso products only at
+      home, and customers who shopped abroad but never bought Contoso, are not counted.
+    population: 'Contoso-brand purchase lines (brand = ''Contoso'' on dim_product — measured as the only
+      one of the 11 brand values containing the word, so exact and contains readings coincide), joined
+      to the buyer via order__placed_by__customer and the premises via order__placed_at__store, restricted
+      to physical stores only (store country <> ''--'', the `real` default of country.exclusion.sentinel_is_not_a_country,
+      which removes 25,408 online lines) AND store country <> the buyer''s own country_code via the declared
+      `customer` path customer__based_in__country. No date restriction, per order.default.an_unscoped_question_covers_all_time:
+      the full 2016-05-18 to 2025-12-31 extent. Buyers only, since the walk starts from sales — the 52,801
+      registered customers who never ordered are absent by construction. This population holds zero rows,
+      which is why the figure is 0 and not merely small.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       customers bought                                      “customers\
+      \ bought”\n  2  ← 1  WHERE      brand = 'Contoso'                                     “Contoso brand\
+      \ products”\n  3  ← 2  PIVOT_TO   their home country                                    “their home\
+      \ country”\n  4  ← 2  WHERE      the country of the store where it was bought != None  “in stores\
+      \ outside their home country”\n  5  ← 4  AGGREGATE  count distinct of customers                \
+      \           “How many customers”\n  answer: step 5   confidence: 0.62   A DAG   step(s) 2 feed more\
+      \ than one"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: their home country
+      asks: Should a customer's home country be the country on their own customer record (where they live),
+        or the country where they do most of their shopping?
+      readings:
+      - the country recorded for the customer themselves, i.e. where they live
+      - the country of the store the customer shops at most often
+      took: the country recorded for the customer themselves
+    - words: in stores outside their home country
+      asks: If a purchase wasn't made at a physical store in a country — for example an online or catalogue
+        order — should it count as 'outside their home country', or be left out entirely?
+      readings:
+      - only purchases at stores that have a country, and that country differs from the customer's
+      - also count online/non-physical channels as being outside the home country
+      took: only purchases at stores that have a country different from the customer's
+    - words: Contoso brand
+      asks: Does 'Contoso' mean exactly the brand named Contoso, or any brand whose name contains Contoso
+        (such as 'Contoso, Ltd')?
+      readings:
+      - the brand named exactly Contoso
+      - every brand whose name starts with or contains Contoso
+      took: the brand named exactly Contoso
+    - words: How many customers bought
+      asks: Do you want every customer with at least one such cross-border Contoso purchase, or only customers
+        who bought Contoso exclusively outside their home country?
+      readings:
+      - any customer with at least one Contoso purchase abroad
+      - customers who never bought Contoso at home at all
+      took: any customer with at least one Contoso purchase abroad
+    - words: bought
+      asks: Over what period — all purchases ever recorded, or a particular year or recent window?
+      readings:
+      - all time
+      - a specific period you have in mind, e.g. last year
+      took: all time
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.62 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id001
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: Contoso brand
+      took: the brand value 'Contoso' on dim_product.brand
+      could_also_mean: any brand name containing 'Contoso', e.g. 'Contoso, Ltd'
+      declaration: 'MEASURED, NOT ASSUMED: dim_product.brand holds exactly 11 values and only one contains
+        ''Contoso'' — it is spelled ''Contoso''. Both readings select the identical set, so this fork
+        costs nothing and is not worth a question.'
+    - word: bought
+      took: all purchases on record, 2016-05-18 to 2025-12-31
+      could_also_mean: a particular year or recent window
+      declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+        2026-09-30): a question naming no period covers the full extent of order_date and must state the
+        first and last date included.'
+    - word: customers bought
+      took: customers who appear on a sales line — 52,189 of them
+      could_also_mean: the customer register, 104,990 rows
+      declaration: 'Customer concept definition: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear
+        on a sale, so the register is not the buyer list.'' Starting from sales is what ''bought'' names.'
+    - word: Contoso brand products
+      took: brand = 'Contoso' on the product row
+      could_also_mean: manufacturer, which is a separate column naming the same thing one step away
+      declaration: 'The Brand concept is grounded in dim_product.brand and counts brand; dim_product.manufacturer
+        is declared as naming `brand` at `naming: legal`, so brand is the nearer-to-common column and
+        the one a question saying ''brand'' reads.'
+    - word: their home country
+      took: the country on the customer's own register row, dim_customer.country_code
+      could_also_mean: the country of the store the customer shops at most often
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22)
+        forbids picking between the store and the customer silently and declares the named paths; the
+        `customer` path, customer__based_in__country, surfaces as 'customer country' / 'where our customers
+        are'. The question names both sides itself — 'their home country' against 'the country of the
+        store' — so the choice is made by the question, not by me. The modal-shopping-country reading
+        is not a declared path in this bundle at all.
+    - word: home country
+      took: the single current country on the customer row
+      could_also_mean: where the customer lived on the order date, since the register is kept as a history
+      declaration: 'dim_customer.valid_from states it plainly: ''a sale could in principle be attributed
+        to where the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should
+        be.'' So the current row is what I read.'
+    - word: in stores outside their home country
+      took: physical shops only, whose country differs from the buyer's — giving 0 customers
+      could_also_mean: also treating the web shop as 'outside their home country', since its country code
+        `--` is literally not equal to any buyer's country — giving 16,584 customers
+      declaration: country.exclusion.sentinel_is_not_a_country (confidence P) declares `--` the online
+        sentinel and NOT a place, defaulting to the `real` population; dim_store.country_code states it
+        directly — 'the online store carries '--' ... so this column cannot attribute an internet sale
+        to a real country'. A sentinel that is not a country cannot be a country other than the buyer's,
+        so the online lines cannot satisfy the test. I apply the declared reading and disclose the other
+        figure rather than asking, because the declaration fixes it.
+    - word: the country of the store where it was bought
+      took: dim_store.country_code, the country of the premises the sale was rung up against
+      could_also_mean: dim_location.country_code, the country of the site the premises stands on, one
+        hop further out
+      declaration: 'The two agree here: store__trades_in__country is the declared store path and v_contoso5_sales_line.store_key
+        points at the premises, ''never at the site''. Either route gives the same 8 domestic pairings,
+        so the choice is immaterial to this answer.'
+    - word: in stores outside their home country
+      took: physical shops whose country differs from the buyer's — 0 customers
+      could_also_mean: counting the web shop as 'outside their home country', since `--` is unequal to
+        every real country — 16,584 customers
+      declaration: 'country.exclusion.sentinel_is_not_a_country (confidence P): `--` is the online sentinel
+        and NOT a place, default population `real`. dim_store.country_code states it directly — ''this
+        column cannot attribute an internet sale to a real country.'' The declaration settles it, so I
+        applied it and disclosed the alternative rather than asking; the reader should nonetheless know
+        that this one choice IS the answer, 0 against 16,584.'
+    - word: their home country
+      took: the country on the customer's own register row
+      could_also_mean: the country they shop in most often
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C) declares the `customer`
+        and `store` paths separately and forbids silent choice; the question names both sides itself.
+        Immaterial regardless — every physical sale being domestic means a customer's modal shopping country
+        IS their home country, so this reading cannot move the 0.
+    - word: bought
+      took: all time, 2016-05-18 to 2025-12-31
+      could_also_mean: a named year or a recent window
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling 2026-09-30).
+        Any narrower window is a subset of a population that already holds no qualifying row, so it too
+        would give 0.
+    - word: How many customers bought
+      took: any customer with at least one qualifying purchase
+      could_also_mean: only customers who bought Contoso exclusively abroad and never at home
+      declaration: 'Immaterial: ''at least one'' is the weaker reading and already returns 0, so the stricter
+        one cannot return more.'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 5 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n\
+        \  s.store_key,\n  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\n\n-- step\
+        \ 2\nSELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'\n\n-- step 3\nSELECT\n\
+        \  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n  s.product_key,\n\
+        \  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN\
+        \ contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'\n\n-- step 4\nSELECT\n\
+        \  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n  c.country_code\
+        \ AS customer_country_code,\n  st.country_code AS store_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+        \ <> c.country_code\n\n-- step 5\nSELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\n\
+        JOIN contoso_served.dim_store AS st\n  ON s.store_key = st.store_key\nWHERE\n  p.brand = 'Contoso'\n\
+        \  AND st.country_code <> '--'\n  AND st.country_code <> c.country_code"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'The single row returned 0: NO CUSTOMER has ever bought a Contoso-brand product
+      at a shop standing in a country other than the one they live in, over every purchase on record,
+      2016-05-18 to 2025-12-31. The zero is structural rather than anything to do with Contoso — across
+      all 223,974 sales of all 11 brands, every one of the 130,424 physical purchase lines is domestic,
+      with only 8 of 64 possible home-country→store-country pairings ever occurring, one per country.
+      WHAT IS EXCLUDED IS THE ENTIRE ALTERNATIVE: 25,408 Contoso lines bought by 16,584 customers went
+      through the web shop, whose country is the `--` sentinel; count that sentinel as ''a country that
+      is not theirs'' and the answer is 16,584 rather than 0. I excluded it because the declarations say
+      `--` is not a place and cannot attribute an internet sale to a real country, so those purchases
+      have no store country to differ from the buyer''s. Also not included, because not asked: the 21,791
+      customers who bought Contoso at a physical shop at home, and the 33,229 who bought Contoso anywhere.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'there is none' · graded WRONG
+  detail:
+    claimed_answer: '0'
+    walk_bucket: WRONG
+    walk_why: claimed 'none', reference 0
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many customers bought Contoso brand products in stores outside their home country?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many distinct customers have at least one purchase of a Contoso-brand product made at a
+      store located in a country other than the customer's own home country. One row, one number, covering
+      all purchases on record (no date window was given). Customers who bought Contoso products only at
+      home, and customers who shopped abroad but never bought Contoso, are not counted.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       customers bought                                      “customers bought”'
+    - '  2  ← 1  WHERE      brand = ''Contoso''                                     “Contoso brand products”'
+    - '  3  ← 2  PIVOT_TO   their home country                                    “their home country”'
+    - '  4  ← 2  WHERE      the country of the store where it was bought != None  “in stores outside their
+      home country”'
+    - '  5  ← 4  AGGREGATE  count distinct of customers                           “How many customers”'
+    - '  answer: step 5   confidence: 0.62   A DAG   step(s) 2 feed more than one'
+    - '  UNDERSTOOD AS: How many distinct customers have at least one purchase of a Contoso-brand product
+      made at a store located in a country other than the customer''s own home country. One row, one number,
+      covering all purchases on record (no date window was given). Customers who bought Contoso products
+      only at home, and customers who shopped abroad but never bought Contoso, are not counted.'
+    - '  AMBIGUOUS ''their home country'' — ASKS: Should a customer''s home country be the country on
+      their own customer record (where they live), or the country where they do most of their shopping?'
+    - '      could mean: the country recorded for the customer themselves, i.e. where they live'
+    - '      could mean: the country of the store the customer shops at most often'
+    - '      took: the country recorded for the customer themselves'
+    - '  AMBIGUOUS ''in stores outside their home country'' — ASKS: If a purchase wasn''t made at a physical
+      store in a country — for example an online or catalogue order — should it count as ''outside their
+      home country'', or be left out entirely?'
+    - '      could mean: only purchases at stores that have a country, and that country differs from the
+      customer''s'
+    - '      could mean: also count online/non-physical channels as being outside the home country'
+    - '      took: only purchases at stores that have a country different from the customer''s'
+    - '  AMBIGUOUS ''Contoso brand'' — ASKS: Does ''Contoso'' mean exactly the brand named Contoso, or
+      any brand whose name contains Contoso (such as ''Contoso, Ltd'')?'
+    - '      could mean: the brand named exactly Contoso'
+    - '      could mean: every brand whose name starts with or contains Contoso'
+    - '      took: the brand named exactly Contoso'
+    - '  AMBIGUOUS ''How many customers bought'' — ASKS: Do you want every customer with at least one
+      such cross-border Contoso purchase, or only customers who bought Contoso exclusively outside their
+      home country?'
+    - '      could mean: any customer with at least one Contoso purchase abroad'
+    - '      could mean: customers who never bought Contoso at home at all'
+    - '      took: any customer with at least one Contoso purchase abroad'
+    - '  AMBIGUOUS ''bought'' — ASKS: Over what period — all purchases ever recorded, or a particular
+      year or recent window?'
+    - '      could mean: all time'
+    - '      could mean: a specific period you have in mind, e.g. last year'
+    - '      took: all time'
+    - '  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - one figure
+    - - said
+      - How many customers
+    - - rows
+      - one
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: their home country
+      asks: Should a customer's home country be the country on their own customer record (where they live),
+        or the country where they do most of their shopping?
+      readings:
+      - the country recorded for the customer themselves, i.e. where they live
+      - the country of the store the customer shops at most often
+      took: the country recorded for the customer themselves
+    - words: in stores outside their home country
+      asks: If a purchase wasn't made at a physical store in a country — for example an online or catalogue
+        order — should it count as 'outside their home country', or be left out entirely?
+      readings:
+      - only purchases at stores that have a country, and that country differs from the customer's
+      - also count online/non-physical channels as being outside the home country
+      took: only purchases at stores that have a country different from the customer's
+    - words: Contoso brand
+      asks: Does 'Contoso' mean exactly the brand named Contoso, or any brand whose name contains Contoso
+        (such as 'Contoso, Ltd')?
+      readings:
+      - the brand named exactly Contoso
+      - every brand whose name starts with or contains Contoso
+      took: the brand named exactly Contoso
+    - words: How many customers bought
+      asks: Do you want every customer with at least one such cross-border Contoso purchase, or only customers
+        who bought Contoso exclusively outside their home country?
+      readings:
+      - any customer with at least one Contoso purchase abroad
+      - customers who never bought Contoso at home at all
+      took: any customer with at least one Contoso purchase abroad
+    - words: bought
+      asks: Over what period — all purchases ever recorded, or a particular year or recent window?
+      readings:
+      - all time
+      - a specific period you have in mind, e.g. last year
+      took: all time
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  c.country_code AS customer_country_code,\n  st.country_code AS store_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+        \ <> c.country_code"
+      params: {}
+    - step: '5'
+      sql: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+        \ <> c.country_code"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'The single row returned 0: NO CUSTOMER has ever bought a Contoso-brand product at a shop standing
+      in a country other than the one they live in, over every purchase on record, 2016-05-18 to 2025-12-31.
+      The zero is structural rather than anything to do with Contoso — across all 223,974 sales of all
+      11 brands, every one of the 130,424 physical purchase lines is domestic, with only 8 of 64 possible
+      home-country→store-country pairings ever occurring, one per country. WHAT IS EXCLUDED IS THE ENTIRE
+      ALTERNATIVE: 25,408 Contoso lines bought by 16,584 customers went through the web shop, whose country
+      is the `--` sentinel; count that sentinel as ''a country that is not theirs'' and the answer is
+      16,584 rather than 0. I excluded it because the declarations say `--` is not a place and cannot
+      attribute an internet sale to a real country, so those purchases have no store country to differ
+      from the buyer''s. Also not included, because not asked: the 21,791 customers who bought Contoso
+      at a physical shop at home, and the 33,229 who bought Contoso anywhere.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id007
+      rows: *id004
+      row_count: 1
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '0'
+    - - shape
+      - there is none
+    - - population it answered over
+      - 'Contoso-brand purchase lines (brand = ''Contoso'' on dim_product — measured as the only one of
+        the 11 brand values containing the word, so exact and contains readings coincide), joined to the
+        buyer via order__placed_by__customer and the premises via order__placed_at__store, restricted
+        to physical stores only (store country <> ''--'', the `real` default of country.exclusion.sentinel_is_not_a_country,
+        which removes 25,408 online lines) AND store country <> the buyer''s own country_code via the
+        declared `customer` path customer__based_in__country. No date restriction, per order.default.an_unscoped_question_covers_all_time:
+        the full 2016-05-18 to 2025-12-31 extent. Buyers only, since the walk starts from sales — the
+        52,801 registered customers who never ordered are absent by construction. This population holds
+        zero rows, which is why the figure is 0 and not merely small.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: customers bought
+      turns:
+      - why: Establish the starting relation — sales lines with the customer who bought — and look at
+          the actual brand values so step 2's literal is checked before it is used.
+        did: 'probe ''dim_product.brand'' AND ALSO: SELECT count(*) AS lines, count(DISTINCT s.order_key)
+          AS orders, count(DISTINCT s.customer_key) AS customers, min(s.order_date) AS first_order, max(s.order_date)
+          AS last_order FROM contoso_served.v_contoso5_sales_line s JOIN contoso_served.dim_customer c
+          ON s.customer_key = c.customer_key'
+        came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure
+          Works'', ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge
+          Video'', ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s):
+          [{"lines": 223974, "orders": 93470, "customers": 52189, "first_order": "2016-05-18", "last_order":
+          "2025-12-31"}]'
+      settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key"
+      means: 'Every purchase line Contoso has on record, each carrying the person who bought it and the
+        country that person lives in: 223,974 lines across 93,470 orders, made by 52,189 distinct customers,
+        spanning 2016-05-18 to 2025-12-31 — all ten years, no period narrowed. One row is one product
+        on one order. This is the pool of "customers bought" before any brand or cross-border restriction;
+        the 52,789 registered customers who never ordered are absent by construction, because this starts
+        from sales and not from the register (the register holds 104,990, of whom only these 52,189 appear
+        on a sale).'
+      readings_taken:
+      - word: Contoso brand
+        took: the brand value 'Contoso' on dim_product.brand
+        could_also_mean: any brand name containing 'Contoso', e.g. 'Contoso, Ltd'
+        declaration: 'MEASURED, NOT ASSUMED: dim_product.brand holds exactly 11 values and only one contains
+          ''Contoso'' — it is spelled ''Contoso''. Both readings select the identical set, so this fork
+          costs nothing and is not worth a question.'
+      - word: bought
+        took: all purchases on record, 2016-05-18 to 2025-12-31
+        could_also_mean: a particular year or recent window
+        declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+          2026-09-30): a question naming no period covers the full extent of order_date and must state
+          the first and last date included.'
+      - word: customers bought
+        took: customers who appear on a sales line — 52,189 of them
+        could_also_mean: the customer register, 104,990 rows
+        declaration: 'Customer concept definition: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear
+          on a sale, so the register is not the buyer list.'' Starting from sales is what ''bought'' names.'
+      blocked_by: []
+    - step: '2'
+      step_asks: Contoso brand products
+      turns:
+      - why: Restrict the purchase pool to Contoso-brand products and measure what survives, so the later
+          cross-border count has a known denominator.
+        did: "SELECT\n  COUNT(*) AS lines,\n  COUNT(DISTINCT s.order_key) AS orders,\n  COUNT(DISTINCT\
+          \ s.customer_key) AS customers,\n  COUNT(DISTINCT s.product_key) AS products,\n  MIN(s.order_date)\
+          \ AS first_order,\n  MAX(s.order_date) AS last_order\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+        came_back: '1 row(s): [{"lines": 59896, "orders": 45125, "customers": 33229, "products": 710,
+          "first_order": "2016-05-18", "last_order": "2025-12-31"}]'
+      settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+      means: 'Every purchase of a Contoso-brand product ever recorded, each row one Contoso product on
+        one order, carrying who bought it and the country they live in: 59,896 lines of the 223,974 (27%),
+        sitting on 45,125 orders, bought by 33,229 distinct customers of the 52,189 who ever ordered,
+        across 710 of the 2,517 SKUs. The window is the full extent, 2016-05-18 to 2025-12-31, and both
+        channels are in — the web shop''s lines have not been removed. Nothing yet says anything about
+        where the purchase was made relative to where the customer lives.'
+      readings_taken:
+      - word: Contoso brand products
+        took: brand = 'Contoso' on the product row
+        could_also_mean: manufacturer, which is a separate column naming the same thing one step away
+        declaration: 'The Brand concept is grounded in dim_product.brand and counts brand; dim_product.manufacturer
+          is declared as naming `brand` at `naming: legal`, so brand is the nearer-to-common column and
+          the one a question saying ''brand'' reads.'
+      blocked_by: []
+    - step: '3'
+      step_asks: their home country
+      turns:
+      - why: Attach each Contoso purchase to the country its buyer lives in via the declared customer
+          path, and check that country is always present and never the online sentinel.
+        did: "SELECT\n  c.country_code,\n  co.country_name,\n  COUNT(*) AS contoso_lines,\n  COUNT(DISTINCT\
+          \ s.customer_key) AS customers\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+          \ AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+          \ = p.product_key\nLEFT JOIN contoso_served.dim_country AS co\n  ON c.country_code = co.country_code\n\
+          WHERE\n  p.brand = 'Contoso'\nGROUP BY\n  c.country_code,\n  co.country_name\nORDER BY\n  customers\
+          \ DESC"
+        came_back: '8 row(s): [{"country_code": "US", "country_name": "United States", "contoso_lines":
+          30309, "customers": 16296}, {"country_code": "GB", "country_name": "United Kingdom", "contoso_lines":
+          6091, "customers": 3668}, {"country_code": "DE", "country_name": "Germany", "contoso_lines":
+          6886, "customers": 3627}, {"country_code": "CA", "country_name": "Canada", "contoso_lines":
+          6442, "customers": 3505}, {"country_code": "AU", "country_name": "Australia", "contoso_lines":
+          3781, "customers": 2350}, {"country_code": "NL", "country_name": "Netherlands", "contoso_lines":
+          2795, "customers": 1570}, {"country_code": "FR", "country_name": "France", "contoso_lines":
+          1898, "customers": 1146}, {"country_code": "IT", "country_name": "Italy", "contoso_lines": 1694,
+          "customers": 1067}]'
+      settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  s.product_key,\n  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  p.brand = 'Contoso'"
+      means: 'Every Contoso purchase now carries the country its buyer lives in. The 33,229 Contoso buyers
+        live in exactly eight countries — the United States holds 16,296 of them (49%), then the United
+        Kingdom 3,668, Germany 3,627, Canada 3,505, Australia 2,350, the Netherlands 1,570, France 1,146,
+        Italy 1,067 — and their 59,896 purchase lines sum back to step 2 with nothing lost or duplicated.
+        No buyer carries the `--` sentinel and none has a missing country, so every purchase has a real
+        home country to compare a store against. This is residence, not shopping behaviour: it says where
+        the buyer lives, and nothing yet about where they bought.'
+      readings_taken:
+      - word: their home country
+        took: the country on the customer's own register row, dim_customer.country_code
+        could_also_mean: the country of the store the customer shops at most often
+        declaration: country.default.whose_country_is_asked_never_assumed (confidence C, RULING-2026-10-22)
+          forbids picking between the store and the customer silently and declares the named paths; the
+          `customer` path, customer__based_in__country, surfaces as 'customer country' / 'where our customers
+          are'. The question names both sides itself — 'their home country' against 'the country of the
+          store' — so the choice is made by the question, not by me. The modal-shopping-country reading
+          is not a declared path in this bundle at all.
+      - word: home country
+        took: the single current country on the customer row
+        could_also_mean: where the customer lived on the order date, since the register is kept as a history
+        declaration: 'dim_customer.valid_from states it plainly: ''a sale could in principle be attributed
+          to where the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should
+          be.'' So the current row is what I read.'
+      blocked_by: []
+    - step: '4'
+      step_asks: in stores outside their home country
+      turns:
+      - why: Compare each Contoso purchase's store country against the buyer's home country, and price
+          both readings of the online rows — sentinel excluded as declared, versus counted as 'abroad'
+          — in a single pass.
+        did: "SELECT\n  COUNT(\n    DISTINCT CASE\n      WHEN st.country_code <> '--' AND st.country_code\
+          \ <> c.country_code\n      THEN s.customer_key\n    END\n  ) AS cust_abroad_physical,\n  COUNT(DISTINCT\
+          \ CASE WHEN st.country_code <> c.country_code THEN s.customer_key END) AS cust_abroad_incl_sentinel,\n\
+          \  COUNT(\n    DISTINCT CASE\n      WHEN st.country_code <> '--' AND st.country_code = c.country_code\n\
+          \      THEN s.customer_key\n    END\n  ) AS cust_at_home,\n  COUNT(DISTINCT CASE WHEN st.country_code\
+          \ = '--' THEN s.customer_key END) AS cust_online,\n  COUNT(\n    CASE WHEN st.country_code <>\
+          \ '--' AND st.country_code <> c.country_code THEN 1 END\n  ) AS lines_abroad_physical,\n  COUNT(CASE\
+          \ WHEN st.country_code = '--' THEN 1 END) AS lines_online,\n  COUNT(*) AS lines_total,\n  COUNT(CASE\
+          \ WHEN st.country_code IS NULL THEN 1 END) AS lines_no_store_country\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+          \ = st.store_key\nWHERE\n  p.brand = 'Contoso'"
+        came_back: '1 row(s): [{"cust_abroad_physical": 0, "cust_abroad_incl_sentinel": 16584, "cust_at_home":
+          21791, "cust_online": 16584, "lines_abroad_physical": 0, "lines_online": 25408, "lines_total":
+          59896, "lines_no_store_country": 0}]'
+      - why: Establish whether a physical cross-border sale exists ANYWHERE in the warehouse, because
+          that decides whether 'zero' is a fact about the Contoso brand or a structural property of the
+          data.
+        did: "SELECT\n  COUNT(*) AS physical_lines_all_brands,\n  COUNT(CASE WHEN st.country_code <> c.country_code\
+          \ THEN 1 END) AS physical_lines_cross_border,\n  COUNT(DISTINCT CASE WHEN st.country_code <>\
+          \ c.country_code THEN s.customer_key END) AS customers_cross_border,\n  COUNT(DISTINCT c.country_code\
+          \ || '>' || st.country_code) AS distinct_home_store_pairs,\n  COUNT(DISTINCT c.country_code)\
+          \ AS home_countries,\n  COUNT(DISTINCT st.country_code) AS store_countries\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_store\
+          \ AS st\n  ON s.store_key = st.store_key\nWHERE\n  st.country_code <> '--'"
+        came_back: '1 row(s): [{"physical_lines_all_brands": 130424, "physical_lines_cross_border": 0,
+          "customers_cross_border": 0, "distinct_home_store_pairs": 8, "home_countries": 8, "store_countries":
+          8}]'
+      settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.store_key,\n\
+        \  c.country_code AS customer_country_code,\n  st.country_code AS store_country_code\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+        \ <> c.country_code"
+      means: 'Contoso purchases made at a shop standing in a country the buyer does not live in: there
+        are NONE. Zero lines, zero customers, out of 59,896 Contoso lines of which 34,488 were at physical
+        shops and 25,408 online. And this is not about Contoso — across all 223,974 sales of all 11 brands,
+        all 130,424 physical lines are domestic: only 8 distinct home-country→store-country pairings occur
+        where 64 are possible across 8 home countries and 8 store countries, i.e. US buyers only ever
+        appear in US shops, German buyers only in German shops. A customer walking into a foreign shop
+        is a thing this warehouse never records. The 16,584 customers whose Contoso purchase was at a
+        ''different'' country are entirely the web shop, whose country is the `--` sentinel — not a place,
+        and declared incapable of attributing an internet sale to any real country.'
+      readings_taken:
+      - word: in stores outside their home country
+        took: physical shops only, whose country differs from the buyer's — giving 0 customers
+        could_also_mean: also treating the web shop as 'outside their home country', since its country
+          code `--` is literally not equal to any buyer's country — giving 16,584 customers
+        declaration: country.exclusion.sentinel_is_not_a_country (confidence P) declares `--` the online
+          sentinel and NOT a place, defaulting to the `real` population; dim_store.country_code states
+          it directly — 'the online store carries '--' ... so this column cannot attribute an internet
+          sale to a real country'. A sentinel that is not a country cannot be a country other than the
+          buyer's, so the online lines cannot satisfy the test. I apply the declared reading and disclose
+          the other figure rather than asking, because the declaration fixes it.
+      - word: the country of the store where it was bought
+        took: dim_store.country_code, the country of the premises the sale was rung up against
+        could_also_mean: dim_location.country_code, the country of the site the premises stands on, one
+          hop further out
+        declaration: 'The two agree here: store__trades_in__country is the declared store path and v_contoso5_sales_line.store_key
+          points at the premises, ''never at the site''. Either route gives the same 8 domestic pairings,
+          so the choice is immaterial to this answer.'
+      blocked_by: []
+    - step: '5'
+      step_asks: How many customers
+      turns:
+      - why: Run the exact aggregate the answer claims — one row, one number — over the cross-border Contoso
+          population settled in step 4, rather than inferring it from an earlier diagnostic.
+        did: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+          \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+          \ <> c.country_code"
+        came_back: '1 row(s): [{"how_many_customers": 0}]'
+      - why: 'The answer is none, and the reason is structural rather than a quirk of Contoso: this warehouse
+          records no physical cross-border purchase by anyone, of any brand.'
+        did: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+          \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+          \ <> c.country_code"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 1 row(s): [{"how_many_customers": 0}]  Give
+          `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from the closed
+          list. If these rows settle the question, do not decline.'
+      settled_on: "SELECT\n  COUNT(DISTINCT s.customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nWHERE\n  p.brand = 'Contoso'\n  AND st.country_code <> '--'\n  AND st.country_code\
+        \ <> c.country_code"
+      means: 'The single row returned 0: NO CUSTOMER has ever bought a Contoso-brand product at a shop
+        standing in a country other than the one they live in, over every purchase on record, 2016-05-18
+        to 2025-12-31. The zero is structural rather than anything to do with Contoso — across all 223,974
+        sales of all 11 brands, every one of the 130,424 physical purchase lines is domestic, with only
+        8 of 64 possible home-country→store-country pairings ever occurring, one per country. WHAT IS
+        EXCLUDED IS THE ENTIRE ALTERNATIVE: 25,408 Contoso lines bought by 16,584 customers went through
+        the web shop, whose country is the `--` sentinel; count that sentinel as ''a country that is not
+        theirs'' and the answer is 16,584 rather than 0. I excluded it because the declarations say `--`
+        is not a place and cannot attribute an internet sale to a real country, so those purchases have
+        no store country to differ from the buyer''s. Also not included, because not asked: the 21,791
+        customers who bought Contoso at a physical shop at home, and the 33,229 who bought Contoso anywhere.'
+      readings_taken:
+      - word: in stores outside their home country
+        took: physical shops whose country differs from the buyer's — 0 customers
+        could_also_mean: counting the web shop as 'outside their home country', since `--` is unequal
+          to every real country — 16,584 customers
+        declaration: 'country.exclusion.sentinel_is_not_a_country (confidence P): `--` is the online sentinel
+          and NOT a place, default population `real`. dim_store.country_code states it directly — ''this
+          column cannot attribute an internet sale to a real country.'' The declaration settles it, so
+          I applied it and disclosed the alternative rather than asking; the reader should nonetheless
+          know that this one choice IS the answer, 0 against 16,584.'
+      - word: their home country
+        took: the country on the customer's own register row
+        could_also_mean: the country they shop in most often
+        declaration: country.default.whose_country_is_asked_never_assumed (confidence C) declares the
+          `customer` and `store` paths separately and forbids silent choice; the question names both sides
+          itself. Immaterial regardless — every physical sale being domestic means a customer's modal
+          shopping country IS their home country, so this reading cannot move the 0.
+      - word: bought
+        took: all time, 2016-05-18 to 2025-12-31
+        could_also_mean: a named year or a recent window
+        declaration: order.default.an_unscoped_question_covers_all_time (confidence C, operator ruling
+          2026-09-30). Any narrower window is a subset of a population that already holds no qualifying
+          row, so it too would give 0.
+      - word: How many customers bought
+        took: any customer with at least one qualifying purchase
+        could_also_mean: only customers who bought Contoso exclusively abroad and never at home
+        declaration: 'Immaterial: ''at least one'' is the weaker reading and already returns 0, so the
+          stricter one cannot return more.'
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id001
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+v3_answer_step: '5'
+v3_gaps: []
+v3_bucket: WRONG
+v3_why: claimed 'none', reference 0
+v3_seconds: 277.7

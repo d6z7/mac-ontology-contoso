@@ -1,0 +1,52 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED: `approved_by` is empty. An agent may not sign a reference.
+id: MQ-23
+question: >-
+  What is the revenue per active customer, counting only customers who have placed an order?
+expected: 4192.73
+sql: >-
+  SELECT ROUND(SUM(net_amount) / COUNT(DISTINCT customer_key), 2)
+  FROM contoso_served.v_contoso5_sales_line
+note: >-
+  ADDED 2026-10-23 ON THE OPERATOR'S INSTRUCTION, to isolate one axis that ADV-03 hides. Verbatim:
+  "the finding that we also track customers who never ordered anything is intersting!?  try adding
+  a question: revenue per actvie cutsomer - (who placed order in the past) ... and see what happens
+  then."
+
+  WHAT ADV-03 CANNOT DISCRIMINATE AND THIS CAN. "Revenue per customer by country" differs between
+  the reference and the walk on TWO axes at once — whose country, AND which customers the
+  denominator counts — so neither answer isolates either. This question names the denominator in
+  its own words and says nothing about a country, so the only axis left is the one the operator
+  wanted measured.
+
+  THE DENOMINATOR IS THE WHOLE QUESTION, and the bundle states the fact it turns on:
+  `dim_customer.customer_key`'s own description records "HALF HAVE NEVER ORDERED", and it is by
+  upstream DESIGN, not a data defect (docs.sqlbi.com/contoso-data-generator). Measured 2026-10-23:
+      104,990  customers on file
+       52,189  have ever placed an order
+       52,801  never have
+  So "revenue per customer" is 2,084.15 over everyone on file and 4,192.73 over those who bought —
+  a factor of two, from one word. This reference takes the SECOND, because the question says
+  "active ... who have placed an order" and leaves nothing to assume.
+
+  NO COUNTRY, NO CHANNEL, DELIBERATELY. The question names neither, so no path is chosen and no
+  channel is filtered: 218,814,471.66 over both channels, all time, divided by the 52,189 distinct
+  `customer_key` that appear on a sales line. A question that named a country would reopen
+  `country.default.whose_country_is_asked_never_assumed`, which declares no default and says ASK —
+  and that is ADV-03's problem, not this one's.
+
+  WHAT A RUN SHOULD DO WITH IT. If the walk answers 4,192.73 the denominator reading is settled by
+  the question's own words, which is what the operator asked to find out. If it answers 2,084.15 it
+  has counted customers who never bought as customers who did, against a fact the relation states
+  in capitals. If it asks, the question was not as clear as it reads.
+expected_by: agent
+expected_at: '2026-10-23'
+approved_by: null
+approved_at: null
+awaiting_approval: >-
+  The arithmetic is re-runnable and the question names its own denominator, so there is little left
+  to rule. What needs a signature is that "active" means EVER ordered rather than ordered recently
+  — this bundle's last sale is 2025-12-31 and no recency window is declared, so "in the past" is
+  read as all time.

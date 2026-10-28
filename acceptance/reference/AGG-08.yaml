@@ -1,0 +1,61 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: AGG-08
+question: Compare net revenue in Germany versus France
+expected:
+  rows: 2
+  ordered: false
+  values:
+    - [DE, 24638830.18]
+    - [FR, 6674724.85]
+sql: |
+  SELECT cu."country_code", round(sum(l."net_price" * l."quantity"), 2) AS net_sales_amount
+  FROM contoso_served.v_contoso5_sales_line l
+  JOIN contoso_served.dim_customer cu USING ("customer_key")
+  WHERE cu."country_code" IN ('DE', 'FR')
+  GROUP BY cu."country_code"
+  ORDER BY 2 DESC
+sql_repointed:
+  by: agent
+  at: '2026-10-22'
+  why: >-
+    THE FILED SQL QUERIED A DIFFERENT BUNDLE, so this reference had never been verified. It was
+    cloned from example/contoso, whose objects are v_contoso_order_line and dim_contoso_customer
+    with PascalCase columns (CustomerKey, NetPrice, Quantity, Country, CountryFull, ProductKey,
+    OrderDate). contoso5 names them v_contoso5_sales_line and dim_customer with snake_case
+    columns, and normalises the country NAME onto dim_country. Measured 2026-10-22 across all 74
+    references: 9 would not run, and 8 of those 9 were these clones.
+  what_changed: 'only the sql field, as a translation of identifiers'
+  what_did_not: >-
+    expected, approved_by, approved_at and note are untouched. THE APPROVAL IS THE ANSWER; the SQL
+    is the check. The translated query reproduces the approved expected value EXACTLY, which is
+    the evidence that the translation is faithful rather than a new claim.
+  verified: >-
+    run against contoso5.duckdb on 2026-10-22 and it reproduces this file's own expected value.
+note: >-
+  Germany is 3.7x France. Both EUR-transacting and both stored in USD, so they are directly
+  comparable with no conversion.
+
+  UNORDERED, deliberately. "Compare A versus B" asks for BOTH numbers and leaves the comparison
+  to the reader; it is not a ranking. Contrast AGG-09 — "which brand sold MORE" — where the
+  winner IS the answer and the order is therefore checked.
+
+  THIS RETURNED 0 ROWS UNTIL 2026-09-25. The engine emitted `dim_contoso_customer.CountryCode`,
+  a column the customer dimension does not have — `CountryCode` is the STORE side's spelling of
+  the same concept, which binds two relations. A re-run after the day's runtime fixes returns
+  both rows correctly. The failure was real and is cured; it was visible only because the capture
+  was stale, which is why a stale difference is reported as inconclusive and never as a defect.
+approved_by: operator
+approved_at: '2026-09-25'
+cloned_from:
+  bundle: example/contoso
+  path: acceptance/reference/AGG-08.yaml
+  commit: e7465b1
+  cloned_at: '2026-09-29'
+  basis: >-
+    Approved on the same landing: main.* is identical in both bundles (8 tables, row counts and
+    columns measured equal on 2026-09-29; 223 974 sales lines), so the approved value is the value
+    here too. The `sql` above is the approving bundle's served view
+    (contoso_served.v_contoso_order_line, dim_contoso_*), NOT this bundle's plane
+    (v_contoso5_sales_line, dim_*): the expected value stands, the derivation on this bundle's
+    own served plane is owed before its capture is judged against it.

@@ -1,0 +1,54 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED: `approved_by` is empty. An agent may not sign a reference.
+id: ADV-13
+question: List top 5 stores that sell more than the average store
+expected:
+  rows: 5
+  ordered: true
+  values:
+  - - Contoso Store Connecticut
+    - 3897804.53
+  - - Contoso Store Northwest Territories
+    - 3655942.73
+  - - Contoso Store Newfoundland and Labrador
+    - 3648990.89
+  - - Contoso Store Kansas
+    - 3608331.57
+  - - Contoso Store South Carolina
+    - 3591981.03
+sql: "SELECT nm, ROUND(net,2) FROM (\n  SELECT s.store_code lc, MIN(s.store_name) nm, SUM(l.net_amount)\
+  \ net\n  FROM contoso_served.v_contoso5_sales_line l\n  JOIN contoso_served.dim_store s ON l.store_key\
+  \ = s.store_key\n  WHERE s.store_code <> -1\n  GROUP BY 1) p\nWHERE net > (SELECT AVG(net) FROM\
+  \ (\n  SELECT s.store_code, SUM(l.net_amount) net\n  FROM contoso_served.v_contoso5_sales_line\
+  \ l\n  JOIN contoso_served.dim_store s ON l.store_key = s.store_key\n  WHERE s.store_code <> -1\
+  \ GROUP BY 1) q)\nORDER BY net DESC\nLIMIT 5\n"
+note: 'USD. THE QUESTION WAS REWORDED BY THE OPERATOR on 2026-10-23, from "Stores that sell more than
+  the average store", and the rewording is what made it answerable. The original had no stable answer:
+  the web store sells 86,790,054.13, twenty-five times the average, so counting it as a store lifts
+  the average from 2,129,426.09 to 3,473,245.58 and the count of stores above average falls from 34
+  to 8. Eight or thirty-four, from one row of data, and a reader given either number could not tell
+  which question they were answered. A TOP-5 is stable: the threshold does not bite (the fifth shop,
+  3,591,981.03, clears both averages) so the RANKING does the work, and the only effect of the web store
+  is whether it takes slot 1 and pushes South Carolina off.
+
+
+  THE PHYSICAL READING, by the operator''s scoping of 2026-10-18: the channel default holds when the
+  question is ABOUT a store (`applies: subject`), and this question''s subject is a store. The web store
+  is not a shop you can walk into.
+
+
+  A STORE IS ITS LOCATION, not its row and not its name: dim_store declares `bindings[].counts: store_code`
+  — 67 locations over 74 rows, because a re-tenanted site has several rows and is one store. Grouped
+  by location the answer is the same five as by name, so the detail does not move this figure — it is
+  stated because the next question may not be so forgiving. 62 locations carry sales.'
+expected_by: agent
+expected_at: '2026-10-23'
+approved_by: null
+approved_at: null
+depends_on_rulings:
+- decisions/RULED-2026-10-18_both-channels-make-revenue.md
+awaiting_approval: 'The arithmetic is re-runnable. What needs a signature is the READING: physical shops
+  only, on the grounds that the subject is a store. Including the web store gives a different list —
+  Online store at 86,790,054.13 in first place and South Carolina off the end.'

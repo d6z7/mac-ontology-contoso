@@ -1,0 +1,110 @@
+# CONTOSO5 > the customer row, SEMANTICALLY — what a question may do with each of its columns.
+#
+# ONE CONCEPT READS THIS RELATION, so this file de-duplicates nothing. It is here because a
+# TWO-FORM ESTATE IS THE LIABILITY: every one of the ten blind readers found on 2026-10-08 had a
+# path that handled `source:` and returned nothing for `bindings:` without saying so, and
+# `PASS over a shrunken population` is how that reads from outside. With one form, a reader that
+# handles only the other sees NOTHING and fails loudly.
+#
+# TWO COLUMNS ARE SUPPRESSED AND THAT IS THE POINT: `customer_name` and `city` carry DQ
+# suppressions, and `customer_name` is ALSO `label_of: customer_key`. The display chooser picks the
+# labelled column, `_display_column` then withholds it for the DQ finding and falls back to the
+# identity, disclosing the substitution — the same answer as before, reached by declaration rather
+# than by the physical descriptor's line order. Measured 2026-10-08: unlabelled, the choice was the
+# descriptor's first `value` column, which saved the forward order and NOT the reverse.
+#
+# THREE DATE COLUMNS, ONE OF WHICH IS NOT A REPORTING DATE. `birth_date` is an axis; the SCD
+# window (`valid_from`, `valid_to`) is not. A reader that narrowed the dated set to the declared
+# one planned "bought in Q1 2024" against `birth_date` (ADV-18), which is why that set is a UNION.
+#
+# The data plane's view of the same relation is data/datasets/dim_customer.yaml.
+metadata:
+  source: CONTOSO5
+  schema_version: '0.3.0-develop'
+  confidence: C
+  provenance: authored
+
+relation:
+  name: dim_customer
+  key: customer_key
+
+columns:
+  customer_key:
+    description: >-
+      the row key: one row per customer, 104,990 of them. HALF HAVE NEVER ORDERED — 52,189
+      appear on a sale — so this register is not the buyer list.
+    surfaces: ['customer id']
+    offers: {}
+  customer_name:
+    description: >-
+      the customer's name as registered.
+    surfaces: ['name', 'who']
+    offers:
+      axis: categorical
+      suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+    rulings:
+      # THE CUSTOMER'S NAME, declared even though it is SUPPRESSED, and that is the point. The
+      # display chooser picks the labelled column and `_display_column` then withholds it for
+      # the DQ finding above and falls back to the identity, disclosing the substitution -- the
+      # same answer the bundle gives today, reached by declaration instead of by accident.
+      # Measured 2026-10-08: with the column unlabelled the choice was the first `value` column
+      # of the descriptor, so the suppression saved the forward order and NOT the reverse, where
+      # `valid_to` became the answering column.
+      label_of: customer_key
+      naming: common
+  continent:
+    description: >-
+      the continent the customer lives on.
+    offers:
+      axis: categorical
+  country_code:
+    description: >-
+      the country the CUSTOMER lives in. 8 of the 9 codes are used; no customer carries the '--'
+      online sentinel. This is the only column that can place an internet sale in a real
+      country.
+    surfaces: ['where the buyer is']
+    offers:
+      axis: categorical
+    rulings:
+      finer_than: continent
+  state:
+    description: >-
+      the state, province or region the customer lives in.
+    surfaces: ['province', 'region']
+    offers:
+      axis: categorical
+    rulings:
+      scoped_by: country_code
+  city:
+    description: >-
+      the city the customer lives in.
+    surfaces: ['town']
+    offers:
+      axis: categorical
+      suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CITY
+  gender:
+    description: >-
+      the customer's recorded gender.
+    surfaces: ['sex']
+    offers:
+      axis: categorical
+  birth_date:
+    description: >-
+      the customer's date of birth.
+    surfaces: ['date of birth', 'born', 'birthday']
+    offers:
+      axis: time
+      extremum: [min, max]
+  valid_from:
+    description: >-
+      the day this customer record became current, 1980-01-01 to 2010-12-30. The register is
+      kept as a history, so a sale could in principle be attributed to where the customer lived
+      ON THE ORDER DATE — nothing in this bundle declares that it should be.
+    surfaces: ['record from', 'as of']
+    offers: {}
+  valid_to:
+    description: >-
+      the day this customer record stopped being current. Paired with `valid_from`; 14,711
+      distinct values.
+    surfaces: ['record until']
+    offers: {}

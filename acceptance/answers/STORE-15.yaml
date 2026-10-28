@@ -1,0 +1,1102 @@
+id: STORE-15
+captured_at: '2026-10-24T21:44:52+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: 'The data does not hold what this question asks.
+
+
+  cities: a city or town column on the store or on its site. `dim_store` serves only store_key, location_code,
+  store_name, country_code, state, open_date, close_date, status_annotation, square_metres; `dim_location`
+  serves only location_code, country_code, country_name, state, units_ever_here. Neither holds a city,
+  and `dim_location.location_code` is an INTEGER site code that would answer ''12, 13, 14'' if bound to
+  ''which cities''. The only city in the bundle is `dim_customer.city` (34,581 values, 453 French) which
+  is (a) where a CUSTOMER lives, not where a shop stands, and (b) declared suppressed under DQ-IDENTIFYING-DIM_CUSTOMER-CITY
+  and must not appear in an answer.'
+verdict:
+  disposition: GOVERNED_REFUSAL
+intent:
+  subject: store
+  operation: select
+  qdmr_simplified: "  1       FROM       store                 “store”\n  2  ← 1  WHERE      in france\
+    \ = 'france'  “in france”\n  3  ← 2  AGGREGATE  count of store        “how many store we have in france”\n\
+    \  4  ← 2  GROUP_BY   by cities             “in what cities are they”\n  5  ← 4  AGGREGATE  count\
+    \ of store        “how many store”\n  6  ← 5  SELECT     city, how many store  “how many store we\
+    \ have in france and in what cities are they”\n  answer: step 6   confidence: 0.78   A DAG   step(s)\
+    \ 2 feed more than one\n  UNDERSTOOD AS: You want to know how many of our stores are in France, and\
+    \ which cities those stores are in — one row per French city, showing the city and how many of our\
+    \ stores sit there (the rows together add up to the France total). I'm reading \"store\" as our store\
+    \ locations and \"in France\" as the store's own location/address being in France; no other country\
+    \ is included.\n  AMBIGUOUS 'store' — ASKS: By \"store\" do you mean only physical retail locations\
+    \ that sell to customers, or should warehouses, depots, offices and online/pop-up outlets count too?\n\
+    \      could mean: physical retail stores only\n      could mean: every kind of location we run, including\
+    \ warehouses, depots and online outlets\n      took: physical store locations as recorded in our store\
+    \ list\n  AMBIGUOUS 'store we have' — ASKS: Should I count only stores that are open and trading today,\
+    \ or every store on record including closed or not-yet-opened ones?\n      could mean: only stores\
+    \ currently open and trading\n      could mean: every store on record, including closed and planned\
+    \ ones\n      took: every store on record, with no open/closed filter applied\n  AMBIGUOUS 'in france'\
+    \ — ASKS: Does \"in France\" mean the store's address is in France, or does it mean the store belongs\
+    \ to our France business region (which could include or exclude places like Monaco or overseas territories)?\n\
+    \      could mean: the store's address/location is in France\n      could mean: the store is assigned\
+    \ to our France sales region or market\n      took: the store's own location is France\n  AMBIGUOUS\
+    \ 'in what cities' — ASKS: Do you want one row per city with its store count, or just the plain list\
+    \ of city names plus a single total?\n      could mean: one row per city showing how many stores are\
+    \ there\n      could mean: a bare list of city names, with one overall total count beside it\n   \
+    \   took: one row per city with its store count, which together give the France total\n  cannot_express:\
+    \ Whether two stores in the same city should be shown as separate store names rather than collapsed\
+    \ into a count — the steps show per-city counts, not individual store identities\n  OUTPUT SHAPE:\
+    \ a list of names and figures · many row(s) · named by city · carrying how many store"
+  understood_as_in_human_words: You want to know how many of our stores are in France, and which cities
+    those stores are in — one row per French city, showing the city and how many of our stores sit there
+    (the rows together add up to the France total). I'm reading "store" as our store locations and "in
+    France" as the store's own location/address being in France; no other country is included.
+  population_actually_answered: null
+  how_the_result_must_be_presented:
+    shape_it_committed_to: null
+    columns_the_answer_step_asks_for: &id001
+    - city
+    - how many store
+    figures_the_answer_step_computes: []
+    answer_step: '6'
+    verb: select
+    said: how many store we have in france and in what cities are they
+    stage1_confidence: 0.78
+  canonical_question: &id002
+    understood_as: You want to know how many of our stores are in France, and which cities those stores
+      are in — one row per French city, showing the city and how many of our stores sit there (the rows
+      together add up to the France total). I'm reading "store" as our store locations and "in France"
+      as the store's own location/address being in France; no other country is included.
+    steps:
+    - id: '1'
+      do: from
+      thing: store
+      said: store
+    - id: '2'
+      do: where
+      of: '1'
+      thing: in france
+      said: in france
+      op: '='
+      value: france
+    - id: '3'
+      do: aggregate
+      of: '2'
+      said: how many store we have in france
+      figures:
+      - how: count
+        of: store
+        said: how many store
+    - id: '4'
+      do: group_by
+      of: '2'
+      thing: cities
+      said: in what cities are they
+    - id: '5'
+      do: aggregate
+      of: '4'
+      said: how many store
+      figures:
+      - how: count
+        of: store
+        said: how many store
+    - id: '6'
+      do: select
+      of: '5'
+      columns: *id001
+      said: how many store we have in france and in what cities are they
+    answer: '6'
+    output_shape: &id004
+      shape: a list of names and figures
+      said: how many store we have in france and in what cities are they
+      rows: many
+      key_columns: &id006
+      - city
+      figure_columns: &id007
+      - how many store
+    ambiguities:
+    - words: store
+      question: By "store" do you mean only physical retail locations that sell to customers, or should
+        warehouses, depots, offices and online/pop-up outlets count too?
+      readings:
+      - physical retail stores only
+      - every kind of location we run, including warehouses, depots and online outlets
+      assumed: physical store locations as recorded in our store list
+    - words: store we have
+      question: Should I count only stores that are open and trading today, or every store on record including
+        closed or not-yet-opened ones?
+      readings:
+      - only stores currently open and trading
+      - every store on record, including closed and planned ones
+      assumed: every store on record, with no open/closed filter applied
+    - words: in france
+      question: Does "in France" mean the store's address is in France, or does it mean the store belongs
+        to our France business region (which could include or exclude places like Monaco or overseas territories)?
+      readings:
+      - the store's address/location is in France
+      - the store is assigned to our France sales region or market
+      assumed: the store's own location is France
+    - words: in what cities
+      question: Do you want one row per city with its store count, or just the plain list of city names
+        plus a single total?
+      readings:
+      - one row per city showing how many stores are there
+      - a bare list of city names, with one overall total count beside it
+      assumed: one row per city with its store count, which together give the France total
+    cannot_express: &id003
+    - Whether two stores in the same city should be shown as separate store names rather than collapsed
+      into a count — the steps show per-city counts, not individual store identities
+    confidence: 0.78
+  steps: 6
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table: null
+  value: null
+  raw: null
+  reading: ''
+  status: no_value
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "store → a trading physical shop — one row of dim_store with no close date and a real site,\
+      \ 57 of them\n        could also mean: every row the dimension holds, 74, which includes the 16\
+      \ closed/restructured premises and the online outlet; or 73 if only the web shop is dropped"
+    ref: 'store.resolution.active_is_the_absent_close_date (default: active, applies: subject) and store.resolution.the_channel_is_the_location_sentinel
+      (default: physical, applies: subject) — the latter states verbatim that "how many stores do we have"
+      is 57. This OVERRIDES the document''s `understood_as`, which assumed no open/closed filter.'
+  - kind: ''
+    text: "store (grain) → the premises, store_key — but at this population premises and sites coincide\
+      \ exactly: 57 rows over 57 distinct location_code, so the store/site distinction moves nothing here\n\
+      \        could also mean: the site, location_code, which differs only once the closed rows are admitted\
+      \ (16 closed premises stand on just 14 sites)"
+    ref: 'dim_store.store_key#finer_than: location_code, and the grounding''s snapshot_rule: "57 rows
+      over 57 location codes, because a location has at most one store with no close date"'
+  - kind: ''
+    text: "in france → the store's own country_code = 'FR' — where the shop itself stands\n        could\
+      \ also mean: the site's country one hop away via store__sited_in__location → location__in__country,\
+      \ which MEASURED IDENTICAL here (7 stores, same 7 regions); or the customer path, where French customers\
+      \ bought, which answers a different question about buyers and not about shops"
+    ref: 'country.default.whose_country_is_asked_never_assumed — never pick between the store and the
+      customer silently. The subject of this question is a Store, so the declared `store` path (surfaces:
+      ''store country'', ''where we trade'') is the one taken, and I state it rather than assume it.'
+  - kind: ''
+    text: "france → the ISO code 'FR' as carried on the store row — which in this bundle includes overseas\
+      \ territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte, Limousin\
+      \ and also La Reunion, Martinique, Mayotte\n        could also mean: metropolitan France only, excluding\
+      \ the three overseas territories, which would leave 4 shops rather than 7 — the question named no\
+      \ such narrowing and the data carries one France"
+    ref: 'dim_location.location_code notes, verbatim: "a store''s place is its `state`, and in France
+      those are regions and overseas territories: Basse-Normandie, Corse, Franche-Comte, La Reunion, Limousin,
+      Martinique, Mayotte"'
+  - kind: ''
+    text: "store we have → currently trading physical shops, 7\n        could also mean: every French\
+      \ premises ever on record including closed and restructured ones — ALSO 7, measured: France carries\
+      \ no closed row at all, so the open/closed fork moves nothing here even though it moves the global\
+      \ figure from 57 to 73"
+    ref: 'store.resolution.active_is_the_absent_close_date (default: active) — applied, and now shown
+      to be costless for France'
+  - kind: ''
+    text: "how many store → a count of premises (store_key), 7\n        could also mean: a count of sites\
+      \ (location_code) — ALSO 7, since each French shop stands on its own site with no succession of\
+      \ tenancies"
+    ref: 'dim_store.store_key#finer_than: location_code — the distinction exists, and here the two levels
+      coincide'
+  concepts: []
+  rules:
+  - id: 'store.resolution.active_is_the_absent_close_date (default: active'
+    why: '''store'' = a trading physical shop — one row of dim_store with no close date and a real site,
+      57 of them'
+  - id: 'applies: subject) and store.resolution.the_channel_is_the_location_sentinel (default: physical'
+    why: '''store'' = a trading physical shop — one row of dim_store with no close date and a real site,
+      57 of them'
+  - id: 'applies: subject) — the latter states verbatim that "how many stores do we have" is 57. This
+      OVERRIDES the document''s `understood_as`'
+    why: '''store'' = a trading physical shop — one row of dim_store with no close date and a real site,
+      57 of them'
+  - id: which assumed no open/closed filter.
+    why: '''store'' = a trading physical shop — one row of dim_store with no close date and a real site,
+      57 of them'
+  - id: 'dim_store.store_key#finer_than: location_code'
+    why: '''store (grain)'' = the premises, store_key — but at this population premises and sites coincide
+      exactly: 57 rows over 57 distinct location_code, so the store/site distinction moves nothing here'
+  - id: 'and the grounding''s snapshot_rule: "57 rows over 57 location codes'
+    why: '''store (grain)'' = the premises, store_key — but at this population premises and sites coincide
+      exactly: 57 rows over 57 distinct location_code, so the store/site distinction moves nothing here'
+  - id: because a location has at most one store with no close date"
+    why: '''store (grain)'' = the premises, store_key — but at this population premises and sites coincide
+      exactly: 57 rows over 57 distinct location_code, so the store/site distinction moves nothing here'
+  - id: country.default.whose_country_is_asked_never_assumed — never pick between the store and the customer
+      silently. The subject of this question is a Store
+    why: '''in france'' = the store''s own country_code = ''FR'' — where the shop itself stands'
+  - id: 'so the declared `store` path (surfaces: ''store country'''
+    why: '''in france'' = the store''s own country_code = ''FR'' — where the shop itself stands'
+  - id: '''where we trade'') is the one taken'
+    why: '''in france'' = the store''s own country_code = ''FR'' — where the shop itself stands'
+  - id: and I state it rather than assume it.
+    why: '''in france'' = the store''s own country_code = ''FR'' — where the shop itself stands'
+  - id: dim_location.location_code notes
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: 'verbatim: "a store''s place is its `state`'
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: 'and in France those are regions and overseas territories: Basse-Normandie'
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: Corse
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: Franche-Comte
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: La Reunion
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: Limousin
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: Martinique
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: Mayotte"
+    why: '''france'' = the ISO code ''FR'' as carried on the store row — which in this bundle includes
+      overseas territories, since the French regions present are Basse-Normandie, Corse, Franche-Comte,
+      Limousin and also La Reunion, Martinique, Mayotte'
+  - id: 'store.resolution.active_is_the_absent_close_date (default: active) — applied'
+    why: '''store we have'' = currently trading physical shops, 7'
+  - id: and now shown to be costless for France
+    why: '''store we have'' = currently trading physical shops, 7'
+  - id: 'dim_store.store_key#finer_than: location_code — the distinction exists'
+    why: '''how many store'' = a count of premises (store_key), 7'
+  - id: and here the two levels coincide
+    why: '''how many store'' = a count of premises (store_key), 7'
+  edges: []
+sql:
+- "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
+  \  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL"
+- "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  square_metres\n\
+  FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL AND country_code\
+  \ = 'FR'"
+- "SELECT\n  COUNT(*) AS how_many_store\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND\
+  \ close_date IS NULL AND country_code = 'FR'"
+answer_sql: null
+sql_valid: true
+result:
+  status: no_value
+  rows: 0
+  cols: []
+  sample_rows: []
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1       FROM       store                 “store”\n  2  ← 1  WHERE\
+    \      in france = 'france'  “in france”\n  3  ← 2  AGGREGATE  count of store        “how many store\
+    \ we have in france”\n  4  ← 2  GROUP_BY   by cities             “in what cities are they”\n  5  ←\
+    \ 4  AGGREGATE  count of store        “how many store”\n  6  ← 5  SELECT     city, how many store\
+    \  “how many store we have in france and in what cities are they”\n  answer: step 6   confidence:\
+    \ 0.78   A DAG   step(s) 2 feed more than one\n  UNDERSTOOD AS: You want to know how many of our stores\
+    \ are in France, and which cities those stores are in — one row per French city, showing the city\
+    \ and how many of our stores sit there (the rows together add up to the France total). I'm reading\
+    \ \"store\" as our store locations and \"in France\" as the store's own location/address being in\
+    \ France; no other country is included.\n  AMBIGUOUS 'store' — ASKS: By \"store\" do you mean only\
+    \ physical retail locations that sell to customers, or should warehouses, depots, offices and online/pop-up\
+    \ outlets count too?\n      could mean: physical retail stores only\n      could mean: every kind\
+    \ of location we run, including warehouses, depots and online outlets\n      took: physical store\
+    \ locations as recorded in our store list\n  AMBIGUOUS 'store we have' — ASKS: Should I count only\
+    \ stores that are open and trading today, or every store on record including closed or not-yet-opened\
+    \ ones?\n      could mean: only stores currently open and trading\n      could mean: every store on\
+    \ record, including closed and planned ones\n      took: every store on record, with no open/closed\
+    \ filter applied\n  AMBIGUOUS 'in france' — ASKS: Does \"in France\" mean the store's address is in\
+    \ France, or does it mean the store belongs to our France business region (which could include or\
+    \ exclude places like Monaco or overseas territories)?\n      could mean: the store's address/location\
+    \ is in France\n      could mean: the store is assigned to our France sales region or market\n   \
+    \   took: the store's own location is France\n  AMBIGUOUS 'in what cities' — ASKS: Do you want one\
+    \ row per city with its store count, or just the plain list of city names plus a single total?\n \
+    \     could mean: one row per city showing how many stores are there\n      could mean: a bare list\
+    \ of city names, with one overall total count beside it\n      took: one row per city with its store\
+    \ count, which together give the France total\n  cannot_express: Whether two stores in the same city\
+    \ should be shown as separate store names rather than collapsed into a count — the steps show per-city\
+    \ counts, not individual store identities\n  OUTPUT SHAPE: a list of names and figures · many row(s)\
+    \ · named by city · carrying how many store"
+  understood_as: You want to know how many of our stores are in France, and which cities those stores
+    are in — one row per French city, showing the city and how many of our stores sit there (the rows
+    together add up to the France total). I'm reading "store" as our store locations and "in France" as
+    the store's own location/address being in France; no other country is included.
+  ambiguities_it_saw:
+  - words: store
+    asks: By "store" do you mean only physical retail locations that sell to customers, or should warehouses,
+      depots, offices and online/pop-up outlets count too?
+    readings:
+    - physical retail stores only
+    - every kind of location we run, including warehouses, depots and online outlets
+    took: physical store locations as recorded in our store list
+  - words: store we have
+    asks: Should I count only stores that are open and trading today, or every store on record including
+      closed or not-yet-opened ones?
+    readings:
+    - only stores currently open and trading
+    - every store on record, including closed and planned ones
+    took: every store on record, with no open/closed filter applied
+  - words: in france
+    asks: Does "in France" mean the store's address is in France, or does it mean the store belongs to
+      our France business region (which could include or exclude places like Monaco or overseas territories)?
+    readings:
+    - the store's address/location is in France
+    - the store is assigned to our France sales region or market
+    took: the store's own location is France
+  - words: in what cities
+    asks: Do you want one row per city with its store count, or just the plain list of city names plus
+      a single total?
+    readings:
+    - one row per city showing how many stores are there
+    - a bare list of city names, with one overall total count beside it
+    took: one row per city with its store count, which together give the France total
+  presentation:
+    claimed_answer_is: null
+    answer_step: '6'
+    answer_step_asks:
+      do: select
+      of: '5'
+      columns: *id001
+      said: how many store we have in france and in what cities are they
+    confidence_stage1: 0.78
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
+      \  close_date,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND\
+      \ close_date IS NULL"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
+      \  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS\
+      \ NULL AND country_code = 'FR'"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  COUNT(*) AS how_many_store\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND close_date IS NULL AND country_code = 'FR'"
+    params: {}
+  what_it_calculated: null
+  rows_returned: null
+  synthesis:
+    claimed: null
+    shape: null
+    answered_population: null
+    gaps: &id005
+    - word: cities
+      needs: a city or town column on the store or on its site. `dim_store` serves only store_key, location_code,
+        store_name, country_code, state, open_date, close_date, status_annotation, square_metres; `dim_location`
+        serves only location_code, country_code, country_name, state, units_ever_here. Neither holds a
+        city, and `dim_location.location_code` is an INTEGER site code that would answer '12, 13, 14'
+        if bound to 'which cities'. The only city in the bundle is `dim_customer.city` (34,581 values,
+        453 French) which is (a) where a CUSTOMER lives, not where a shop stands, and (b) declared suppressed
+        under DQ-IDENTIFYING-DIM_CUSTOMER-CITY and must not appear in an answer.
+    stopped_at: '4'
+  thinking:
+  - step: '1'
+    step_asks: store
+    turns:
+    - why: Establish the Store base relation and measure, in one pass, what each declared default (physical
+        vs online channel, active vs closed) does to the row count — so step 1's population is chosen
+        with the figures in hand.
+      did: 'probe ''dim_store.country_code'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN ''online''
+        ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''active'' ELSE ''closed''
+        END AS trading_state, count(*) AS store_rows, count(DISTINCT location_code) AS sites FROM contoso_served.dim_store
+        GROUP BY 1, 2 ORDER BY 1, 2'
+      came_back: 'dim_store.country_code (varchar) holds 9 distinct value(s): ''--'', ''AU'', ''CA'',
+        ''DE'', ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 3 row(s): [{"channel": "online", "trading_state":
+        "active", "store_rows": 1, "sites": 1}, {"channel": "physical", "trading_state": "active", "store_rows":
+        57, "sites": 57}, {"channel": "physical", "trading_state": "closed", "store_rows": 16, "sites":
+        14}]'
+    settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
+      \  close_date,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND\
+      \ close_date IS NULL"
+    means: 'The stores Contoso trades from as this bundle records them: 57 rows, one per premises that
+      is still open (no close date) and stands on a real site (the online outlet excluded). Each row is
+      one shop, with the site it stands on, its name, the country and the state/region it sits in, when
+      it opened, and its floor area — no country filter yet, no period, no sales. The 16 shut or restructured
+      premises and the single web shop are not in here.'
+    readings_taken:
+    - word: store
+      took: a trading physical shop — one row of dim_store with no close date and a real site, 57 of them
+      could_also_mean: every row the dimension holds, 74, which includes the 16 closed/restructured premises
+        and the online outlet; or 73 if only the web shop is dropped
+      declaration: 'store.resolution.active_is_the_absent_close_date (default: active, applies: subject)
+        and store.resolution.the_channel_is_the_location_sentinel (default: physical, applies: subject)
+        — the latter states verbatim that "how many stores do we have" is 57. This OVERRIDES the document''s
+        `understood_as`, which assumed no open/closed filter.'
+    - word: store (grain)
+      took: 'the premises, store_key — but at this population premises and sites coincide exactly: 57
+        rows over 57 distinct location_code, so the store/site distinction moves nothing here'
+      could_also_mean: the site, location_code, which differs only once the closed rows are admitted (16
+        closed premises stand on just 14 sites)
+      declaration: 'dim_store.store_key#finer_than: location_code, and the grounding''s snapshot_rule:
+        "57 rows over 57 location codes, because a location has at most one store with no close date"'
+    blocked_by: []
+  - step: '2'
+    step_asks: in france
+    turns:
+    - why: Apply "in France" to the 57 trading stores, and in the same query price the only live fork
+        in that phrase for a store subject — the store's own `country_code` versus its site's `country_code`
+        one hop away — by showing every store where either route says FR.
+      did: "SELECT\n  s.country_code AS store_country,\n  l.country_code AS site_country,\n  COUNT(*)\
+        \ AS stores,\n  COUNT(DISTINCT s.state) AS distinct_store_states,\n  COUNT(DISTINCT l.state) AS\
+        \ distinct_site_states\nFROM contoso_served.dim_store AS s\nJOIN contoso_served.dim_location AS\
+        \ l\n  ON s.location_code = l.location_code\nWHERE\n  s.location_code <> -1\n  AND s.close_date\
+        \ IS NULL\n  AND (\n    s.country_code = 'FR' OR l.country_code = 'FR'\n  )\nGROUP BY\n  1,\n\
+        \  2\nORDER BY\n  3 DESC"
+      came_back: '1 row(s): [{"store_country": "FR", "site_country": "FR", "stores": 7, "distinct_store_states":
+        7, "distinct_site_states": 7}]'
+    settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
+      \  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS\
+      \ NULL AND country_code = 'FR'"
+    means: 'The shops Contoso currently trades from whose own address is in France: 7 of them, one row
+      per shop, each with the site it stands on, its name, the French region or overseas territory it
+      sits in, when it opened and its floor area. No sales, no period, no customers — these are premises
+      on the register with no close date. Closed and restructured French premises are not here, nor is
+      the web shop.'
+    readings_taken:
+    - word: in france
+      took: the store's own country_code = 'FR' — where the shop itself stands
+      could_also_mean: the site's country one hop away via store__sited_in__location → location__in__country,
+        which MEASURED IDENTICAL here (7 stores, same 7 regions); or the customer path, where French customers
+        bought, which answers a different question about buyers and not about shops
+      declaration: 'country.default.whose_country_is_asked_never_assumed — never pick between the store
+        and the customer silently. The subject of this question is a Store, so the declared `store` path
+        (surfaces: ''store country'', ''where we trade'') is the one taken, and I state it rather than
+        assume it.'
+    - word: france
+      took: the ISO code 'FR' as carried on the store row — which in this bundle includes overseas territories,
+        since the French regions present are Basse-Normandie, Corse, Franche-Comte, Limousin and also
+        La Reunion, Martinique, Mayotte
+      could_also_mean: metropolitan France only, excluding the three overseas territories, which would
+        leave 4 shops rather than 7 — the question named no such narrowing and the data carries one France
+      declaration: 'dim_location.location_code notes, verbatim: "a store''s place is its `state`, and
+        in France those are regions and overseas territories: Basse-Normandie, Corse, Franche-Comte, La
+        Reunion, Limousin, Martinique, Mayotte"'
+    blocked_by: []
+  - step: '3'
+    step_asks: how many store we have in france
+    turns:
+    - why: Count the French stores, and in the same query price the one default I applied against the
+        document's own reading — trading shops only (declared) versus every French premises on record
+        (what `understood_as` assumed) — so the override is disclosed with a figure beside it.
+      did: "SELECT\n  COUNT(*) FILTER(WHERE\n    close_date IS NULL) AS stores_trading,\n  COUNT(*) AS\
+        \ store_rows_all,\n  COUNT(DISTINCT location_code) AS sites_all,\n  COUNT(DISTINCT location_code)\
+        \ FILTER(WHERE\n    close_date IS NULL) AS sites_trading,\n  COUNT(DISTINCT state) FILTER(WHERE\n\
+        \    close_date IS NULL) AS regions_trading\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND country_code = 'FR'"
+      came_back: '1 row(s): [{"stores_trading": 7, "store_rows_all": 7, "sites_all": 7, "sites_trading":
+        7, "regions_trading": 7}]'
+    settled_on: "SELECT\n  COUNT(*) AS how_many_store\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND close_date IS NULL AND country_code = 'FR'"
+    means: 'One figure: Contoso has 7 shops in France. That is 7 physical premises whose own address is
+      French, counted off the store register with no period and no reference to sales — not 7 sales outlets''
+      worth of revenue, and not 7 sites with some re-tenanted. All 7 are open: France has no closed or
+      restructured premises at all, so this is simultaneously the count of French shops trading and the
+      count of French store rows the dimension holds.'
+    readings_taken:
+    - word: store we have
+      took: currently trading physical shops, 7
+      could_also_mean: 'every French premises ever on record including closed and restructured ones —
+        ALSO 7, measured: France carries no closed row at all, so the open/closed fork moves nothing here
+        even though it moves the global figure from 57 to 73'
+      declaration: 'store.resolution.active_is_the_absent_close_date (default: active) — applied, and
+        now shown to be costless for France'
+    - word: how many store
+      took: a count of premises (store_key), 7
+      could_also_mean: a count of sites (location_code) — ALSO 7, since each French shop stands on its
+        own site with no succession of tenancies
+      declaration: 'dim_store.store_key#finer_than: location_code — the distinction exists, and here the
+        two levels coincide'
+    blocked_by: []
+  - step: '4'
+    step_asks: in what cities are they
+    turns: []
+    settled_on: ''
+    means: null
+    readings_taken: []
+    blocked_by: &id008
+    - word: cities
+      needs: a city or town column on the store or on its site. `dim_store` serves only store_key, location_code,
+        store_name, country_code, state, open_date, close_date, status_annotation, square_metres; `dim_location`
+        serves only location_code, country_code, country_name, state, units_ever_here. Neither holds a
+        city, and `dim_location.location_code` is an INTEGER site code that would answer '12, 13, 14'
+        if bound to 'which cities'. The only city in the bundle is `dim_customer.city` (34,581 values,
+        453 French) which is (a) where a CUSTOMER lives, not where a shop stands, and (b) declared suppressed
+        under DQ-IDENTIFYING-DIM_CUSTOMER-CITY and must not appear in an answer.
+  - step: '5'
+    step_asks: how many store
+    turns: []
+    settled_on: ''
+    means: null
+    readings_taken: []
+    blocked_by: []
+  - step: '6'
+    step_asks: how many store we have in france and in what cities are they
+    turns: []
+    settled_on: ''
+    means: null
+    readings_taken: []
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: You want to know how many of our stores are in France, and which cities those stores are in
+      — one row per French city, showing the city and how many of our stores sit there (the rows together
+      add up to the France total). I'm reading "store" as our store locations and "in France" as the store's
+      own location/address being in France; no other country is included.
+    population: null
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       store                 “store”\n  2  ← 1  WHERE      in france\
+      \ = 'france'  “in france”\n  3  ← 2  AGGREGATE  count of store        “how many store we have in\
+      \ france”\n  4  ← 2  GROUP_BY   by cities             “in what cities are they”\n  5  ← 4  AGGREGATE\
+      \  count of store        “how many store”\n  6  ← 5  SELECT     city, how many store  “how many\
+      \ store we have in france and in what cities are they”\n  answer: step 6   confidence: 0.78   A\
+      \ DAG   step(s) 2 feed more than one"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: store
+      asks: By "store" do you mean only physical retail locations that sell to customers, or should warehouses,
+        depots, offices and online/pop-up outlets count too?
+      readings:
+      - physical retail stores only
+      - every kind of location we run, including warehouses, depots and online outlets
+      took: physical store locations as recorded in our store list
+    - words: store we have
+      asks: Should I count only stores that are open and trading today, or every store on record including
+        closed or not-yet-opened ones?
+      readings:
+      - only stores currently open and trading
+      - every store on record, including closed and planned ones
+      took: every store on record, with no open/closed filter applied
+    - words: in france
+      asks: Does "in France" mean the store's address is in France, or does it mean the store belongs
+        to our France business region (which could include or exclude places like Monaco or overseas territories)?
+      readings:
+      - the store's address/location is in France
+      - the store is assigned to our France sales region or market
+      took: the store's own location is France
+    - words: in what cities
+      asks: Do you want one row per city with its store count, or just the plain list of city names plus
+        a single total?
+      readings:
+      - one row per city showing how many stores are there
+      - a bare list of city names, with one overall total count beside it
+      took: one row per city with its store count, which together give the France total
+- stage: cannot_express
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: *id003
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id004
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.78 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: store
+      took: a trading physical shop — one row of dim_store with no close date and a real site, 57 of them
+      could_also_mean: every row the dimension holds, 74, which includes the 16 closed/restructured premises
+        and the online outlet; or 73 if only the web shop is dropped
+      declaration: 'store.resolution.active_is_the_absent_close_date (default: active, applies: subject)
+        and store.resolution.the_channel_is_the_location_sentinel (default: physical, applies: subject)
+        — the latter states verbatim that "how many stores do we have" is 57. This OVERRIDES the document''s
+        `understood_as`, which assumed no open/closed filter.'
+    - word: store (grain)
+      took: 'the premises, store_key — but at this population premises and sites coincide exactly: 57
+        rows over 57 distinct location_code, so the store/site distinction moves nothing here'
+      could_also_mean: the site, location_code, which differs only once the closed rows are admitted (16
+        closed premises stand on just 14 sites)
+      declaration: 'dim_store.store_key#finer_than: location_code, and the grounding''s snapshot_rule:
+        "57 rows over 57 location codes, because a location has at most one store with no close date"'
+    - word: in france
+      took: the store's own country_code = 'FR' — where the shop itself stands
+      could_also_mean: the site's country one hop away via store__sited_in__location → location__in__country,
+        which MEASURED IDENTICAL here (7 stores, same 7 regions); or the customer path, where French customers
+        bought, which answers a different question about buyers and not about shops
+      declaration: 'country.default.whose_country_is_asked_never_assumed — never pick between the store
+        and the customer silently. The subject of this question is a Store, so the declared `store` path
+        (surfaces: ''store country'', ''where we trade'') is the one taken, and I state it rather than
+        assume it.'
+    - word: france
+      took: the ISO code 'FR' as carried on the store row — which in this bundle includes overseas territories,
+        since the French regions present are Basse-Normandie, Corse, Franche-Comte, Limousin and also
+        La Reunion, Martinique, Mayotte
+      could_also_mean: metropolitan France only, excluding the three overseas territories, which would
+        leave 4 shops rather than 7 — the question named no such narrowing and the data carries one France
+      declaration: 'dim_location.location_code notes, verbatim: "a store''s place is its `state`, and
+        in France those are regions and overseas territories: Basse-Normandie, Corse, Franche-Comte, La
+        Reunion, Limousin, Martinique, Mayotte"'
+    - word: store we have
+      took: currently trading physical shops, 7
+      could_also_mean: 'every French premises ever on record including closed and restructured ones —
+        ALSO 7, measured: France carries no closed row at all, so the open/closed fork moves nothing here
+        even though it moves the global figure from 57 to 73'
+      declaration: 'store.resolution.active_is_the_absent_close_date (default: active) — applied, and
+        now shown to be costless for France'
+    - word: how many store
+      took: a count of premises (store_key), 7
+      could_also_mean: a count of sites (location_code) — ALSO 7, since each French shop stands on its
+        own site with no succession of tenancies
+      declaration: 'dim_store.store_key#finer_than: location_code — the distinction exists, and here the
+        two levels coincide'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5 -> 6
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n\
+        \  open_date,\n  close_date,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND close_date IS NULL\n\n-- step 2\nSELECT\n  store_key,\n  location_code,\n  store_name,\n\
+        \  country_code,\n  state,\n  open_date,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
+        \  location_code <> -1 AND close_date IS NULL AND country_code = 'FR'\n\n-- step 3\nSELECT\n \
+        \ COUNT(*) AS how_many_store\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND\
+        \ close_date IS NULL AND country_code = 'FR'"
+      params: {}
+- stage: execute
+  status: error
+  ms: 0
+  summary: the answer step returned no rows
+  detail:
+    rows: null
+    stopped_at: '4'
+    the_data_does_not_hold: *id005
+- stage: calculated
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: null
+- stage: evaluate
+  status: error
+  ms: 0
+  summary: claimed as None · graded NO ANSWER
+  detail:
+    claimed_answer: null
+    walk_bucket: NO ANSWER
+    walk_why: nothing was claimed
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: how many store we have in france and in what cities are they?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: You want to know how many of our stores are in France, and which cities those stores are in
+      — one row per French city, showing the city and how many of our stores sit there (the rows together
+      add up to the France total). I'm reading "store" as our store locations and "in France" as the store's
+      own location/address being in France; no other country is included.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       store                 “store”'
+    - '  2  ← 1  WHERE      in france = ''france''  “in france”'
+    - '  3  ← 2  AGGREGATE  count of store        “how many store we have in france”'
+    - '  4  ← 2  GROUP_BY   by cities             “in what cities are they”'
+    - '  5  ← 4  AGGREGATE  count of store        “how many store”'
+    - '  6  ← 5  SELECT     city, how many store  “how many store we have in france and in what cities
+      are they”'
+    - '  answer: step 6   confidence: 0.78   A DAG   step(s) 2 feed more than one'
+    - '  UNDERSTOOD AS: You want to know how many of our stores are in France, and which cities those
+      stores are in — one row per French city, showing the city and how many of our stores sit there (the
+      rows together add up to the France total). I''m reading "store" as our store locations and "in France"
+      as the store''s own location/address being in France; no other country is included.'
+    - '  AMBIGUOUS ''store'' — ASKS: By "store" do you mean only physical retail locations that sell to
+      customers, or should warehouses, depots, offices and online/pop-up outlets count too?'
+    - '      could mean: physical retail stores only'
+    - '      could mean: every kind of location we run, including warehouses, depots and online outlets'
+    - '      took: physical store locations as recorded in our store list'
+    - '  AMBIGUOUS ''store we have'' — ASKS: Should I count only stores that are open and trading today,
+      or every store on record including closed or not-yet-opened ones?'
+    - '      could mean: only stores currently open and trading'
+    - '      could mean: every store on record, including closed and planned ones'
+    - '      took: every store on record, with no open/closed filter applied'
+    - '  AMBIGUOUS ''in france'' — ASKS: Does "in France" mean the store''s address is in France, or does
+      it mean the store belongs to our France business region (which could include or exclude places like
+      Monaco or overseas territories)?'
+    - '      could mean: the store''s address/location is in France'
+    - '      could mean: the store is assigned to our France sales region or market'
+    - '      took: the store''s own location is France'
+    - '  AMBIGUOUS ''in what cities'' — ASKS: Do you want one row per city with its store count, or just
+      the plain list of city names plus a single total?'
+    - '      could mean: one row per city showing how many stores are there'
+    - '      could mean: a bare list of city names, with one overall total count beside it'
+    - '      took: one row per city with its store count, which together give the France total'
+    - '  cannot_express: Whether two stores in the same city should be shown as separate store names rather
+      than collapsed into a count — the steps show per-city counts, not individual store identities'
+    - '  OUTPUT SHAPE: a list of names and figures · many row(s) · named by city · carrying how many store'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a list of names and figures
+    - - said
+      - how many store we have in france and in what cities are they
+    - - rows
+      - many
+    - - key_columns
+      - *id006
+    - - figure_columns
+      - *id007
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: store
+      asks: By "store" do you mean only physical retail locations that sell to customers, or should warehouses,
+        depots, offices and online/pop-up outlets count too?
+      readings:
+      - physical retail stores only
+      - every kind of location we run, including warehouses, depots and online outlets
+      took: physical store locations as recorded in our store list
+    - words: store we have
+      asks: Should I count only stores that are open and trading today, or every store on record including
+        closed or not-yet-opened ones?
+      readings:
+      - only stores currently open and trading
+      - every store on record, including closed and planned ones
+      took: every store on record, with no open/closed filter applied
+    - words: in france
+      asks: Does "in France" mean the store's address is in France, or does it mean the store belongs
+        to our France business region (which could include or exclude places like Monaco or overseas territories)?
+      readings:
+      - the store's address/location is in France
+      - the store is assigned to our France sales region or market
+      took: the store's own location is France
+    - words: in what cities
+      asks: Do you want one row per city with its store count, or just the plain list of city names plus
+        a single total?
+      readings:
+      - one row per city showing how many stores are there
+      - a bare list of city names, with one overall total count beside it
+      took: one row per city with its store count, which together give the France total
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
+        \  close_date,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND\
+        \ close_date IS NULL"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
+        \  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS\
+        \ NULL AND country_code = 'FR'"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  COUNT(*) AS how_many_store\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND close_date IS NULL AND country_code = 'FR'"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: empty
+  body:
+    kind: prose
+    value: null
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: null
+      rows: null
+      row_count: null
+      capped: null
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - null
+    - - shape
+      - null
+    - - population it answered over
+      - null
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: store
+      turns:
+      - why: Establish the Store base relation and measure, in one pass, what each declared default (physical
+          vs online channel, active vs closed) does to the row count — so step 1's population is chosen
+          with the figures in hand.
+        did: 'probe ''dim_store.country_code'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN ''online''
+          ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''active'' ELSE ''closed''
+          END AS trading_state, count(*) AS store_rows, count(DISTINCT location_code) AS sites FROM contoso_served.dim_store
+          GROUP BY 1, 2 ORDER BY 1, 2'
+        came_back: 'dim_store.country_code (varchar) holds 9 distinct value(s): ''--'', ''AU'', ''CA'',
+          ''DE'', ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 3 row(s): [{"channel": "online",
+          "trading_state": "active", "store_rows": 1, "sites": 1}, {"channel": "physical", "trading_state":
+          "active", "store_rows": 57, "sites": 57}, {"channel": "physical", "trading_state": "closed",
+          "store_rows": 16, "sites": 14}]'
+      settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n\
+        \  open_date,\n  close_date,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND close_date IS NULL"
+      means: 'The stores Contoso trades from as this bundle records them: 57 rows, one per premises that
+        is still open (no close date) and stands on a real site (the online outlet excluded). Each row
+        is one shop, with the site it stands on, its name, the country and the state/region it sits in,
+        when it opened, and its floor area — no country filter yet, no period, no sales. The 16 shut or
+        restructured premises and the single web shop are not in here.'
+      readings_taken:
+      - word: store
+        took: a trading physical shop — one row of dim_store with no close date and a real site, 57 of
+          them
+        could_also_mean: every row the dimension holds, 74, which includes the 16 closed/restructured
+          premises and the online outlet; or 73 if only the web shop is dropped
+        declaration: 'store.resolution.active_is_the_absent_close_date (default: active, applies: subject)
+          and store.resolution.the_channel_is_the_location_sentinel (default: physical, applies: subject)
+          — the latter states verbatim that "how many stores do we have" is 57. This OVERRIDES the document''s
+          `understood_as`, which assumed no open/closed filter.'
+      - word: store (grain)
+        took: 'the premises, store_key — but at this population premises and sites coincide exactly: 57
+          rows over 57 distinct location_code, so the store/site distinction moves nothing here'
+        could_also_mean: the site, location_code, which differs only once the closed rows are admitted
+          (16 closed premises stand on just 14 sites)
+        declaration: 'dim_store.store_key#finer_than: location_code, and the grounding''s snapshot_rule:
+          "57 rows over 57 location codes, because a location has at most one store with no close date"'
+      blocked_by: []
+    - step: '2'
+      step_asks: in france
+      turns:
+      - why: Apply "in France" to the 57 trading stores, and in the same query price the only live fork
+          in that phrase for a store subject — the store's own `country_code` versus its site's `country_code`
+          one hop away — by showing every store where either route says FR.
+        did: "SELECT\n  s.country_code AS store_country,\n  l.country_code AS site_country,\n  COUNT(*)\
+          \ AS stores,\n  COUNT(DISTINCT s.state) AS distinct_store_states,\n  COUNT(DISTINCT l.state)\
+          \ AS distinct_site_states\nFROM contoso_served.dim_store AS s\nJOIN contoso_served.dim_location\
+          \ AS l\n  ON s.location_code = l.location_code\nWHERE\n  s.location_code <> -1\n  AND s.close_date\
+          \ IS NULL\n  AND (\n    s.country_code = 'FR' OR l.country_code = 'FR'\n  )\nGROUP BY\n  1,\n\
+          \  2\nORDER BY\n  3 DESC"
+        came_back: '1 row(s): [{"store_country": "FR", "site_country": "FR", "stores": 7, "distinct_store_states":
+          7, "distinct_site_states": 7}]'
+      settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  state,\n\
+        \  open_date,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND\
+        \ close_date IS NULL AND country_code = 'FR'"
+      means: 'The shops Contoso currently trades from whose own address is in France: 7 of them, one row
+        per shop, each with the site it stands on, its name, the French region or overseas territory it
+        sits in, when it opened and its floor area. No sales, no period, no customers — these are premises
+        on the register with no close date. Closed and restructured French premises are not here, nor
+        is the web shop.'
+      readings_taken:
+      - word: in france
+        took: the store's own country_code = 'FR' — where the shop itself stands
+        could_also_mean: the site's country one hop away via store__sited_in__location → location__in__country,
+          which MEASURED IDENTICAL here (7 stores, same 7 regions); or the customer path, where French
+          customers bought, which answers a different question about buyers and not about shops
+        declaration: 'country.default.whose_country_is_asked_never_assumed — never pick between the store
+          and the customer silently. The subject of this question is a Store, so the declared `store`
+          path (surfaces: ''store country'', ''where we trade'') is the one taken, and I state it rather
+          than assume it.'
+      - word: france
+        took: the ISO code 'FR' as carried on the store row — which in this bundle includes overseas territories,
+          since the French regions present are Basse-Normandie, Corse, Franche-Comte, Limousin and also
+          La Reunion, Martinique, Mayotte
+        could_also_mean: metropolitan France only, excluding the three overseas territories, which would
+          leave 4 shops rather than 7 — the question named no such narrowing and the data carries one
+          France
+        declaration: 'dim_location.location_code notes, verbatim: "a store''s place is its `state`, and
+          in France those are regions and overseas territories: Basse-Normandie, Corse, Franche-Comte,
+          La Reunion, Limousin, Martinique, Mayotte"'
+      blocked_by: []
+    - step: '3'
+      step_asks: how many store we have in france
+      turns:
+      - why: Count the French stores, and in the same query price the one default I applied against the
+          document's own reading — trading shops only (declared) versus every French premises on record
+          (what `understood_as` assumed) — so the override is disclosed with a figure beside it.
+        did: "SELECT\n  COUNT(*) FILTER(WHERE\n    close_date IS NULL) AS stores_trading,\n  COUNT(*)\
+          \ AS store_rows_all,\n  COUNT(DISTINCT location_code) AS sites_all,\n  COUNT(DISTINCT location_code)\
+          \ FILTER(WHERE\n    close_date IS NULL) AS sites_trading,\n  COUNT(DISTINCT state) FILTER(WHERE\n\
+          \    close_date IS NULL) AS regions_trading\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+          \ <> -1 AND country_code = 'FR'"
+        came_back: '1 row(s): [{"stores_trading": 7, "store_rows_all": 7, "sites_all": 7, "sites_trading":
+          7, "regions_trading": 7}]'
+      settled_on: "SELECT\n  COUNT(*) AS how_many_store\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND close_date IS NULL AND country_code = 'FR'"
+      means: 'One figure: Contoso has 7 shops in France. That is 7 physical premises whose own address
+        is French, counted off the store register with no period and no reference to sales — not 7 sales
+        outlets'' worth of revenue, and not 7 sites with some re-tenanted. All 7 are open: France has
+        no closed or restructured premises at all, so this is simultaneously the count of French shops
+        trading and the count of French store rows the dimension holds.'
+      readings_taken:
+      - word: store we have
+        took: currently trading physical shops, 7
+        could_also_mean: 'every French premises ever on record including closed and restructured ones
+          — ALSO 7, measured: France carries no closed row at all, so the open/closed fork moves nothing
+          here even though it moves the global figure from 57 to 73'
+        declaration: 'store.resolution.active_is_the_absent_close_date (default: active) — applied, and
+          now shown to be costless for France'
+      - word: how many store
+        took: a count of premises (store_key), 7
+        could_also_mean: a count of sites (location_code) — ALSO 7, since each French shop stands on its
+          own site with no succession of tenancies
+        declaration: 'dim_store.store_key#finer_than: location_code — the distinction exists, and here
+          the two levels coincide'
+      blocked_by: []
+    - step: '4'
+      step_asks: in what cities are they
+      turns: []
+      settled_on: ''
+      means: null
+      readings_taken: []
+      blocked_by: *id008
+    - step: '5'
+      step_asks: how many store
+      turns: []
+      settled_on: ''
+      means: null
+      readings_taken: []
+      blocked_by: []
+    - step: '6'
+      step_asks: how many store we have in france and in what cities are they
+      turns: []
+      settled_on: ''
+      means: null
+      readings_taken: []
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+- '6'
+v3_answer_step: '6'
+v3_gaps: *id005
+v3_bucket: NO ANSWER
+v3_why: nothing was claimed
+v3_seconds: 172.6

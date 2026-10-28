@@ -1,0 +1,55 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: ADV-09
+question: >-
+  Countries where average order value exceeds 500
+expected:
+  rows: 8
+  ordered: false
+  values:
+  - - Australia
+  - - Canada
+  - - France
+  - - Germany
+  - - Italy
+  - - Netherlands
+  - - United Kingdom
+  - - United States
+sql: >-
+  SELECT co.country_name FROM contoso_served.v_contoso5_sales_line l JOIN contoso_served.dim_store
+  s ON l.store_key=s.store_key JOIN contoso_served.dim_country co ON
+  s.country_code=co.country_code WHERE s.store_code IS DISTINCT FROM -1 GROUP BY
+  co.country_name HAVING SUM(l.net_amount)/COUNT(DISTINCT l.order_key) > 500
+note: >-
+  INDEPENDENTLY VERIFIED 2026-10-18, not read back from the engine: the SQL below was written by
+  hand against contoso5.duckdb and returns this figure exactly. SHOP POPULATION throughout (`store_code IS DISTINCT FROM -1`), AND IT IS DECLARED HERE RATHER
+  THAN INHERITED. Shop-only was the bundle''s default for Store until the operator reversed it on
+  2026-10-18 -- "now i am for correctnes and correctness is both" -- so this restriction is a
+  choice this reference has to justify, and the justification is the AXIS and not a default: the
+  online channel is one row of `dim_store` carrying `store_code = -1`, and it has neither a
+  country nor a floor area, so it cannot appear on an axis that groups by either. A question that
+  names the online channel is answered -- see MQ-07 and ADV-24. ALL EIGHT
+  TRADING COUNTRIES QUALIFY, and that is a real finding rather than a missing filter: ADV-08's
+  approved figures run 2498 to 2618, every one far above 500. A HAVING that excludes nothing is
+  still a HAVING.
+
+  LIST COMPLETED 2026-10-19, CLAIM UNTOUCHED. This file said `rows: 8` and then listed THREE
+  names -- the first three alphabetically -- under `ordered: true`, over a GROUP BY with no ORDER
+  BY. So it could never agree with itself: the statement returns the eight in hash order, which
+  begins Netherlands. The eight are now all written down and `ordered` is false, because the
+  statement does not order and an unordered answer must not be graded on sequence. Nothing was
+  decided here: the note already asserted that all eight trading countries qualify, and the
+  per-country figures are 2239.53 to 2617.62, every one far above 500.
+
+  THE SHOP FILTER STAYS, AND NOT BECAUSE OF THE OLD DEFAULT. The operator's ruling of 2026-10-18
+  makes an unqualified revenue question span both channels, and this question names no channel, so
+  the filter looks stale. IT IS NOT, AND THE REASON IS A SEPARATE OPEN DEFECT: the online store
+  carries `country_code` '--', and `dim_country` holds a row for that sentinel whose
+  `country_name` is 'Online'. Drop the filter and this list returns NINE rows, the ninth being a
+  country called 'Online'. Here the filter is not expressing the retired channel default, it is
+  keeping a non-country out of a list of countries. Re-approving the population of this case, or
+  of any country-grouped case, waits on the country-attribution ruling -- the same one AGG-03,
+  AGG-05, AGG-08, AGG-10, AGG-12, RC02, RC07 and RC15 are blocked on.
+approved_by: operator
+approved_at: '2026-10-17'
+approved_here: true

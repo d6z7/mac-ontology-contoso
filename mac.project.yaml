@@ -1,0 +1,179 @@
+# THE MINIMAL FIRST-RUN INPUT — and on this bundle it is the ONLY authored input besides the transforms
+# it does not yet have. Everything under data/ except the .parquet landings is PRODUCED by `mac_import`.
+#
+# WHAT contoso5 MEASURES. contoso4 varies CURATION against contoso2 and holds the data constant.
+# contoso5 holds the data constant against contoso4 and varies the DELIVERY: it is ingested as two
+# separate parts, landing plane first, under the checklist and the enforcement ruled on 2026-09-28 —
+# "split data plane delivery in two parts: data sources and datasets / have checklist for each one of
+# them / have linter and enforcement for every syntax thing we implement", and the reason behind it:
+# "i effectively want to achieve repeatibiliy. it is super important that you create ALL relevant
+# components of the data plane - so that NOTHING GETS LOST".
+#
+# WHY A FIFTH BUNDLE RATHER THAN RE-RUNNING A FOURTH. Every defect the split exposed was invisible on a
+# bundle that had been incrementally re-run, because a later pass had already repaired what an earlier
+# one lost. Measured on contoso4: 26 declared foreign keys built incrementally, ZERO from a clean import.
+# A bundle ingested exactly once, from nothing, is the only instrument that can read that difference.
+#
+# THE SERVED PLANE IS DECLARED AND EMPTY. A bundle holding only a landing plane is a delivered state, not
+# a half-finished one — that is precisely the claim the two-part split makes, and this bundle is where it
+# is tested rather than asserted.
+spec_version: mac.container/1
+
+metadata:
+  project: example/contoso5
+  data_domain: example
+  dataset: contoso5
+  label: Contoso 5
+runtime:
+  connector: mac.connector.duckdb
+  connection: connection.yaml
+
+# ONLY THE PLANE THIS BUNDLE HAS. `data` and `ontology` are conventional, not required, and the
+# container loader REFUSES a plane that points at nothing — "declared plane 'ontology' -> 'ontology'
+# does not exist", which is how the console answered `POST /open` with 409. Creating an empty directory
+# to satisfy it would satisfy the MECHANISM and not the requirement: the loader is right, a bundle that
+# declares a plane is claiming to have one. `ontology: ontology` is added in the same change that
+# authors the first concept.
+planes:
+  data: data
+  # DECLARED THE DAY THE PLANE WAS FIRST AUTHORED, 2026-09-29. Without it `mac_project.resolve`
+  # falls back to the bundle root and every tool reading `concepts_dir` looks in `<root>/concepts`,
+  # which does not exist — so check_grain_declaration and check_concept_columns_exist both reported
+  # NOT RUN over ten concepts sitting in ontology/concepts/. A tool that HARDCODES the path found
+  # them; the ones that read the declaration could not. One fact, two readers, and the declaration
+  # was the half that was missing.
+  ontology: ontology
+descriptors: data/datasets
+sources: data/sources
+transforms: data/transforms
+lookups: data/lookups
+
+# DECLARED SCOPE EXCLUSIONS. CONFORMANCE.md §2: the only alternatives are to bring a file under a schema
+# definition or to declare it here with a reason — "declared debt is visible and arguable, silent debt is
+# how 156 undefined artifacts stayed invisible while every gate was green."
+conformance:
+  out_of_scope:
+    - path: connection.yaml
+      reason: >-
+        A CONNECTOR CONFIGURATION, not a MAC model artifact. It says which warehouse to open and under
+        which schema; it makes no claim about meaning, so there is nothing for the core to validate and
+        nothing for a projector to read. The seam that consumes it is mac.connector, and the shape it
+        must satisfy is that seam's contract.
+
+    # THE TEST CORPUS, cloned on 2026-09-29 from the first Contoso bundle (mac-ontology-contoso@e7465b1)
+    # over the identical landing. Corpus testing is outside the framework by operator ruling, recorded in
+    # the reference bundle's own conformance block: MAC defines the ontology, not the questions asked of
+    # it. The first bundle left three of these paths undeclared and its validate_schema went red on them
+    # (paraphrases.yaml routed to PropertiesFile; questions.yaml and reference/ undefined) — declared here
+    # so this bundle says what they are instead of failing on a definition they never claimed.
+    # PROPOSED questions, not the pinned corpus: 20 hard readings written on 2026-10-09 to measure
+    # the grammar's REACH, each with hand-written oracle SQL that was executed, the figure it
+    # returned, and a measured classification (CANNOT_ENCODE / PLANS_WRONG / PLANS_CORRECT / …).
+    # It is the input to tools/mac_grammar_reach.py and makes no claim about meaning, so there is
+    # nothing here for the core to validate.
+    #
+    # DECLARED RATHER THAN RENAMED, which is the gate's own documented remedy. validate_schema
+    # routes every `acceptance/*.yaml` to PropertiesFile by LOCATION ("A SUITE IS A SHAPE, NOT A
+    # FILENAME"), so a corpus file that is not a property suite fails on its own shape with no way
+    # to say so — and the gate's note at validate_schema.py:362 provides exactly this escape, which
+    # reports the file as WAIVED and never as clean, so the count still shows it. Renaming it to
+    # dodge the router would be spelling around a defect, which this estate ruled against on
+    # 2026-10-08 when `ontology/` → `model/` was withdrawn for the same reason.
+    - path: acceptance/expected_first_run.yaml
+      reason: >-
+        THE INGESTION CONTRACT — which of mac_import's deliverables this bundle owes, at what size,
+        and which data-quality findings must still be raised (tools/check_first_run.py is its only
+        reader). It asserts what a DELIVERY must contain, not what the ontology means, so the core
+        has nothing here to validate; and validate_schema routes every acceptance/*.yaml to
+        PropertiesFile by location, which is a shape this file is not. Declared rather than renamed,
+        the same remedy the three corpus files below take.
+    - path: acceptance/proposed_questions.yaml
+      reason: >-
+        Proposed readings used to measure grammar reach, with executed oracle SQL and a measured
+        classification per attempt. Not a property suite; routed to PropertiesFile by location.
+    - path: acceptance/questions.yaml
+      reason: >-
+        The pinned question corpus — what is ASKED of the ontology, one id, text, tags and regression
+        class per question. Not a declaration the ontology makes; the projector (sdk/project/questions.py)
+        reads it as the authority for a question's text.
+    - path: acceptance/paraphrases.yaml
+      reason: >-
+        Wording variants per corpus question, for the interpreter's robustness runs. Same class as the
+        corpus: asked, not declared.
+    - path: acceptance/reference/**
+      reason: >-
+        THE APPROVED ANSWERS — a person ran the query, read the number and said yes; PASS or FAIL, nothing
+        else (tools/check_answers.py). Cloned with the corpus over the identical landing; each file
+        carries its provenance and says its derivation on this bundle's served plane is owed.
+    - path: acceptance/oracle/**
+      reason: >-
+        Shape and outcome oracles DERIVED from the question text through this bundle's own registers
+        (acceptance/tools/generate_shape_oracles.py); no expected value is ever written. What is asked,
+        not part of the ontology.
+    - path: acceptance/anchors/**
+      reason: >-
+        Plausibility anchors — a number derived independently of the engine, twice, with the author's
+        `agree` verdict. Cloned and re-measured on this bundle's landing (verified_on_this_bundle).
+    - path: acceptance/answers/**
+      reason: >-
+        One captured answer per corpus question — what the pipeline RETURNED when asked. Observation,
+        not declaration; written by the console's runs.
+    - path: acceptance/runs/answers_before_*/**
+      reason: >-
+        THE PREVIOUS CAPTURES, byte-identical in shape to `acceptance/answers/**` above and waived for
+        the same reason: observation, not declaration. `spikes/v3/to_board.py` copies the whole answer
+        set here before overwriting it, so the board's record of an earlier architecture's run on the
+        same questions survives — which is why these are kept rather than deleted.
+        .
+        DECLARED ON 2026-10-24 BECAUSE THEY TOOK THE BUNDLE DOWN. The waiver above covered the live
+        directory and never its backup, so every re-capture added ~90 undeclared files to the bundle:
+        21 directories and 1,902 files by today, which is the exact count validate_schema reported
+        when it turned MAC001/MAC002 from clean to ERROR and the compiler answered DOES NOT COMPILE.
+        At 01:54 the same bundle compiled with 0 errors and the identical 13 warnings, so the only
+        thing that changed was the size of this tree. A waiver that names the live path and not the
+        archive of that same path is half a declaration.
+    - path: acceptance/tools/**
+      reason: >-
+        The harness that derives oracles, replays intents and traces a question through the planner.
+        Test tooling, not an ontology artifact.
+
+    # THE LAST TWO ACCEPTANCE DIRECTORIES, declared 2026-10-07. These 88 files were the single largest
+    # MAC001 finding in the bundle — 85 intents and 3 interpret errors, "present, carries no MAC
+    # definition, not declared out of scope" — and they held the compile at DOES_NOT_COMPILE on their
+    # own. Nothing about them changed; what was missing was the sentence saying what they are. The
+    # ruling they fall under is the operator's of 2026-10-04, already recorded in the framework's own
+    # pointer registry (mac_pointers.yaml#carved_out for `acceptance/**`): "acceptance is driven with
+    # other mechanisms and does not have to be absolutely strict -- ignore anything coming from
+    # acceptance, you should not even try to track acceptance here." The catalogue carved the whole
+    # plane out of REFERENTIAL strictness; this is the same decision stated where the STRUCTURAL gate
+    # reads it, because the two mechanisms read different declarations and only one had been told.
+    - path: acceptance/intents/**
+      reason: >-
+        One captured INTENT per question — what the interpreter produced from the question text, pinned
+        so a planner change can be replayed against it. A record of a RUN, not a declaration the
+        ontology makes: nothing here states meaning, and the authority for a question's text is
+        acceptance/questions.yaml. Written by the harness (acceptance/tools), read by the replay.
+    - path: acceptance/interpret_errors/**
+      reason: >-
+        The questions the interpreter REFUSED, kept so a refusal is evidence rather than an absence.
+        Same standing as the intents beside them — the record of a run, not an ontology artifact.
+
+# WHAT THIS BUNDLE PERMITS TO BE PUBLISHED OUT OF ITS OWN DATA — a claim plus the REASON for it, made
+# once, in the manifest, where a reader and a gate both find it. The framework default is WITHHELD and a
+# bundle that says nothing withholds, because the harm is asymmetric: a withheld sample costs a reader
+# one convenience, a published one cannot be recalled.
+disclosure:
+  samples:
+    publish: true
+    reason: >-
+      Synthetic data under a permissive open-source licence — the Contoso Data Generator V2 release,
+      MIT — generated for teaching and demonstration. Every customer, store, order and product in this
+      bundle is fabricated: no row here describes a real person or a real organisation's trade. There is
+      nothing to protect, and being a worked example is the entire purpose of the bundle.
+
+      IT MATTERS MORE HERE THAN ELSEWHERE, because this bundle's job is to show what a FIRST delivery
+      produces. A relation preview is the artifact that shows whether a landing was read correctly at
+      all, and a reviewer who cannot see rows is left checking a descriptor against another descriptor.
+
+      A bundle over real data states no such basis and therefore withholds — the schema requires this
+      reason precisely so that publishing has to be argued and withholding does not.

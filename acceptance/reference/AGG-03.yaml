@@ -1,0 +1,72 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: AGG-03
+question: Show net revenue by customer country
+expected:
+  rows: 8
+  ordered: false
+  values:
+    - [US, 111862187.56]
+    - [DE, 24638830.18]
+    - [CA, 23242027.53]
+    - [GB, 23049533.37]
+    - [AU, 13360672.61]
+    - [NL, 9421520.47]
+    - [FR, 6674724.85]
+    - [IT, 6564975.09]
+sql: |
+  SELECT cu."country_code", round(sum(l."net_price" * l."quantity"), 2) AS net_sales_amount
+  FROM contoso_served.v_contoso5_sales_line l
+  JOIN contoso_served.dim_customer cu USING ("customer_key")
+  GROUP BY cu."country_code"
+sql_repointed:
+  by: agent
+  at: '2026-10-22'
+  why: >-
+    THE FILED SQL QUERIED A DIFFERENT BUNDLE, so this reference had never been verified. It was
+    cloned from example/contoso, whose objects are v_contoso_order_line and dim_contoso_customer
+    with PascalCase columns (CustomerKey, NetPrice, Quantity, Country, CountryFull, ProductKey,
+    OrderDate). contoso5 names them v_contoso5_sales_line and dim_customer with snake_case
+    columns, and normalises the country NAME onto dim_country. Measured 2026-10-22 across all 74
+    references: 9 would not run, and 8 of those 9 were these clones.
+  what_changed: 'only the sql field, as a translation of identifiers'
+  what_did_not: >-
+    expected, approved_by, approved_at and note are untouched. THE APPROVAL IS THE ANSWER; the SQL
+    is the check. The translated query reproduces the approved expected value EXACTLY, which is
+    the evidence that the translation is faithful rather than a new claim.
+  verified: >-
+    run against contoso5.duckdb on 2026-10-22 and it reproduces this file's own expected value.
+note: >-
+  USD throughout. EIGHT rows, not nine: the CUSTOMER side has eight countries, while the STORE
+  side has nine because it carries the '--' sentinel for the online channel. Grouping by the
+  wrong side is the mistake this reference catches.
+
+  UNORDERED DELIBERATELY. The query has no ORDER BY, so row order is whatever the engine
+  produces — measured, it returned AU, CA, GB, FR first. Comparing a sequence here would fail
+  an honest run.
+
+  THE `cols:` ASSERTION IS REMOVED, 2026-10-19, AND NO APPROVED VALUE CHANGED. This reference
+  demanded the column be spelled ['Country', 'net_sales_amount'] and the engine answers
+  ['country_name', 'netrevenue']; the FIGURES are identical to the cent and in the same order,
+  verified row by row. A COLUMN NAME IS NOT THE ANSWER -- the operator approved numbers, and the
+  aliases in this file were the hand-written SQL's own, never ruled on. Graded on the label, this
+  question failed under all NINE configurations of the ablation matrix while being right every
+  time, which is how an oracle defect masquerades as an engine defect for weeks. The same
+  assertion was removed from ADV-04 and MQ-16 earlier today, where it had been added by ME and
+  failed the same way; these three inherited theirs from the original references. The row count
+  and the values are still asserted, so the reference is weaker in exactly one respect: what the
+  columns are CALLED.
+approved_by: operator
+approved_at: '2026-09-25'
+cloned_from:
+  bundle: example/contoso
+  path: acceptance/reference/AGG-03.yaml
+  commit: e7465b1
+  cloned_at: '2026-09-29'
+  basis: >-
+    Approved on the same landing: main.* is identical in both bundles (8 tables, row counts and
+    columns measured equal on 2026-09-29; 223 974 sales lines), so the approved value is the value
+    here too. The `sql` above is the approving bundle's served view
+    (contoso_served.v_contoso_order_line, dim_contoso_*), NOT this bundle's plane
+    (v_contoso5_sales_line, dim_*): the expected value stands, the derivation on this bundle's
+    own served plane is owed before its capture is judged against it.

@@ -1,0 +1,60 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED: `approved_by` is empty. An agent may not sign a reference.
+id: MQ-21
+question: Did we sell anythin in this quarter
+expected: true
+sql: >-
+  SELECT COUNT(*) > 0 FROM contoso_served.v_contoso5_sales_line
+   WHERE order_date >= DATE_TRUNC('quarter',
+           (SELECT MAX(order_date) FROM contoso_served.v_contoso5_sales_line))
+     AND order_date <  DATE_TRUNC('quarter',
+           (SELECT MAX(order_date) FROM contoso_served.v_contoso5_sales_line)) + INTERVAL 3 MONTH
+note: >-
+  THE SAMPLING-DATE RULING REVERSED THIS ANSWER, and that is the whole content of this reference.
+  Measured both ways on 2026-10-23:
+
+    "this quarter" = Q4 2026, from today's clock   0 lines          -> the answer is NO
+    "this quarter" = Q4 2025, from the vintage     11,121 lines     -> the answer is YES
+
+  On the clock the honest reply was "no" — and it was honest for the wrong reason. There are no
+  sales in Q4 2026 because THE DATA STOPS ON 2025-12-31, ten months earlier, not because nothing
+  was sold. A reader given "no" could not tell "we sold nothing this quarter" from "your question
+  is past the end of the warehouse", and that is exactly the silent-wrong-answer class this plane
+  exists to catch. It is the same distinction MQ-09 and MQ-13 hold for a missing country: False
+  and a refusal are different facts wearing one word.
+
+  THE WINDOW IS DERIVED, NOT TYPED. The SQL above takes `MAX(order_date)` from the relation and
+  truncates it to a quarter, so it re-derives the anchor on every run rather than carrying
+  2025-12-31 as a literal. That is the same canon the bundle's vintage records
+  (`mac.canon.scoped_latest` on `order.resolution.the_anchor_is_the_newest_order`), spelled inline
+  here because a reference must be runnable on its own. When the warehouse grows, this oracle
+  follows it and `tools/check_vintage_fresh.py` reports the drift against the recorded vintage.
+
+  THE ANSWER IS NOT JUST `true`, AND THE DISCLOSURE IS NOT OPTIONAL. A defaulted anchor obliges
+  the answer to say what it covered — `mac_runtime.vintage.AsOfAnchor.disclosure` renders it and
+  there is no flag that turns it off. The reply must carry: "Relative periods are anchored to
+  2025-12-31, this bundle's recorded vintage ... not today's date (2026-10-23)", and the window
+  2025-10-01 to 2025-12-31. A bare `true` with no window is the same defect as a bare `no`.
+
+  WHAT THIS QUESTION CANNOT DISCRIMINATE, stated so nobody reads more into a PASS than is there:
+  2025-12-31 is the LAST DAY of its own quarter, so "this quarter" and "this quarter to date"
+  resolve to the identical window here and the figures are the same. A case that separates those
+  two readings needs an anchor mid-quarter and this bundle has none.
+
+  THE SUPPORTING FIGURES, for a reader who wants more than the boolean: 11,121 lines over 4,641
+  distinct orders, 8,498,897.95 net revenue in USD, first order 2025-10-01 and last 2025-12-31 —
+  so the quarter is covered end to end, not by a single stray row.
+expected_by: agent
+expected_at: '2026-10-23'
+approved_by: null
+approved_at: null
+depends_on_rulings:
+- decisions/RULED-2026-10-23_the-sampling-date-is-the-newest-order.md
+awaiting_approval: >-
+  The boolean is re-runnable and it follows from the sampling date you ruled. What needs a
+  signature is that `true` WITH THE WINDOW DISCLOSED is the right answer here rather than a
+  refusal naming the end of the data. Under the pin the question is about a quarter the warehouse
+  covers, so a refusal would now be wrong — but the refusal was the right answer yesterday, and
+  the reference should record which of those two you want held.

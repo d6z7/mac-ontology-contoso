@@ -1,0 +1,52 @@
+id: ANCHOR_15
+question: What is the total floor space of our stores in square meters? (STORE-05)
+family: store_versioning
+derivation:
+  sql: SELECT sum(square_metres) FROM contoso_served.dim_store WHERE close_date IS NULL AND location_code
+    <> -1
+  raw_value: 86170
+  cross_check_sql: SELECT sum(s."SquareMeters") FROM main.store s WHERE s."CloseDate" IS NULL AND s."CountryCode"
+    <> '--'
+  cross_check_value: 86170
+  agree: true
+  comparison: numeric, tolerance 0.01 — the two routes read different relations (served, then the raw
+    landing)
+expected:
+  shape: scalar
+  value: 86170
+  tolerance: 0
+  pinned:
+    grain: one row per StoreCode - the CURRENT version
+    measure: SquareMeters
+assumptions: '86 170, NOT 99 300. OPERATOR RULING, 2026-09-30: "stores that are closed, restructured have
+  close date and are not active anymore; other stores without status do not have close date are ONLY stores
+  currently active and this is the scope of our interest in most questions." The population is now DECLARED,
+  not described: store.yaml#grounding.value_filter is `close_date IS NULL AND location_code <> -1`, read
+  by the planner and disclosed on every answer. The two clauses are the two things a store is not -- a
+  row with a close date is a store that ENDED, and location_code -1 is the online channel written as a
+  store.
+
+
+  99 300 summed one row per location INCLUDING the nine that have shut, so it counted the floor space
+  of shops that no longer exist. 109 120 -- the unfiltered sum -- also counted New Brunswick three times,
+  which has held three successive stores (1 105, 1 500, 3 500 m2). The active population counts each shop
+  once and only the shops there are.'
+authority: ruled
+authority_note: RULED, then DERIVED. The population is an operator ruling of 2026-09-30 (above); the figure
+  is computed from it by two routes, the served plane and the raw landing, which share no view definition.
+  An anchor can say the engine's number disagrees with the data; only a person can say which population
+  the question means, and here one did.
+cloned_from:
+  bundle: example/contoso
+  path: acceptance/anchors/ANCHOR_15.yaml
+  commit: e7465b1
+  cloned_at: '2026-09-29'
+verified_on_this_bundle:
+  measured_route: derivation.cross_check_sql (the landing, main.*, identical in both bundles)
+  value: 99300
+  status: agree
+  measured_at: '2026-09-29'
+  note: derivation.sql names the first bundle's served views and does not run here; the landing route
+    is the one measured on contoso5.duckdb. The served-plane derivation is owed.
+ruled_at: '2026-09-30'
+ruled_by: operator

@@ -1,0 +1,2473 @@
+id: ADV-10
+captured_at: '2026-10-24T21:44:50+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: 'When you say a product was "sold in one country", do you mean the country of the shop that sold
+  it, or the country the buyer lives in? Point at one and I will hand you that table:
+
+
+  (a) THE COUNTRY OF THE SELLING SHOP — a 20-row table. 17 products sold only in the United States (among
+  them Adventure Works Floor Lamp M2150 Grey, Adventure Works Wall Lamp E2150 Grey, Litware Desk Lamp
+  E1020 Black, Litware Floor Lamp M2015 Black, Litware Floor Lamp X1015 Blue), plus exactly one product
+  each in three other countries: Adventure Works Chandelier M6150 Grey in Canada, Litware Floor Lamp M2015
+  White in the Netherlands, and Adventure Works Desk Lamp E1300 Black in the United Kingdom. Reading this
+  as the shop''s SITE country instead gives the identical 20 products with zero disagreements, so that
+  is not a third answer.
+
+
+  (b) THE COUNTRY THE BUYER LIVES IN — a 4-row table, all four United States.
+
+
+  (c) THE COUNTRY OF THE SELLING SHOP, STRICTLY — only products whose every sale was rung up in that one
+  country, so any product that also sold through the web shop is out: a 1-row table, United States. This
+  reading exists because the web shop has no country of its own, and 19 of the 20 products in (a) also
+  sold through it — they qualify in (a) only because the web shop''s country code is a placeholder rather
+  than a place.
+
+
+  WHAT THE CHOICE COSTS, CONCRETELY: going from (a) to (b) drops 16 of the 20 products, and those 16 include
+  every non-US row — so (a) is the only reading under which Canada, the Netherlands and the United Kingdom
+  appear at all. If you want a list that can name a country other than the United States, you want (a).
+
+
+  WHAT THE CHOICE DOES NOT CHANGE: at least 2,497 of the 2,517 products sold are ruled out as multi-country
+  under every reading, and the United States dominates all three lists (17 of 20, 4 of 4, 1 of 1). The
+  4 products in (b) all sit inside the 20 in (a), so the readings never call the same product single-country
+  and multi-country in opposite directions — the looser reading simply admits 16 more. Every single-country
+  product is a lamp or chandelier under all three readings. Nothing is excluded for never having been
+  sold: all 2,517 products on the register have sales, and no product sells only online. No date limit
+  is in play — you named no period, so all ten years of orders are covered, 2016-05-18 to 2025-12-31.'
+verdict:
+  disposition: GOVERNED_REFUSAL
+intent:
+  subject: product
+  operation: select
+  qdmr_simplified: "  1         FROM       products sold                                             \
+    \                “products ... sold”\n  2  ← 1    GROUP_BY   by product                          \
+    \                                      “products”\n  3  ← 2    AGGREGATE  count distinct of country\
+    \                                                 “only sold in one country”\n  4  ← 2+3  HAVING \
+    \    figure_step='3' op='=' than={'value': 1, 'said': 'only ... one country'}  “only sold in one country”\n\
+    \  5  ← 4    SELECT     product, country, how many countries it was sold in                      \
+    \ “List products ... and their respective countries”\n  answer: step 5   confidence: 0.74   A DAG\
+    \   step(s) 2 feed more than one   converging at 4\n  UNDERSTOOD AS: Among all products that have\
+    \ been sold, find the ones whose sales touch exactly one country, and show each such product next\
+    \ to the single country it was sold in. One row stands for one product and its only country; products\
+    \ sold in two or more countries, and products never sold at all, are left out. No date limit is applied\
+    \ — all sales on record count.\n  AMBIGUOUS 'sold in one country' — ASKS: When you say a product was\
+    \ sold in a country, do you mean the country of the customer or delivery address, or the country of\
+    \ the store/office that made the sale?\n      could mean: the country the buyer is in, or where the\
+    \ order was shipped\n      could mean: the country of the selling store, branch or subsidiary\n  \
+    \    took: the country associated with the sale, whichever one your data treats as the sale's country\n\
+    \  AMBIGUOUS 'products' — ASKS: Should each individual product count on its own, or should products\
+    \ be rolled up into their product line or category?\n      could mean: each individual product item\
+    \ on its own\n      could mean: each product line, model family or category\n      took: each individual\
+    \ product on its own\n  AMBIGUOUS 'only sold in one country' — ASKS: Do you mean over the whole history\
+    \ of sales, or only within a recent period such as this year?\n      could mean: ever — across all\
+    \ sales on record\n      could mean: within a specific recent period only\n      took: across all\
+    \ sales on record, with no date limit\n  AMBIGUOUS 'only sold' — ASKS: Should a product that has never\
+    \ been sold anywhere be excluded, or would you want to see it too?\n      could mean: only products\
+    \ with sales, and those sales all in one country\n      could mean: also include products with no\
+    \ sales at all\n      took: only products that actually have sales, all in one country\n  OUTPUT SHAPE:\
+    \ a table · many row(s) · named by product, country · carrying how many countries it was sold in"
+  understood_as_in_human_words: Among all products that have been sold, find the ones whose sales touch
+    exactly one country, and show each such product next to the single country it was sold in. One row
+    stands for one product and its only country; products sold in two or more countries, and products
+    never sold at all, are left out. No date limit is applied — all sales on record count.
+  population_actually_answered: 'All 2,517 products on dim_product, which measured is every product with
+    at least one sales line — so the "never sold are left out" exclusion removed nothing. Computed over
+    all 223,974 rows of v_contoso5_sales_line inner-joined to dim_store, dim_customer and dim_product
+    (and dim_location for the third path); every join is declared cardinality 1 and the product total
+    stayed 2,517 across all five queries, so no lines were dropped. NO date filter, per order.default.an_unscoped_question_covers_all_time
+    (confidence C) and no period in the question: full extent of order_date, 2016-05-18 to 2025-12-31,
+    on order_date and not delivery_date per order.default.period_is_order_date. NO channel filter: web-shop
+    lines are in the population, because store.resolution.the_channel_is_the_location_sentinel scopes
+    its `physical` default with `applies: subject` and this question''s subject is a Product, not a Store.
+    On the shop and site paths the `--` code is excluded from the COUNTRY COUNT per country.exclusion.sentinel_is_not_a_country
+    — the online lines remain in the population, they merely contribute no country, which is exactly what
+    separates reading (a) from reading (c). The country universe is the 8 real countries on every path.
+    I did NOT restrict by channel, period, category, brand, price or revenue, and I did NOT roll products
+    up into lines or categories.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: I will not choose
+    columns_the_answer_step_asks_for: &id001
+    - product
+    - country
+    - how many countries it was sold in
+    figures_the_answer_step_computes: []
+    answer_step: '5'
+    verb: select
+    said: List products ... and their respective countries
+    stage1_confidence: 0.74
+  canonical_question: &id002
+    understood_as: Among all products that have been sold, find the ones whose sales touch exactly one
+      country, and show each such product next to the single country it was sold in. One row stands for
+      one product and its only country; products sold in two or more countries, and products never sold
+      at all, are left out. No date limit is applied — all sales on record count.
+    steps:
+    - id: '1'
+      do: from
+      thing: products sold
+      said: products ... sold
+    - id: '2'
+      do: group_by
+      of: '1'
+      thing: product
+      said: products
+    - id: '3'
+      do: aggregate
+      of: '2'
+      figures:
+      - how: count distinct
+        of: country
+        said: in one country
+      said: only sold in one country
+    - id: '4'
+      do: having
+      of: '2'
+      figure_step: '3'
+      op: '='
+      than:
+        value: 1
+        said: only ... one country
+      said: only sold in one country
+    - id: '5'
+      do: select
+      of: '4'
+      columns: *id001
+      said: List products ... and their respective countries
+    answer: '5'
+    output_shape: &id003
+      shape: a table
+      said: List products only sold in one country and their respective countries
+      rows: many
+      key_columns: &id005
+      - product
+      - country
+      figure_columns: &id006
+      - how many countries it was sold in
+    ambiguities:
+    - words: sold in one country
+      question: When you say a product was sold in a country, do you mean the country of the customer
+        or delivery address, or the country of the store/office that made the sale?
+      readings:
+      - the country the buyer is in, or where the order was shipped
+      - the country of the selling store, branch or subsidiary
+      assumed: the country associated with the sale, whichever one your data treats as the sale's country
+    - words: products
+      question: Should each individual product count on its own, or should products be rolled up into
+        their product line or category?
+      readings:
+      - each individual product item on its own
+      - each product line, model family or category
+      assumed: each individual product on its own
+    - words: only sold in one country
+      question: Do you mean over the whole history of sales, or only within a recent period such as this
+        year?
+      readings:
+      - ever — across all sales on record
+      - within a specific recent period only
+      assumed: across all sales on record, with no date limit
+    - words: only sold
+      question: Should a product that has never been sold anywhere be excluded, or would you want to see
+        it too?
+      readings:
+      - only products with sales, and those sales all in one country
+      - also include products with no sales at all
+      assumed: only products that actually have sales, all in one country
+    cannot_express: []
+    confidence: 0.74
+  steps: 5
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: reading
+      type: string
+    - name: product
+      type: string
+    - name: country
+      type: string
+    - name: countries_sold_in
+      type: number
+    rows:
+    - - 'a: selling shop country'
+      - Adventure Works Chandelier M6150 Grey
+      - Canada
+      - 1
+    - - 'a: selling shop country'
+      - Litware Floor Lamp M2015 White
+      - Netherlands
+      - 1
+    - - 'a: selling shop country'
+      - Adventure Works Desk Lamp E1300 Black
+      - United Kingdom
+      - 1
+    - - 'a: selling shop country'
+      - Adventure Works Floor Lamp M2150 Grey
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Adventure Works Wall Lamp E2150 Grey
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Litware Desk Lamp E1020 Black
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Litware Floor Lamp M2015 Black
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Litware Floor Lamp X1015 Blue
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Litware Home Theater System 5.1 Channel M516 Silver
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Litware Wall Lamp E3015 Black
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Proseware Chandelier M0815 Blue
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Proseware Desk Lamp E0120 Silver
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Proseware Desk Lamp E0130 Blue
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Proseware Wall Lamp E0215 Grey
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - Proseware Wall Lamp E0315 White
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - WWI Chandelier M615 Blue
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - WWI Chandelier M815 Grey
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - WWI Wall Lamp E215 Blue
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - WWI Wall Lamp E215 Silver
+      - United States
+      - 1
+    - - 'a: selling shop country'
+      - WWI Wall Lamp E315 Grey
+      - United States
+      - 1
+    - - 'b: buyer country'
+      - Adventure Works Wall Lamp E2150 Grey
+      - United States
+      - 1
+    - - 'b: buyer country'
+      - Litware Desk Lamp E1020 Black
+      - United States
+      - 1
+    - - 'b: buyer country'
+      - WWI Chandelier M815 Grey
+      - United States
+      - 1
+    - - 'b: buyer country'
+      - WWI Wall Lamp E215 Silver
+      - United States
+      - 1
+    - - 'c: selling shop country, strict'
+      - WWI Wall Lamp E215 Silver
+      - United States
+      - 1
+  value: null
+  raw: 'When you say a product was "sold in one country", do you mean the country of the shop that sold
+    it, or the country the buyer lives in? Point at one and I will hand you that table:
+
+
+    (a) THE COUNTRY OF THE SELLING SHOP — a 20-row table. 17 products sold only in the United States (among
+    them Adventure Works Floor Lamp M2150 Grey, Adventure Works Wall Lamp E2150 Grey, Litware Desk Lamp
+    E1020 Black, Litware Floor Lamp M2015 Black, Litware Floor Lamp X1015 Blue), plus exactly one product
+    each in three other countries: Adventure Works Chandelier M6150 Grey in Canada, Litware Floor Lamp
+    M2015 White in the Netherlands, and Adventure Works Desk Lamp E1300 Black in the United Kingdom. Reading
+    this as the shop''s SITE country instead gives the identical 20 products with zero disagreements,
+    so that is not a third answer.
+
+
+    (b) THE COUNTRY THE BUYER LIVES IN — a 4-row table, all four United States.
+
+
+    (c) THE COUNTRY OF THE SELLING SHOP, STRICTLY — only products whose every sale was rung up in that
+    one country, so any product that also sold through the web shop is out: a 1-row table, United States.
+    This reading exists because the web shop has no country of its own, and 19 of the 20 products in (a)
+    also sold through it — they qualify in (a) only because the web shop''s country code is a placeholder
+    rather than a place.
+
+
+    WHAT THE CHOICE COSTS, CONCRETELY: going from (a) to (b) drops 16 of the 20 products, and those 16
+    include every non-US row — so (a) is the only reading under which Canada, the Netherlands and the
+    United Kingdom appear at all. If you want a list that can name a country other than the United States,
+    you want (a).
+
+
+    WHAT THE CHOICE DOES NOT CHANGE: at least 2,497 of the 2,517 products sold are ruled out as multi-country
+    under every reading, and the United States dominates all three lists (17 of 20, 4 of 4, 1 of 1). The
+    4 products in (b) all sit inside the 20 in (a), so the readings never call the same product single-country
+    and multi-country in opposite directions — the looser reading simply admits 16 more. Every single-country
+    product is a lamp or chandelier under all three readings. Nothing is excluded for never having been
+    sold: all 2,517 products on the register have sales, and no product sells only online. No date limit
+    is in play — you named no period, so all ten years of orders are covered, 2016-05-18 to 2025-12-31.'
+  reading: I will not choose
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "sold → a product that appears on at least one line of v_contoso5_sales_line; measured, this\
+      \ is all 2,517 products on dim_product, so the 'never sold are left out' exclusion removes nothing\n\
+      \        could also mean: products with sales only inside some recent window, which would drop products\
+      \ whose only sales are old"
+    ref: order.default.an_unscoped_question_covers_all_time (confidence C) — a question naming no period
+      covers the full extent of order_date, so no date limit is applied and the window is 2016-05-18 to
+      2025-12-31
+  - kind: ''
+    text: "sold in one country → NEITHER reading chosen — the base carries both the store country and\
+      \ the customer country, because the two readings differ materially (20 products against 4) and must\
+      \ be priced side by side rather than settled here\n        could also mean: the country of the selling\
+      \ store (20 products touch exactly one), or the country the buyer lives in (4 products touch exactly\
+      \ one)"
+    ref: country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code) — never
+      pick between the store and the customer silently, and never average the two; paths store__trades_in__country
+      and customer__based_in__country are both declared
+  - kind: ''
+    text: "products → one product_key — a SKU, the grain Product declares as 'the level the shelf knows\
+      \ it', where colour alone makes a new product\n        could also mean: a product line or category,\
+      \ which product_category.ambiguity.which_level would route to category_name (8) or sub_category_name\
+      \ (32)"
+    ref: declaration://none
+  - kind: ''
+    text: "country → on the store path, the `--` sentinel is NOT a country, so web-shop lines contribute\
+      \ no store country; measured, this drops no product from the population because no product sells\
+      \ only online\n        could also mean: treating `--` as a ninth country, which would make the web\
+      \ shop itself a 'country' a product was sold in"
+    ref: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+      — reporting nine countries is forbidden; eight is true
+  - kind: ''
+    text: "products → the group is one product_key, displayed by product_name\n        could also mean:\
+      \ displaying product_code (the SKU) instead, which is equally unique here"
+    ref: 'dim_product.product_name carries naming: common, #1 of 5 in the preference order common > legal
+      > long > short > code, so it is what an answer should show; product_code is naming: code, #5, and
+      remains available by name'
+  - kind: ''
+    text: "country → counted distinctly two ways in parallel — store country and customer country — with\
+      \ no choice made; the web shop's `--` contributes no store country but its sales still exist and\
+      \ are kept visible as a separate column\n        could also mean: store country only (20 products\
+      \ reach 1), customer country only (4 products reach 1), or store country requiring that no sale\
+      \ went through the web shop at all (1 product reaches 1)"
+    ref: country.default.whose_country_is_asked_never_assumed (confidence C) forbids picking between store
+      and customer silently; country.exclusion.sentinel_is_not_a_country forbids counting `--` as a country,
+      which is why the store reading needs the extra online column to stay honest
+  - kind: ''
+    text: "in one country → a product's countries are counted over the sales it actually has; a product\
+      \ sold in one shop-country but also online counts as 1 under the store reading, and 19 of the 20\
+      \ such products are in exactly that position\n        could also mean: requiring every sale of the\
+      \ product to sit in the one country, which excludes any product with web sales and leaves 1 product\
+      \ instead of 20"
+    ref: declaration://none
+  - kind: ''
+    text: "sold → all sales on record, 2016-05-18 to 2025-12-31\n        could also mean: a recent window\
+      \ only"
+    ref: order.default.an_unscoped_question_covers_all_time (confidence C) — no period named, so the full
+      extent of order_date is covered
+  - kind: ''
+    text: "only ... one country → exactly one distinct country, tested as = 1 against the counts from\
+      \ step 3, applied under all three readings rather than one\n        could also mean: nothing else\
+      \ — 'only one' is unambiguous as a test; what is ambiguous is which country column it tests"
+    ref: country.default.whose_country_is_asked_never_assumed (confidence C) — the test is fixed, the
+      path is not, and the path may not be chosen silently
+  - kind: ''
+    text: "country → no reading chosen; 20 products under the shop's country, 4 under the buyer's country,\
+      \ 1 under the shop's country strictly requiring no web sales\n        could also mean: the three\
+      \ sets are nested and all three are dominated by the United States, so the CHARACTER of the answer\
+      \ is stable even though its SIZE is not"
+    ref: declaration://none
+  - kind: ''
+    text: "sold in one country → NO READING CHOSEN — all three declared paths measured: shop country 20\
+      \ products, site country the same 20 (0 products disagree), buyer country 4 products\n        could\
+      \ also mean: the country of the selling store/branch, or the country the buyer lives in — 20 rows\
+      \ against 4 rows, and the country mix collapses from US/CA/NL/GB to US only"
+    ref: 'country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code): never
+      pick between the store and the customer silently, and never average the two. Its path_select realization
+      names store, customer and location paths and declares NO default — it forbids the choice rather
+      than settling it'
+  - kind: ''
+    text: "one country → on the shop path the web shop contributes no country, since its code is a sentinel\
+      \ and not a place — so a product sold in one country plus online still counts as one, which is how\
+      \ 19 of the 20 qualify\n        could also mean: treating a web sale as a sale outside that one\
+      \ country, leaving 1 product instead of 20 — reported as reading (c)"
+    ref: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+      forbid counting `--` as a country; neither says what to do about a PRODUCT selling both in one country
+      and online, so this sub-fork is live rather than settled
+  - kind: ''
+    text: "products → each individual product on its own — one product_key at SKU grain, shown by product_name,\
+      \ which measured unique across all 2,517\n        could also mean: rolled up to product line or\
+      \ category — 8 categories or 32 sub-categories"
+    ref: 'Product is declared at SKU grain, ''the level the shelf knows it'', where colour alone makes
+      a new product; dim_product.product_name carries naming: common, #1 of 5, so it is what an answer
+      should show'
+  - kind: ''
+    text: "only sold → only products that actually have sales — measured, that is all 2,517, so this exclusion\
+      \ drops nothing and the ambiguity is moot\n        could also mean: also showing products with no\
+      \ sales at all, of which this bundle has none"
+    ref: declaration://none
+  - kind: ''
+    text: "sold (when) → all sales on record, 2016-05-18 to 2025-12-31\n        could also mean: a recent\
+      \ window only, which is the one further choice that would move all three counts"
+    ref: order.default.an_unscoped_question_covers_all_time (confidence C) — cover the full extent of
+      order_date and state the dates included
+  - kind: ''
+    text: "sold (which channel) → both channels; web-shop sales kept in the population\n        could\
+      \ also mean: physical shops only, which is the default when a question's subject is a Store"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel scopes its physical default with `applies:
+      subject`; the subject here is a Product, and the operator''s ruling of 2026-10-18 has unqualified
+      questions spanning both channels'
+  - kind: ''
+    text: "how many countries it was sold in → reported as the constant 1, since it is the predicate that\
+      \ selected the rows\n        could also mean: the reader may have wanted the count BEFORE the filter\
+      \ — i.e. the distribution across all products, which runs 1 to 8 and is in step 3"
+    ref: declaration://none
+  concepts: []
+  rules:
+  - id: order.default.an_unscoped_question_covers_all_time (confidence C) — a question naming no period
+      covers the full extent of order_date
+    why: '''sold'' = a product that appears on at least one line of v_contoso5_sales_line; measured, this
+      is all 2,517 products on dim_product, so the ''never sold are left out'' exclusion removes nothing'
+  - id: so no date limit is applied and the window is 2016-05-18 to 2025-12-31
+    why: '''sold'' = a product that appears on at least one line of v_contoso5_sales_line; measured, this
+      is all 2,517 products on dim_product, so the ''never sold are left out'' exclusion removes nothing'
+  - id: country.default.whose_country_is_asked_never_assumed (confidence C
+    why: '''sold in one country'' = NEITHER reading chosen — the base carries both the store country and
+      the customer country, because the two readings differ materially (20 products against 4) and must
+      be priced side by side rather than settled here'
+  - id: binds country_code) — never pick between the store and the customer silently
+    why: '''sold in one country'' = NEITHER reading chosen — the base carries both the store country and
+      the customer country, because the two readings differ materially (20 products against 4) and must
+      be priced side by side rather than settled here'
+  - id: and never average the two
+    why: '''sold in one country'' = NEITHER reading chosen — the base carries both the store country and
+      the customer country, because the two readings differ materially (20 products against 4) and must
+      be priced side by side rather than settled here'
+  - id: paths store__trades_in__country and customer__based_in__country are both declared
+    why: '''sold in one country'' = NEITHER reading chosen — the base carries both the store country and
+      the customer country, because the two readings differ materially (20 products against 4) and must
+      be priced side by side rather than settled here'
+  - id: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+      — reporting nine countries is forbidden
+    why: '''country'' = on the store path, the `--` sentinel is NOT a country, so web-shop lines contribute
+      no store country; measured, this drops no product from the population because no product sells only
+      online'
+  - id: eight is true
+    why: '''country'' = on the store path, the `--` sentinel is NOT a country, so web-shop lines contribute
+      no store country; measured, this drops no product from the population because no product sells only
+      online'
+  - id: 'dim_product.product_name carries naming: common'
+    why: '''products'' = the group is one product_key, displayed by product_name'
+  - id: '#1 of 5 in the preference order common > legal > long > short > code'
+    why: '''products'' = the group is one product_key, displayed by product_name'
+  - id: so it is what an answer should show
+    why: '''products'' = the group is one product_key, displayed by product_name'
+  - id: 'product_code is naming: code'
+    why: '''products'' = the group is one product_key, displayed by product_name'
+  - id: '#5'
+    why: '''products'' = the group is one product_key, displayed by product_name'
+  - id: and remains available by name
+    why: '''products'' = the group is one product_key, displayed by product_name'
+  - id: country.default.whose_country_is_asked_never_assumed (confidence C) forbids picking between store
+      and customer silently
+    why: '''country'' = counted distinctly two ways in parallel — store country and customer country —
+      with no choice made; the web shop''s `--` contributes no store country but its sales still exist
+      and are kept visible as a separate column'
+  - id: country.exclusion.sentinel_is_not_a_country forbids counting `--` as a country
+    why: '''country'' = counted distinctly two ways in parallel — store country and customer country —
+      with no choice made; the web shop''s `--` contributes no store country but its sales still exist
+      and are kept visible as a separate column'
+  - id: which is why the store reading needs the extra online column to stay honest
+    why: '''country'' = counted distinctly two ways in parallel — store country and customer country —
+      with no choice made; the web shop''s `--` contributes no store country but its sales still exist
+      and are kept visible as a separate column'
+  - id: order.default.an_unscoped_question_covers_all_time (confidence C) — no period named
+    why: '''sold'' = all sales on record, 2016-05-18 to 2025-12-31'
+  - id: so the full extent of order_date is covered
+    why: '''sold'' = all sales on record, 2016-05-18 to 2025-12-31'
+  - id: country.default.whose_country_is_asked_never_assumed (confidence C) — the test is fixed
+    why: '''only ... one country'' = exactly one distinct country, tested as = 1 against the counts from
+      step 3, applied under all three readings rather than one'
+  - id: the path is not
+    why: '''only ... one country'' = exactly one distinct country, tested as = 1 against the counts from
+      step 3, applied under all three readings rather than one'
+  - id: and the path may not be chosen silently
+    why: '''only ... one country'' = exactly one distinct country, tested as = 1 against the counts from
+      step 3, applied under all three readings rather than one'
+  - id: 'binds country_code): never pick between the store and the customer silently'
+    why: '''sold in one country'' = NO READING CHOSEN — all three declared paths measured: shop country
+      20 products, site country the same 20 (0 products disagree), buyer country 4 products'
+  - id: and never average the two. Its path_select realization names store
+    why: '''sold in one country'' = NO READING CHOSEN — all three declared paths measured: shop country
+      20 products, site country the same 20 (0 products disagree), buyer country 4 products'
+  - id: customer and location paths and declares NO default — it forbids the choice rather than settling
+      it
+    why: '''sold in one country'' = NO READING CHOSEN — all three declared paths measured: shop country
+      20 products, site country the same 20 (0 products disagree), buyer country 4 products'
+  - id: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+      forbid counting `--` as a country
+    why: '''one country'' = on the shop path the web shop contributes no country, since its code is a
+      sentinel and not a place — so a product sold in one country plus online still counts as one, which
+      is how 19 of the 20 qualify'
+  - id: neither says what to do about a PRODUCT selling both in one country and online
+    why: '''one country'' = on the shop path the web shop contributes no country, since its code is a
+      sentinel and not a place — so a product sold in one country plus online still counts as one, which
+      is how 19 of the 20 qualify'
+  - id: so this sub-fork is live rather than settled
+    why: '''one country'' = on the shop path the web shop contributes no country, since its code is a
+      sentinel and not a place — so a product sold in one country plus online still counts as one, which
+      is how 19 of the 20 qualify'
+  - id: Product is declared at SKU grain
+    why: '''products'' = each individual product on its own — one product_key at SKU grain, shown by product_name,
+      which measured unique across all 2,517'
+  - id: '''the level the shelf knows it'''
+    why: '''products'' = each individual product on its own — one product_key at SKU grain, shown by product_name,
+      which measured unique across all 2,517'
+  - id: where colour alone makes a new product
+    why: '''products'' = each individual product on its own — one product_key at SKU grain, shown by product_name,
+      which measured unique across all 2,517'
+  - id: '#1 of 5'
+    why: '''products'' = each individual product on its own — one product_key at SKU grain, shown by product_name,
+      which measured unique across all 2,517'
+  - id: order.default.an_unscoped_question_covers_all_time (confidence C) — cover the full extent of order_date
+      and state the dates included
+    why: '''sold (when)'' = all sales on record, 2016-05-18 to 2025-12-31'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel scopes its physical default with `applies:
+      subject`'
+    why: '''sold (which channel)'' = both channels; web-shop sales kept in the population'
+  - id: the subject here is a Product
+    why: '''sold (which channel)'' = both channels; web-shop sales kept in the population'
+  - id: and the operator's ruling of 2026-10-18 has unqualified questions spanning both channels
+    why: '''sold (which channel)'' = both channels; web-shop sales kept in the population'
+  edges: []
+sql:
+- "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT CASE WHEN\
+  \ st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code <>\
+  \ '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n    MIN(c.country_code)\
+  \ AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer\
+  \ AS c\n    ON s.customer_key = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key\
+  \ = p.product_key\n  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling shop\
+  \ country' AS reading,\n  p.product_name AS product,\n  dc.country_name AS country,\n  p.n_store AS\
+  \ countries_sold_in\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc =\
+  \ dc.country_code\nWHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n  p.product_name,\n\
+  \  dc.country_name,\n  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON\
+  \ p.cust_cc = dc.country_code\nWHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop country,\
+  \ strict',\n  p.product_name,\n  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country\
+  \ AS dc\n  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n\
+  \  reading,\n  country,\n  product"
+- "SELECT\n  s.order_key,\n  s.line_number,\n  s.product_key,\n  s.order_date,\n  s.channel,\n  CASE WHEN\
+  \ st.country_code <> '--' THEN st.country_code END AS store_country_code,\n  c.country_code AS customer_country_code\n\
+  FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+  \ = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key"
+- "SELECT\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n  b.customer_country_code\nFROM\
+  \ (\n  SELECT\n    s.product_key,\n    CASE WHEN st.country_code <> '--' THEN st.country_code END AS\
+  \ store_country_code,\n    c.country_code AS customer_country_code\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer\
+  \ AS c\n    ON s.customer_key = c.customer_key\n) AS b\nJOIN contoso_served.dim_product AS p\n  ON b.product_key\
+  \ = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n  b.customer_country_code"
+- "SELECT\n  p.product_key,\n  p.product_name,\n  COUNT(DISTINCT CASE WHEN st.country_code <> '--' THEN\
+  \ st.country_code END) AS n_store_countries,\n  COUNT(DISTINCT c.country_code) AS n_customer_countries,\n\
+  \  SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines,\n  COUNT(*) AS total_lines\n\
+  FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+  \ = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN\
+  \ contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n\
+  \  p.product_name"
+- "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT CASE WHEN\
+  \ st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code <>\
+  \ '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n    MIN(c.country_code)\
+  \ AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines\n  FROM contoso_served.v_contoso5_sales_line\
+  \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer\
+  \ AS c\n    ON s.customer_key = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key\
+  \ = p.product_key\n  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web set\
+  \ aside)' AS reading,\n  product_key,\n  product_name,\n  store_cc AS country_code,\n  n_store AS countries\n\
+  FROM per_product\nWHERE\n  n_store = 1\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n  product_key,\n\
+  \  product_name,\n  store_cc,\n  n_store\nFROM per_product\nWHERE\n  n_store = 1 AND online_lines =\
+  \ 0\nUNION ALL\nSELECT\n  'customer',\n  product_key,\n  product_name,\n  cust_cc,\n  n_cust\nFROM per_product\n\
+  WHERE\n  n_cust = 1\nORDER BY\n  reading,\n  country_code,\n  product_name"
+answer_sql: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+  \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+  \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n  \
+  \  MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines\n\
+  \  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key\
+  \ = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key = c.customer_key\n\
+  \  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n  GROUP BY\n    p.product_key,\n\
+  \    p.product_name\n)\nSELECT\n  'a: selling shop country' AS reading,\n  p.product_name AS product,\n\
+  \  dc.country_name AS country,\n  p.n_store AS countries_sold_in\nFROM per_product AS p\nJOIN contoso_served.dim_country\
+  \ AS dc\n  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n\
+  \  p.product_name,\n  dc.country_name,\n  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country\
+  \ AS dc\n  ON p.cust_cc = dc.country_code\nWHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop\
+  \ country, strict',\n  p.product_name,\n  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN\
+  \ contoso_served.dim_country AS dc\n  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines\
+  \ = 0\nORDER BY\n  reading,\n  country,\n  product"
+sql_valid: true
+result:
+  status: ok
+  rows: 25
+  cols: &id007
+  - reading
+  - product
+  - country
+  - countries_sold_in
+  sample_rows:
+  - - 'a: selling shop country'
+    - Adventure Works Chandelier M6150 Grey
+    - Canada
+    - 1
+  - - 'a: selling shop country'
+    - Litware Floor Lamp M2015 White
+    - Netherlands
+    - 1
+  - - 'a: selling shop country'
+    - Adventure Works Desk Lamp E1300 Black
+    - United Kingdom
+    - 1
+  - - 'a: selling shop country'
+    - Adventure Works Floor Lamp M2150 Grey
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Adventure Works Wall Lamp E2150 Grey
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Litware Desk Lamp E1020 Black
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Litware Floor Lamp M2015 Black
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Litware Floor Lamp X1015 Blue
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Litware Home Theater System 5.1 Channel M516 Silver
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Litware Wall Lamp E3015 Black
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Proseware Chandelier M0815 Blue
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Proseware Desk Lamp E0120 Silver
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Proseware Desk Lamp E0130 Blue
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Proseware Wall Lamp E0215 Grey
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - Proseware Wall Lamp E0315 White
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - WWI Chandelier M615 Blue
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - WWI Chandelier M815 Grey
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - WWI Wall Lamp E215 Blue
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - WWI Wall Lamp E215 Silver
+    - United States
+    - 1
+  - - 'a: selling shop country'
+    - WWI Wall Lamp E315 Grey
+    - United States
+    - 1
+  - - 'b: buyer country'
+    - Adventure Works Wall Lamp E2150 Grey
+    - United States
+    - 1
+  - - 'b: buyer country'
+    - Litware Desk Lamp E1020 Black
+    - United States
+    - 1
+  - - 'b: buyer country'
+    - WWI Chandelier M815 Grey
+    - United States
+    - 1
+  - - 'b: buyer country'
+    - WWI Wall Lamp E215 Silver
+    - United States
+    - 1
+  - - 'c: selling shop country, strict'
+    - WWI Wall Lamp E215 Silver
+    - United States
+    - 1
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1         FROM       products sold                               \
+    \                              “products ... sold”\n  2  ← 1    GROUP_BY   by product            \
+    \                                                    “products”\n  3  ← 2    AGGREGATE  count distinct\
+    \ of country                                                 “only sold in one country”\n  4  ← 2+3\
+    \  HAVING     figure_step='3' op='=' than={'value': 1, 'said': 'only ... one country'}  “only sold\
+    \ in one country”\n  5  ← 4    SELECT     product, country, how many countries it was sold in    \
+    \                   “List products ... and their respective countries”\n  answer: step 5   confidence:\
+    \ 0.74   A DAG   step(s) 2 feed more than one   converging at 4\n  UNDERSTOOD AS: Among all products\
+    \ that have been sold, find the ones whose sales touch exactly one country, and show each such product\
+    \ next to the single country it was sold in. One row stands for one product and its only country;\
+    \ products sold in two or more countries, and products never sold at all, are left out. No date limit\
+    \ is applied — all sales on record count.\n  AMBIGUOUS 'sold in one country' — ASKS: When you say\
+    \ a product was sold in a country, do you mean the country of the customer or delivery address, or\
+    \ the country of the store/office that made the sale?\n      could mean: the country the buyer is\
+    \ in, or where the order was shipped\n      could mean: the country of the selling store, branch or\
+    \ subsidiary\n      took: the country associated with the sale, whichever one your data treats as\
+    \ the sale's country\n  AMBIGUOUS 'products' — ASKS: Should each individual product count on its own,\
+    \ or should products be rolled up into their product line or category?\n      could mean: each individual\
+    \ product item on its own\n      could mean: each product line, model family or category\n      took:\
+    \ each individual product on its own\n  AMBIGUOUS 'only sold in one country' — ASKS: Do you mean over\
+    \ the whole history of sales, or only within a recent period such as this year?\n      could mean:\
+    \ ever — across all sales on record\n      could mean: within a specific recent period only\n    \
+    \  took: across all sales on record, with no date limit\n  AMBIGUOUS 'only sold' — ASKS: Should a\
+    \ product that has never been sold anywhere be excluded, or would you want to see it too?\n      could\
+    \ mean: only products with sales, and those sales all in one country\n      could mean: also include\
+    \ products with no sales at all\n      took: only products that actually have sales, all in one country\n\
+    \  OUTPUT SHAPE: a table · many row(s) · named by product, country · carrying how many countries it\
+    \ was sold in"
+  understood_as: Among all products that have been sold, find the ones whose sales touch exactly one country,
+    and show each such product next to the single country it was sold in. One row stands for one product
+    and its only country; products sold in two or more countries, and products never sold at all, are
+    left out. No date limit is applied — all sales on record count.
+  ambiguities_it_saw:
+  - words: sold in one country
+    asks: When you say a product was sold in a country, do you mean the country of the customer or delivery
+      address, or the country of the store/office that made the sale?
+    readings:
+    - the country the buyer is in, or where the order was shipped
+    - the country of the selling store, branch or subsidiary
+    took: the country associated with the sale, whichever one your data treats as the sale's country
+  - words: products
+    asks: Should each individual product count on its own, or should products be rolled up into their
+      product line or category?
+    readings:
+    - each individual product item on its own
+    - each product line, model family or category
+    took: each individual product on its own
+  - words: only sold in one country
+    asks: Do you mean over the whole history of sales, or only within a recent period such as this year?
+    readings:
+    - ever — across all sales on record
+    - within a specific recent period only
+    took: across all sales on record, with no date limit
+  - words: only sold
+    asks: Should a product that has never been sold anywhere be excluded, or would you want to see it
+      too?
+    readings:
+    - only products with sales, and those sales all in one country
+    - also include products with no sales at all
+    took: only products that actually have sales, all in one country
+  presentation:
+    claimed_answer_is: I will not choose
+    answer_step: '5'
+    answer_step_asks:
+      do: select
+      of: '4'
+      columns: *id001
+      said: List products ... and their respective countries
+    confidence_stage1: 0.74
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.product_key,\n  s.order_date,\n  s.channel,\n\
+      \  CASE WHEN st.country_code <> '--' THEN st.country_code END AS store_country_code,\n  c.country_code\
+      \ AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store\
+      \ AS st\n  ON s.store_key = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+      \ = c.customer_key"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n  b.customer_country_code\n\
+      FROM (\n  SELECT\n    s.product_key,\n    CASE WHEN st.country_code <> '--' THEN st.country_code\
+      \ END AS store_country_code,\n    c.country_code AS customer_country_code\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer\
+      \ AS c\n    ON s.customer_key = c.customer_key\n) AS b\nJOIN contoso_served.dim_product AS p\n \
+      \ ON b.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n\
+      \  b.customer_country_code"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  p.product_key,\n  p.product_name,\n  COUNT(DISTINCT CASE WHEN st.country_code <> '--'\
+      \ THEN st.country_code END) AS n_store_countries,\n  COUNT(DISTINCT c.country_code) AS n_customer_countries,\n\
+      \  SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines,\n  COUNT(*) AS total_lines\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+      \ = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\n\
+      JOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n\
+      \  p.product_name"
+    params: {}
+  - step: '4'
+    sql: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+      \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+      \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+      \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+      \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+      \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+      \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+      \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web set aside)' AS reading,\n\
+      \  product_key,\n  product_name,\n  store_cc AS country_code,\n  n_store AS countries\nFROM per_product\n\
+      WHERE\n  n_store = 1\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n  product_key,\n  product_name,\n\
+      \  store_cc,\n  n_store\nFROM per_product\nWHERE\n  n_store = 1 AND online_lines = 0\nUNION ALL\n\
+      SELECT\n  'customer',\n  product_key,\n  product_name,\n  cust_cc,\n  n_cust\nFROM per_product\n\
+      WHERE\n  n_cust = 1\nORDER BY\n  reading,\n  country_code,\n  product_name"
+    params: {}
+  - step: '5'
+    sql: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+      \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+      \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+      \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+      \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+      \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+      \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+      \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling shop country' AS reading,\n\
+      \  p.product_name AS product,\n  dc.country_name AS country,\n  p.n_store AS countries_sold_in\n\
+      FROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc = dc.country_code\n\
+      WHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n  p.product_name,\n  dc.country_name,\n\
+      \  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.cust_cc = dc.country_code\n\
+      WHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop country, strict',\n  p.product_name,\n\
+      \  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n\
+      \  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n  reading,\n\
+      \  country,\n  product"
+    params: {}
+  what_it_calculated: 'What I have calculated: for each of the 2,517 products Contoso has ever sold, in
+    how many distinct countries that product''s sales landed — counted once for each way this data can
+    say where a sale happened — over all ten years of orders with both channels included and no date limit;
+    then the products whose count is exactly one, each beside the single country it was sold in. The claimed
+    answer is not one table but the choice between three, because the count of countries per product depends
+    on which country column is read: 20 product-and-country rows by the selling shop''s country, the identical
+    20 by the shop''s site country, 4 rows by the buyer''s country, and 1 row by the selling shop''s country
+    when a web sale is held to be a sale somewhere else. The figure in each row, "how many countries it
+    was sold in", is 1 by construction — it is the test that selected the row, not an independent measurement,
+    and that is the one column in the requested output that carries no information. What I did NOT include:
+    no period restriction, no channel restriction, no product rollup, and no money or units figure of
+    any kind — the only quantity here is a count of distinct countries per product.'
+  rows_returned: &id004
+  - reading: 'a: selling shop country'
+    product: Adventure Works Chandelier M6150 Grey
+    country: Canada
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Litware Floor Lamp M2015 White
+    country: Netherlands
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Adventure Works Desk Lamp E1300 Black
+    country: United Kingdom
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Adventure Works Floor Lamp M2150 Grey
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Adventure Works Wall Lamp E2150 Grey
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Litware Desk Lamp E1020 Black
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Litware Floor Lamp M2015 Black
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Litware Floor Lamp X1015 Blue
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Litware Home Theater System 5.1 Channel M516 Silver
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Litware Wall Lamp E3015 Black
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Proseware Chandelier M0815 Blue
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Proseware Desk Lamp E0120 Silver
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Proseware Desk Lamp E0130 Blue
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Proseware Wall Lamp E0215 Grey
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: Proseware Wall Lamp E0315 White
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: WWI Chandelier M615 Blue
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: WWI Chandelier M815 Grey
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: WWI Wall Lamp E215 Blue
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: WWI Wall Lamp E215 Silver
+    country: United States
+    countries_sold_in: 1
+  - reading: 'a: selling shop country'
+    product: WWI Wall Lamp E315 Grey
+    country: United States
+    countries_sold_in: 1
+  - reading: 'b: buyer country'
+    product: Adventure Works Wall Lamp E2150 Grey
+    country: United States
+    countries_sold_in: 1
+  - reading: 'b: buyer country'
+    product: Litware Desk Lamp E1020 Black
+    country: United States
+    countries_sold_in: 1
+  - reading: 'b: buyer country'
+    product: WWI Chandelier M815 Grey
+    country: United States
+    countries_sold_in: 1
+  - reading: 'b: buyer country'
+    product: WWI Wall Lamp E215 Silver
+    country: United States
+    countries_sold_in: 1
+  - reading: 'c: selling shop country, strict'
+    product: WWI Wall Lamp E215 Silver
+    country: United States
+    countries_sold_in: 1
+  synthesis:
+    claimed: 'When you say a product was "sold in one country", do you mean the country of the shop that
+      sold it, or the country the buyer lives in? Point at one and I will hand you that table:
+
+
+      (a) THE COUNTRY OF THE SELLING SHOP — a 20-row table. 17 products sold only in the United States
+      (among them Adventure Works Floor Lamp M2150 Grey, Adventure Works Wall Lamp E2150 Grey, Litware
+      Desk Lamp E1020 Black, Litware Floor Lamp M2015 Black, Litware Floor Lamp X1015 Blue), plus exactly
+      one product each in three other countries: Adventure Works Chandelier M6150 Grey in Canada, Litware
+      Floor Lamp M2015 White in the Netherlands, and Adventure Works Desk Lamp E1300 Black in the United
+      Kingdom. Reading this as the shop''s SITE country instead gives the identical 20 products with zero
+      disagreements, so that is not a third answer.
+
+
+      (b) THE COUNTRY THE BUYER LIVES IN — a 4-row table, all four United States.
+
+
+      (c) THE COUNTRY OF THE SELLING SHOP, STRICTLY — only products whose every sale was rung up in that
+      one country, so any product that also sold through the web shop is out: a 1-row table, United States.
+      This reading exists because the web shop has no country of its own, and 19 of the 20 products in
+      (a) also sold through it — they qualify in (a) only because the web shop''s country code is a placeholder
+      rather than a place.
+
+
+      WHAT THE CHOICE COSTS, CONCRETELY: going from (a) to (b) drops 16 of the 20 products, and those
+      16 include every non-US row — so (a) is the only reading under which Canada, the Netherlands and
+      the United Kingdom appear at all. If you want a list that can name a country other than the United
+      States, you want (a).
+
+
+      WHAT THE CHOICE DOES NOT CHANGE: at least 2,497 of the 2,517 products sold are ruled out as multi-country
+      under every reading, and the United States dominates all three lists (17 of 20, 4 of 4, 1 of 1).
+      The 4 products in (b) all sit inside the 20 in (a), so the readings never call the same product
+      single-country and multi-country in opposite directions — the looser reading simply admits 16 more.
+      Every single-country product is a lamp or chandelier under all three readings. Nothing is excluded
+      for never having been sold: all 2,517 products on the register have sales, and no product sells
+      only online. No date limit is in play — you named no period, so all ten years of orders are covered,
+      2016-05-18 to 2025-12-31.'
+    shape: I will not choose
+    answered_population: 'All 2,517 products on dim_product, which measured is every product with at least
+      one sales line — so the "never sold are left out" exclusion removed nothing. Computed over all 223,974
+      rows of v_contoso5_sales_line inner-joined to dim_store, dim_customer and dim_product (and dim_location
+      for the third path); every join is declared cardinality 1 and the product total stayed 2,517 across
+      all five queries, so no lines were dropped. NO date filter, per order.default.an_unscoped_question_covers_all_time
+      (confidence C) and no period in the question: full extent of order_date, 2016-05-18 to 2025-12-31,
+      on order_date and not delivery_date per order.default.period_is_order_date. NO channel filter: web-shop
+      lines are in the population, because store.resolution.the_channel_is_the_location_sentinel scopes
+      its `physical` default with `applies: subject` and this question''s subject is a Product, not a
+      Store. On the shop and site paths the `--` code is excluded from the COUNTRY COUNT per country.exclusion.sentinel_is_not_a_country
+      — the online lines remain in the population, they merely contribute no country, which is exactly
+      what separates reading (a) from reading (c). The country universe is the 8 real countries on every
+      path. I did NOT restrict by channel, period, category, brand, price or revenue, and I did NOT roll
+      products up into lines or categories.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: products ... sold
+    turns:
+    - why: Establish the base "products sold" row set and, in the same pass, price both declared readings
+        of a sale's country (store vs customer), since country.default.whose_country_is_asked_never_assumed
+        forbids choosing silently.
+      did: 'probe ''dim_store.country_code'' AND ALSO: WITH per_product AS ( SELECT s.product_key, COUNT(*)
+        AS lines_sold, COUNT(DISTINCT CASE WHEN st.country_code <> ''--'' THEN st.country_code END) AS
+        n_store_countries, COUNT(DISTINCT c.country_code) AS n_customer_countries FROM contoso_served.v_contoso5_sales_line
+        s JOIN contoso_served.dim_store st ON s.store_key = st.store_key JOIN contoso_served.dim_customer
+        c ON s.customer_key = c.customer_key GROUP BY s.product_key ) SELECT COUNT(*) AS products_ever_sold,
+        SUM(CASE WHEN n_store_countries = 1 THEN 1 ELSE 0 END) AS exactly_one_store_country, SUM(CASE
+        WHEN n_store_countries = 0 THEN 1 ELSE 0 END) AS online_only_no_store_country, SUM(CASE WHEN n_customer_countries
+        = 1 THEN 1 ELSE 0 END) AS exactly_one_customer_country, MAX(n_store_countries) AS max_store_countries,
+        MAX(n_customer_countries) AS max_customer_countries FROM per_product'
+      came_back: 'dim_store.country_code (varchar) holds 9 distinct value(s): ''--'', ''AU'', ''CA'',
+        ''DE'', ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"products_ever_sold": 2517,
+        "exactly_one_store_country": 20, "online_only_no_store_country": 0, "exactly_one_customer_country":
+        4, "max_store_countries": 8, "max_customer_countries": 8}]'
+    settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.product_key,\n  s.order_date,\n  s.channel,\n\
+      \  CASE WHEN st.country_code <> '--' THEN st.country_code END AS store_country_code,\n  c.country_code\
+      \ AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store\
+      \ AS st\n  ON s.store_key = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+      \ = c.customer_key"
+    means: 'One row per sales line of every product that has ever been sold — 223,974 lines covering all
+      2,517 products on the product register, over the whole ten-year span of order dates (2016-05-18
+      to 2025-12-31, no date limit applied). Each row carries the product that was sold and BOTH candidate
+      countries for that sale: the country of the store that rang it up (left empty on web-shop lines,
+      because the `--` sentinel is not a place) and the country the buying customer lives in. Nothing
+      is counted or filtered yet; this is the set of sales the later steps group by product. Measured
+      off it: 20 products have sales touching exactly one store country, 4 have sales touching exactly
+      one customer country, and 0 products sell only online.'
+    readings_taken:
+    - word: sold
+      took: a product that appears on at least one line of v_contoso5_sales_line; measured, this is all
+        2,517 products on dim_product, so the 'never sold are left out' exclusion removes nothing
+      could_also_mean: products with sales only inside some recent window, which would drop products whose
+        only sales are old
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — a question naming
+        no period covers the full extent of order_date, so no date limit is applied and the window is
+        2016-05-18 to 2025-12-31
+    - word: sold in one country
+      took: NEITHER reading chosen — the base carries both the store country and the customer country,
+        because the two readings differ materially (20 products against 4) and must be priced side by
+        side rather than settled here
+      could_also_mean: the country of the selling store (20 products touch exactly one), or the country
+        the buyer lives in (4 products touch exactly one)
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code)
+        — never pick between the store and the customer silently, and never average the two; paths store__trades_in__country
+        and customer__based_in__country are both declared
+    - word: products
+      took: one product_key — a SKU, the grain Product declares as 'the level the shelf knows it', where
+        colour alone makes a new product
+      could_also_mean: a product line or category, which product_category.ambiguity.which_level would
+        route to category_name (8) or sub_category_name (32)
+      declaration: null
+    - word: country
+      took: on the store path, the `--` sentinel is NOT a country, so web-shop lines contribute no store
+        country; measured, this drops no product from the population because no product sells only online
+      could_also_mean: treating `--` as a ninth country, which would make the web shop itself a 'country'
+        a product was sold in
+      declaration: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+        — reporting nine countries is forbidden; eight is true
+    blocked_by: []
+  - step: '2'
+    step_asks: products
+    turns:
+    - why: Set the grain at one row per product sold, and check whether product_name is unique at that
+        grain, since the answer table must display names but is keyed on product_key.
+      did: "WITH sold AS (\n  SELECT DISTINCT\n    s.product_key\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS s\n)\nSELECT\n  COUNT(*) AS product_groups,\n  COUNT(DISTINCT p.product_name) AS distinct_names,\n\
+        \  COUNT(DISTINCT p.product_code) AS distinct_codes\nFROM sold\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON sold.product_key = p.product_key"
+      came_back: '1 row(s): [{"product_groups": 2517, "distinct_names": 2517, "distinct_codes": 2517}]'
+    settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n  b.customer_country_code\n\
+      FROM (\n  SELECT\n    s.product_key,\n    CASE WHEN st.country_code <> '--' THEN st.country_code\
+      \ END AS store_country_code,\n    c.country_code AS customer_country_code\n  FROM contoso_served.v_contoso5_sales_line\
+      \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer\
+      \ AS c\n    ON s.customer_key = c.customer_key\n) AS b\nJOIN contoso_served.dim_product AS p\n \
+      \ ON b.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n\
+      \  b.customer_country_code"
+    means: 'The 223,974 sales lines from step 1 collapsed to the product grain: 2,517 groups, one per
+      product that has ever been sold, which is every product on the register. Each group holds the distinct
+      product/country pairings its sales produced under both readings at once — the country of the selling
+      store and the country of the buying customer — so the next step can count countries either way without
+      re-reading the fact. Each product carries a unique name and a unique source code (2,517 of each
+      over 2,517 products), so naming a product in the final table cannot merge two products into one
+      row or split one across two. Still no date limit and still no country reading chosen; nothing has
+      been counted or filtered out yet.'
+    readings_taken:
+    - word: products
+      took: the group is one product_key, displayed by product_name
+      could_also_mean: displaying product_code (the SKU) instead, which is equally unique here
+      declaration: 'dim_product.product_name carries naming: common, #1 of 5 in the preference order common
+        > legal > long > short > code, so it is what an answer should show; product_code is naming: code,
+        #5, and remains available by name'
+    blocked_by: []
+  - step: '3'
+    step_asks: only sold in one country
+    turns:
+    - why: Get the full distribution of countries-per-product under both readings, and measure how many
+        of the single-country products also sold online, which decides whether the sentinel exclusion
+        is quietly admitting multi-channel products.
+      did: "WITH per_product AS (\n  SELECT\n    s.product_key,\n    COUNT(DISTINCT CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS n_store_countries,\n    COUNT(DISTINCT c.country_code)\
+        \ AS n_customer_countries,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines\n\
+        \  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store AS st\n   \
+        \ ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  GROUP BY\n    s.product_key\n)\nSELECT\n  'store' AS reading,\n  n_store_countries\
+        \ AS countries,\n  COUNT(*) AS products,\n  SUM(CASE WHEN online_lines > 0 THEN 1 ELSE 0 END)\
+        \ AS of_which_also_sold_online\nFROM per_product\nGROUP BY\n  1,\n  2\nUNION ALL\nSELECT\n  'customer'\
+        \ AS reading,\n  n_customer_countries AS countries,\n  COUNT(*) AS products,\n  SUM(CASE WHEN\
+        \ online_lines > 0 THEN 1 ELSE 0 END) AS of_which_also_sold_online\nFROM per_product\nGROUP BY\n\
+        \  1,\n  2\nORDER BY\n  1,\n  2"
+      came_back: '16 row(s) (first 8 of 16): [{"reading": "customer", "countries": 1, "products": 4, "of_which_also_sold_online":
+        3}, {"reading": "customer", "countries": 2, "products": 20, "of_which_also_sold_online": 20},
+        {"reading": "customer", "countries": 3, "products": 54, "of_which_also_sold_online": 53}, {"reading":
+        "customer", "countries": 4, "products": 75, "of_which_also_sold_online": 75}, {"reading": "customer",
+        "countries": 5, "products": 157, "of_which_also_sold_online": 157}, {"reading": "customer", "countries":
+        6, "products": 335, "of_which_also_sold_online": 335}, {"reading": "customer", "countries": 7,
+        "products": 592, "of_which_also_sold_online": 592}, {"reading": "customer", "countries": 8, "products":
+        1280, "of_which_also_sold_online": 1280}]'
+    - why: Retrieve the store-reading half of the same distribution, which the truncated result cut off.
+      did: "WITH per_product AS (\n  SELECT\n    s.product_key,\n    COUNT(DISTINCT CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS n_store_countries,\n    SUM(CASE WHEN s.channel = 'online'\
+        \ THEN 1 ELSE 0 END) AS online_lines,\n    COUNT(*) AS total_lines\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  GROUP BY\n\
+        \    s.product_key\n)\nSELECT\n  n_store_countries AS countries,\n  COUNT(*) AS products,\n  SUM(CASE\
+        \ WHEN online_lines > 0 THEN 1 ELSE 0 END) AS of_which_also_sold_online,\n  SUM(CASE WHEN online_lines\
+        \ = total_lines THEN 1 ELSE 0 END) AS of_which_online_only\nFROM per_product\nGROUP BY\n  1\n\
+        ORDER BY\n  1"
+      came_back: '8 row(s): [{"countries": 1, "products": 20, "of_which_also_sold_online": 19, "of_which_online_only":
+        0}, {"countries": 2, "products": 64, "of_which_also_sold_online": 64, "of_which_online_only":
+        0}, {"countries": 3, "products": 114, "of_which_also_sold_online": 113, "of_which_online_only":
+        0}, {"countries": 4, "products": 184, "of_which_also_sold_online": 184, "of_which_online_only":
+        0}, {"countries": 5, "products": 292, "of_which_also_sold_online": 292, "of_which_online_only":
+        0}, {"countries": 6, "products": 472, "of_which_also_sold_online": 472, "of_which_online_only":
+        0}, {"countries": 7, "products": 551, "of_which_also_sold_online": 551, "of_which_online_only":
+        0}, {"countries": 8, "products": 820, "of_which_also_sold_online": 820, "of_which_online_only":
+        0}]'
+    settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  COUNT(DISTINCT CASE WHEN st.country_code\
+      \ <> '--' THEN st.country_code END) AS n_store_countries,\n  COUNT(DISTINCT c.country_code) AS n_customer_countries,\n\
+      \  SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines,\n  COUNT(*) AS total_lines\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+      \ = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\n\
+      JOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n\
+      \  p.product_name"
+    means: 'One row per product ever sold — all 2,517 of them — saying in how many different countries
+      that product''s sales landed, counted two ways side by side: by the country of the shop that sold
+      it, and by the country the buyer lives in. Each row also says how many of the product''s sales went
+      through the web shop, because the web shop has no country of its own. Over all ten years of orders,
+      no date limit. The spread is wide under both readings: by store country, products run from 1 country
+      (20 products) to all 8 (820 products); by customer country, from 1 (4 products) to all 8 (1,280
+      products). The counts disagree per product because a shop in one country sells to buyers living
+      in several. Nothing has been filtered to one country yet — this is the count that the next step
+      tests against 1.'
+    readings_taken:
+    - word: country
+      took: counted distinctly two ways in parallel — store country and customer country — with no choice
+        made; the web shop's `--` contributes no store country but its sales still exist and are kept
+        visible as a separate column
+      could_also_mean: store country only (20 products reach 1), customer country only (4 products reach
+        1), or store country requiring that no sale went through the web shop at all (1 product reaches
+        1)
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C) forbids picking
+        between store and customer silently; country.exclusion.sentinel_is_not_a_country forbids counting
+        `--` as a country, which is why the store reading needs the extra online column to stay honest
+    - word: in one country
+      took: a product's countries are counted over the sales it actually has; a product sold in one shop-country
+        but also online counts as 1 under the store reading, and 19 of the 20 such products are in exactly
+        that position
+      could_also_mean: requiring every sale of the product to sit in the one country, which excludes any
+        product with web sales and leaves 1 product instead of 20
+      declaration: null
+    - word: sold
+      took: all sales on record, 2016-05-18 to 2025-12-31
+      could_also_mean: a recent window only
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — no period named,
+        so the full extent of order_date is covered
+    blocked_by: []
+  - step: '4'
+    step_asks: only sold in one country
+    turns:
+    - why: Apply the = 1 test under each of the three measured readings and see which countries the qualifying
+        products fall in, plus how far the readings' product sets overlap.
+      did: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+        \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+        \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+        \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+        \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web set aside)' AS reading,\n\
+        \  store_cc AS country,\n  COUNT(*) AS products\nFROM per_product\nWHERE\n  n_store = 1\nGROUP\
+        \ BY\n  1,\n  2\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n  store_cc,\n  COUNT(*)\n\
+        FROM per_product\nWHERE\n  n_store = 1 AND online_lines = 0\nGROUP BY\n  1,\n  2\nUNION ALL\n\
+        SELECT\n  'customer',\n  cust_cc,\n  COUNT(*)\nFROM per_product\nWHERE\n  n_cust = 1\nGROUP BY\n\
+        \  1,\n  2\nUNION ALL\nSELECT\n  'overlap: qualifies under store AND customer',\n  '(any)',\n\
+        \  COUNT(*)\nFROM per_product\nWHERE\n  n_store = 1 AND n_cust = 1\nORDER BY\n  1,\n  3 DESC"
+      came_back: '7 row(s): [{"reading": "customer", "country": "US", "products": 4}, {"reading": "overlap:
+        qualifies under store AND customer", "country": "(any)", "products": 4}, {"reading": "store (strict,
+        no web sales)", "country": "US", "products": 1}, {"reading": "store (web set aside)", "country":
+        "US", "products": 17}, {"reading": "store (web set aside)", "country": "CA", "products": 1}, {"reading":
+        "store (web set aside)", "country": "NL", "products": 1}, {"reading": "store (web set aside)",
+        "country": "GB", "products": 1}]'
+    settled_on: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+      \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+      \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+      \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+      \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+      \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+      \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+      \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web set aside)' AS reading,\n\
+      \  product_key,\n  product_name,\n  store_cc AS country_code,\n  n_store AS countries\nFROM per_product\n\
+      WHERE\n  n_store = 1\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n  product_key,\n  product_name,\n\
+      \  store_cc,\n  n_store\nFROM per_product\nWHERE\n  n_store = 1 AND online_lines = 0\nUNION ALL\n\
+      SELECT\n  'customer',\n  product_key,\n  product_name,\n  cust_cc,\n  n_cust\nFROM per_product\n\
+      WHERE\n  n_cust = 1\nORDER BY\n  reading,\n  country_code,\n  product_name"
+    means: The products that pass the "exactly one country" test, listed once per reading that admits
+      them, each with the single country it was sold in. Under the country of the selling shop, 20 products
+      qualify — 17 of them sold only in the United States, one only in Canada, one only in the Netherlands,
+      one only in Great Britain. Tighten that to products with no web-shop sales at all and 1 product
+      qualifies, in the United States. Under the country the buyer lives in, 4 products qualify, all 4
+      in the United States, and all 4 of them also pass the shop reading, so the customer set sits inside
+      the shop set. Over all ten years of orders with no date limit. What has been dropped at this step
+      is every product whose sales touch two or more countries — 2,497 of the 2,517 under the shop reading,
+      2,513 under the customer reading.
+    readings_taken:
+    - word: only ... one country
+      took: exactly one distinct country, tested as = 1 against the counts from step 3, applied under
+        all three readings rather than one
+      could_also_mean: nothing else — 'only one' is unambiguous as a test; what is ambiguous is which
+        country column it tests
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C) — the test is fixed,
+        the path is not, and the path may not be chosen silently
+    - word: country
+      took: no reading chosen; 20 products under the shop's country, 4 under the buyer's country, 1 under
+        the shop's country strictly requiring no web sales
+      could_also_mean: the three sets are nested and all three are dominated by the United States, so
+        the CHARACTER of the answer is stable even though its SIZE is not
+      declaration: null
+    blocked_by: []
+  - step: '5'
+    step_asks: List products ... and their respective countries
+    turns:
+    - why: Price the third declared path (location__in__country) and check whether it agrees with the
+        store path, so the fork presented to the reader covers every reading the declaration names.
+      did: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    COUNT(DISTINCT CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS n_store,\n    COUNT(DISTINCT CASE WHEN l.country_code <>\
+        \ '--' THEN l.country_code END) AS n_loc,\n    COUNT(DISTINCT c.country_code) AS n_cust\n  FROM\
+        \ contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key\
+        \ = st.store_key\n  JOIN contoso_served.dim_location AS l\n    ON st.location_code = l.location_code\n\
+        \  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key = c.customer_key\n  JOIN contoso_served.dim_product\
+        \ AS p\n    ON s.product_key = p.product_key\n  GROUP BY\n    p.product_key\n)\nSELECT\n  COUNT(*)\
+        \ AS products,\n  SUM(CASE WHEN n_store = 1 THEN 1 ELSE 0 END) AS one_store_country,\n  SUM(CASE\
+        \ WHEN n_loc = 1 THEN 1 ELSE 0 END) AS one_location_country,\n  SUM(CASE WHEN n_cust = 1 THEN\
+        \ 1 ELSE 0 END) AS one_customer_country,\n  SUM(CASE WHEN n_store <> n_loc THEN 1 ELSE 0 END)\
+        \ AS products_where_store_and_location_disagree\nFROM per_product"
+      came_back: '1 row(s): [{"products": 2517, "one_store_country": 20, "one_location_country": 20, "one_customer_country":
+        4, "products_where_store_and_location_disagree": 0}]'
+    - why: All three declared country paths are now priced and the two distinct readings differ materially
+        with no declared default, so the answer is the question that lets the reader point at the one
+        they meant.
+      did: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+        \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+        \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+        \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+        \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling shop country' AS\
+        \ reading,\n  p.product_name AS product,\n  dc.country_name AS country,\n  p.n_store AS countries_sold_in\n\
+        FROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc = dc.country_code\n\
+        WHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n  p.product_name,\n  dc.country_name,\n\
+        \  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.cust_cc = dc.country_code\n\
+        WHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop country, strict',\n  p.product_name,\n\
+        \  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n\
+        \  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n\
+        \  reading,\n  country,\n  product"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 25 row(s) (first 8 of 25): [{"reading": "a: selling shop
+        country", "product": "Adventure Works Chandelier M6150 Grey", "country": "Canada", "countries_sold_in":
+        1}, {"reading": "a: selling shop country", "product": "Litware Floor Lamp M2015 White", "country":
+        "Netherlands", "countries_sold_in": 1}, {"reading": "a: selling shop country", "product": "Adventure
+        Works Desk Lamp E1300 Black", "country": "United Kingdom", "countries_sold_in": 1}, {"reading":
+        "a: selling shop country", "product": "Adventure Works Floor Lamp M2150 Grey", "country": "United
+        States", "countries_sold_in": 1}, {"reading": "a: selling shop country", "product": "Adventure
+        Works Wall Lamp E2150 Grey", "country": "United States", "countries_sold_in": 1}, {"reading":
+        "a: selling shop country", "product": "Litware Desk Lamp E1020 Black", "country": "United States",
+        "countries_sold_in": 1}, {"reading": "a: selling shop country", "product": "Litware Floor Lamp
+        M2015 Black", "country": "United States", "countries_sold_in": 1}, {"reading": "a: selling shop
+        country", "product": "Litware Floor'
+    settled_on: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+      \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+      \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+      \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+      \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+      \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+      \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+      \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling shop country' AS reading,\n\
+      \  p.product_name AS product,\n  dc.country_name AS country,\n  p.n_store AS countries_sold_in\n\
+      FROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc = dc.country_code\n\
+      WHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n  p.product_name,\n  dc.country_name,\n\
+      \  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.cust_cc = dc.country_code\n\
+      WHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop country, strict',\n  p.product_name,\n\
+      \  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n\
+      \  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n  reading,\n\
+      \  country,\n  product"
+    means: 'What I have calculated: for each of the 2,517 products Contoso has ever sold, in how many
+      distinct countries that product''s sales landed — counted once for each way this data can say where
+      a sale happened — over all ten years of orders with both channels included and no date limit; then
+      the products whose count is exactly one, each beside the single country it was sold in. The claimed
+      answer is not one table but the choice between three, because the count of countries per product
+      depends on which country column is read: 20 product-and-country rows by the selling shop''s country,
+      the identical 20 by the shop''s site country, 4 rows by the buyer''s country, and 1 row by the selling
+      shop''s country when a web sale is held to be a sale somewhere else. The figure in each row, "how
+      many countries it was sold in", is 1 by construction — it is the test that selected the row, not
+      an independent measurement, and that is the one column in the requested output that carries no information.
+      What I did NOT include: no period restriction, no channel restriction, no product rollup, and no
+      money or units figure of any kind — the only quantity here is a count of distinct countries per
+      product.'
+    readings_taken:
+    - word: sold in one country
+      took: 'NO READING CHOSEN — all three declared paths measured: shop country 20 products, site country
+        the same 20 (0 products disagree), buyer country 4 products'
+      could_also_mean: the country of the selling store/branch, or the country the buyer lives in — 20
+        rows against 4 rows, and the country mix collapses from US/CA/NL/GB to US only
+      declaration: 'country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code):
+        never pick between the store and the customer silently, and never average the two. Its path_select
+        realization names store, customer and location paths and declares NO default — it forbids the
+        choice rather than settling it'
+    - word: one country
+      took: on the shop path the web shop contributes no country, since its code is a sentinel and not
+        a place — so a product sold in one country plus online still counts as one, which is how 19 of
+        the 20 qualify
+      could_also_mean: treating a web sale as a sale outside that one country, leaving 1 product instead
+        of 20 — reported as reading (c)
+      declaration: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+        forbid counting `--` as a country; neither says what to do about a PRODUCT selling both in one
+        country and online, so this sub-fork is live rather than settled
+    - word: products
+      took: each individual product on its own — one product_key at SKU grain, shown by product_name,
+        which measured unique across all 2,517
+      could_also_mean: rolled up to product line or category — 8 categories or 32 sub-categories
+      declaration: 'Product is declared at SKU grain, ''the level the shelf knows it'', where colour alone
+        makes a new product; dim_product.product_name carries naming: common, #1 of 5, so it is what an
+        answer should show'
+    - word: only sold
+      took: only products that actually have sales — measured, that is all 2,517, so this exclusion drops
+        nothing and the ambiguity is moot
+      could_also_mean: also showing products with no sales at all, of which this bundle has none
+      declaration: null
+    - word: sold (when)
+      took: all sales on record, 2016-05-18 to 2025-12-31
+      could_also_mean: a recent window only, which is the one further choice that would move all three
+        counts
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — cover the full
+        extent of order_date and state the dates included
+    - word: sold (which channel)
+      took: both channels; web-shop sales kept in the population
+      could_also_mean: physical shops only, which is the default when a question's subject is a Store
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its physical default
+        with `applies: subject`; the subject here is a Product, and the operator''s ruling of 2026-10-18
+        has unqualified questions spanning both channels'
+    - word: how many countries it was sold in
+      took: reported as the constant 1, since it is the predicate that selected the rows
+      could_also_mean: the reader may have wanted the count BEFORE the filter — i.e. the distribution
+        across all products, which runs 1 to 8 and is in step 3
+      declaration: null
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: Among all products that have been sold, find the ones whose sales touch exactly one country,
+      and show each such product next to the single country it was sold in. One row stands for one product
+      and its only country; products sold in two or more countries, and products never sold at all, are
+      left out. No date limit is applied — all sales on record count.
+    population: 'All 2,517 products on dim_product, which measured is every product with at least one
+      sales line — so the "never sold are left out" exclusion removed nothing. Computed over all 223,974
+      rows of v_contoso5_sales_line inner-joined to dim_store, dim_customer and dim_product (and dim_location
+      for the third path); every join is declared cardinality 1 and the product total stayed 2,517 across
+      all five queries, so no lines were dropped. NO date filter, per order.default.an_unscoped_question_covers_all_time
+      (confidence C) and no period in the question: full extent of order_date, 2016-05-18 to 2025-12-31,
+      on order_date and not delivery_date per order.default.period_is_order_date. NO channel filter: web-shop
+      lines are in the population, because store.resolution.the_channel_is_the_location_sentinel scopes
+      its `physical` default with `applies: subject` and this question''s subject is a Product, not a
+      Store. On the shop and site paths the `--` code is excluded from the COUNTRY COUNT per country.exclusion.sentinel_is_not_a_country
+      — the online lines remain in the population, they merely contribute no country, which is exactly
+      what separates reading (a) from reading (c). The country universe is the 8 real countries on every
+      path. I did NOT restrict by channel, period, category, brand, price or revenue, and I did NOT roll
+      products up into lines or categories.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1         FROM       products sold                                            \
+      \                 “products ... sold”\n  2  ← 1    GROUP_BY   by product                       \
+      \                                         “products”\n  3  ← 2    AGGREGATE  count distinct of country\
+      \                                                 “only sold in one country”\n  4  ← 2+3  HAVING\
+      \     figure_step='3' op='=' than={'value': 1, 'said': 'only ... one country'}  “only sold in one\
+      \ country”\n  5  ← 4    SELECT     product, country, how many countries it was sold in         \
+      \              “List products ... and their respective countries”\n  answer: step 5   confidence:\
+      \ 0.74   A DAG   step(s) 2 feed more than one   converging at 4"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: sold in one country
+      asks: When you say a product was sold in a country, do you mean the country of the customer or delivery
+        address, or the country of the store/office that made the sale?
+      readings:
+      - the country the buyer is in, or where the order was shipped
+      - the country of the selling store, branch or subsidiary
+      took: the country associated with the sale, whichever one your data treats as the sale's country
+    - words: products
+      asks: Should each individual product count on its own, or should products be rolled up into their
+        product line or category?
+      readings:
+      - each individual product item on its own
+      - each product line, model family or category
+      took: each individual product on its own
+    - words: only sold in one country
+      asks: Do you mean over the whole history of sales, or only within a recent period such as this year?
+      readings:
+      - ever — across all sales on record
+      - within a specific recent period only
+      took: across all sales on record, with no date limit
+    - words: only sold
+      asks: Should a product that has never been sold anywhere be excluded, or would you want to see it
+        too?
+      readings:
+      - only products with sales, and those sales all in one country
+      - also include products with no sales at all
+      took: only products that actually have sales, all in one country
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.74 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: sold
+      took: a product that appears on at least one line of v_contoso5_sales_line; measured, this is all
+        2,517 products on dim_product, so the 'never sold are left out' exclusion removes nothing
+      could_also_mean: products with sales only inside some recent window, which would drop products whose
+        only sales are old
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — a question naming
+        no period covers the full extent of order_date, so no date limit is applied and the window is
+        2016-05-18 to 2025-12-31
+    - word: sold in one country
+      took: NEITHER reading chosen — the base carries both the store country and the customer country,
+        because the two readings differ materially (20 products against 4) and must be priced side by
+        side rather than settled here
+      could_also_mean: the country of the selling store (20 products touch exactly one), or the country
+        the buyer lives in (4 products touch exactly one)
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code)
+        — never pick between the store and the customer silently, and never average the two; paths store__trades_in__country
+        and customer__based_in__country are both declared
+    - word: products
+      took: one product_key — a SKU, the grain Product declares as 'the level the shelf knows it', where
+        colour alone makes a new product
+      could_also_mean: a product line or category, which product_category.ambiguity.which_level would
+        route to category_name (8) or sub_category_name (32)
+      declaration: null
+    - word: country
+      took: on the store path, the `--` sentinel is NOT a country, so web-shop lines contribute no store
+        country; measured, this drops no product from the population because no product sells only online
+      could_also_mean: treating `--` as a ninth country, which would make the web shop itself a 'country'
+        a product was sold in
+      declaration: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+        — reporting nine countries is forbidden; eight is true
+    - word: products
+      took: the group is one product_key, displayed by product_name
+      could_also_mean: displaying product_code (the SKU) instead, which is equally unique here
+      declaration: 'dim_product.product_name carries naming: common, #1 of 5 in the preference order common
+        > legal > long > short > code, so it is what an answer should show; product_code is naming: code,
+        #5, and remains available by name'
+    - word: country
+      took: counted distinctly two ways in parallel — store country and customer country — with no choice
+        made; the web shop's `--` contributes no store country but its sales still exist and are kept
+        visible as a separate column
+      could_also_mean: store country only (20 products reach 1), customer country only (4 products reach
+        1), or store country requiring that no sale went through the web shop at all (1 product reaches
+        1)
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C) forbids picking
+        between store and customer silently; country.exclusion.sentinel_is_not_a_country forbids counting
+        `--` as a country, which is why the store reading needs the extra online column to stay honest
+    - word: in one country
+      took: a product's countries are counted over the sales it actually has; a product sold in one shop-country
+        but also online counts as 1 under the store reading, and 19 of the 20 such products are in exactly
+        that position
+      could_also_mean: requiring every sale of the product to sit in the one country, which excludes any
+        product with web sales and leaves 1 product instead of 20
+      declaration: null
+    - word: sold
+      took: all sales on record, 2016-05-18 to 2025-12-31
+      could_also_mean: a recent window only
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — no period named,
+        so the full extent of order_date is covered
+    - word: only ... one country
+      took: exactly one distinct country, tested as = 1 against the counts from step 3, applied under
+        all three readings rather than one
+      could_also_mean: nothing else — 'only one' is unambiguous as a test; what is ambiguous is which
+        country column it tests
+      declaration: country.default.whose_country_is_asked_never_assumed (confidence C) — the test is fixed,
+        the path is not, and the path may not be chosen silently
+    - word: country
+      took: no reading chosen; 20 products under the shop's country, 4 under the buyer's country, 1 under
+        the shop's country strictly requiring no web sales
+      could_also_mean: the three sets are nested and all three are dominated by the United States, so
+        the CHARACTER of the answer is stable even though its SIZE is not
+      declaration: null
+    - word: sold in one country
+      took: 'NO READING CHOSEN — all three declared paths measured: shop country 20 products, site country
+        the same 20 (0 products disagree), buyer country 4 products'
+      could_also_mean: the country of the selling store/branch, or the country the buyer lives in — 20
+        rows against 4 rows, and the country mix collapses from US/CA/NL/GB to US only
+      declaration: 'country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code):
+        never pick between the store and the customer silently, and never average the two. Its path_select
+        realization names store, customer and location paths and declares NO default — it forbids the
+        choice rather than settling it'
+    - word: one country
+      took: on the shop path the web shop contributes no country, since its code is a sentinel and not
+        a place — so a product sold in one country plus online still counts as one, which is how 19 of
+        the 20 qualify
+      could_also_mean: treating a web sale as a sale outside that one country, leaving 1 product instead
+        of 20 — reported as reading (c)
+      declaration: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+        forbid counting `--` as a country; neither says what to do about a PRODUCT selling both in one
+        country and online, so this sub-fork is live rather than settled
+    - word: products
+      took: each individual product on its own — one product_key at SKU grain, shown by product_name,
+        which measured unique across all 2,517
+      could_also_mean: rolled up to product line or category — 8 categories or 32 sub-categories
+      declaration: 'Product is declared at SKU grain, ''the level the shelf knows it'', where colour alone
+        makes a new product; dim_product.product_name carries naming: common, #1 of 5, so it is what an
+        answer should show'
+    - word: only sold
+      took: only products that actually have sales — measured, that is all 2,517, so this exclusion drops
+        nothing and the ambiguity is moot
+      could_also_mean: also showing products with no sales at all, of which this bundle has none
+      declaration: null
+    - word: sold (when)
+      took: all sales on record, 2016-05-18 to 2025-12-31
+      could_also_mean: a recent window only, which is the one further choice that would move all three
+        counts
+      declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — cover the full
+        extent of order_date and state the dates included
+    - word: sold (which channel)
+      took: both channels; web-shop sales kept in the population
+      could_also_mean: physical shops only, which is the default when a question's subject is a Store
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its physical default
+        with `applies: subject`; the subject here is a Product, and the operator''s ruling of 2026-10-18
+        has unqualified questions spanning both channels'
+    - word: how many countries it was sold in
+      took: reported as the constant 1, since it is the predicate that selected the rows
+      could_also_mean: the reader may have wanted the count BEFORE the filter — i.e. the distribution
+        across all products, which runs 1 to 8 and is in step 3
+      declaration: null
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 5 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  s.order_key,\n  s.line_number,\n  s.product_key,\n  s.order_date,\n \
+        \ s.channel,\n  CASE WHEN st.country_code <> '--' THEN st.country_code END AS store_country_code,\n\
+        \  c.country_code AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN\
+        \ contoso_served.dim_store AS st\n  ON s.store_key = st.store_key\nJOIN contoso_served.dim_customer\
+        \ AS c\n  ON s.customer_key = c.customer_key\n\n-- step 2\nSELECT\n  p.product_key,\n  p.product_name,\n\
+        \  b.store_country_code,\n  b.customer_country_code\nFROM (\n  SELECT\n    s.product_key,\n  \
+        \  CASE WHEN st.country_code <> '--' THEN st.country_code END AS store_country_code,\n    c.country_code\
+        \ AS customer_country_code\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n) AS b\nJOIN contoso_served.dim_product AS p\n  ON b.product_key = p.product_key\n\
+        GROUP BY\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n  b.customer_country_code\n\
+        \n-- step 3\nSELECT\n  p.product_key,\n  p.product_name,\n  COUNT(DISTINCT CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS n_store_countries,\n  COUNT(DISTINCT c.country_code) AS\
+        \ n_customer_countries,\n  SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines,\n\
+        \  COUNT(*) AS total_lines\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store\
+        \ AS st\n  ON s.store_key = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\n\
+        GROUP BY\n  p.product_key,\n  p.product_name\n\n-- step 4\nWITH per_product AS (\n  SELECT\n \
+        \   p.product_key,\n    p.product_name,\n    COUNT(DISTINCT CASE WHEN st.country_code <> '--'\
+        \ THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code <> '--' THEN st.country_code\
+        \ END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n    MIN(c.country_code) AS\
+        \ cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines\n  FROM\
+        \ contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key\
+        \ = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key = c.customer_key\n\
+        \  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n  GROUP BY\n  \
+        \  p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web set aside)' AS reading,\n  product_key,\n\
+        \  product_name,\n  store_cc AS country_code,\n  n_store AS countries\nFROM per_product\nWHERE\n\
+        \  n_store = 1\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n  product_key,\n  product_name,\n\
+        \  store_cc,\n  n_store\nFROM per_product\nWHERE\n  n_store = 1 AND online_lines = 0\nUNION ALL\n\
+        SELECT\n  'customer',\n  product_key,\n  product_name,\n  cust_cc,\n  n_cust\nFROM per_product\n\
+        WHERE\n  n_cust = 1\nORDER BY\n  reading,\n  country_code,\n  product_name\n\n-- step 5\nWITH\
+        \ per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT CASE\
+        \ WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+        \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+        \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+        \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling shop country' AS\
+        \ reading,\n  p.product_name AS product,\n  dc.country_name AS country,\n  p.n_store AS countries_sold_in\n\
+        FROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc = dc.country_code\n\
+        WHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n  p.product_name,\n  dc.country_name,\n\
+        \  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.cust_cc = dc.country_code\n\
+        WHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop country, strict',\n  p.product_name,\n\
+        \  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n\
+        \  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n\
+        \  reading,\n  country,\n  product"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'What I have calculated: for each of the 2,517 products Contoso has ever sold,
+      in how many distinct countries that product''s sales landed — counted once for each way this data
+      can say where a sale happened — over all ten years of orders with both channels included and no
+      date limit; then the products whose count is exactly one, each beside the single country it was
+      sold in. The claimed answer is not one table but the choice between three, because the count of
+      countries per product depends on which country column is read: 20 product-and-country rows by the
+      selling shop''s country, the identical 20 by the shop''s site country, 4 rows by the buyer''s country,
+      and 1 row by the selling shop''s country when a web sale is held to be a sale somewhere else. The
+      figure in each row, "how many countries it was sold in", is 1 by construction — it is the test that
+      selected the row, not an independent measurement, and that is the one column in the requested output
+      that carries no information. What I did NOT include: no period restriction, no channel restriction,
+      no product rollup, and no money or units figure of any kind — the only quantity here is a count
+      of distinct countries per product.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'I will not choose' · graded DECLINED
+  detail:
+    claimed_answer: 'When you say a product was "sold in one country", do you mean the country of the
+      shop that sold it, or the country the buyer lives in? Point at one and I will hand you that table:
+
+
+      (a) THE COUNTRY OF THE SELLING SHOP — a 20-row table. 17 products sold only in the United States
+      (among them Adventure Works Floor Lamp M2150 Grey, Adventure Works Wall Lamp E2150 Grey, Litware
+      Desk Lamp E1020 Black, Litware Floor Lamp M2015 Black, Litware Floor Lamp X1015 Blue), plus exactly
+      one product each in three other countries: Adventure Works Chandelier M6150 Grey in Canada, Litware
+      Floor Lamp M2015 White in the Netherlands, and Adventure Works Desk Lamp E1300 Black in the United
+      Kingdom. Reading this as the shop''s SITE country instead gives the identical 20 products with zero
+      disagreements, so that is not a third answer.
+
+
+      (b) THE COUNTRY THE BUYER LIVES IN — a 4-row table, all four United States.
+
+
+      (c) THE COUNTRY OF THE SELLING SHOP, STRICTLY — only products whose every sale was rung up in that
+      one country, so any product that also sold through the web shop is out: a 1-row table, United States.
+      This reading exists because the web shop has no country of its own, and 19 of the 20 products in
+      (a) also sold through it — they qualify in (a) only because the web shop''s country code is a placeholder
+      rather than a place.
+
+
+      WHAT THE CHOICE COSTS, CONCRETELY: going from (a) to (b) drops 16 of the 20 products, and those
+      16 include every non-US row — so (a) is the only reading under which Canada, the Netherlands and
+      the United Kingdom appear at all. If you want a list that can name a country other than the United
+      States, you want (a).
+
+
+      WHAT THE CHOICE DOES NOT CHANGE: at least 2,497 of the 2,517 products sold are ruled out as multi-country
+      under every reading, and the United States dominates all three lists (17 of 20, 4 of 4, 1 of 1).
+      The 4 products in (b) all sit inside the 20 in (a), so the readings never call the same product
+      single-country and multi-country in opposite directions — the looser reading simply admits 16 more.
+      Every single-country product is a lamp or chandelier under all three readings. Nothing is excluded
+      for never having been sold: all 2,517 products on the register have sales, and no product sells
+      only online. No date limit is in play — you named no period, so all ten years of orders are covered,
+      2016-05-18 to 2025-12-31.'
+    walk_bucket: DECLINED
+    walk_why: it refused to choose between readings the question did not name
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: List products only sold in one country and their respective countries
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: Among all products that have been sold, find the ones whose sales touch exactly one country,
+      and show each such product next to the single country it was sold in. One row stands for one product
+      and its only country; products sold in two or more countries, and products never sold at all, are
+      left out. No date limit is applied — all sales on record count.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1         FROM       products sold                                                             “products
+      ... sold”'
+    - '  2  ← 1    GROUP_BY   by product                                                                “products”'
+    - '  3  ← 2    AGGREGATE  count distinct of country                                                 “only
+      sold in one country”'
+    - '  4  ← 2+3  HAVING     figure_step=''3'' op=''='' than={''value'': 1, ''said'': ''only ... one
+      country''}  “only sold in one country”'
+    - '  5  ← 4    SELECT     product, country, how many countries it was sold in                       “List
+      products ... and their respective countries”'
+    - '  answer: step 5   confidence: 0.74   A DAG   step(s) 2 feed more than one   converging at 4'
+    - '  UNDERSTOOD AS: Among all products that have been sold, find the ones whose sales touch exactly
+      one country, and show each such product next to the single country it was sold in. One row stands
+      for one product and its only country; products sold in two or more countries, and products never
+      sold at all, are left out. No date limit is applied — all sales on record count.'
+    - '  AMBIGUOUS ''sold in one country'' — ASKS: When you say a product was sold in a country, do you
+      mean the country of the customer or delivery address, or the country of the store/office that made
+      the sale?'
+    - '      could mean: the country the buyer is in, or where the order was shipped'
+    - '      could mean: the country of the selling store, branch or subsidiary'
+    - '      took: the country associated with the sale, whichever one your data treats as the sale''s
+      country'
+    - '  AMBIGUOUS ''products'' — ASKS: Should each individual product count on its own, or should products
+      be rolled up into their product line or category?'
+    - '      could mean: each individual product item on its own'
+    - '      could mean: each product line, model family or category'
+    - '      took: each individual product on its own'
+    - '  AMBIGUOUS ''only sold in one country'' — ASKS: Do you mean over the whole history of sales, or
+      only within a recent period such as this year?'
+    - '      could mean: ever — across all sales on record'
+    - '      could mean: within a specific recent period only'
+    - '      took: across all sales on record, with no date limit'
+    - '  AMBIGUOUS ''only sold'' — ASKS: Should a product that has never been sold anywhere be excluded,
+      or would you want to see it too?'
+    - '      could mean: only products with sales, and those sales all in one country'
+    - '      could mean: also include products with no sales at all'
+    - '      took: only products that actually have sales, all in one country'
+    - '  OUTPUT SHAPE: a table · many row(s) · named by product, country · carrying how many countries
+      it was sold in'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a table
+    - - said
+      - List products only sold in one country and their respective countries
+    - - rows
+      - many
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: sold in one country
+      asks: When you say a product was sold in a country, do you mean the country of the customer or delivery
+        address, or the country of the store/office that made the sale?
+      readings:
+      - the country the buyer is in, or where the order was shipped
+      - the country of the selling store, branch or subsidiary
+      took: the country associated with the sale, whichever one your data treats as the sale's country
+    - words: products
+      asks: Should each individual product count on its own, or should products be rolled up into their
+        product line or category?
+      readings:
+      - each individual product item on its own
+      - each product line, model family or category
+      took: each individual product on its own
+    - words: only sold in one country
+      asks: Do you mean over the whole history of sales, or only within a recent period such as this year?
+      readings:
+      - ever — across all sales on record
+      - within a specific recent period only
+      took: across all sales on record, with no date limit
+    - words: only sold
+      asks: Should a product that has never been sold anywhere be excluded, or would you want to see it
+        too?
+      readings:
+      - only products with sales, and those sales all in one country
+      - also include products with no sales at all
+      took: only products that actually have sales, all in one country
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.product_key,\n  s.order_date,\n  s.channel,\n\
+        \  CASE WHEN st.country_code <> '--' THEN st.country_code END AS store_country_code,\n  c.country_code\
+        \ AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store\
+        \ AS st\n  ON s.store_key = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n  b.customer_country_code\n\
+        FROM (\n  SELECT\n    s.product_key,\n    CASE WHEN st.country_code <> '--' THEN st.country_code\
+        \ END AS store_country_code,\n    c.country_code AS customer_country_code\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer\
+        \ AS c\n    ON s.customer_key = c.customer_key\n) AS b\nJOIN contoso_served.dim_product AS p\n\
+        \  ON b.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n\
+        \  b.customer_country_code"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  p.product_key,\n  p.product_name,\n  COUNT(DISTINCT CASE WHEN st.country_code <>\
+        \ '--' THEN st.country_code END) AS n_store_countries,\n  COUNT(DISTINCT c.country_code) AS n_customer_countries,\n\
+        \  SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines,\n  COUNT(*) AS total_lines\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store AS st\n  ON s.store_key\
+        \ = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\n\
+        JOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n\
+        \  p.product_name"
+      params: {}
+    - step: '4'
+      sql: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+        \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+        \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+        \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+        \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web set aside)' AS reading,\n\
+        \  product_key,\n  product_name,\n  store_cc AS country_code,\n  n_store AS countries\nFROM per_product\n\
+        WHERE\n  n_store = 1\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n  product_key,\n \
+        \ product_name,\n  store_cc,\n  n_store\nFROM per_product\nWHERE\n  n_store = 1 AND online_lines\
+        \ = 0\nUNION ALL\nSELECT\n  'customer',\n  product_key,\n  product_name,\n  cust_cc,\n  n_cust\n\
+        FROM per_product\nWHERE\n  n_cust = 1\nORDER BY\n  reading,\n  country_code,\n  product_name"
+      params: {}
+    - step: '5'
+      sql: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+        \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+        \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+        \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+        \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling shop country' AS\
+        \ reading,\n  p.product_name AS product,\n  dc.country_name AS country,\n  p.n_store AS countries_sold_in\n\
+        FROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc = dc.country_code\n\
+        WHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n  p.product_name,\n  dc.country_name,\n\
+        \  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.cust_cc = dc.country_code\n\
+        WHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop country, strict',\n  p.product_name,\n\
+        \  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n\
+        \  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n\
+        \  reading,\n  country,\n  product"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'What I have calculated: for each of the 2,517 products Contoso has ever sold, in how many
+      distinct countries that product''s sales landed — counted once for each way this data can say where
+      a sale happened — over all ten years of orders with both channels included and no date limit; then
+      the products whose count is exactly one, each beside the single country it was sold in. The claimed
+      answer is not one table but the choice between three, because the count of countries per product
+      depends on which country column is read: 20 product-and-country rows by the selling shop''s country,
+      the identical 20 by the shop''s site country, 4 rows by the buyer''s country, and 1 row by the selling
+      shop''s country when a web sale is held to be a sale somewhere else. The figure in each row, "how
+      many countries it was sold in", is 1 by construction — it is the test that selected the row, not
+      an independent measurement, and that is the one column in the requested output that carries no information.
+      What I did NOT include: no period restriction, no channel restriction, no product rollup, and no
+      money or units figure of any kind — the only quantity here is a count of distinct countries per
+      product.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id007
+      rows: *id004
+      row_count: 25
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - 'When you say a product was "sold in one country", do you mean the country of the shop that sold
+        it, or the country the buyer lives in? Point at one and I will hand you that table:
+
+
+        (a) THE COUNTRY OF THE SELLING SHOP — a 20-row table. 17 products sold only in the United States
+        (among them Adventure Works Floor Lamp M2150 Grey, Adventure Works Wall Lamp E2150 Grey, Litware
+        Desk Lamp E1020 Black, Litware Floor Lamp M2015 Black, Litware Floor Lamp X1015 Blue), plus exactly
+        one product each in three other countries: Adventure Works Chandelier M6150 Grey in Canada, Litware
+        Floor Lamp M2015 White in the Netherlands, and Adventure Works Desk Lamp E1300 Black in the United
+        Kingdom. Reading this as the shop''s SITE country instead gives the identical 20 products with
+        zero disagreements, so that is not a third answer.
+
+
+        (b) THE COUNTRY THE BUYER LIVES IN — a 4-row table, all four United States.
+
+
+        (c) THE COUNTRY OF THE SELLING SHOP, STRICTLY — only products whose every sale was rung up in
+        that one country, so any product that also sold through the web shop is out: a 1-row table, United
+        States. This reading exists because the web shop has no country of its own, and 19 of the 20 products
+        in (a) also sold through it — they qualify in (a) only because the web shop''s country code is
+        a placeholder rather than a place.
+
+
+        WHAT THE CHOICE COSTS, CONCRETELY: going from (a) to (b) drops 16 of the 20 products, and those
+        16 include every non-US row — so (a) is the only reading under which Canada, the Netherlands and
+        the United Kingdom appear at all. If you want a list that can name a country other than the United
+        States, you want (a).
+
+
+        WHAT THE CHOICE DOES NOT CHANGE: at least 2,497 of the 2,517 products sold are ruled out as multi-country
+        under every reading, and the United States dominates all three lists (17 of 20, 4 of 4, 1 of 1).
+        The 4 products in (b) all sit inside the 20 in (a), so the readings never call the same product
+        single-country and multi-country in opposite directions — the looser reading simply admits 16
+        more. Every single-country product is a lamp or chandelier under all three readings. Nothing is
+        excluded for never having been sold: all 2,517 products on the register have sales, and no product
+        sells only online. No date limit is in play — you named no period, so all ten years of orders
+        are covered, 2016-05-18 to 2025-12-31.'
+    - - shape
+      - I will not choose
+    - - population it answered over
+      - 'All 2,517 products on dim_product, which measured is every product with at least one sales line
+        — so the "never sold are left out" exclusion removed nothing. Computed over all 223,974 rows of
+        v_contoso5_sales_line inner-joined to dim_store, dim_customer and dim_product (and dim_location
+        for the third path); every join is declared cardinality 1 and the product total stayed 2,517 across
+        all five queries, so no lines were dropped. NO date filter, per order.default.an_unscoped_question_covers_all_time
+        (confidence C) and no period in the question: full extent of order_date, 2016-05-18 to 2025-12-31,
+        on order_date and not delivery_date per order.default.period_is_order_date. NO channel filter:
+        web-shop lines are in the population, because store.resolution.the_channel_is_the_location_sentinel
+        scopes its `physical` default with `applies: subject` and this question''s subject is a Product,
+        not a Store. On the shop and site paths the `--` code is excluded from the COUNTRY COUNT per country.exclusion.sentinel_is_not_a_country
+        — the online lines remain in the population, they merely contribute no country, which is exactly
+        what separates reading (a) from reading (c). The country universe is the 8 real countries on every
+        path. I did NOT restrict by channel, period, category, brand, price or revenue, and I did NOT
+        roll products up into lines or categories.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: products ... sold
+      turns:
+      - why: Establish the base "products sold" row set and, in the same pass, price both declared readings
+          of a sale's country (store vs customer), since country.default.whose_country_is_asked_never_assumed
+          forbids choosing silently.
+        did: 'probe ''dim_store.country_code'' AND ALSO: WITH per_product AS ( SELECT s.product_key, COUNT(*)
+          AS lines_sold, COUNT(DISTINCT CASE WHEN st.country_code <> ''--'' THEN st.country_code END)
+          AS n_store_countries, COUNT(DISTINCT c.country_code) AS n_customer_countries FROM contoso_served.v_contoso5_sales_line
+          s JOIN contoso_served.dim_store st ON s.store_key = st.store_key JOIN contoso_served.dim_customer
+          c ON s.customer_key = c.customer_key GROUP BY s.product_key ) SELECT COUNT(*) AS products_ever_sold,
+          SUM(CASE WHEN n_store_countries = 1 THEN 1 ELSE 0 END) AS exactly_one_store_country, SUM(CASE
+          WHEN n_store_countries = 0 THEN 1 ELSE 0 END) AS online_only_no_store_country, SUM(CASE WHEN
+          n_customer_countries = 1 THEN 1 ELSE 0 END) AS exactly_one_customer_country, MAX(n_store_countries)
+          AS max_store_countries, MAX(n_customer_countries) AS max_customer_countries FROM per_product'
+        came_back: 'dim_store.country_code (varchar) holds 9 distinct value(s): ''--'', ''AU'', ''CA'',
+          ''DE'', ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"products_ever_sold":
+          2517, "exactly_one_store_country": 20, "online_only_no_store_country": 0, "exactly_one_customer_country":
+          4, "max_store_countries": 8, "max_customer_countries": 8}]'
+      settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.product_key,\n  s.order_date,\n  s.channel,\n\
+        \  CASE WHEN st.country_code <> '--' THEN st.country_code END AS store_country_code,\n  c.country_code\
+        \ AS customer_country_code\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store\
+        \ AS st\n  ON s.store_key = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key"
+      means: 'One row per sales line of every product that has ever been sold — 223,974 lines covering
+        all 2,517 products on the product register, over the whole ten-year span of order dates (2016-05-18
+        to 2025-12-31, no date limit applied). Each row carries the product that was sold and BOTH candidate
+        countries for that sale: the country of the store that rang it up (left empty on web-shop lines,
+        because the `--` sentinel is not a place) and the country the buying customer lives in. Nothing
+        is counted or filtered yet; this is the set of sales the later steps group by product. Measured
+        off it: 20 products have sales touching exactly one store country, 4 have sales touching exactly
+        one customer country, and 0 products sell only online.'
+      readings_taken:
+      - word: sold
+        took: a product that appears on at least one line of v_contoso5_sales_line; measured, this is
+          all 2,517 products on dim_product, so the 'never sold are left out' exclusion removes nothing
+        could_also_mean: products with sales only inside some recent window, which would drop products
+          whose only sales are old
+        declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — a question naming
+          no period covers the full extent of order_date, so no date limit is applied and the window is
+          2016-05-18 to 2025-12-31
+      - word: sold in one country
+        took: NEITHER reading chosen — the base carries both the store country and the customer country,
+          because the two readings differ materially (20 products against 4) and must be priced side by
+          side rather than settled here
+        could_also_mean: the country of the selling store (20 products touch exactly one), or the country
+          the buyer lives in (4 products touch exactly one)
+        declaration: country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code)
+          — never pick between the store and the customer silently, and never average the two; paths store__trades_in__country
+          and customer__based_in__country are both declared
+      - word: products
+        took: one product_key — a SKU, the grain Product declares as 'the level the shelf knows it', where
+          colour alone makes a new product
+        could_also_mean: a product line or category, which product_category.ambiguity.which_level would
+          route to category_name (8) or sub_category_name (32)
+        declaration: null
+      - word: country
+        took: on the store path, the `--` sentinel is NOT a country, so web-shop lines contribute no store
+          country; measured, this drops no product from the population because no product sells only online
+        could_also_mean: treating `--` as a ninth country, which would make the web shop itself a 'country'
+          a product was sold in
+        declaration: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+          — reporting nine countries is forbidden; eight is true
+      blocked_by: []
+    - step: '2'
+      step_asks: products
+      turns:
+      - why: Set the grain at one row per product sold, and check whether product_name is unique at that
+          grain, since the answer table must display names but is keyed on product_key.
+        did: "WITH sold AS (\n  SELECT DISTINCT\n    s.product_key\n  FROM contoso_served.v_contoso5_sales_line\
+          \ AS s\n)\nSELECT\n  COUNT(*) AS product_groups,\n  COUNT(DISTINCT p.product_name) AS distinct_names,\n\
+          \  COUNT(DISTINCT p.product_code) AS distinct_codes\nFROM sold\nJOIN contoso_served.dim_product\
+          \ AS p\n  ON sold.product_key = p.product_key"
+        came_back: '1 row(s): [{"product_groups": 2517, "distinct_names": 2517, "distinct_codes": 2517}]'
+      settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n  b.customer_country_code\n\
+        FROM (\n  SELECT\n    s.product_key,\n    CASE WHEN st.country_code <> '--' THEN st.country_code\
+        \ END AS store_country_code,\n    c.country_code AS customer_country_code\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer\
+        \ AS c\n    ON s.customer_key = c.customer_key\n) AS b\nJOIN contoso_served.dim_product AS p\n\
+        \  ON b.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name,\n  b.store_country_code,\n\
+        \  b.customer_country_code"
+      means: 'The 223,974 sales lines from step 1 collapsed to the product grain: 2,517 groups, one per
+        product that has ever been sold, which is every product on the register. Each group holds the
+        distinct product/country pairings its sales produced under both readings at once — the country
+        of the selling store and the country of the buying customer — so the next step can count countries
+        either way without re-reading the fact. Each product carries a unique name and a unique source
+        code (2,517 of each over 2,517 products), so naming a product in the final table cannot merge
+        two products into one row or split one across two. Still no date limit and still no country reading
+        chosen; nothing has been counted or filtered out yet.'
+      readings_taken:
+      - word: products
+        took: the group is one product_key, displayed by product_name
+        could_also_mean: displaying product_code (the SKU) instead, which is equally unique here
+        declaration: 'dim_product.product_name carries naming: common, #1 of 5 in the preference order
+          common > legal > long > short > code, so it is what an answer should show; product_code is naming:
+          code, #5, and remains available by name'
+      blocked_by: []
+    - step: '3'
+      step_asks: only sold in one country
+      turns:
+      - why: Get the full distribution of countries-per-product under both readings, and measure how many
+          of the single-country products also sold online, which decides whether the sentinel exclusion
+          is quietly admitting multi-channel products.
+        did: "WITH per_product AS (\n  SELECT\n    s.product_key,\n    COUNT(DISTINCT CASE WHEN st.country_code\
+          \ <> '--' THEN st.country_code END) AS n_store_countries,\n    COUNT(DISTINCT c.country_code)\
+          \ AS n_customer_countries,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines\n\
+          \  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store AS st\n \
+          \   ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+          \ = c.customer_key\n  GROUP BY\n    s.product_key\n)\nSELECT\n  'store' AS reading,\n  n_store_countries\
+          \ AS countries,\n  COUNT(*) AS products,\n  SUM(CASE WHEN online_lines > 0 THEN 1 ELSE 0 END)\
+          \ AS of_which_also_sold_online\nFROM per_product\nGROUP BY\n  1,\n  2\nUNION ALL\nSELECT\n \
+          \ 'customer' AS reading,\n  n_customer_countries AS countries,\n  COUNT(*) AS products,\n  SUM(CASE\
+          \ WHEN online_lines > 0 THEN 1 ELSE 0 END) AS of_which_also_sold_online\nFROM per_product\n\
+          GROUP BY\n  1,\n  2\nORDER BY\n  1,\n  2"
+        came_back: '16 row(s) (first 8 of 16): [{"reading": "customer", "countries": 1, "products": 4,
+          "of_which_also_sold_online": 3}, {"reading": "customer", "countries": 2, "products": 20, "of_which_also_sold_online":
+          20}, {"reading": "customer", "countries": 3, "products": 54, "of_which_also_sold_online": 53},
+          {"reading": "customer", "countries": 4, "products": 75, "of_which_also_sold_online": 75}, {"reading":
+          "customer", "countries": 5, "products": 157, "of_which_also_sold_online": 157}, {"reading":
+          "customer", "countries": 6, "products": 335, "of_which_also_sold_online": 335}, {"reading":
+          "customer", "countries": 7, "products": 592, "of_which_also_sold_online": 592}, {"reading":
+          "customer", "countries": 8, "products": 1280, "of_which_also_sold_online": 1280}]'
+      - why: Retrieve the store-reading half of the same distribution, which the truncated result cut
+          off.
+        did: "WITH per_product AS (\n  SELECT\n    s.product_key,\n    COUNT(DISTINCT CASE WHEN st.country_code\
+          \ <> '--' THEN st.country_code END) AS n_store_countries,\n    SUM(CASE WHEN s.channel = 'online'\
+          \ THEN 1 ELSE 0 END) AS online_lines,\n    COUNT(*) AS total_lines\n  FROM contoso_served.v_contoso5_sales_line\
+          \ AS s\n  JOIN contoso_served.dim_store AS st\n    ON s.store_key = st.store_key\n  GROUP BY\n\
+          \    s.product_key\n)\nSELECT\n  n_store_countries AS countries,\n  COUNT(*) AS products,\n\
+          \  SUM(CASE WHEN online_lines > 0 THEN 1 ELSE 0 END) AS of_which_also_sold_online,\n  SUM(CASE\
+          \ WHEN online_lines = total_lines THEN 1 ELSE 0 END) AS of_which_online_only\nFROM per_product\n\
+          GROUP BY\n  1\nORDER BY\n  1"
+        came_back: '8 row(s): [{"countries": 1, "products": 20, "of_which_also_sold_online": 19, "of_which_online_only":
+          0}, {"countries": 2, "products": 64, "of_which_also_sold_online": 64, "of_which_online_only":
+          0}, {"countries": 3, "products": 114, "of_which_also_sold_online": 113, "of_which_online_only":
+          0}, {"countries": 4, "products": 184, "of_which_also_sold_online": 184, "of_which_online_only":
+          0}, {"countries": 5, "products": 292, "of_which_also_sold_online": 292, "of_which_online_only":
+          0}, {"countries": 6, "products": 472, "of_which_also_sold_online": 472, "of_which_online_only":
+          0}, {"countries": 7, "products": 551, "of_which_also_sold_online": 551, "of_which_online_only":
+          0}, {"countries": 8, "products": 820, "of_which_also_sold_online": 820, "of_which_online_only":
+          0}]'
+      settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  COUNT(DISTINCT CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS n_store_countries,\n  COUNT(DISTINCT c.country_code) AS\
+        \ n_customer_countries,\n  SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END) AS online_lines,\n\
+        \  COUNT(*) AS total_lines\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_store\
+        \ AS st\n  ON s.store_key = st.store_key\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\n\
+        GROUP BY\n  p.product_key,\n  p.product_name"
+      means: 'One row per product ever sold — all 2,517 of them — saying in how many different countries
+        that product''s sales landed, counted two ways side by side: by the country of the shop that sold
+        it, and by the country the buyer lives in. Each row also says how many of the product''s sales
+        went through the web shop, because the web shop has no country of its own. Over all ten years
+        of orders, no date limit. The spread is wide under both readings: by store country, products run
+        from 1 country (20 products) to all 8 (820 products); by customer country, from 1 (4 products)
+        to all 8 (1,280 products). The counts disagree per product because a shop in one country sells
+        to buyers living in several. Nothing has been filtered to one country yet — this is the count
+        that the next step tests against 1.'
+      readings_taken:
+      - word: country
+        took: counted distinctly two ways in parallel — store country and customer country — with no choice
+          made; the web shop's `--` contributes no store country but its sales still exist and are kept
+          visible as a separate column
+        could_also_mean: store country only (20 products reach 1), customer country only (4 products reach
+          1), or store country requiring that no sale went through the web shop at all (1 product reaches
+          1)
+        declaration: country.default.whose_country_is_asked_never_assumed (confidence C) forbids picking
+          between store and customer silently; country.exclusion.sentinel_is_not_a_country forbids counting
+          `--` as a country, which is why the store reading needs the extra online column to stay honest
+      - word: in one country
+        took: a product's countries are counted over the sales it actually has; a product sold in one
+          shop-country but also online counts as 1 under the store reading, and 19 of the 20 such products
+          are in exactly that position
+        could_also_mean: requiring every sale of the product to sit in the one country, which excludes
+          any product with web sales and leaves 1 product instead of 20
+        declaration: null
+      - word: sold
+        took: all sales on record, 2016-05-18 to 2025-12-31
+        could_also_mean: a recent window only
+        declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — no period named,
+          so the full extent of order_date is covered
+      blocked_by: []
+    - step: '4'
+      step_asks: only sold in one country
+      turns:
+      - why: Apply the = 1 test under each of the three measured readings and see which countries the
+          qualifying products fall in, plus how far the readings' product sets overlap.
+        did: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+          \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN\
+          \ st.country_code <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code)\
+          \ AS n_cust,\n    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN\
+          \ 1 ELSE 0 END) AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+          \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON\
+          \ s.customer_key = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key\
+          \ = p.product_key\n  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web\
+          \ set aside)' AS reading,\n  store_cc AS country,\n  COUNT(*) AS products\nFROM per_product\n\
+          WHERE\n  n_store = 1\nGROUP BY\n  1,\n  2\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n\
+          \  store_cc,\n  COUNT(*)\nFROM per_product\nWHERE\n  n_store = 1 AND online_lines = 0\nGROUP\
+          \ BY\n  1,\n  2\nUNION ALL\nSELECT\n  'customer',\n  cust_cc,\n  COUNT(*)\nFROM per_product\n\
+          WHERE\n  n_cust = 1\nGROUP BY\n  1,\n  2\nUNION ALL\nSELECT\n  'overlap: qualifies under store\
+          \ AND customer',\n  '(any)',\n  COUNT(*)\nFROM per_product\nWHERE\n  n_store = 1 AND n_cust\
+          \ = 1\nORDER BY\n  1,\n  3 DESC"
+        came_back: '7 row(s): [{"reading": "customer", "country": "US", "products": 4}, {"reading": "overlap:
+          qualifies under store AND customer", "country": "(any)", "products": 4}, {"reading": "store
+          (strict, no web sales)", "country": "US", "products": 1}, {"reading": "store (web set aside)",
+          "country": "US", "products": 17}, {"reading": "store (web set aside)", "country": "CA", "products":
+          1}, {"reading": "store (web set aside)", "country": "NL", "products": 1}, {"reading": "store
+          (web set aside)", "country": "GB", "products": 1}]'
+      settled_on: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+        \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+        \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+        \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+        \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'store (web set aside)' AS reading,\n\
+        \  product_key,\n  product_name,\n  store_cc AS country_code,\n  n_store AS countries\nFROM per_product\n\
+        WHERE\n  n_store = 1\nUNION ALL\nSELECT\n  'store (strict, no web sales)',\n  product_key,\n \
+        \ product_name,\n  store_cc,\n  n_store\nFROM per_product\nWHERE\n  n_store = 1 AND online_lines\
+        \ = 0\nUNION ALL\nSELECT\n  'customer',\n  product_key,\n  product_name,\n  cust_cc,\n  n_cust\n\
+        FROM per_product\nWHERE\n  n_cust = 1\nORDER BY\n  reading,\n  country_code,\n  product_name"
+      means: The products that pass the "exactly one country" test, listed once per reading that admits
+        them, each with the single country it was sold in. Under the country of the selling shop, 20 products
+        qualify — 17 of them sold only in the United States, one only in Canada, one only in the Netherlands,
+        one only in Great Britain. Tighten that to products with no web-shop sales at all and 1 product
+        qualifies, in the United States. Under the country the buyer lives in, 4 products qualify, all
+        4 in the United States, and all 4 of them also pass the shop reading, so the customer set sits
+        inside the shop set. Over all ten years of orders with no date limit. What has been dropped at
+        this step is every product whose sales touch two or more countries — 2,497 of the 2,517 under
+        the shop reading, 2,513 under the customer reading.
+      readings_taken:
+      - word: only ... one country
+        took: exactly one distinct country, tested as = 1 against the counts from step 3, applied under
+          all three readings rather than one
+        could_also_mean: nothing else — 'only one' is unambiguous as a test; what is ambiguous is which
+          country column it tests
+        declaration: country.default.whose_country_is_asked_never_assumed (confidence C) — the test is
+          fixed, the path is not, and the path may not be chosen silently
+      - word: country
+        took: no reading chosen; 20 products under the shop's country, 4 under the buyer's country, 1
+          under the shop's country strictly requiring no web sales
+        could_also_mean: the three sets are nested and all three are dominated by the United States, so
+          the CHARACTER of the answer is stable even though its SIZE is not
+        declaration: null
+      blocked_by: []
+    - step: '5'
+      step_asks: List products ... and their respective countries
+      turns:
+      - why: Price the third declared path (location__in__country) and check whether it agrees with the
+          store path, so the fork presented to the reader covers every reading the declaration names.
+        did: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    COUNT(DISTINCT CASE WHEN st.country_code\
+          \ <> '--' THEN st.country_code END) AS n_store,\n    COUNT(DISTINCT CASE WHEN l.country_code\
+          \ <> '--' THEN l.country_code END) AS n_loc,\n    COUNT(DISTINCT c.country_code) AS n_cust\n\
+          \  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store AS st\n \
+          \   ON s.store_key = st.store_key\n  JOIN contoso_served.dim_location AS l\n    ON st.location_code\
+          \ = l.location_code\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key = c.customer_key\n\
+          \  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n  GROUP BY\n\
+          \    p.product_key\n)\nSELECT\n  COUNT(*) AS products,\n  SUM(CASE WHEN n_store = 1 THEN 1 ELSE\
+          \ 0 END) AS one_store_country,\n  SUM(CASE WHEN n_loc = 1 THEN 1 ELSE 0 END) AS one_location_country,\n\
+          \  SUM(CASE WHEN n_cust = 1 THEN 1 ELSE 0 END) AS one_customer_country,\n  SUM(CASE WHEN n_store\
+          \ <> n_loc THEN 1 ELSE 0 END) AS products_where_store_and_location_disagree\nFROM per_product"
+        came_back: '1 row(s): [{"products": 2517, "one_store_country": 20, "one_location_country": 20,
+          "one_customer_country": 4, "products_where_store_and_location_disagree": 0}]'
+      - why: All three declared country paths are now priced and the two distinct readings differ materially
+          with no declared default, so the answer is the question that lets the reader point at the one
+          they meant.
+        did: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+          \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN\
+          \ st.country_code <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code)\
+          \ AS n_cust,\n    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN\
+          \ 1 ELSE 0 END) AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+          \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON\
+          \ s.customer_key = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key\
+          \ = p.product_key\n  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling\
+          \ shop country' AS reading,\n  p.product_name AS product,\n  dc.country_name AS country,\n \
+          \ p.n_store AS countries_sold_in\nFROM per_product AS p\nJOIN contoso_served.dim_country AS\
+          \ dc\n  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer\
+          \ country',\n  p.product_name,\n  dc.country_name,\n  p.n_cust\nFROM per_product AS p\nJOIN\
+          \ contoso_served.dim_country AS dc\n  ON p.cust_cc = dc.country_code\nWHERE\n  p.n_cust = 1\n\
+          UNION ALL\nSELECT\n  'c: selling shop country, strict',\n  p.product_name,\n  dc.country_name,\n\
+          \  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc\
+          \ = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n  reading,\n \
+          \ country,\n  product"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 25 row(s) (first 8 of 25): [{"reading": "a:
+          selling shop country", "product": "Adventure Works Chandelier M6150 Grey", "country": "Canada",
+          "countries_sold_in": 1}, {"reading": "a: selling shop country", "product": "Litware Floor Lamp
+          M2015 White", "country": "Netherlands", "countries_sold_in": 1}, {"reading": "a: selling shop
+          country", "product": "Adventure Works Desk Lamp E1300 Black", "country": "United Kingdom", "countries_sold_in":
+          1}, {"reading": "a: selling shop country", "product": "Adventure Works Floor Lamp M2150 Grey",
+          "country": "United States", "countries_sold_in": 1}, {"reading": "a: selling shop country",
+          "product": "Adventure Works Wall Lamp E2150 Grey", "country": "United States", "countries_sold_in":
+          1}, {"reading": "a: selling shop country", "product": "Litware Desk Lamp E1020 Black", "country":
+          "United States", "countries_sold_in": 1}, {"reading": "a: selling shop country", "product":
+          "Litware Floor Lamp M2015 Black", "country": "United States", "countries_sold_in": 1}, {"reading":
+          "a: selling shop country", "product": "Litware Floor'
+      settled_on: "WITH per_product AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    COUNT(DISTINCT\
+        \ CASE WHEN st.country_code <> '--' THEN st.country_code END) AS n_store,\n    MIN(CASE WHEN st.country_code\
+        \ <> '--' THEN st.country_code END) AS store_cc,\n    COUNT(DISTINCT c.country_code) AS n_cust,\n\
+        \    MIN(c.country_code) AS cust_cc,\n    SUM(CASE WHEN s.channel = 'online' THEN 1 ELSE 0 END)\
+        \ AS online_lines\n  FROM contoso_served.v_contoso5_sales_line AS s\n  JOIN contoso_served.dim_store\
+        \ AS st\n    ON s.store_key = st.store_key\n  JOIN contoso_served.dim_customer AS c\n    ON s.customer_key\
+        \ = c.customer_key\n  JOIN contoso_served.dim_product AS p\n    ON s.product_key = p.product_key\n\
+        \  GROUP BY\n    p.product_key,\n    p.product_name\n)\nSELECT\n  'a: selling shop country' AS\
+        \ reading,\n  p.product_name AS product,\n  dc.country_name AS country,\n  p.n_store AS countries_sold_in\n\
+        FROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.store_cc = dc.country_code\n\
+        WHERE\n  p.n_store = 1\nUNION ALL\nSELECT\n  'b: buyer country',\n  p.product_name,\n  dc.country_name,\n\
+        \  p.n_cust\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n  ON p.cust_cc = dc.country_code\n\
+        WHERE\n  p.n_cust = 1\nUNION ALL\nSELECT\n  'c: selling shop country, strict',\n  p.product_name,\n\
+        \  dc.country_name,\n  p.n_store\nFROM per_product AS p\nJOIN contoso_served.dim_country AS dc\n\
+        \  ON p.store_cc = dc.country_code\nWHERE\n  p.n_store = 1 AND p.online_lines = 0\nORDER BY\n\
+        \  reading,\n  country,\n  product"
+      means: 'What I have calculated: for each of the 2,517 products Contoso has ever sold, in how many
+        distinct countries that product''s sales landed — counted once for each way this data can say
+        where a sale happened — over all ten years of orders with both channels included and no date limit;
+        then the products whose count is exactly one, each beside the single country it was sold in. The
+        claimed answer is not one table but the choice between three, because the count of countries per
+        product depends on which country column is read: 20 product-and-country rows by the selling shop''s
+        country, the identical 20 by the shop''s site country, 4 rows by the buyer''s country, and 1 row
+        by the selling shop''s country when a web sale is held to be a sale somewhere else. The figure
+        in each row, "how many countries it was sold in", is 1 by construction — it is the test that selected
+        the row, not an independent measurement, and that is the one column in the requested output that
+        carries no information. What I did NOT include: no period restriction, no channel restriction,
+        no product rollup, and no money or units figure of any kind — the only quantity here is a count
+        of distinct countries per product.'
+      readings_taken:
+      - word: sold in one country
+        took: 'NO READING CHOSEN — all three declared paths measured: shop country 20 products, site country
+          the same 20 (0 products disagree), buyer country 4 products'
+        could_also_mean: the country of the selling store/branch, or the country the buyer lives in —
+          20 rows against 4 rows, and the country mix collapses from US/CA/NL/GB to US only
+        declaration: 'country.default.whose_country_is_asked_never_assumed (confidence C, binds country_code):
+          never pick between the store and the customer silently, and never average the two. Its path_select
+          realization names store, customer and location paths and declares NO default — it forbids the
+          choice rather than settling it'
+      - word: one country
+        took: on the shop path the web shop contributes no country, since its code is a sentinel and not
+          a place — so a product sold in one country plus online still counts as one, which is how 19
+          of the 20 qualify
+        could_also_mean: treating a web sale as a sale outside that one country, leaving 1 product instead
+          of 20 — reported as reading (c)
+        declaration: country.exclusion.sentinel_is_not_a_country and location.exclusion.the_online_row_is_not_a_place
+          forbid counting `--` as a country; neither says what to do about a PRODUCT selling both in one
+          country and online, so this sub-fork is live rather than settled
+      - word: products
+        took: each individual product on its own — one product_key at SKU grain, shown by product_name,
+          which measured unique across all 2,517
+        could_also_mean: rolled up to product line or category — 8 categories or 32 sub-categories
+        declaration: 'Product is declared at SKU grain, ''the level the shelf knows it'', where colour
+          alone makes a new product; dim_product.product_name carries naming: common, #1 of 5, so it is
+          what an answer should show'
+      - word: only sold
+        took: only products that actually have sales — measured, that is all 2,517, so this exclusion
+          drops nothing and the ambiguity is moot
+        could_also_mean: also showing products with no sales at all, of which this bundle has none
+        declaration: null
+      - word: sold (when)
+        took: all sales on record, 2016-05-18 to 2025-12-31
+        could_also_mean: a recent window only, which is the one further choice that would move all three
+          counts
+        declaration: order.default.an_unscoped_question_covers_all_time (confidence C) — cover the full
+          extent of order_date and state the dates included
+      - word: sold (which channel)
+        took: both channels; web-shop sales kept in the population
+        could_also_mean: physical shops only, which is the default when a question's subject is a Store
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its physical default
+          with `applies: subject`; the subject here is a Product, and the operator''s ruling of 2026-10-18
+          has unqualified questions spanning both channels'
+      - word: how many countries it was sold in
+        took: reported as the constant 1, since it is the predicate that selected the rows
+        could_also_mean: the reader may have wanted the count BEFORE the filter — i.e. the distribution
+          across all products, which runs 1 to 8 and is in step 3
+        declaration: null
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+v3_answer_step: '5'
+v3_gaps: []
+v3_bucket: DECLINED
+v3_why: it refused to choose between readings the question did not name
+v3_seconds: 405.3

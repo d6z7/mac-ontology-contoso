@@ -1,0 +1,222 @@
+metadata:
+  source: CONTOSO5
+  version: '1.1'
+  schema_version: '0.3.0-develop'
+  confidence: C
+  provenance: authored
+concept:
+  name: Order
+  class: event
+  definition: One customer's purchase on one date, counted by distinct `order_key` over the line relation.
+    It is also THE FACT NODE of the sales line, one row per order line - every money and quantity
+    measure (net, gross, cost, discount, margin, units, and the per-unit prices) is a column it serves,
+    and every edge from the sale to a dimension starts here. The account is knowledge/order.md.
+grounding:
+  bindings:
+    - relation: v_contoso5_sales_line
+      # `line_number` IS SERVED even though no question asks about it, because the relation's
+      # key is [order_key, line_number] and that key becomes `cell_key` and reaches the SQL.
+      # A concept may serve a SUBSET of a relation -- but never a subset that omits part of
+      # the grain it is being read at. Caught by check_delivery_consistency's KEY-BACKED the
+      # hour this concept moved to a binding: before the move it declared `key: order_key`
+      # alone, which was consistent with serving one column and WRONG about the grain.
+      #
+      # THE MEASURES ARE SERVED HERE, since 2026-10-26 (operator ruling, ontology 1.1). They were
+      # six concepts of their own — NetRevenue, GrossRevenue, SalesCost, Margin, Discount,
+      # UnitsSold — each serving one column of this same relation at this same grain and each
+      # declaring its own copy of every edge to a dimension. One fact node per grain replaces them:
+      # the meaning of each figure is its column's description, its names are its column's
+      # surfaces, and its additivity is its column's `offers.aggregate`.
+      serves: [order_key, line_number, order_date, delivery_date, customer_key, store_key,
+               product_key, currency_code, quantity, net_amount, gross_amount, cost_amount,
+               discount_amount, margin_amount, unit_price, net_price, unit_cost]
+      # `counts`, NOT a narrower `key`. Order declared `key: order_key` on a LINE-grained
+      # relation, so its cell_key -- which reaches the SQL -- said one row per order over a
+      # table of 223,974 lines. The relation is line-grained and says so once; ONE ORDER is one
+      # distinct order_key over those lines, which is exactly what `counts` states.
+      counts: order_key
+  note: reached by counting distinct order_key over the line relation — NOT collapsed, so each row it
+    reads carries exactly one product
+contract:
+  default_reading: A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME — operator ruling, 2026-09-30. No implied
+    "this year" and no implied latest month. The extent is `{order_date}` from 2016-05-18 to 2025-12-31;
+    deliveries run six days further, to 2026-01-06. State the window the answer actually covered, because
+    an unscoped total and a year-to-date total are indistinguishable from the figure alone.
+  rules:
+  - id: order.resolution.rate_on_order_date
+    kind: mac.concept.rule.resolution
+    confidence: P
+    scope: CONTOSO5
+    binds:
+    - order_date
+    - currency_code
+    realized_by:
+    - udf: mac.canon.composite_key_guard
+      params:
+        code_column: to_currency
+        scope_columns:
+        - date_day
+        - from_currency
+  - id: order.default.period_is_order_date
+    kind: mac.concept.rule.default
+    confidence: P
+    scope: CONTOSO5
+    binds:
+    - order_date
+    - delivery_date
+    realized_by:
+    - udf: mac.canon.column_select
+      params:
+        default: ordered
+        columns:
+          ordered:
+            column: order_date
+            surfaces:
+            - ordered
+            - order date
+            - placed
+            - when it was ordered
+          delivered:
+            column: delivery_date
+            surfaces:
+            - delivered
+            - delivery date
+            - shipped
+            - when it arrived
+  - id: order.default.an_unscoped_question_covers_all_time
+    kind: mac.concept.rule.default
+    confidence: C
+    scope: CONTOSO5
+    binds:
+    - order_date
+    realized_by:
+    - udf: mac.canon.period_default
+      params:
+        default: all_time
+        windows:
+          all_time:
+            unbounded: true
+  # ADDED 2026-10-23, OPERATOR RULING: "but as the time move on ... we need to specify the
+  # sampling date lets say on 31.12.2025". THIS RULE IS WHY THAT DATE IS NOT TYPED ANYWHERE:
+  # `max(order_date)` over this relation IS 2025-12-31, so the pin is MEASURED FROM THE DATA and
+  # re-measures itself when the warehouse grows. A literal would have to be re-typed and would be
+  # wrong the day it was not.
+  #
+  # WHAT IT CLOSES. `mac.canon.scoped_latest` has existed, correct and declared
+  # (`mac_vocabulary.yaml#canon.terms.scoped_latest`, serving `tracking_vintage`) and NOTHING IN
+  # THIS BUNDLE FIRED IT -- so every relative period resolved against the CLOCK while the canon
+  # that computes it FROM THE DATA sat unreachable. That is this estate's named defect: a
+  # declaration with no reader. tools/mac_vintage.py refused with NO-ANCHOR until this block.
+  #
+  # THE PLACEMENT IS THE PREPARED DECISION OF 2026-10-11
+  # (meaning-as-code/decisions/PREPARED-2026-10-11_contoso-anchor-binding.md), adapted to this
+  # bundle's names: the anchor is a property of the FACT, so the binding goes where the relation
+  # is. A binding whose params point at another concept's relation is indirection that rots.
+  #
+  # NO `scope`, DELIBERATELY. The canon's page permits an unscoped anchor "only when there is no
+  # axis to pin", and this relation carries no scenario, plan or budget axis -- there are no
+  # forward-dated rows to exclude. Measured, both halves: max(order_date) 2025-12-31 and
+  # max(delivery_date) 2026-01-06, six days further, which is why the anchor names order_date and
+  # not "the newest date in the relation".
+  - id: order.resolution.the_anchor_is_the_newest_order
+    kind: mac.concept.rule.resolution
+    confidence: C
+    scope: CONTOSO5
+    binds:
+    - order_date
+    realized_by:
+    - udf: mac.canon.scoped_latest
+      params:
+        table: contoso_served.v_contoso5_sales_line
+        date_column: order_date
+  # ── THE RATIOS OVER THE SALE'S MEASURES, moved here 2026-10-26 from the retired measure concepts
+  # NetRevenue, Discount and Margin, with their ids UNCHANGED: frozen acceptance captures record the
+  # id each run read, and a rule's id is a name, not an address. The denominators were concept names
+  # (UnitsSold, GrossRevenue, NetRevenue, SalesCost); they are now the COLUMNS those concepts
+  # measured (`quantity`, `gross_amount`, `net_amount`, `cost_amount`), which is the same figure
+  # with one home fewer. The price reading's figure and ruling date are on `net_amount`'s
+  # description, where a reader of the relation finds them.
+  - id: net_revenue.default.a_price_is_revenue_per_article
+    kind: mac.concept.rule.default
+    confidence: C
+    scope: CONTOSO5
+    binds:
+    - net_amount
+    realized_by:
+    - udf: mac.canon.ratio_select
+      params:
+        default: price_per_article
+        ratios:
+          price_per_article:
+            denominator: quantity
+            surfaces:
+            - price
+            - average price
+            - unit price
+            - price per unit
+            - per unit
+            - price per article
+            - per article
+  # RETIRED 2026-10-25 on NetRevenue, carried here with its rule: a restatement.
+  #
+  # IT SAID: a question saying "revenue" or "sales" without saying net or gross is answered on the
+  # net amount and told so. THE WORD ALREADY BINDS, at the column, on the one relation both
+  # concepts ground on:
+  #   v_contoso5_sales_line.net_amount    surfaces: revenue · sales · net · net revenue ·
+  #                                       net sales · turnover · takings · what we charged
+  #   v_contoso5_sales_line.gross_amount  surfaces: gross · gross revenue · gross sales ·
+  #                                       list value · before discount
+  # So `revenue` reaches the net column by name and `gross revenue` reaches the gross one. The
+  # default IS the surface list.
+  #
+  # THIS IS THE RULE I BOUND WRONGLY EARLIER THE SAME DAY, to `column_select` with a `gross_amount`
+  # this concept does not serve. The binding was wrong and so was the diagnosis: the right reading
+  # is that the routing was already declared one layer down, and a rule naming it again is a second
+  # home. `column_select` remains the canon for two readings of one measure where the surfaces do
+  # NOT settle it; here they do.
+  - id: discount.aggregation.percent_is_over_gross
+    kind: mac.concept.rule.aggregation
+    confidence: C
+    scope: CONTOSO5
+    binds:
+    - discount_amount
+    realized_by:
+    - udf: mac.canon.ratio_select
+      params:
+        default: percent
+        ratios:
+          percent:
+            denominator: gross_amount
+            surfaces:
+            - discount percentage
+            - discount rate
+            - discount %
+            - discount as a percentage
+  - id: margin.aggregation.two_named_ratios
+    kind: mac.concept.rule.aggregation
+    confidence: C
+    scope: CONTOSO5
+    binds:
+    - margin_amount
+    realized_by:
+    - udf: mac.canon.ratio_select
+      params:
+        ratios:
+          margin_percent:
+            denominator: net_amount
+            surfaces:
+            - margin %
+            - margin percentage
+            - margin rate
+            - net margin
+            - margin on net
+          markup_percent:
+            denominator: cost_amount
+            surfaces:
+            - markup
+            - markup %
+            - markup percentage
+            - margin on cost
+governance:
+  owner: operator
+  last_reviewed: '2026-09-30'

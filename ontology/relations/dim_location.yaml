@@ -1,0 +1,101 @@
+# CONTOSO5 > the location row, SEMANTICALLY — what a question may do with each of its columns.
+#
+# ONE CONCEPT READS THIS RELATION, so this file de-duplicates nothing. It is here because a
+# TWO-FORM ESTATE IS THE LIABILITY: every one of the ten blind readers found on 2026-10-08 had a
+# path that handled `source:` and returned nothing for `bindings:` without saying so, and
+# `PASS over a shrunken population` is how that reads from outside. With one form, a reader that
+# handles only the other sees NOTHING and fails loudly.
+#
+# THE GEOGRAPHY LADDER LIVES HERE, which is the fact worth having in one home: country and state are
+# not independent axes but a hierarchy, and the `finer_than`/`scoped_by` rulings on these columns are
+# what let a breakdown roll up without the composer guessing. Store reaches this relation through
+# `location_code`, so the ladder is one join away from every sale.
+#
+# THE LADDER IS TWO RUNGS, NOT FOUR. This paragraph listed "continent, country, state and city" until
+# 2026-10-24 and this relation holds neither end of that: there is no continent column and no city
+# column, and `main.store` has none either — a store's finest place is its `state`, which in France
+# means regions and overseas territories. The only `finer_than` ruling here is `state finer_than
+# country_code`. A reader told the ladder has a city rung will go looking for one, which is how an
+# answer comes back holding site codes where city names were asked for. City exists in this bundle
+# only as `dim_customer.city` — where a customer LIVES, surfaced as `town`, and declared
+# `offers.suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CITY`.
+#
+# The data plane's view of the same relation is data/datasets/dim_location.yaml.
+metadata:
+  source: CONTOSO5
+  schema_version: '0.3.0-develop'
+  confidence: C
+  provenance: authored
+
+relation:
+  name: dim_location
+  key: location_code
+
+columns:
+  location_code:
+    description: >-
+      THE SITE ITSELF — one row per site, 67 of them, which is what makes this relation the place a
+      question about sites should be answered from. The value -1 is the online sentinel and not a
+      place (location.exclusion.the_online_row_is_not_a_place).
+
+      SURFACES WIDENED 2026-10-24 BY THE OPERATOR, verbatim: "dont call it site code ... just site,
+      location, city". It had carried only `site code`, so a question saying SITE had no reason to
+      prefer this relation — where one row already IS one site — over `dim_store.location_code`,
+      where the same code repeats across rows. Both resolve to the same 67 sites, so this was never
+      the cause of a wrong answer; it is a reader finding the site grain by NAME instead of inferring
+      it from a description sentence.
+
+      `city` WAS ASKED FOR AND THEN WITHDRAWN THE SAME DAY, and the reason belongs here because the
+      next person will reach for it too. THIS BUNDLE HAS NO STORE CITY. `main.store` carries
+      StoreKey, StoreCode, GeoAreaKey, CountryCode, CountryName, State, OpenDate, CloseDate,
+      Description, SquareMeters, Status — and no city or town; `GeoAreaKey` is 67 distinct over 74
+      rows, another site identifier rather than a link to a geography. A store's place is its
+      `state`, and in France those are regions and overseas territories: Basse-Normandie, Corse,
+      Franche-Comte, La Reunion, Limousin, Martinique, Mayotte.
+
+      CITY DOES EXIST IN THIS BUNDLE, ON THE CUSTOMER — `dim_customer.city`, 34,581 distinct, 453 of
+      them French, real names (Abbeville, Agde, Agen, Aix-En-Provence). It surfaces as `town` and
+      carries `offers.suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CITY`, so it is declared personally
+      identifying and must not appear in an answer. It is also where a customer LIVES, not where a
+      shop stands, so it could not answer a question about stores even if it were usable.
+
+      WHY SURFACING `city` HERE WAS WORSE THAN LEAVING IT OFF: `location_code` is an INTEGER. A
+      reader binding "which cities" to it answers 12, 13, 14 — site codes presented as city names.
+      Unbound, the question fails to bind and the walk says so, which is the correct outcome for a
+      fact this bundle does not hold.
+    surfaces: ['site', 'location']
+    offers: {}
+  country_code:
+    description: >-
+      the country the site sits in.
+    surfaces: ['site country code']
+    offers:
+      axis: categorical
+  country_name:
+    description: >-
+      the name of the country the site sits in, carried here as well as on dim_country.
+    surfaces: ['site country name']
+    offers:
+      axis: categorical
+    rulings:
+      label_of: country_code
+      naming: long
+  state:
+    description: >-
+      the state, province or region the site sits in.
+    surfaces: ['province', 'region']
+    offers:
+      axis: categorical
+    rulings:
+      finer_than: country_code
+  units_ever_here:
+    description: >-
+      how many store rows have ever stood at this site, 1 to 3 over 67 sites. This is WHY a
+      store is its location and not its row: a site re-tenanted twice has three store rows and
+      is one store.
+    surfaces: ['stores ever here', 'tenancies', 'how many stores here']
+    offers:
+      aggregate:
+        type: precomputed
+        unit: units
+      extremum: [min, max]

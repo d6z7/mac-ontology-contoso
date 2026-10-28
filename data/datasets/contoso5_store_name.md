@@ -1,0 +1,92 @@
+---
+type: Dataset
+title: 'Clean: contoso5_store_name'
+description: AI-friendly clean shape the ontology binds to
+relation: null
+tags:
+- CONTOSO5
+- dataset
+- lifecycle:draft
+---
+
+## Columns
+
+| column | type | role | reference |
+|---|---|---|---|
+| `code` | string | PK |  |
+
+## Rows
+
+- The rows of this relation live in a FILE: format `csv` · `data/lookups/contoso5_store_name.lookup.csv` · 67 row(s) measured.
+
+| `code` |
+|---|
+| Contoso Store Alaska |
+| Contoso Store Arkansas |
+| Contoso Store Armagh |
+| Contoso Store Australian Capital Territory |
+| Contoso Store Ayrshire |
+| Contoso Store Basse-Normandie |
+| Contoso Store Belfast |
+| Contoso Store Berlin |
+| Contoso Store Blaenau Gwent |
+| Contoso Store Brandenburg |
+| Contoso Store Caltanissetta |
+| Contoso Store Connecticut |
+| Contoso Store Corse |
+| Contoso Store Delaware |
+| Contoso Store Drenthe |
+| Contoso Store Dungannon and South Tyrone |
+| Contoso Store Enna |
+| Contoso Store Fermanagh |
+| Contoso Store Flevoland |
+| Contoso Store Franche-Comté |
+| Contoso Store Freie Hansestadt Bremen |
+| Contoso Store Freistaat Thüringen |
+| Contoso Store Friesland |
+| Contoso Store Groningen |
+| Contoso Store Hamburg |
+| Contoso Store Hawaii |
+| Contoso Store Hessen |
+| Contoso Store Idaho |
+| Contoso Store Iowa |
+| Contoso Store Kansas |
+| Contoso Store La Réunion |
+| Contoso Store Limousin |
+| Contoso Store Maine |
+| Contoso Store Martinique |
+| Contoso Store Mayotte |
+| Contoso Store Mecklenburg-Vorpommern |
+| Contoso Store Mississippi |
+| Contoso Store Montana |
+| Contoso Store Nebraska |
+| Contoso Store Nevada |
+| Contoso Store New Brunswick |
+| Contoso Store New Hampshire |
+| Contoso Store New Mexico |
+| Contoso Store Newfoundland and Labrador |
+| Contoso Store North Dakota |
+| Contoso Store North Down |
+| Contoso Store Northern Territory |
+| Contoso Store Northwest Territories |
+| Contoso Store Nunavut |
+| Contoso Store Oregon |
+| Contoso Store Pesaro |
+| Contoso Store Rhode Island |
+| Contoso Store Saarland |
+| Contoso Store Sachsen-Anhalt |
+| Contoso Store South Australia |
+| Contoso Store South Carolina |
+| Contoso Store South Dakota |
+| Contoso Store Tasmania |
+| Contoso Store Utah |
+| Contoso Store Victoria |
+| Contoso Store Washington DC |
+| Contoso Store West Virginia |
+| Contoso Store Western Australia |
+| Contoso Store Wyoming |
+| Contoso Store Yukon |
+| Contoso Store Zeeland |
+| Online store |
+
+_All 67 row(s) — this IS the complete mapping._

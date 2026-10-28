@@ -1,0 +1,1463 @@
+id: ADV-18
+captured_at: '2026-10-24T21:44:53+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: customer
+  operation: select
+  qdmr_simplified: "  1         FROM       customers                                                 \
+    \          “Customers”\n  2  ← 1    PIVOT_TO   purchases                                         \
+    \                  “bought”\n  3  ← 2    DURING     by year                                      \
+    \                       “2025”\n  4  ← 3    GROUP_BY   by customer                               \
+    \                          “Customers”\n  5  ← 4    AGGREGATE  count distinct of quarter of 2025 they\
+    \ bought in                    “bought in all 4 quarters of 2025”\n  6  ← 4+5  HAVING     figure_step='5'\
+    \ op='=' than={'value': 4, 'said': 'all 4 quarters'}  “bought in all 4 quarters of 2025”\n  7  ← 6\
+    \    SELECT     customer, number of quarters of 2025 they bought in                 “Customers who\
+    \ bought in all 4 quarters of 2025”\n  answer: step 7   confidence: 0.79   A DAG   step(s) 4 feed\
+    \ more than one   converging at 6\n  UNDERSTOOD AS: List the customers who made at least one purchase\
+    \ in every one of the four quarters of 2025 (Q1, Q2, Q3 and Q4) — one row per customer, showing the\
+    \ customer and the number of distinct 2025 quarters they bought in (which will be 4). Customers who\
+    \ bought in only one, two or three of the quarters, and customers with no 2025 purchases at all, are\
+    \ excluded.\n  AMBIGUOUS 'bought' — ASKS: Should a customer count as having bought in a quarter based\
+    \ on any order they placed, or only on orders that were actually paid for and not cancelled or fully\
+    \ returned?\n      could mean: any order placed in that quarter counts\n      could mean: only completed/paid\
+    \ orders count, excluding cancelled or returned ones\n      took: any purchase recorded in that quarter\
+    \ counts\n  AMBIGUOUS 'all 4 quarters of 2025' — ASKS: Do you mean the four calendar quarters (Jan–Mar,\
+    \ Apr–Jun, Jul–Sep, Oct–Dec 2025), or your company's fiscal quarters for fiscal year 2025?\n     \
+    \ could mean: calendar quarters of 2025\n      could mean: fiscal quarters of fiscal year 2025\n \
+    \     took: calendar quarters Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025\n  AMBIGUOUS 'Customers' — ASKS:\
+    \ Should each individual customer account be counted on its own, or should accounts belonging to the\
+    \ same parent company or household be rolled up into one customer?\n      could mean: one row per\
+    \ individual customer account\n      could mean: one row per parent company or household, rolling\
+    \ up its accounts\n      took: one row per individual customer\n  cannot_express: which specific quarters\
+    \ each customer bought in, or how much they bought in each quarter — the steps only test that all\
+    \ four were covered\n  OUTPUT SHAPE: a list of names and figures · many row(s) · named by customer\
+    \ · carrying number of quarters of 2025 they bought in"
+  understood_as_in_human_words: List the customers who made at least one purchase in every one of the
+    four quarters of 2025 (Q1, Q2, Q3 and Q4) — one row per customer, showing the customer and the number
+    of distinct 2025 quarters they bought in (which will be 4). Customers who bought in only one, two
+    or three of the quarters, and customers with no 2025 purchases at all, are excluded.
+  population_actually_answered: 'The 13,834 customer accounts that placed at least one order with an order_date
+    in calendar 2025 — 3 of them qualified. Restrictions I applied, and where each came from: (1) the
+    period read on `order_date`, not `delivery_date`, because order.default.period_is_order_date declares
+    `default: ordered`; I measured the alternative and it returns the same three customers. (2) Calendar
+    quarters, because this bundle declares no fiscal calendar, so fiscal quarters cannot be computed at
+    all. (3) BOTH sales channels — shop and web shop — with no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+    is scoped `applies: subject` and the subject here is customers, not stores (operator''s ruling of
+    2026-10-18). (4) One row per individual customer account, no roll-up to household or parent company,
+    as no such column is declared. (5) Every recorded purchase line counted, with no exclusion for cancellations
+    or returns: the fact declares no status, cancellation or return column, and the lowest quantity anywhere
+    is 1 and the lowest net amount 0.83, so there is no reversing line to exclude. The three are identified
+    by `customer_key`, not by name, because dim_customer.customer_name is declared SUPPRESSED (DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME).
+    Excluded by the question''s own terms: the 38,355 registered customers who bought in an earlier year
+    but not in 2025, and the 52,801 who have never bought anything.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: a list of names and figures
+    columns_the_answer_step_asks_for: &id001
+    - customer
+    - number of quarters of 2025 they bought in
+    figures_the_answer_step_computes: []
+    answer_step: '7'
+    verb: select
+    said: Customers who bought in all 4 quarters of 2025
+    stage1_confidence: 0.79
+  canonical_question: &id002
+    understood_as: List the customers who made at least one purchase in every one of the four quarters
+      of 2025 (Q1, Q2, Q3 and Q4) — one row per customer, showing the customer and the number of distinct
+      2025 quarters they bought in (which will be 4). Customers who bought in only one, two or three of
+      the quarters, and customers with no 2025 purchases at all, are excluded.
+    steps:
+    - id: '1'
+      do: from
+      thing: customers
+      said: Customers
+    - id: '2'
+      do: pivot_to
+      of: '1'
+      to: purchases
+      said: bought
+    - id: '3'
+      do: during
+      of: '2'
+      grain: year
+      said: '2025'
+    - id: '4'
+      do: group_by
+      of: '3'
+      thing: customer
+      said: Customers
+    - id: '5'
+      do: aggregate
+      of: '4'
+      figures:
+      - how: count distinct
+        of: quarter of 2025 they bought in
+        said: in all 4 quarters of 2025
+      said: bought in all 4 quarters of 2025
+    - id: '6'
+      do: having
+      of: '4'
+      figure_step: '5'
+      op: '='
+      than:
+        value: 4
+        said: all 4 quarters
+      said: bought in all 4 quarters of 2025
+    - id: '7'
+      do: select
+      of: '6'
+      columns: *id001
+      said: Customers who bought in all 4 quarters of 2025
+    answer: '7'
+    output_shape: &id004
+      shape: a list of names and figures
+      said: Customers who bought in all 4 quarters of 2025
+      rows: many
+      key_columns: &id006
+      - customer
+      figure_columns: &id007
+      - number of quarters of 2025 they bought in
+    ambiguities:
+    - words: bought
+      question: Should a customer count as having bought in a quarter based on any order they placed,
+        or only on orders that were actually paid for and not cancelled or fully returned?
+      readings:
+      - any order placed in that quarter counts
+      - only completed/paid orders count, excluding cancelled or returned ones
+      assumed: any purchase recorded in that quarter counts
+    - words: all 4 quarters of 2025
+      question: Do you mean the four calendar quarters (Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025), or your
+        company's fiscal quarters for fiscal year 2025?
+      readings:
+      - calendar quarters of 2025
+      - fiscal quarters of fiscal year 2025
+      assumed: calendar quarters Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025
+    - words: Customers
+      question: Should each individual customer account be counted on its own, or should accounts belonging
+        to the same parent company or household be rolled up into one customer?
+      readings:
+      - one row per individual customer account
+      - one row per parent company or household, rolling up its accounts
+      assumed: one row per individual customer
+    cannot_express: &id003
+    - which specific quarters each customer bought in, or how much they bought in each quarter — the steps
+      only test that all four were covered
+    confidence: 0.79
+  steps: 7
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: customer
+      type: number
+    - name: quarters_of_2025_bought_in
+      type: number
+    rows:
+    - - 208369
+      - 4
+    - - 556838
+      - 4
+    - - 595495
+      - 4
+  value: null
+  raw: '[{"customer": 208369, "quarters_of_2025_bought_in": 4}, {"customer": 556838, "quarters_of_2025_bought_in":
+    4}, {"customer": 595495, "quarters_of_2025_bought_in": 4}]'
+  reading: a list of names and figures
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "Customers → one row per individual customer account on dim_customer, identified by customer_key\
+      \ — 104,990 of them, grain confirmed as exactly one row per key\n        could also mean: accounts\
+      \ rolled up into a parent company or household, which this bundle declares no column for"
+    ref: Customer concept, grounded in contoso_served.dim_customer key customer_key
+  - kind: ''
+    text: "Customers (how they will be named in the answer) → customer_key will be the identifier shown,\
+      \ because dim_customer.customer_name carries `suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME`\
+      \ and must not appear in an answer\n        could also mean: the customer's registered name, which\
+      \ is the declared `naming: common` column a reader would normally be shown — it is forbidden here,\
+      \ so the answer will carry keys and not names"
+    ref: dim_customer.customer_name — SUPPRESSED, declared reason DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+  - kind: ''
+    text: "bought → any purchase line recorded in the fact counts — which is every line there is\n   \
+      \     could also mean: only completed and paid orders, excluding cancelled or fully returned ones.\
+      \ THIS BUNDLE CANNOT EXPRESS THAT READING: v_contoso5_sales_line carries no order status, no cancellation\
+      \ flag and no return flag, and I measured the only trace a return could leave — the lowest quantity\
+      \ anywhere is 1 and the lowest net amount is 0.83, both positive, so there is not a single reversing\
+      \ line. The two readings select the identical population and the fork costs nothing"
+    ref: Order concept, grounded in v_contoso5_sales_line counting distinct order_key; no status or reversal
+      column is declared on the relation
+  - kind: ''
+    text: "bought (which channel) → both channels — shop purchases and web-shop purchases alike, 2 channels\
+      \ present\n        could also mean: physical shops only, which is the `default: physical` of store.resolution.the_channel_is_the_location_sentinel.\
+      \ It does NOT reach here: that realization is scoped `applies: subject`, and the subject of this\
+      \ question is customers and their purchases, not a Store. The operator's ruling of 2026-10-18 is\
+      \ explicit that a question not about stores spans both channels"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel — applies: subject; v_contoso5_sales_line.channel'
+  - kind: ''
+    text: "2025 → the year the order was PLACED, order_date between 2025-01-01 and 2025-12-31 — 37,708\
+      \ lines\n        could also mean: the year the order was DELIVERED. I measured it: 37,616 lines,\
+      \ with the quarters shifting by roughly 1% each (Q1 10,073 vs 9,939, Q2 7,424 vs 7,526, Q3 9,127\
+      \ vs 9,122, Q4 10,992 vs 11,121) as orders placed near a quarter boundary land in the next one.\
+      \ The declared default settles the choice, but because the final answer is an all-four-quarters\
+      \ membership test rather than a sum, a handful of boundary orders could still move individual customers\
+      \ in or out — so I will report the final customer count under both readings"
+    ref: 'order.default.period_is_order_date — default: ordered; v_contoso5_sales_line.order_date carries
+      period_binding: True'
+  - kind: ''
+    text: "all 4 quarters of 2025 → the four CALENDAR quarters — Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025\n\
+      \        could also mean: fiscal quarters of a fiscal year 2025. THIS BUNDLE CANNOT EXPRESS THAT\
+      \ READING: no fiscal calendar, fiscal-year column or period table is declared anywhere in the ontology,\
+      \ so there is no fiscal quarter to compute. Calendar is the only quarter this data has"
+    ref: no fiscal period is declared on any relation; the only time axis on the fact is order_date /
+      delivery_date
+  - kind: ''
+    text: "2025 (period column), re-priced at the figure → order_date — 3 customers reach all four quarters\n\
+      \        could also mean: delivery_date — also exactly 3 customers reach all four quarters, with\
+      \ the rest of the distribution nearly identical (12,534 / 1,217 / 59 / 3). The readings AGREE on\
+      \ the answer's size, so the fork I flagged at step 3 is settled as immaterial and needs no question"
+    ref: 'order.default.period_is_order_date — default: ordered'
+  - kind: ''
+    text: "Customers (as shown in the answer) → customer_key, the numeric account identifier\n       \
+      \ could also mean: the customer's registered name, which is the declared `naming: common` column\
+      \ and what a reader asking \"which customers\" probably wants — forbidden in an answer by its suppression,\
+      \ so keys are the only identifier available"
+    ref: dim_customer.customer_name — SUPPRESSED, DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+  - kind: ''
+    text: "bought → any purchase line recorded in 2025 counts\n        could also mean: only completed,\
+      \ paid, non-cancelled, non-returned orders — not expressible here, and measured to be the identical\
+      \ population: no status or reversal column exists, and every line carries a positive quantity and\
+      \ a positive amount"
+    ref: Order concept grounded in v_contoso5_sales_line; no status column declared on the relation
+  - kind: ''
+    text: "all 4 quarters of 2025 → the four calendar quarters, read on order_date — 3 customers\n   \
+      \     could also mean: read on delivery_date, which I measured: the SAME three customers qualify,\
+      \ 208369, 556838 and 595495. Fiscal quarters are not computable in this bundle"
+    ref: 'order.default.period_is_order_date; v_contoso5_sales_line.order_date carries period_binding:
+      True'
+  concepts: []
+  rules:
+  - id: Customer concept
+    why: '''Customers'' = one row per individual customer account on dim_customer, identified by customer_key
+      — 104,990 of them, grain confirmed as exactly one row per key'
+  - id: grounded in contoso_served.dim_customer key customer_key
+    why: '''Customers'' = one row per individual customer account on dim_customer, identified by customer_key
+      — 104,990 of them, grain confirmed as exactly one row per key'
+  - id: dim_customer.customer_name — SUPPRESSED
+    why: '''Customers (how they will be named in the answer)'' = customer_key will be the identifier shown,
+      because dim_customer.customer_name carries `suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME`
+      and must not appear in an answer'
+  - id: declared reason DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+    why: '''Customers (how they will be named in the answer)'' = customer_key will be the identifier shown,
+      because dim_customer.customer_name carries `suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME`
+      and must not appear in an answer'
+  - id: Order concept
+    why: '''bought'' = any purchase line recorded in the fact counts — which is every line there is'
+  - id: grounded in v_contoso5_sales_line counting distinct order_key
+    why: '''bought'' = any purchase line recorded in the fact counts — which is every line there is'
+  - id: no status or reversal column is declared on the relation
+    why: '''bought'' = any purchase line recorded in the fact counts — which is every line there is'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel — applies: subject'
+    why: '''bought (which channel)'' = both channels — shop purchases and web-shop purchases alike, 2
+      channels present'
+  - id: v_contoso5_sales_line.channel
+    why: '''bought (which channel)'' = both channels — shop purchases and web-shop purchases alike, 2
+      channels present'
+  - id: 'order.default.period_is_order_date — default: ordered'
+    why: '''2025'' = the year the order was PLACED, order_date between 2025-01-01 and 2025-12-31 — 37,708
+      lines'
+  - id: 'v_contoso5_sales_line.order_date carries period_binding: True'
+    why: '''2025'' = the year the order was PLACED, order_date between 2025-01-01 and 2025-12-31 — 37,708
+      lines'
+  - id: no fiscal period is declared on any relation
+    why: '''all 4 quarters of 2025'' = the four CALENDAR quarters — Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec
+      2025'
+  - id: the only time axis on the fact is order_date / delivery_date
+    why: '''all 4 quarters of 2025'' = the four CALENDAR quarters — Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec
+      2025'
+  - id: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+    why: '''Customers (as shown in the answer)'' = customer_key, the numeric account identifier'
+  - id: Order concept grounded in v_contoso5_sales_line
+    why: '''bought'' = any purchase line recorded in 2025 counts'
+  - id: no status column declared on the relation
+    why: '''bought'' = any purchase line recorded in 2025 counts'
+  - id: order.default.period_is_order_date
+    why: '''all 4 quarters of 2025'' = the four calendar quarters, read on order_date — 3 customers'
+  edges: []
+sql:
+- "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+  FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n  s.customer_key\n\
+  HAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+- "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
+- "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS s"
+- "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date,\n  QUARTER(s.order_date) AS quarter_of_2025\n\
+  FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025"
+- "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+  \ = 2025\nGROUP BY\n  s.customer_key"
+- "SELECT\n  s.customer_key,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+  FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n  s.customer_key"
+- "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+  \ = 2025\nGROUP BY\n  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4"
+answer_sql: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+  FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n  s.customer_key\n\
+  HAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+sql_valid: true
+result:
+  status: ok
+  rows: 3
+  cols: &id008
+  - customer
+  - quarters_of_2025_bought_in
+  sample_rows:
+  - - 208369
+    - 4
+  - - 556838
+    - 4
+  - - 595495
+    - 4
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1         FROM       customers                                   \
+    \                        “Customers”\n  2  ← 1    PIVOT_TO   purchases                           \
+    \                                “bought”\n  3  ← 2    DURING     by year                        \
+    \                                     “2025”\n  4  ← 3    GROUP_BY   by customer                 \
+    \                                        “Customers”\n  5  ← 4    AGGREGATE  count distinct of quarter\
+    \ of 2025 they bought in                    “bought in all 4 quarters of 2025”\n  6  ← 4+5  HAVING\
+    \     figure_step='5' op='=' than={'value': 4, 'said': 'all 4 quarters'}  “bought in all 4 quarters\
+    \ of 2025”\n  7  ← 6    SELECT     customer, number of quarters of 2025 they bought in           \
+    \      “Customers who bought in all 4 quarters of 2025”\n  answer: step 7   confidence: 0.79   A DAG\
+    \   step(s) 4 feed more than one   converging at 6\n  UNDERSTOOD AS: List the customers who made at\
+    \ least one purchase in every one of the four quarters of 2025 (Q1, Q2, Q3 and Q4) — one row per customer,\
+    \ showing the customer and the number of distinct 2025 quarters they bought in (which will be 4).\
+    \ Customers who bought in only one, two or three of the quarters, and customers with no 2025 purchases\
+    \ at all, are excluded.\n  AMBIGUOUS 'bought' — ASKS: Should a customer count as having bought in\
+    \ a quarter based on any order they placed, or only on orders that were actually paid for and not\
+    \ cancelled or fully returned?\n      could mean: any order placed in that quarter counts\n      could\
+    \ mean: only completed/paid orders count, excluding cancelled or returned ones\n      took: any purchase\
+    \ recorded in that quarter counts\n  AMBIGUOUS 'all 4 quarters of 2025' — ASKS: Do you mean the four\
+    \ calendar quarters (Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025), or your company's fiscal quarters for\
+    \ fiscal year 2025?\n      could mean: calendar quarters of 2025\n      could mean: fiscal quarters\
+    \ of fiscal year 2025\n      took: calendar quarters Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025\n  AMBIGUOUS\
+    \ 'Customers' — ASKS: Should each individual customer account be counted on its own, or should accounts\
+    \ belonging to the same parent company or household be rolled up into one customer?\n      could mean:\
+    \ one row per individual customer account\n      could mean: one row per parent company or household,\
+    \ rolling up its accounts\n      took: one row per individual customer\n  cannot_express: which specific\
+    \ quarters each customer bought in, or how much they bought in each quarter — the steps only test\
+    \ that all four were covered\n  OUTPUT SHAPE: a list of names and figures · many row(s) · named by\
+    \ customer · carrying number of quarters of 2025 they bought in"
+  understood_as: List the customers who made at least one purchase in every one of the four quarters of
+    2025 (Q1, Q2, Q3 and Q4) — one row per customer, showing the customer and the number of distinct 2025
+    quarters they bought in (which will be 4). Customers who bought in only one, two or three of the quarters,
+    and customers with no 2025 purchases at all, are excluded.
+  ambiguities_it_saw:
+  - words: bought
+    asks: Should a customer count as having bought in a quarter based on any order they placed, or only
+      on orders that were actually paid for and not cancelled or fully returned?
+    readings:
+    - any order placed in that quarter counts
+    - only completed/paid orders count, excluding cancelled or returned ones
+    took: any purchase recorded in that quarter counts
+  - words: all 4 quarters of 2025
+    asks: Do you mean the four calendar quarters (Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025), or your company's
+      fiscal quarters for fiscal year 2025?
+    readings:
+    - calendar quarters of 2025
+    - fiscal quarters of fiscal year 2025
+    took: calendar quarters Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025
+  - words: Customers
+    asks: Should each individual customer account be counted on its own, or should accounts belonging
+      to the same parent company or household be rolled up into one customer?
+    readings:
+    - one row per individual customer account
+    - one row per parent company or household, rolling up its accounts
+    took: one row per individual customer
+  presentation:
+    claimed_answer_is: a list of names and figures
+    answer_step: '7'
+    answer_step_asks:
+      do: select
+      of: '6'
+      columns: *id001
+      said: Customers who bought in all 4 quarters of 2025
+    confidence_stage1: 0.79
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date,\n  QUARTER(s.order_date) AS quarter_of_2025\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+      \ = 2025\nGROUP BY\n  s.customer_key"
+    params: {}
+  - step: '5'
+    sql: "SELECT\n  s.customer_key,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n \
+      \ s.customer_key"
+    params: {}
+  - step: '6'
+    sql: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+      \ = 2025\nGROUP BY\n  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4"
+    params: {}
+  - step: '7'
+    sql: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n \
+      \ s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+    params: {}
+  what_it_calculated: 'These three customers — keys 208369, 556838 and 595495 — are the only people on
+    Contoso''s register who placed at least one order in every calendar quarter of 2025, and the 4 beside
+    each is the number of distinct 2025 quarters they bought in. For scale: of the 13,834 customers who
+    bought anything in 2025, 12,553 appeared in only one quarter, 1,219 in two, 59 in three, and these
+    3 in all four. What the figure does NOT include: nothing about how much they spent, how many orders
+    they placed, or what they bought — the test is merely presence in a quarter, so one small order per
+    quarter counts the same as fifty. It does not say which quarters, because all four is the only qualifying
+    pattern. And it hands back keys rather than names, which is as close to "which customers" as the suppression
+    on customer_name allows.'
+  rows_returned: &id005
+  - customer: 208369
+    quarters_of_2025_bought_in: 4
+  - customer: 556838
+    quarters_of_2025_bought_in: 4
+  - customer: 595495
+    quarters_of_2025_bought_in: 4
+  synthesis:
+    claimed: '[{"customer": 208369, "quarters_of_2025_bought_in": 4}, {"customer": 556838, "quarters_of_2025_bought_in":
+      4}, {"customer": 595495, "quarters_of_2025_bought_in": 4}]'
+    shape: a list of names and figures
+    answered_population: 'The 13,834 customer accounts that placed at least one order with an order_date
+      in calendar 2025 — 3 of them qualified. Restrictions I applied, and where each came from: (1) the
+      period read on `order_date`, not `delivery_date`, because order.default.period_is_order_date declares
+      `default: ordered`; I measured the alternative and it returns the same three customers. (2) Calendar
+      quarters, because this bundle declares no fiscal calendar, so fiscal quarters cannot be computed
+      at all. (3) BOTH sales channels — shop and web shop — with no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+      is scoped `applies: subject` and the subject here is customers, not stores (operator''s ruling of
+      2026-10-18). (4) One row per individual customer account, no roll-up to household or parent company,
+      as no such column is declared. (5) Every recorded purchase line counted, with no exclusion for cancellations
+      or returns: the fact declares no status, cancellation or return column, and the lowest quantity
+      anywhere is 1 and the lowest net amount 0.83, so there is no reversing line to exclude. The three
+      are identified by `customer_key`, not by name, because dim_customer.customer_name is declared SUPPRESSED
+      (DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME). Excluded by the question''s own terms: the 38,355 registered
+      customers who bought in an earlier year but not in 2025, and the 52,801 who have never bought anything.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: Customers
+    turns:
+    - why: 'Establish the starting population for this step: one row per customer on the register, confirming
+        the grain is customer_key and nothing is duplicated.'
+      did: "SELECT\n  COUNT(*) AS rows_on_register,\n  COUNT(DISTINCT customer_key) AS distinct_customers,\n\
+        \  MIN(customer_key) AS lowest_key,\n  MAX(customer_key) AS highest_key\nFROM contoso_served.dim_customer"
+      came_back: '1 row(s): [{"rows_on_register": 104990, "distinct_customers": 104990, "lowest_key":
+        15, "highest_key": 2099743}]'
+    settled_on: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
+    means: 'Every person on Contoso''s customer register — 104,990 of them, one row each, identified by
+      customer_key. This is the register and not the buyer list: the declaration records that only 52,189
+      of these ever appear on a sale, so the later pivot to purchases and the 2025 filter will cut this
+      set down hard, which is what the question intends when it asks for customers who bought in all four
+      quarters.'
+    readings_taken:
+    - word: Customers
+      took: one row per individual customer account on dim_customer, identified by customer_key — 104,990
+        of them, grain confirmed as exactly one row per key
+      could_also_mean: accounts rolled up into a parent company or household, which this bundle declares
+        no column for
+      declaration: Customer concept, grounded in contoso_served.dim_customer key customer_key
+    - word: Customers (how they will be named in the answer)
+      took: 'customer_key will be the identifier shown, because dim_customer.customer_name carries `suppressed:
+        DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME` and must not appear in an answer'
+      could_also_mean: 'the customer''s registered name, which is the declared `naming: common` column
+        a reader would normally be shown — it is forbidden here, so the answer will carry keys and not
+        names'
+      declaration: dim_customer.customer_name — SUPPRESSED, declared reason DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+    blocked_by: []
+  - step: '2'
+    step_asks: bought
+    turns:
+    - why: Establish the pivot from the register to purchases along order__placed_by__customer, and at
+        the same time check whether the data holds anything that could distinguish "any order placed"
+        from "only completed, non-returned orders" — negative quantities or negative amounts would be
+        the only trace of it.
+      did: "SELECT\n  COUNT(*) AS purchase_lines,\n  COUNT(DISTINCT s.order_key) AS purchases,\n  COUNT(DISTINCT\
+        \ s.customer_key) AS customers_who_bought,\n  COUNT(DISTINCT c.customer_key) AS customers_matched_on_register,\n\
+        \  MIN(s.order_date) AS first_order,\n  MAX(s.order_date) AS last_order,\n  MIN(s.quantity) AS\
+        \ lowest_quantity,\n  MIN(s.net_amount) AS lowest_net_amount,\n  COUNT(DISTINCT s.channel) AS\
+        \ channels\nFROM contoso_served.v_contoso5_sales_line AS s\nLEFT JOIN contoso_served.dim_customer\
+        \ AS c\n  ON s.customer_key = c.customer_key"
+      came_back: '1 row(s): [{"purchase_lines": 223974, "purchases": 93470, "customers_who_bought": 52189,
+        "customers_matched_on_register": 52189, "first_order": "2016-05-18", "last_order": "2025-12-31",
+        "lowest_quantity": 1, "lowest_net_amount": "0.82650", "channels": 2}]'
+    settled_on: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s"
+    means: 'Every purchase line ever recorded against a customer — 223,974 lines making up 93,470 distinct
+      orders, placed by 52,189 distinct customers, spanning 2016-05-18 to 2025-12-31, across both the
+      physical shops and the web shop. Each row is one product on one order by one customer on one day.
+      The 52,801 registered customers who never bought anything have no rows here at all, which is intended:
+      the question asks who bought, so a non-buyer cannot qualify.'
+    readings_taken:
+    - word: bought
+      took: any purchase line recorded in the fact counts — which is every line there is
+      could_also_mean: 'only completed and paid orders, excluding cancelled or fully returned ones. THIS
+        BUNDLE CANNOT EXPRESS THAT READING: v_contoso5_sales_line carries no order status, no cancellation
+        flag and no return flag, and I measured the only trace a return could leave — the lowest quantity
+        anywhere is 1 and the lowest net amount is 0.83, both positive, so there is not a single reversing
+        line. The two readings select the identical population and the fork costs nothing'
+      declaration: Order concept, grounded in v_contoso5_sales_line counting distinct order_key; no status
+        or reversal column is declared on the relation
+    - word: bought (which channel)
+      took: both channels — shop purchases and web-shop purchases alike, 2 channels present
+      could_also_mean: 'physical shops only, which is the `default: physical` of store.resolution.the_channel_is_the_location_sentinel.
+        It does NOT reach here: that realization is scoped `applies: subject`, and the subject of this
+        question is customers and their purchases, not a Store. The operator''s ruling of 2026-10-18 is
+        explicit that a question not about stores spans both channels'
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel — applies: subject; v_contoso5_sales_line.channel'
+    blocked_by: []
+  - step: '3'
+    step_asks: '2025'
+    turns:
+    - why: Apply the 2025 restriction on the declared period column while pricing the one fork that could
+        move rows between quarters — reading the period on delivery_date instead of order_date — and confirm
+        each of the four calendar quarters holds purchases at all.
+      did: "SELECT\n  'ordered' AS reading,\n  QUARTER(order_date) AS quarter_of_2025,\n  COUNT(*) AS\
+        \ lines,\n  COUNT(DISTINCT order_key) AS orders,\n  COUNT(DISTINCT customer_key) AS customers\n\
+        FROM contoso_served.v_contoso5_sales_line\nWHERE\n  YEAR(order_date) = 2025\nGROUP BY\n  1,\n\
+        \  2\nUNION ALL\nSELECT\n  'delivered' AS reading,\n  QUARTER(delivery_date) AS quarter_of_2025,\n\
+        \  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  COUNT(DISTINCT customer_key)\
+        \ AS customers\nFROM contoso_served.v_contoso5_sales_line\nWHERE\n  YEAR(delivery_date) = 2025\n\
+        GROUP BY\n  1,\n  2\nORDER BY\n  reading DESC,\n  quarter_of_2025"
+      came_back: '8 row(s): [{"reading": "ordered", "quarter_of_2025": 1, "lines": 9939, "orders": 4065,
+        "customers": 3931}, {"reading": "ordered", "quarter_of_2025": 2, "lines": 7526, "orders": 3172,
+        "customers": 3096}, {"reading": "ordered", "quarter_of_2025": 3, "lines": 9122, "orders": 3831,
+        "customers": 3693}, {"reading": "ordered", "quarter_of_2025": 4, "lines": 11121, "orders": 4641,
+        "customers": 4460}, {"reading": "delivered", "quarter_of_2025": 1, "lines": 10073, "orders": 4125,
+        "customers": 3986}, {"reading": "delivered", "quarter_of_2025": 2, "lines": 7424, "orders": 3130,
+        "customers": 3057}, {"reading": "delivered", "quarter_of_2025": 3, "lines": 9127, "orders": 3833,
+        "customers": 3699}, {"reading": "delivered", "quarter_of_2025": 4, "lines": 10992, "orders": 4594,
+        "customers": 4415}]'
+    settled_on: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date,\n  QUARTER(s.order_date) AS\
+      \ quarter_of_2025\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) =\
+      \ 2025"
+    means: 'Every purchase line placed during calendar 2025 — 37,708 lines making up 15,709 distinct orders,
+      each tagged with which of the four calendar quarters it was placed in (Q1 9,939 lines, Q2 7,526,
+      Q3 9,122, Q4 11,121). One row is one product on one order by one customer on one day in 2025. The
+      distinct-customer count for the year is deliberately not stated here: the per-quarter figures (3,931
+      / 3,096 / 3,693 / 4,460) cannot be added, because a customer who bought in two quarters appears
+      in both — that count arrives at the grouping step. 2025 is a complete year in this bundle: the newest
+      order anywhere is 2025-12-31, so Q4 is not a part-quarter.'
+    readings_taken:
+    - word: '2025'
+      took: the year the order was PLACED, order_date between 2025-01-01 and 2025-12-31 — 37,708 lines
+      could_also_mean: 'the year the order was DELIVERED. I measured it: 37,616 lines, with the quarters
+        shifting by roughly 1% each (Q1 10,073 vs 9,939, Q2 7,424 vs 7,526, Q3 9,127 vs 9,122, Q4 10,992
+        vs 11,121) as orders placed near a quarter boundary land in the next one. The declared default
+        settles the choice, but because the final answer is an all-four-quarters membership test rather
+        than a sum, a handful of boundary orders could still move individual customers in or out — so
+        I will report the final customer count under both readings'
+      declaration: 'order.default.period_is_order_date — default: ordered; v_contoso5_sales_line.order_date
+        carries period_binding: True'
+    - word: all 4 quarters of 2025
+      took: the four CALENDAR quarters — Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025
+      could_also_mean: 'fiscal quarters of a fiscal year 2025. THIS BUNDLE CANNOT EXPRESS THAT READING:
+        no fiscal calendar, fiscal-year column or period table is declared anywhere in the ontology, so
+        there is no fiscal quarter to compute. Calendar is the only quarter this data has'
+      declaration: no fiscal period is declared on any relation; the only time axis on the fact is order_date
+        / delivery_date
+    blocked_by: []
+  - step: '4'
+    step_asks: Customers
+    turns:
+    - why: Establish how many customer groups the 2025 purchase set collapses to, which is the row count
+        every later filter works down from, and confirm the grouping loses no lines or orders.
+      did: "SELECT\n  COUNT(DISTINCT s.customer_key) AS customers_with_2025_purchases,\n  COUNT(DISTINCT\
+        \ s.order_key) AS orders_2025,\n  COUNT(*) AS lines_2025\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nWHERE\n  YEAR(s.order_date) = 2025"
+      came_back: '1 row(s): [{"customers_with_2025_purchases": 13834, "orders_2025": 15709, "lines_2025":
+        37708}]'
+    settled_on: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+      \ = 2025\nGROUP BY\n  s.customer_key"
+    means: One row per customer who placed at least one order in calendar 2025 — 13,834 of them, grouped
+      down from 37,708 purchase lines and 15,709 orders. Each row stands for a single customer account
+      and the whole of that customer's 2025 buying, across both the shops and the web shop. The 38,355
+      other customers on the register who bought in some earlier year but not in 2025, and the 52,801
+      who never bought at all, are not here.
+    readings_taken: []
+    blocked_by: []
+  - step: '5'
+    step_asks: bought in all 4 quarters of 2025
+    turns:
+    - why: Produce the figure for each customer — how many distinct 2025 quarters they bought in — as
+        a distribution, so the size of the qualifying set is visible at once, and measure it under both
+        the order-date and delivery-date readings to settle whether that fork changes the answer.
+      did: "WITH by_order AS (\n  SELECT\n    customer_key,\n    COUNT(DISTINCT QUARTER(order_date)) AS\
+        \ quarters\n  FROM contoso_served.v_contoso5_sales_line\n  WHERE\n    YEAR(order_date) = 2025\n\
+        \  GROUP BY\n    customer_key\n), by_delivery AS (\n  SELECT\n    customer_key,\n    COUNT(DISTINCT\
+        \ QUARTER(delivery_date)) AS quarters\n  FROM contoso_served.v_contoso5_sales_line\n  WHERE\n\
+        \    YEAR(delivery_date) = 2025\n  GROUP BY\n    customer_key\n)\nSELECT\n  'ordered' AS reading,\n\
+        \  quarters AS quarters_of_2025_bought_in,\n  COUNT(*) AS customers\nFROM by_order\nGROUP BY\n\
+        \  1,\n  2\nUNION ALL\nSELECT\n  'delivered' AS reading,\n  quarters AS quarters_of_2025_bought_in,\n\
+        \  COUNT(*) AS customers\nFROM by_delivery\nGROUP BY\n  1,\n  2\nORDER BY\n  reading DESC,\n \
+        \ quarters_of_2025_bought_in"
+      came_back: '8 row(s): [{"reading": "ordered", "quarters_of_2025_bought_in": 1, "customers": 12553},
+        {"reading": "ordered", "quarters_of_2025_bought_in": 2, "customers": 1219}, {"reading": "ordered",
+        "quarters_of_2025_bought_in": 3, "customers": 59}, {"reading": "ordered", "quarters_of_2025_bought_in":
+        4, "customers": 3}, {"reading": "delivered", "quarters_of_2025_bought_in": 1, "customers": 12534},
+        {"reading": "delivered", "quarters_of_2025_bought_in": 2, "customers": 1217}, {"reading": "delivered",
+        "quarters_of_2025_bought_in": 3, "customers": 59}, {"reading": "delivered", "quarters_of_2025_bought_in":
+        4, "customers": 3}]'
+    settled_on: "SELECT\n  s.customer_key,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n \
+      \ s.customer_key"
+    means: 'One row per 2025 buyer — 13,834 of them — carrying how many of the four calendar quarters
+      of 2025 that customer placed at least one order in, a whole number from 1 to 4. Across the whole
+      set: 12,553 customers bought in a single quarter, 1,219 in two, 59 in three, and 3 in all four.
+      The figure counts quarters touched, not orders placed and not money spent, so a customer with twelve
+      orders all in March scores 1.'
+    readings_taken:
+    - word: 2025 (period column), re-priced at the figure
+      took: order_date — 3 customers reach all four quarters
+      could_also_mean: delivery_date — also exactly 3 customers reach all four quarters, with the rest
+        of the distribution nearly identical (12,534 / 1,217 / 59 / 3). The readings AGREE on the answer's
+        size, so the fork I flagged at step 3 is settled as immaterial and needs no question
+      declaration: 'order.default.period_is_order_date — default: ordered'
+    blocked_by: []
+  - step: '6'
+    step_asks: bought in all 4 quarters of 2025
+    turns:
+    - why: Apply the `= 4` filter to get the qualifying customers, and settle the one thing left open
+        from step 5 — whether the delivery-date reading picks the same three people or a different three
+        that merely happen to number three.
+      did: "WITH by_order AS (\n  SELECT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  WHERE\n    YEAR(order_date) = 2025\n  GROUP BY\n    customer_key\n  HAVING\n    COUNT(DISTINCT\
+        \ QUARTER(order_date)) = 4\n), by_delivery AS (\n  SELECT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n\
+        \  WHERE\n    YEAR(delivery_date) = 2025\n  GROUP BY\n    customer_key\n  HAVING\n    COUNT(DISTINCT\
+        \ QUARTER(delivery_date)) = 4\n)\nSELECT\n  COALESCE(o.customer_key, d.customer_key) AS customer_key,\n\
+        \  (\n    NOT o.customer_key IS NULL\n  ) AS qualifies_on_order_date,\n  (\n    NOT d.customer_key\
+        \ IS NULL\n  ) AS qualifies_on_delivery_date\nFROM by_order AS o\nFULL OUTER JOIN by_delivery\
+        \ AS d\n  ON o.customer_key = d.customer_key\nORDER BY\n  customer_key"
+      came_back: '3 row(s): [{"customer_key": 208369, "qualifies_on_order_date": true, "qualifies_on_delivery_date":
+        true}, {"customer_key": 556838, "qualifies_on_order_date": true, "qualifies_on_delivery_date":
+        true}, {"customer_key": 595495, "qualifies_on_order_date": true, "qualifies_on_delivery_date":
+        true}]'
+    settled_on: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+      \ = 2025\nGROUP BY\n  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4"
+    means: The three customers — keys 208369, 556838 and 595495 — who placed at least one order in every
+      one of the four calendar quarters of 2025. Each row is one customer account that bought in Q1 and
+      Q2 and Q3 and Q4. The 1,219 customers who managed two quarters and the 59 who managed three are
+      excluded, as are the 12,553 who bought in only one.
+    readings_taken: []
+    blocked_by: []
+  - step: '7'
+    step_asks: Customers who bought in all 4 quarters of 2025
+    turns:
+    - why: Produce the answer rows themselves — the customer and their 2025 quarter count — and read them
+        before claiming anything.
+      did: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+        \  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+      came_back: '3 row(s): [{"customer": 208369, "quarters_of_2025_bought_in": 4}, {"customer": 556838,
+        "quarters_of_2025_bought_in": 4}, {"customer": 595495, "quarters_of_2025_bought_in": 4}]'
+    - why: 'The answer rows are read and consistent with every step behind them: three customers, each
+        with a quarter count of 4, the same three under both the order-date and delivery-date readings.'
+      did: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+        \  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 3 row(s): [{"customer": 208369, "quarters_of_2025_bought_in":
+        4}, {"customer": 556838, "quarters_of_2025_bought_in": 4}, {"customer": 595495, "quarters_of_2025_bought_in":
+        4}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from
+        the closed list. If these rows settle the question, do not decline.'
+    settled_on: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n \
+      \ s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+    means: 'These three customers — keys 208369, 556838 and 595495 — are the only people on Contoso''s
+      register who placed at least one order in every calendar quarter of 2025, and the 4 beside each
+      is the number of distinct 2025 quarters they bought in. For scale: of the 13,834 customers who bought
+      anything in 2025, 12,553 appeared in only one quarter, 1,219 in two, 59 in three, and these 3 in
+      all four. What the figure does NOT include: nothing about how much they spent, how many orders they
+      placed, or what they bought — the test is merely presence in a quarter, so one small order per quarter
+      counts the same as fifty. It does not say which quarters, because all four is the only qualifying
+      pattern. And it hands back keys rather than names, which is as close to "which customers" as the
+      suppression on customer_name allows.'
+    readings_taken:
+    - word: Customers (as shown in the answer)
+      took: customer_key, the numeric account identifier
+      could_also_mean: 'the customer''s registered name, which is the declared `naming: common` column
+        and what a reader asking "which customers" probably wants — forbidden in an answer by its suppression,
+        so keys are the only identifier available'
+      declaration: dim_customer.customer_name — SUPPRESSED, DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+    - word: bought
+      took: any purchase line recorded in 2025 counts
+      could_also_mean: 'only completed, paid, non-cancelled, non-returned orders — not expressible here,
+        and measured to be the identical population: no status or reversal column exists, and every line
+        carries a positive quantity and a positive amount'
+      declaration: Order concept grounded in v_contoso5_sales_line; no status column declared on the relation
+    - word: all 4 quarters of 2025
+      took: the four calendar quarters, read on order_date — 3 customers
+      could_also_mean: 'read on delivery_date, which I measured: the SAME three customers qualify, 208369,
+        556838 and 595495. Fiscal quarters are not computable in this bundle'
+      declaration: 'order.default.period_is_order_date; v_contoso5_sales_line.order_date carries period_binding:
+        True'
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: List the customers who made at least one purchase in every one of the four quarters of 2025
+      (Q1, Q2, Q3 and Q4) — one row per customer, showing the customer and the number of distinct 2025
+      quarters they bought in (which will be 4). Customers who bought in only one, two or three of the
+      quarters, and customers with no 2025 purchases at all, are excluded.
+    population: 'The 13,834 customer accounts that placed at least one order with an order_date in calendar
+      2025 — 3 of them qualified. Restrictions I applied, and where each came from: (1) the period read
+      on `order_date`, not `delivery_date`, because order.default.period_is_order_date declares `default:
+      ordered`; I measured the alternative and it returns the same three customers. (2) Calendar quarters,
+      because this bundle declares no fiscal calendar, so fiscal quarters cannot be computed at all. (3)
+      BOTH sales channels — shop and web shop — with no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+      is scoped `applies: subject` and the subject here is customers, not stores (operator''s ruling of
+      2026-10-18). (4) One row per individual customer account, no roll-up to household or parent company,
+      as no such column is declared. (5) Every recorded purchase line counted, with no exclusion for cancellations
+      or returns: the fact declares no status, cancellation or return column, and the lowest quantity
+      anywhere is 1 and the lowest net amount 0.83, so there is no reversing line to exclude. The three
+      are identified by `customer_key`, not by name, because dim_customer.customer_name is declared SUPPRESSED
+      (DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME). Excluded by the question''s own terms: the 38,355 registered
+      customers who bought in an earlier year but not in 2025, and the 52,801 who have never bought anything.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1         FROM       customers                                                \
+      \           “Customers”\n  2  ← 1    PIVOT_TO   purchases                                      \
+      \                     “bought”\n  3  ← 2    DURING     by year                                 \
+      \                            “2025”\n  4  ← 3    GROUP_BY   by customer                        \
+      \                                 “Customers”\n  5  ← 4    AGGREGATE  count distinct of quarter\
+      \ of 2025 they bought in                    “bought in all 4 quarters of 2025”\n  6  ← 4+5  HAVING\
+      \     figure_step='5' op='=' than={'value': 4, 'said': 'all 4 quarters'}  “bought in all 4 quarters\
+      \ of 2025”\n  7  ← 6    SELECT     customer, number of quarters of 2025 they bought in         \
+      \        “Customers who bought in all 4 quarters of 2025”\n  answer: step 7   confidence: 0.79 \
+      \  A DAG   step(s) 4 feed more than one   converging at 6"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: bought
+      asks: Should a customer count as having bought in a quarter based on any order they placed, or only
+        on orders that were actually paid for and not cancelled or fully returned?
+      readings:
+      - any order placed in that quarter counts
+      - only completed/paid orders count, excluding cancelled or returned ones
+      took: any purchase recorded in that quarter counts
+    - words: all 4 quarters of 2025
+      asks: Do you mean the four calendar quarters (Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025), or your
+        company's fiscal quarters for fiscal year 2025?
+      readings:
+      - calendar quarters of 2025
+      - fiscal quarters of fiscal year 2025
+      took: calendar quarters Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025
+    - words: Customers
+      asks: Should each individual customer account be counted on its own, or should accounts belonging
+        to the same parent company or household be rolled up into one customer?
+      readings:
+      - one row per individual customer account
+      - one row per parent company or household, rolling up its accounts
+      took: one row per individual customer
+- stage: cannot_express
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: *id003
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id004
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.79 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: Customers
+      took: one row per individual customer account on dim_customer, identified by customer_key — 104,990
+        of them, grain confirmed as exactly one row per key
+      could_also_mean: accounts rolled up into a parent company or household, which this bundle declares
+        no column for
+      declaration: Customer concept, grounded in contoso_served.dim_customer key customer_key
+    - word: Customers (how they will be named in the answer)
+      took: 'customer_key will be the identifier shown, because dim_customer.customer_name carries `suppressed:
+        DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME` and must not appear in an answer'
+      could_also_mean: 'the customer''s registered name, which is the declared `naming: common` column
+        a reader would normally be shown — it is forbidden here, so the answer will carry keys and not
+        names'
+      declaration: dim_customer.customer_name — SUPPRESSED, declared reason DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+    - word: bought
+      took: any purchase line recorded in the fact counts — which is every line there is
+      could_also_mean: 'only completed and paid orders, excluding cancelled or fully returned ones. THIS
+        BUNDLE CANNOT EXPRESS THAT READING: v_contoso5_sales_line carries no order status, no cancellation
+        flag and no return flag, and I measured the only trace a return could leave — the lowest quantity
+        anywhere is 1 and the lowest net amount is 0.83, both positive, so there is not a single reversing
+        line. The two readings select the identical population and the fork costs nothing'
+      declaration: Order concept, grounded in v_contoso5_sales_line counting distinct order_key; no status
+        or reversal column is declared on the relation
+    - word: bought (which channel)
+      took: both channels — shop purchases and web-shop purchases alike, 2 channels present
+      could_also_mean: 'physical shops only, which is the `default: physical` of store.resolution.the_channel_is_the_location_sentinel.
+        It does NOT reach here: that realization is scoped `applies: subject`, and the subject of this
+        question is customers and their purchases, not a Store. The operator''s ruling of 2026-10-18 is
+        explicit that a question not about stores spans both channels'
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel — applies: subject; v_contoso5_sales_line.channel'
+    - word: '2025'
+      took: the year the order was PLACED, order_date between 2025-01-01 and 2025-12-31 — 37,708 lines
+      could_also_mean: 'the year the order was DELIVERED. I measured it: 37,616 lines, with the quarters
+        shifting by roughly 1% each (Q1 10,073 vs 9,939, Q2 7,424 vs 7,526, Q3 9,127 vs 9,122, Q4 10,992
+        vs 11,121) as orders placed near a quarter boundary land in the next one. The declared default
+        settles the choice, but because the final answer is an all-four-quarters membership test rather
+        than a sum, a handful of boundary orders could still move individual customers in or out — so
+        I will report the final customer count under both readings'
+      declaration: 'order.default.period_is_order_date — default: ordered; v_contoso5_sales_line.order_date
+        carries period_binding: True'
+    - word: all 4 quarters of 2025
+      took: the four CALENDAR quarters — Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025
+      could_also_mean: 'fiscal quarters of a fiscal year 2025. THIS BUNDLE CANNOT EXPRESS THAT READING:
+        no fiscal calendar, fiscal-year column or period table is declared anywhere in the ontology, so
+        there is no fiscal quarter to compute. Calendar is the only quarter this data has'
+      declaration: no fiscal period is declared on any relation; the only time axis on the fact is order_date
+        / delivery_date
+    - word: 2025 (period column), re-priced at the figure
+      took: order_date — 3 customers reach all four quarters
+      could_also_mean: delivery_date — also exactly 3 customers reach all four quarters, with the rest
+        of the distribution nearly identical (12,534 / 1,217 / 59 / 3). The readings AGREE on the answer's
+        size, so the fork I flagged at step 3 is settled as immaterial and needs no question
+      declaration: 'order.default.period_is_order_date — default: ordered'
+    - word: Customers (as shown in the answer)
+      took: customer_key, the numeric account identifier
+      could_also_mean: 'the customer''s registered name, which is the declared `naming: common` column
+        and what a reader asking "which customers" probably wants — forbidden in an answer by its suppression,
+        so keys are the only identifier available'
+      declaration: dim_customer.customer_name — SUPPRESSED, DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+    - word: bought
+      took: any purchase line recorded in 2025 counts
+      could_also_mean: 'only completed, paid, non-cancelled, non-returned orders — not expressible here,
+        and measured to be the identical population: no status or reversal column exists, and every line
+        carries a positive quantity and a positive amount'
+      declaration: Order concept grounded in v_contoso5_sales_line; no status column declared on the relation
+    - word: all 4 quarters of 2025
+      took: the four calendar quarters, read on order_date — 3 customers
+      could_also_mean: 'read on delivery_date, which I measured: the SAME three customers qualify, 208369,
+        556838 and 595495. Fiscal quarters are not computable in this bundle'
+      declaration: 'order.default.period_is_order_date; v_contoso5_sales_line.order_date carries period_binding:
+        True'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 7 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  customer_key\nFROM contoso_served.dim_customer\n\n-- step 2\nSELECT\n\
+        \  s.customer_key,\n  s.order_key,\n  s.order_date\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\n\n-- step 3\nSELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date,\n  QUARTER(s.order_date)\
+        \ AS quarter_of_2025\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+        \ = 2025\n\n-- step 4\nSELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS\
+        \ s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n  s.customer_key\n\n-- step 5\nSELECT\n  s.customer_key,\n\
+        \  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n  s.customer_key\n\n-- step 6\nSELECT\n\
+        \  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+        \ = 2025\nGROUP BY\n  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\n\n\
+        -- step 7\nSELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+        \  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id005
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'These three customers — keys 208369, 556838 and 595495 — are the only people
+      on Contoso''s register who placed at least one order in every calendar quarter of 2025, and the
+      4 beside each is the number of distinct 2025 quarters they bought in. For scale: of the 13,834 customers
+      who bought anything in 2025, 12,553 appeared in only one quarter, 1,219 in two, 59 in three, and
+      these 3 in all four. What the figure does NOT include: nothing about how much they spent, how many
+      orders they placed, or what they bought — the test is merely presence in a quarter, so one small
+      order per quarter counts the same as fifty. It does not say which quarters, because all four is
+      the only qualifying pattern. And it hands back keys rather than names, which is as close to "which
+      customers" as the suppression on customer_name allows.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'a list of names and figures' · graded EXACT
+  detail:
+    claimed_answer: '[{"customer": 208369, "quarters_of_2025_bought_in": 4}, {"customer": 556838, "quarters_of_2025_bought_in":
+      4}, {"customer": 595495, "quarters_of_2025_bought_in": 4}]'
+    walk_bucket: EXACT
+    walk_why: 3 row(s) match
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: Customers who bought in all 4 quarters of 2025
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: List the customers who made at least one purchase in every one of the four quarters of 2025
+      (Q1, Q2, Q3 and Q4) — one row per customer, showing the customer and the number of distinct 2025
+      quarters they bought in (which will be 4). Customers who bought in only one, two or three of the
+      quarters, and customers with no 2025 purchases at all, are excluded.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1         FROM       customers                                                           “Customers”'
+    - '  2  ← 1    PIVOT_TO   purchases                                                           “bought”'
+    - '  3  ← 2    DURING     by year                                                             “2025”'
+    - '  4  ← 3    GROUP_BY   by customer                                                         “Customers”'
+    - '  5  ← 4    AGGREGATE  count distinct of quarter of 2025 they bought in                    “bought
+      in all 4 quarters of 2025”'
+    - '  6  ← 4+5  HAVING     figure_step=''5'' op=''='' than={''value'': 4, ''said'': ''all 4 quarters''}  “bought
+      in all 4 quarters of 2025”'
+    - '  7  ← 6    SELECT     customer, number of quarters of 2025 they bought in                 “Customers
+      who bought in all 4 quarters of 2025”'
+    - '  answer: step 7   confidence: 0.79   A DAG   step(s) 4 feed more than one   converging at 6'
+    - '  UNDERSTOOD AS: List the customers who made at least one purchase in every one of the four quarters
+      of 2025 (Q1, Q2, Q3 and Q4) — one row per customer, showing the customer and the number of distinct
+      2025 quarters they bought in (which will be 4). Customers who bought in only one, two or three of
+      the quarters, and customers with no 2025 purchases at all, are excluded.'
+    - '  AMBIGUOUS ''bought'' — ASKS: Should a customer count as having bought in a quarter based on any
+      order they placed, or only on orders that were actually paid for and not cancelled or fully returned?'
+    - '      could mean: any order placed in that quarter counts'
+    - '      could mean: only completed/paid orders count, excluding cancelled or returned ones'
+    - '      took: any purchase recorded in that quarter counts'
+    - '  AMBIGUOUS ''all 4 quarters of 2025'' — ASKS: Do you mean the four calendar quarters (Jan–Mar,
+      Apr–Jun, Jul–Sep, Oct–Dec 2025), or your company''s fiscal quarters for fiscal year 2025?'
+    - '      could mean: calendar quarters of 2025'
+    - '      could mean: fiscal quarters of fiscal year 2025'
+    - '      took: calendar quarters Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025'
+    - '  AMBIGUOUS ''Customers'' — ASKS: Should each individual customer account be counted on its own,
+      or should accounts belonging to the same parent company or household be rolled up into one customer?'
+    - '      could mean: one row per individual customer account'
+    - '      could mean: one row per parent company or household, rolling up its accounts'
+    - '      took: one row per individual customer'
+    - '  cannot_express: which specific quarters each customer bought in, or how much they bought in each
+      quarter — the steps only test that all four were covered'
+    - '  OUTPUT SHAPE: a list of names and figures · many row(s) · named by customer · carrying number
+      of quarters of 2025 they bought in'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a list of names and figures
+    - - said
+      - Customers who bought in all 4 quarters of 2025
+    - - rows
+      - many
+    - - key_columns
+      - *id006
+    - - figure_columns
+      - *id007
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: bought
+      asks: Should a customer count as having bought in a quarter based on any order they placed, or only
+        on orders that were actually paid for and not cancelled or fully returned?
+      readings:
+      - any order placed in that quarter counts
+      - only completed/paid orders count, excluding cancelled or returned ones
+      took: any purchase recorded in that quarter counts
+    - words: all 4 quarters of 2025
+      asks: Do you mean the four calendar quarters (Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025), or your
+        company's fiscal quarters for fiscal year 2025?
+      readings:
+      - calendar quarters of 2025
+      - fiscal quarters of fiscal year 2025
+      took: calendar quarters Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025
+    - words: Customers
+      asks: Should each individual customer account be counted on its own, or should accounts belonging
+        to the same parent company or household be rolled up into one customer?
+      readings:
+      - one row per individual customer account
+      - one row per parent company or household, rolling up its accounts
+      took: one row per individual customer
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date,\n  QUARTER(s.order_date) AS quarter_of_2025\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+        \ = 2025\nGROUP BY\n  s.customer_key"
+      params: {}
+    - step: '5'
+      sql: "SELECT\n  s.customer_key,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+        \  s.customer_key"
+      params: {}
+    - step: '6'
+      sql: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+        \ = 2025\nGROUP BY\n  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4"
+      params: {}
+    - step: '7'
+      sql: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+        \  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'These three customers — keys 208369, 556838 and 595495 — are the only people on Contoso''s
+      register who placed at least one order in every calendar quarter of 2025, and the 4 beside each
+      is the number of distinct 2025 quarters they bought in. For scale: of the 13,834 customers who bought
+      anything in 2025, 12,553 appeared in only one quarter, 1,219 in two, 59 in three, and these 3 in
+      all four. What the figure does NOT include: nothing about how much they spent, how many orders they
+      placed, or what they bought — the test is merely presence in a quarter, so one small order per quarter
+      counts the same as fifty. It does not say which quarters, because all four is the only qualifying
+      pattern. And it hands back keys rather than names, which is as close to "which customers" as the
+      suppression on customer_name allows.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id008
+      rows: *id005
+      row_count: 3
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '[{"customer": 208369, "quarters_of_2025_bought_in": 4}, {"customer": 556838, "quarters_of_2025_bought_in":
+        4}, {"customer": 595495, "quarters_of_2025_bought_in": 4}]'
+    - - shape
+      - a list of names and figures
+    - - population it answered over
+      - 'The 13,834 customer accounts that placed at least one order with an order_date in calendar 2025
+        — 3 of them qualified. Restrictions I applied, and where each came from: (1) the period read on
+        `order_date`, not `delivery_date`, because order.default.period_is_order_date declares `default:
+        ordered`; I measured the alternative and it returns the same three customers. (2) Calendar quarters,
+        because this bundle declares no fiscal calendar, so fiscal quarters cannot be computed at all.
+        (3) BOTH sales channels — shop and web shop — with no channel predicate, because store.resolution.the_channel_is_the_location_sentinel
+        is scoped `applies: subject` and the subject here is customers, not stores (operator''s ruling
+        of 2026-10-18). (4) One row per individual customer account, no roll-up to household or parent
+        company, as no such column is declared. (5) Every recorded purchase line counted, with no exclusion
+        for cancellations or returns: the fact declares no status, cancellation or return column, and
+        the lowest quantity anywhere is 1 and the lowest net amount 0.83, so there is no reversing line
+        to exclude. The three are identified by `customer_key`, not by name, because dim_customer.customer_name
+        is declared SUPPRESSED (DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME). Excluded by the question''s
+        own terms: the 38,355 registered customers who bought in an earlier year but not in 2025, and
+        the 52,801 who have never bought anything.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: Customers
+      turns:
+      - why: 'Establish the starting population for this step: one row per customer on the register, confirming
+          the grain is customer_key and nothing is duplicated.'
+        did: "SELECT\n  COUNT(*) AS rows_on_register,\n  COUNT(DISTINCT customer_key) AS distinct_customers,\n\
+          \  MIN(customer_key) AS lowest_key,\n  MAX(customer_key) AS highest_key\nFROM contoso_served.dim_customer"
+        came_back: '1 row(s): [{"rows_on_register": 104990, "distinct_customers": 104990, "lowest_key":
+          15, "highest_key": 2099743}]'
+      settled_on: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
+      means: 'Every person on Contoso''s customer register — 104,990 of them, one row each, identified
+        by customer_key. This is the register and not the buyer list: the declaration records that only
+        52,189 of these ever appear on a sale, so the later pivot to purchases and the 2025 filter will
+        cut this set down hard, which is what the question intends when it asks for customers who bought
+        in all four quarters.'
+      readings_taken:
+      - word: Customers
+        took: one row per individual customer account on dim_customer, identified by customer_key — 104,990
+          of them, grain confirmed as exactly one row per key
+        could_also_mean: accounts rolled up into a parent company or household, which this bundle declares
+          no column for
+        declaration: Customer concept, grounded in contoso_served.dim_customer key customer_key
+      - word: Customers (how they will be named in the answer)
+        took: 'customer_key will be the identifier shown, because dim_customer.customer_name carries `suppressed:
+          DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME` and must not appear in an answer'
+        could_also_mean: 'the customer''s registered name, which is the declared `naming: common` column
+          a reader would normally be shown — it is forbidden here, so the answer will carry keys and not
+          names'
+        declaration: dim_customer.customer_name — SUPPRESSED, declared reason DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+      blocked_by: []
+    - step: '2'
+      step_asks: bought
+      turns:
+      - why: Establish the pivot from the register to purchases along order__placed_by__customer, and
+          at the same time check whether the data holds anything that could distinguish "any order placed"
+          from "only completed, non-returned orders" — negative quantities or negative amounts would be
+          the only trace of it.
+        did: "SELECT\n  COUNT(*) AS purchase_lines,\n  COUNT(DISTINCT s.order_key) AS purchases,\n  COUNT(DISTINCT\
+          \ s.customer_key) AS customers_who_bought,\n  COUNT(DISTINCT c.customer_key) AS customers_matched_on_register,\n\
+          \  MIN(s.order_date) AS first_order,\n  MAX(s.order_date) AS last_order,\n  MIN(s.quantity)\
+          \ AS lowest_quantity,\n  MIN(s.net_amount) AS lowest_net_amount,\n  COUNT(DISTINCT s.channel)\
+          \ AS channels\nFROM contoso_served.v_contoso5_sales_line AS s\nLEFT JOIN contoso_served.dim_customer\
+          \ AS c\n  ON s.customer_key = c.customer_key"
+        came_back: '1 row(s): [{"purchase_lines": 223974, "purchases": 93470, "customers_who_bought":
+          52189, "customers_matched_on_register": 52189, "first_order": "2016-05-18", "last_order": "2025-12-31",
+          "lowest_quantity": 1, "lowest_net_amount": "0.82650", "channels": 2}]'
+      settled_on: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s"
+      means: 'Every purchase line ever recorded against a customer — 223,974 lines making up 93,470 distinct
+        orders, placed by 52,189 distinct customers, spanning 2016-05-18 to 2025-12-31, across both the
+        physical shops and the web shop. Each row is one product on one order by one customer on one day.
+        The 52,801 registered customers who never bought anything have no rows here at all, which is intended:
+        the question asks who bought, so a non-buyer cannot qualify.'
+      readings_taken:
+      - word: bought
+        took: any purchase line recorded in the fact counts — which is every line there is
+        could_also_mean: 'only completed and paid orders, excluding cancelled or fully returned ones.
+          THIS BUNDLE CANNOT EXPRESS THAT READING: v_contoso5_sales_line carries no order status, no cancellation
+          flag and no return flag, and I measured the only trace a return could leave — the lowest quantity
+          anywhere is 1 and the lowest net amount is 0.83, both positive, so there is not a single reversing
+          line. The two readings select the identical population and the fork costs nothing'
+        declaration: Order concept, grounded in v_contoso5_sales_line counting distinct order_key; no
+          status or reversal column is declared on the relation
+      - word: bought (which channel)
+        took: both channels — shop purchases and web-shop purchases alike, 2 channels present
+        could_also_mean: 'physical shops only, which is the `default: physical` of store.resolution.the_channel_is_the_location_sentinel.
+          It does NOT reach here: that realization is scoped `applies: subject`, and the subject of this
+          question is customers and their purchases, not a Store. The operator''s ruling of 2026-10-18
+          is explicit that a question not about stores spans both channels'
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel — applies: subject; v_contoso5_sales_line.channel'
+      blocked_by: []
+    - step: '3'
+      step_asks: '2025'
+      turns:
+      - why: Apply the 2025 restriction on the declared period column while pricing the one fork that
+          could move rows between quarters — reading the period on delivery_date instead of order_date
+          — and confirm each of the four calendar quarters holds purchases at all.
+        did: "SELECT\n  'ordered' AS reading,\n  QUARTER(order_date) AS quarter_of_2025,\n  COUNT(*) AS\
+          \ lines,\n  COUNT(DISTINCT order_key) AS orders,\n  COUNT(DISTINCT customer_key) AS customers\n\
+          FROM contoso_served.v_contoso5_sales_line\nWHERE\n  YEAR(order_date) = 2025\nGROUP BY\n  1,\n\
+          \  2\nUNION ALL\nSELECT\n  'delivered' AS reading,\n  QUARTER(delivery_date) AS quarter_of_2025,\n\
+          \  COUNT(*) AS lines,\n  COUNT(DISTINCT order_key) AS orders,\n  COUNT(DISTINCT customer_key)\
+          \ AS customers\nFROM contoso_served.v_contoso5_sales_line\nWHERE\n  YEAR(delivery_date) = 2025\n\
+          GROUP BY\n  1,\n  2\nORDER BY\n  reading DESC,\n  quarter_of_2025"
+        came_back: '8 row(s): [{"reading": "ordered", "quarter_of_2025": 1, "lines": 9939, "orders": 4065,
+          "customers": 3931}, {"reading": "ordered", "quarter_of_2025": 2, "lines": 7526, "orders": 3172,
+          "customers": 3096}, {"reading": "ordered", "quarter_of_2025": 3, "lines": 9122, "orders": 3831,
+          "customers": 3693}, {"reading": "ordered", "quarter_of_2025": 4, "lines": 11121, "orders": 4641,
+          "customers": 4460}, {"reading": "delivered", "quarter_of_2025": 1, "lines": 10073, "orders":
+          4125, "customers": 3986}, {"reading": "delivered", "quarter_of_2025": 2, "lines": 7424, "orders":
+          3130, "customers": 3057}, {"reading": "delivered", "quarter_of_2025": 3, "lines": 9127, "orders":
+          3833, "customers": 3699}, {"reading": "delivered", "quarter_of_2025": 4, "lines": 10992, "orders":
+          4594, "customers": 4415}]'
+      settled_on: "SELECT\n  s.customer_key,\n  s.order_key,\n  s.order_date,\n  QUARTER(s.order_date)\
+        \ AS quarter_of_2025\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date)\
+        \ = 2025"
+      means: 'Every purchase line placed during calendar 2025 — 37,708 lines making up 15,709 distinct
+        orders, each tagged with which of the four calendar quarters it was placed in (Q1 9,939 lines,
+        Q2 7,526, Q3 9,122, Q4 11,121). One row is one product on one order by one customer on one day
+        in 2025. The distinct-customer count for the year is deliberately not stated here: the per-quarter
+        figures (3,931 / 3,096 / 3,693 / 4,460) cannot be added, because a customer who bought in two
+        quarters appears in both — that count arrives at the grouping step. 2025 is a complete year in
+        this bundle: the newest order anywhere is 2025-12-31, so Q4 is not a part-quarter.'
+      readings_taken:
+      - word: '2025'
+        took: the year the order was PLACED, order_date between 2025-01-01 and 2025-12-31 — 37,708 lines
+        could_also_mean: 'the year the order was DELIVERED. I measured it: 37,616 lines, with the quarters
+          shifting by roughly 1% each (Q1 10,073 vs 9,939, Q2 7,424 vs 7,526, Q3 9,127 vs 9,122, Q4 10,992
+          vs 11,121) as orders placed near a quarter boundary land in the next one. The declared default
+          settles the choice, but because the final answer is an all-four-quarters membership test rather
+          than a sum, a handful of boundary orders could still move individual customers in or out — so
+          I will report the final customer count under both readings'
+        declaration: 'order.default.period_is_order_date — default: ordered; v_contoso5_sales_line.order_date
+          carries period_binding: True'
+      - word: all 4 quarters of 2025
+        took: the four CALENDAR quarters — Jan–Mar, Apr–Jun, Jul–Sep, Oct–Dec 2025
+        could_also_mean: 'fiscal quarters of a fiscal year 2025. THIS BUNDLE CANNOT EXPRESS THAT READING:
+          no fiscal calendar, fiscal-year column or period table is declared anywhere in the ontology,
+          so there is no fiscal quarter to compute. Calendar is the only quarter this data has'
+        declaration: no fiscal period is declared on any relation; the only time axis on the fact is order_date
+          / delivery_date
+      blocked_by: []
+    - step: '4'
+      step_asks: Customers
+      turns:
+      - why: Establish how many customer groups the 2025 purchase set collapses to, which is the row count
+          every later filter works down from, and confirm the grouping loses no lines or orders.
+        did: "SELECT\n  COUNT(DISTINCT s.customer_key) AS customers_with_2025_purchases,\n  COUNT(DISTINCT\
+          \ s.order_key) AS orders_2025,\n  COUNT(*) AS lines_2025\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nWHERE\n  YEAR(s.order_date) = 2025"
+        came_back: '1 row(s): [{"customers_with_2025_purchases": 13834, "orders_2025": 15709, "lines_2025":
+          37708}]'
+      settled_on: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n \
+        \ YEAR(s.order_date) = 2025\nGROUP BY\n  s.customer_key"
+      means: One row per customer who placed at least one order in calendar 2025 — 13,834 of them, grouped
+        down from 37,708 purchase lines and 15,709 orders. Each row stands for a single customer account
+        and the whole of that customer's 2025 buying, across both the shops and the web shop. The 38,355
+        other customers on the register who bought in some earlier year but not in 2025, and the 52,801
+        who never bought at all, are not here.
+      readings_taken: []
+      blocked_by: []
+    - step: '5'
+      step_asks: bought in all 4 quarters of 2025
+      turns:
+      - why: Produce the figure for each customer — how many distinct 2025 quarters they bought in — as
+          a distribution, so the size of the qualifying set is visible at once, and measure it under both
+          the order-date and delivery-date readings to settle whether that fork changes the answer.
+        did: "WITH by_order AS (\n  SELECT\n    customer_key,\n    COUNT(DISTINCT QUARTER(order_date))\
+          \ AS quarters\n  FROM contoso_served.v_contoso5_sales_line\n  WHERE\n    YEAR(order_date) =\
+          \ 2025\n  GROUP BY\n    customer_key\n), by_delivery AS (\n  SELECT\n    customer_key,\n   \
+          \ COUNT(DISTINCT QUARTER(delivery_date)) AS quarters\n  FROM contoso_served.v_contoso5_sales_line\n\
+          \  WHERE\n    YEAR(delivery_date) = 2025\n  GROUP BY\n    customer_key\n)\nSELECT\n  'ordered'\
+          \ AS reading,\n  quarters AS quarters_of_2025_bought_in,\n  COUNT(*) AS customers\nFROM by_order\n\
+          GROUP BY\n  1,\n  2\nUNION ALL\nSELECT\n  'delivered' AS reading,\n  quarters AS quarters_of_2025_bought_in,\n\
+          \  COUNT(*) AS customers\nFROM by_delivery\nGROUP BY\n  1,\n  2\nORDER BY\n  reading DESC,\n\
+          \  quarters_of_2025_bought_in"
+        came_back: '8 row(s): [{"reading": "ordered", "quarters_of_2025_bought_in": 1, "customers": 12553},
+          {"reading": "ordered", "quarters_of_2025_bought_in": 2, "customers": 1219}, {"reading": "ordered",
+          "quarters_of_2025_bought_in": 3, "customers": 59}, {"reading": "ordered", "quarters_of_2025_bought_in":
+          4, "customers": 3}, {"reading": "delivered", "quarters_of_2025_bought_in": 1, "customers": 12534},
+          {"reading": "delivered", "quarters_of_2025_bought_in": 2, "customers": 1217}, {"reading": "delivered",
+          "quarters_of_2025_bought_in": 3, "customers": 59}, {"reading": "delivered", "quarters_of_2025_bought_in":
+          4, "customers": 3}]'
+      settled_on: "SELECT\n  s.customer_key,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+        \  s.customer_key"
+      means: 'One row per 2025 buyer — 13,834 of them — carrying how many of the four calendar quarters
+        of 2025 that customer placed at least one order in, a whole number from 1 to 4. Across the whole
+        set: 12,553 customers bought in a single quarter, 1,219 in two, 59 in three, and 3 in all four.
+        The figure counts quarters touched, not orders placed and not money spent, so a customer with
+        twelve orders all in March scores 1.'
+      readings_taken:
+      - word: 2025 (period column), re-priced at the figure
+        took: order_date — 3 customers reach all four quarters
+        could_also_mean: delivery_date — also exactly 3 customers reach all four quarters, with the rest
+          of the distribution nearly identical (12,534 / 1,217 / 59 / 3). The readings AGREE on the answer's
+          size, so the fork I flagged at step 3 is settled as immaterial and needs no question
+        declaration: 'order.default.period_is_order_date — default: ordered'
+      blocked_by: []
+    - step: '6'
+      step_asks: bought in all 4 quarters of 2025
+      turns:
+      - why: Apply the `= 4` filter to get the qualifying customers, and settle the one thing left open
+          from step 5 — whether the delivery-date reading picks the same three people or a different three
+          that merely happen to number three.
+        did: "WITH by_order AS (\n  SELECT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n\
+          \  WHERE\n    YEAR(order_date) = 2025\n  GROUP BY\n    customer_key\n  HAVING\n    COUNT(DISTINCT\
+          \ QUARTER(order_date)) = 4\n), by_delivery AS (\n  SELECT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n\
+          \  WHERE\n    YEAR(delivery_date) = 2025\n  GROUP BY\n    customer_key\n  HAVING\n    COUNT(DISTINCT\
+          \ QUARTER(delivery_date)) = 4\n)\nSELECT\n  COALESCE(o.customer_key, d.customer_key) AS customer_key,\n\
+          \  (\n    NOT o.customer_key IS NULL\n  ) AS qualifies_on_order_date,\n  (\n    NOT d.customer_key\
+          \ IS NULL\n  ) AS qualifies_on_delivery_date\nFROM by_order AS o\nFULL OUTER JOIN by_delivery\
+          \ AS d\n  ON o.customer_key = d.customer_key\nORDER BY\n  customer_key"
+        came_back: '3 row(s): [{"customer_key": 208369, "qualifies_on_order_date": true, "qualifies_on_delivery_date":
+          true}, {"customer_key": 556838, "qualifies_on_order_date": true, "qualifies_on_delivery_date":
+          true}, {"customer_key": 595495, "qualifies_on_order_date": true, "qualifies_on_delivery_date":
+          true}]'
+      settled_on: "SELECT\n  s.customer_key\nFROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n \
+        \ YEAR(s.order_date) = 2025\nGROUP BY\n  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date))\
+        \ = 4"
+      means: The three customers — keys 208369, 556838 and 595495 — who placed at least one order in every
+        one of the four calendar quarters of 2025. Each row is one customer account that bought in Q1
+        and Q2 and Q3 and Q4. The 1,219 customers who managed two quarters and the 59 who managed three
+        are excluded, as are the 12,553 who bought in only one.
+      readings_taken: []
+      blocked_by: []
+    - step: '7'
+      step_asks: Customers who bought in all 4 quarters of 2025
+      turns:
+      - why: Produce the answer rows themselves — the customer and their 2025 quarter count — and read
+          them before claiming anything.
+        did: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+          FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+          \  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+        came_back: '3 row(s): [{"customer": 208369, "quarters_of_2025_bought_in": 4}, {"customer": 556838,
+          "quarters_of_2025_bought_in": 4}, {"customer": 595495, "quarters_of_2025_bought_in": 4}]'
+      - why: 'The answer rows are read and consistent with every step behind them: three customers, each
+          with a quarter count of 4, the same three under both the order-date and delivery-date readings.'
+        did: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+          FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+          \  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 3 row(s): [{"customer": 208369, "quarters_of_2025_bought_in":
+          4}, {"customer": 556838, "quarters_of_2025_bought_in": 4}, {"customer": 595495, "quarters_of_2025_bought_in":
+          4}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from
+          the closed list. If these rows settle the question, do not decline.'
+      settled_on: "SELECT\n  s.customer_key AS customer,\n  COUNT(DISTINCT QUARTER(s.order_date)) AS quarters_of_2025_bought_in\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nWHERE\n  YEAR(s.order_date) = 2025\nGROUP BY\n\
+        \  s.customer_key\nHAVING\n  COUNT(DISTINCT QUARTER(s.order_date)) = 4\nORDER BY\n  s.customer_key"
+      means: 'These three customers — keys 208369, 556838 and 595495 — are the only people on Contoso''s
+        register who placed at least one order in every calendar quarter of 2025, and the 4 beside each
+        is the number of distinct 2025 quarters they bought in. For scale: of the 13,834 customers who
+        bought anything in 2025, 12,553 appeared in only one quarter, 1,219 in two, 59 in three, and these
+        3 in all four. What the figure does NOT include: nothing about how much they spent, how many orders
+        they placed, or what they bought — the test is merely presence in a quarter, so one small order
+        per quarter counts the same as fifty. It does not say which quarters, because all four is the
+        only qualifying pattern. And it hands back keys rather than names, which is as close to "which
+        customers" as the suppression on customer_name allows.'
+      readings_taken:
+      - word: Customers (as shown in the answer)
+        took: customer_key, the numeric account identifier
+        could_also_mean: 'the customer''s registered name, which is the declared `naming: common` column
+          and what a reader asking "which customers" probably wants — forbidden in an answer by its suppression,
+          so keys are the only identifier available'
+        declaration: dim_customer.customer_name — SUPPRESSED, DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
+      - word: bought
+        took: any purchase line recorded in 2025 counts
+        could_also_mean: 'only completed, paid, non-cancelled, non-returned orders — not expressible here,
+          and measured to be the identical population: no status or reversal column exists, and every
+          line carries a positive quantity and a positive amount'
+        declaration: Order concept grounded in v_contoso5_sales_line; no status column declared on the
+          relation
+      - word: all 4 quarters of 2025
+        took: the four calendar quarters, read on order_date — 3 customers
+        could_also_mean: 'read on delivery_date, which I measured: the SAME three customers qualify, 208369,
+          556838 and 595495. Fiscal quarters are not computable in this bundle'
+        declaration: 'order.default.period_is_order_date; v_contoso5_sales_line.order_date carries period_binding:
+          True'
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+- '6'
+- '7'
+v3_answer_step: '7'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: 3 row(s) match
+v3_seconds: 280.0

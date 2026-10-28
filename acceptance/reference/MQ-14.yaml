@@ -1,0 +1,96 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED: `approved_by` is empty. An agent may not sign a reference.
+id: MQ-14
+question: What is an average age of all opened stores?
+expected: 13.086206896551724
+sql: >-
+  SELECT AVG(date_diff('year', open_date, DATE '2025-12-31')
+             - CASE WHEN strftime(DATE '2025-12-31','%m%d') < strftime(open_date,'%m%d')
+                    THEN 1 ELSE 0 END)
+  FROM contoso_served.dim_store WHERE close_date IS NULL
+note: >-
+  THE ANCHOR IS 2025-12-31 AND IT IS NOT A LITERAL. It is this bundle's recorded vintage —
+  `max(order_date)` over `contoso_served.v_contoso5_sales_line`, measured at build by
+  `mac.canon.scoped_latest` and written to `artifacts/estate/bundle_vintage.json`. The operator
+  ruled the sampling date on 2026-10-23 and the ruling is honoured by MEASURING it, not by typing
+  it: `tools/check_vintage_fresh.py` re-measures it against the live warehouse and reports drift.
+
+  WHY THE ANCHOR HAD TO BE PINNED AT ALL. An age moves every day. The same question answered
+  15.27 on 2026-10-02, 15.33 on 2026-10-23 and would answer 16.33 on 2027-10-23 — three approved
+  figures for one unchanged question, and no gate could have told a regression from a sunrise.
+
+  A STORE IS ITS LOCATION, not its row. `dim_store` declares `bindings[].counts: location_code`:
+  67 locations over 74 rows, because a re-tenanted site carries several rows and is one store.
+  The four readings, all measured at this anchor, so the choice is visible rather than implied:
+
+    by LOCATION, earliest open_date (67)   13.880597014925373   <- this reference
+    by ROW (74 rows)                       13.486486486486486
+    by LOCATION, latest open_date (67)     13.298507462686567
+    by LOCATION, earliest, trading only    13.086206896551724
+
+  EARLIEST, because a store's age is measured from when the SITE opened for trade — the same
+  reading the customer analogy takes from `birth_date`, which is a first date and not a latest
+  one. A re-tenanting is not a new store being born.
+
+  ALL STORES MEANS BOTH CHANNELS, by the operator's ruling of 2026-10-18: 67 locations including
+  the online outlet (location_code -1, opened 2010-01-01 and still trading — at 15.99 years the
+  oldest store in the bundle, which is why including it raises the average rather than lowering
+  it). The question says "all". Physical-only gives 66 locations and 13.863636363636363, which is
+  the figure to expect if the channel default is ever read as applying here.
+
+  THE AGE READING IS BIRTHDAY-AWARE COMPLETED YEARS, the one MQ-15 declared and verified: whole
+  years since the date, minus one for anyone whose anniversary has not yet arrived. AT THIS
+  ANCHOR THE SECOND DECLARED READING AGREES TO THE LAST DIGIT (year boundaries crossed =
+  13.880597014925373), because 31 December is past every anniversary but a 31 December one. That
+  agreement is a property of the anchor, not of the figure, and it is why MQ-15 keeps a separate
+  mid-year case — see the ruling.
+
+  0 of 74 rows have a null open_date, so nothing is dropped by the IS NOT NULL guard.
+  REPHRASED BY THE OPERATOR 2026-10-23: "reprhase into: what is an average age of all opened
+  stores / this is unambiguous". The previous wording was "What is the average age of the all
+  stores", and the rephrase settles the POPULATION, which was one of its two live forks.
+
+  "OPENED" MEANS OPEN — `close_date IS NULL`, the 58 stores trading at the anchor, by
+  `store.resolution.active_is_the_absent_close_date` (confidence C, the operator''s impurity fix of
+  2026-10-01 made `close_date` and `status_annotation` equivalent: 16 rows carry a close date and
+  all 16 carry a non-blank status). The old "all stores" admitted 67 locations, 74 rows and 58
+  trading, and the walk and this reference picked differently.
+
+  CALCULATED BY HAND AT THE OPERATOR''S REQUEST, and the arithmetic is here so nobody has to trust
+  the statement: 58 stores, completed years at the anchor, summing to 759.
+      759 / 58 = 13.086206896551724
+  oldest: Contoso Store Ayrshire and Northwest Territories, opened 2005-03-04, 20 years.
+  youngest: Contoso Store Saarland, opened 2019-03-05, 6 years. The SQL above reproduces the hand
+  figure to the last digit.
+
+  WHAT THE REPHRASE DOES *NOT* SETTLE, flagged rather than hidden — the ROUNDING is still a fork:
+      completed years, birthday-aware   13.086206896551724   <- this reference
+      fractional, days / 365.25         13.708654913
+  Both are declared readings of elapsed time and the operator ruled on 2026-10-16 that BOTH exist,
+  "chosen at use" — and nothing carries that ruling, which is why the walk chose birthday-aware on
+  MQ-15 and fractional here. This reference takes completed years because that is the reading MQ-15
+  verified and approved. AT THIS ANCHOR THE THIRD READING AGREES WITH THE FIRST: year-boundaries-
+  crossed also gives 13.086206896551724, because 31 December is past every anniversary but a
+  31 December one. That collapse is a property of the operator''s sampling-date pin.
+
+  AND ONE MORE, SMALLER: 58 includes the online outlet. `store.resolution.the_channel_is_the_
+  location_sentinel` declares `default: physical` with `applies: subject`, and this question''s
+  subject IS a store — which would argue for 57 physical stores and 13.052631578947368. "ALL
+  opened stores" is read as the instruction not to filter, so the web shop stays. The difference
+  is 0.034 years and the operator has not ruled it.
+
+expected_by: agent
+expected_at: '2026-10-23'
+approved_by: null
+approved_at: null
+depends_on_rulings:
+- decisions/RULED-2026-10-23_the-sampling-date-is-the-newest-order.md
+- decisions/RULED-2026-10-18_both-channels-make-revenue.md
+awaiting_approval: >-
+  The arithmetic is re-runnable and the anchor is derived, not chosen. Two readings need a
+  signature. FIRST, EARLIEST vs LATEST open_date for a re-tenanted site: earliest gives 13.8806,
+  latest 13.2985. SECOND, whether "all stores" includes the online outlet: including it gives
+  13.880597014925373 over 67 locations, excluding it 13.863636363636363 over 66 — a difference of
+  0.017 years, so this reading barely moves the figure even though it changes the population.

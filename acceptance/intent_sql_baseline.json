@@ -1,0 +1,763 @@
+{
+ "spec_version": "mac.intent_sql_baseline/1",
+ "note": "QUERY LOGIC, NOT VALUES. Each entry is the canonical form of the SQL this bundle's declarations generate for one recorded reading, with its bound parameters. It is invariant under any data refresh and moves only when a declaration moves. Produced by meaning-as-code/tools/check_intent_sql_fingerprint.py --capture.",
+ "captured": "2026-10-26",
+ "bundle": "contoso5",
+ "canonicaliser": "sqlglot 30.12.0 / duckdb + optimize + mac post-pass (6 passes)",
+ "intents": {
+  "ADV-01": {
+   "fingerprint": "c8f29aa86ca74a48",
+   "params_json": "{\"period_end\": \"2025-01-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT \"dim_product\".\"brand\" AS \"brand\", SUM(\"v_contoso5_sales_line\".\"gross_amount\") AS \"grossrevenue\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT) GROUP BY \"dim_product\".\"brand\" ORDER BY \"grossrevenue\" DESC",
+   "question": "Compare gross vs net revenue by brand in 2024"
+  },
+  "ADV-02": {
+   "fingerprint": "e59eedf41972bc23",
+   "params_json": "{\"customer\": \"Europe\"}",
+   "canonical_sql": "SELECT \"dim_product\".\"brand\" AS \"brand\", SUM(\"v_contoso5_sales_line\".\"discount_amount\") AS \"discount\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"continent\" = CAST('@P_customer' AS TEXT) AND \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" GROUP BY \"dim_product\".\"brand\" ORDER BY \"discount\" DESC, \"brand\" LIMIT 1",
+   "question": "Which brand has the highest margin (gross minus net) in Europe?"
+  },
+  "ADV-03": {
+   "fingerprint": "7521752670d0ce63",
+   "params_json": "{}",
+   "canonical_sql": "SELECT \"dim_country\".\"country_name\" AS \"country_name\", SUM(\"v_contoso5_sales_line\".\"net_amount\") / NULLIF(COUNT(DISTINCT \"dim_customer\".\"customer_key\"), 0) AS \"netrevenue_per_customer\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" GROUP BY \"dim_country\".\"country_code\", \"dim_country\".\"country_name\" ORDER BY \"netrevenue_per_customer\" DESC",
+   "question": "Revenue per customer by country"
+  },
+  "ADV-04": {
+   "fingerprint": "174c1bc0da7f3c34",
+   "params_json": "{\"country\": \"DE\", \"grain_0\": \"month\", \"period_end\": \"2025-01-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT CAST(DATE_TRUNC(CAST('@P_grain_0' AS TEXT), \"v_contoso5_sales_line\".\"order_date\") AS DATE) AS \"_col_0\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" AND \"dim_country\".\"country_code\" = CAST('@P_country' AS TEXT) WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT) GROUP BY CAST(DATE_TRUNC(CAST('@P_grain_0' AS TEXT), \"v_contoso5_sales_line\".\"order_date\") AS DATE) ORDER BY \"_col_0\"",
+   "question": "Monthly revenue trend for Germany in 2024"
+  },
+  "ADV-08": {
+   "fingerprint": "249e31f2c8ec30b1",
+   "params_json": "{}",
+   "canonical_sql": "SELECT \"dim_country\".\"country_name\" AS \"country_name\", SUM(\"v_contoso5_sales_line\".\"net_amount\") / NULLIF(COUNT(DISTINCT \"v_contoso5_sales_line\".\"order_key\"), 0) AS \"netrevenue_per_order\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" GROUP BY \"dim_country\".\"country_code\", \"dim_country\".\"country_name\" ORDER BY \"netrevenue_per_order\" DESC",
+   "question": "Average order value by country"
+  },
+  "ADV-09": {
+   "fingerprint": "a97562d31c9080ac",
+   "params_json": "{\"having_netrevenue\": \"500.0\", \"pop_country_country_code\": \"--\"}",
+   "canonical_sql": "SELECT \"dim_country\".\"country_name\" AS \"country\" FROM \"contoso_served\".\"dim_country\" AS \"dim_country\" JOIN \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" WHERE \"dim_country\".\"country_code\" IS DISTINCT FROM CAST('@P_pop_country_country_code' AS TEXT) GROUP BY \"dim_country\".\"country_name\" HAVING AVG(\"v_contoso5_sales_line\".\"net_amount\") > CAST('@P_having_netrevenue' AS TEXT) ORDER BY \"country\"",
+   "question": "Countries where average order value exceeds 500"
+  },
+  "ADV-11": {
+   "fingerprint": "4f4401eaa13a3e46",
+   "params_json": "{\"period_end\": \"2025-01-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT)",
+   "question": "Show revenue from new customers with first order from 2024 onwards vs customers older then 2024"
+  },
+  "ADV-13": {
+   "fingerprint": "1f5ab07136278337",
+   "params_json": "{\"having_netrevenue\": \"0.0\", \"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT \"dim_store\".\"store_name\" AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" JOIN \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" ON \"dim_store\".\"store_key\" = \"v_contoso5_sales_line\".\"store_key\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) GROUP BY \"dim_store\".\"store_name\" HAVING AVG(\"v_contoso5_sales_line\".\"net_amount\") > CAST('@P_having_netrevenue' AS TEXT) ORDER BY \"store\"",
+   "question": "List top 5 stores that sell more than the average store"
+  },
+  "ADV-15": {
+   "fingerprint": "871c99d10ca9d4ac",
+   "params_json": "{\"brand\": \"Contoso\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_customer\".\"customer_key\") AS \"customer\" FROM \"contoso_served\".\"dim_customer\" AS \"dim_customer\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"dim_customer\".\"country_code\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"brand\" = CAST('@P_brand' AS TEXT) AND \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" JOIN \"contoso_served\".\"dim_store\" AS \"dim_store\" ON \"dim_country\".\"country_code\" = \"dim_store\".\"country_code\" AND \"dim_store\".\"country_code\" IS DISTINCT FROM \"dim_customer\".\"country_code\" JOIN \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" ON \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\"",
+   "question": "How many customers bought Contoso brand products in stores outside their home country?"
+  },
+  "ADV-16": {
+   "fingerprint": "70e4c04e3e520c23",
+   "params_json": "{\"country\": \"DE\", \"country_1\": \"FR\"}",
+   "canonical_sql": "SELECT \"dim_product\".\"product_name\" AS \"product\" FROM \"contoso_served\".\"dim_product\" AS \"dim_product\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" JOIN \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" GROUP BY \"dim_product\".\"product_name\" HAVING SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_1' AS TEXT) THEN 1 ELSE 0 END) > 0 ORDER BY \"product\"",
+   "question": "Products sold in both Germany and France"
+  },
+  "ADV-17": {
+   "fingerprint": "973aee45ec99baab",
+   "params_json": "{\"country\": \"AU\", \"country_1\": \"CA\", \"country_2\": \"FR\", \"country_3\": \"DE\", \"country_4\": \"IT\", \"country_5\": \"NL\", \"country_6\": \"GB\", \"country_7\": \"US\"}",
+   "canonical_sql": "SELECT \"dim_product\".\"brand\" AS \"brand\" FROM \"contoso_served\".\"dim_product\" AS \"dim_product\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" JOIN \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" GROUP BY \"dim_product\".\"brand\" HAVING SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_1' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_2' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_3' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_4' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_5' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_6' AS TEXT) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN \"dim_country\".\"country_code\" = CAST('@P_country_7' AS TEXT) THEN 1 ELSE 0 END) > 0 ORDER BY \"brand\"",
+   "question": "Brands sold in every country"
+  },
+  "ADV-18": {
+   "fingerprint": "fd2f65bbd8a9379b",
+   "params_json": "{\"order_date_from\": \"2025-01-01\", \"order_date_from_1\": \"2025-04-01\", \"order_date_from_2\": \"2025-07-01\", \"order_date_from_3\": \"2025-10-01\", \"order_date_to\": \"2025-04-01\", \"order_date_to_1\": \"2025-07-01\", \"order_date_to_2\": \"2025-10-01\", \"order_date_to_3\": \"2026-01-01\", \"period_end\": \"2026-01-01\", \"period_start\": \"2025-01-01\"}",
+   "canonical_sql": "SELECT \"dim_customer\".\"customer_key\" AS \"customer\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT) GROUP BY \"dim_customer\".\"customer_key\" HAVING SUM(CASE WHEN (\"v_contoso5_sales_line\".\"order_date\" < CAST('@P_order_date_to' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_order_date_from' AS TEXT)) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN (\"v_contoso5_sales_line\".\"order_date\" < CAST('@P_order_date_to_1' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_order_date_from_1' AS TEXT)) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN (\"v_contoso5_sales_line\".\"order_date\" < CAST('@P_order_date_to_2' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_order_date_from_2' AS TEXT)) THEN 1 ELSE 0 END) > 0 AND SUM(CASE WHEN (\"v_contoso5_sales_line\".\"order_date\" < CAST('@P_order_date_to_3' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_order_date_from_3' AS TEXT)) THEN 1 ELSE 0 END) > 0 ORDER BY \"customer\" DESC",
+   "question": "Customers who bought in all 4 quarters of 2025"
+  },
+  "ADV-22": {
+   "fingerprint": "25021e5f897a07cf",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "Total Revenue"
+  },
+  "ADV-24": {
+   "fingerprint": "1ee43f2bdbf5bc49",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_store\" AS \"dim_store\" ON \"dim_store\".\"location_code\" = CAST('@P_pop_store_location_code' AS TEXT) AND \"dim_store\".\"store_key\" = \"v_contoso5_sales_line\".\"store_key\"",
+   "question": "Total Revenue of Internet Shop"
+  },
+  "ADV-25": {
+   "fingerprint": "0e39a8267ad834c0",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") / NULLIF(SUM(\"v_contoso5_sales_line\".\"quantity\"), 0) AS \"netrevenue_per_unitssold\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "Average price"
+  },
+  "AGG-01": {
+   "fingerprint": "25021e5f897a07cf",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "What is the total net revenue?"
+  },
+  "AGG-02": {
+   "fingerprint": "a9efc6a18c30649d",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"quantity\") AS \"unitssold\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "What is the total quantity sold?"
+  },
+  "AGG-03": {
+   "fingerprint": "6eee697b8197db57",
+   "params_json": "{}",
+   "canonical_sql": "SELECT \"dim_customer\".\"country_code\" AS \"country_code\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" GROUP BY \"dim_customer\".\"country_code\" ORDER BY \"netrevenue\" DESC",
+   "question": "Show net revenue by customer country"
+  },
+  "AGG-04": {
+   "fingerprint": "7d98f5c2585ea5e3",
+   "params_json": "{}",
+   "canonical_sql": "SELECT \"dim_product\".\"brand\" AS \"brand\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" GROUP BY \"dim_product\".\"brand\" ORDER BY \"netrevenue\" DESC",
+   "question": "Break down net revenue by brand"
+  },
+  "AGG-05": {
+   "fingerprint": "25765453be1fba53",
+   "params_json": "{\"country\": \"DE\"}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" AND \"dim_country\".\"country_code\" = CAST('@P_country' AS TEXT)",
+   "question": "What is the net revenue in Germany?"
+  },
+  "AGG-06": {
+   "fingerprint": "a7c9de932223865f",
+   "params_json": "{\"brand\": \"Contoso\"}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"brand\" = CAST('@P_brand' AS TEXT) AND \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\"",
+   "question": "What is the net revenue for the Contoso brand?"
+  },
+  "AGG-07": {
+   "fingerprint": "5fe2e653d0f48d29",
+   "params_json": "{\"period_end\": \"2024-04-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT)",
+   "question": "What was the net revenue in Q1 2024?"
+  },
+  "AGG-08": {
+   "fingerprint": "9f0c0020ad0b0f7f",
+   "params_json": "{\"country_0\": \"DE\", \"country_1\": \"FR\"}",
+   "canonical_sql": "SELECT \"dim_country\".\"country_name\" AS \"country_name\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" AND \"dim_country\".\"country_code\" IN (CAST('@P_country_0' AS TEXT), CAST('@P_country_1' AS TEXT)) GROUP BY \"dim_country\".\"country_code\", \"dim_country\".\"country_name\" ORDER BY \"netrevenue\" DESC",
+   "question": "Compare net revenue in Germany versus France"
+  },
+  "AGG-09": {
+   "fingerprint": "8aa08b662f86627c",
+   "params_json": "{\"brand_0\": \"Contoso\", \"brand_1\": \"Fabrikam\"}",
+   "canonical_sql": "SELECT \"dim_product\".\"brand\" AS \"brand\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"brand\" IN (CAST('@P_brand_0' AS TEXT), CAST('@P_brand_1' AS TEXT)) AND \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" GROUP BY \"dim_product\".\"brand\" ORDER BY \"netrevenue\" DESC",
+   "question": "Which brand sold more in total, Contoso or Fabrikam?"
+  },
+  "AGG-10": {
+   "fingerprint": "5480b4d7e3159f54",
+   "params_json": "{}",
+   "canonical_sql": "SELECT \"dim_country\".\"country_name\" AS \"country_name\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" GROUP BY \"dim_country\".\"country_code\", \"dim_country\".\"country_name\" ORDER BY \"netrevenue\" DESC, \"dim_country\".\"country_code\", \"country_name\" LIMIT 5",
+   "question": "What are the top 5 countries by net revenue?"
+  },
+  "AGG-11": {
+   "fingerprint": "32639c4d7c0175b0",
+   "params_json": "{}",
+   "canonical_sql": "SELECT \"dim_product\".\"product_name\" AS \"product_name\", SUM(\"v_contoso5_sales_line\".\"quantity\") AS \"unitssold\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" GROUP BY \"dim_product\".\"product_key\", \"dim_product\".\"product_name\" ORDER BY \"unitssold\" DESC, \"dim_product\".\"product_key\" DESC, \"product_name\" LIMIT 3",
+   "question": "What are the top 3 products by quantity sold?"
+  },
+  "AGG-12": {
+   "fingerprint": "4632acb7987fd911",
+   "params_json": "{\"country\": \"DE\"}",
+   "canonical_sql": "WITH \"_u_0\" AS (SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"_col_0\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\") SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") / NULLIF(MAX(\"_u_0\".\"_col_0\"), 0) AS \"netrevenue_share_of_total\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" CROSS JOIN \"_u_0\" AS \"_u_0\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" AND \"dim_country\".\"country_code\" = CAST('@P_country' AS TEXT)",
+   "question": "What percentage of total net revenue comes from Germany?"
+  },
+  "AGG-13": {
+   "fingerprint": "849465458c7e50e7",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"gross_amount\") / NULLIF(SUM(\"v_contoso5_sales_line\".\"net_amount\"), 0) AS \"grossrevenue_per_netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "What is the ratio of gross revenue to net revenue?"
+  },
+  "AGG-14": {
+   "fingerprint": "25021e5f897a07cf",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "What is the total net revenue converted to USD?"
+  },
+  "AGG-15": {
+   "fingerprint": "b31a491c3b02c22d",
+   "params_json": "{\"period_end\": \"2025-01-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT \"dim_product\".\"brand\" AS \"brand\", \"dim_customer\".\"country_code\" AS \"country_code\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT) GROUP BY \"dim_customer\".\"country_code\", \"dim_product\".\"brand\" ORDER BY \"brand\", \"netrevenue\" DESC",
+   "question": "Show net revenue by brand and customer country for 2024, order by brand and net revenue"
+  },
+  "MQ-06": {
+   "fingerprint": "c67191dcbb61f465",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT AVG(\"dim_store\".\"square_metres\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "What is the average store size in square meters?"
+  },
+  "MQ-07": {
+   "fingerprint": "1ee43f2bdbf5bc49",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_store\" AS \"dim_store\" ON \"dim_store\".\"location_code\" = CAST('@P_pop_store_location_code' AS TEXT) AND \"dim_store\".\"store_key\" = \"v_contoso5_sales_line\".\"store_key\"",
+   "question": "What is the revenue from the online store?"
+  },
+  "MQ-08": {
+   "fingerprint": "5968dae496c73e8e",
+   "params_json": "{\"period_end\": \"2025-01-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT DISTINCT \"dim_product\".\"product_name\" AS \"product\" FROM \"contoso_served\".\"dim_product\" AS \"dim_product\" WHERE NOT \"dim_product\".\"product_key\" IN (SELECT DISTINCT \"v_contoso5_sales_line\".\"product_key\" AS \"product_key\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT)) ORDER BY \"dim_product\".\"product_name\"",
+   "question": "Which products were NOT sold in 2024?"
+  },
+  "MQ-09": {
+   "fingerprint": "a69199acc35deecd",
+   "params_json": "{\"country\": \"IT\", \"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT DISTINCT \"dim_store\".\"store_name\" AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"country_code\" = CAST('@P_country' AS TEXT) AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND NOT \"dim_store\".\"store_key\" IN (SELECT DISTINCT \"v_contoso5_sales_line\".\"store_key\" AS \"store_key\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\") ORDER BY \"dim_store\".\"store_name\"",
+   "question": "Are there any stores in Italy with no sales?"
+  },
+  "MQ-10": {
+   "fingerprint": "304d1ca7af6ee43e",
+   "params_json": "{\"close_date_from\": \"2019-01-01\", \"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT DISTINCT \"dim_store\".\"store_name\" AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" >= CAST('@P_close_date_from' AS TEXT) AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) ORDER BY \"dim_store\".\"store_name\"",
+   "question": "Which stores closed after 2018?"
+  },
+  "MQ-11": {
+   "fingerprint": "5d42025e1e018414",
+   "params_json": "{}",
+   "canonical_sql": "SELECT \"dim_country\".\"country_name\" AS \"country_name\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_country\" AS \"dim_country\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" JOIN \"contoso_served\".\"dim_store\" AS \"dim_store\" ON \"dim_customer\".\"country_code\" = \"dim_store\".\"country_code\" AND \"dim_store\".\"store_key\" = \"v_contoso5_sales_line\".\"store_key\" GROUP BY \"dim_country\".\"country_code\", \"dim_country\".\"country_name\" ORDER BY \"netrevenue\" DESC",
+   "question": "Show me revenue by country for customers in the same country as their store"
+  },
+  "MQ-12": {
+   "fingerprint": "25021e5f897a07cf",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "Total sales in dollars"
+  },
+  "MQ-14": {
+   "fingerprint": "c67191dcbb61f465",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT AVG(\"dim_store\".\"square_metres\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "What is an average age of all opened stores?"
+  },
+  "MQ-16": {
+   "fingerprint": "cd0129665ced3040",
+   "params_json": "{\"customer\": \"DE\", \"grain_0\": \"month\", \"period_end\": \"2025-01-01\", \"period_start\": \"2024-01-01\", \"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT CAST(DATE_TRUNC(CAST('@P_grain_0' AS TEXT), \"v_contoso5_sales_line\".\"order_date\") AS DATE) AS \"_col_0\", SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"country_code\" = CAST('@P_customer' AS TEXT) AND \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" JOIN \"contoso_served\".\"dim_store\" AS \"dim_store\" ON \"dim_store\".\"location_code\" = CAST('@P_pop_store_location_code' AS TEXT) AND \"dim_store\".\"store_key\" = \"v_contoso5_sales_line\".\"store_key\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT) GROUP BY CAST(DATE_TRUNC(CAST('@P_grain_0' AS TEXT), \"v_contoso5_sales_line\".\"order_date\") AS DATE) ORDER BY \"_col_0\"",
+   "question": "What is monthly revenue trend in Germany in 2024 only from Internet shop?"
+  },
+  "MQ-19": {
+   "fingerprint": "c67191dcbb61f465",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT AVG(\"dim_store\".\"square_metres\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "What is the average size of our shops?"
+  },
+  "MQ-22": {
+   "fingerprint": "96d35988e951bda1",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "WITH \"_u_0\" AS (SELECT AVG(\"dim_store\".\"square_metres\") AS \"_col_0\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)) SELECT \"dim_store\".\"store_name\" AS \"store_name\", SUM(\"dim_store\".\"square_metres\") / NULLIF(MAX(\"_u_0\".\"_col_0\"), 0) AS \"store_per_average\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" CROSS JOIN \"_u_0\" AS \"_u_0\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) GROUP BY \"dim_store\".\"location_code\", \"dim_store\".\"store_name\" ORDER BY \"store_per_average\" DESC",
+   "question": "What is the ratio of the actual shop size and the average shop size?"
+  },
+  "RC01": {
+   "fingerprint": "b29f7ce1b7d4cbb2",
+   "params_json": "{}",
+   "canonical_sql": "SELECT DISTINCT \"dim_product\".\"brand\" AS \"brand\" FROM \"contoso_served\".\"dim_product\" AS \"dim_product\" ORDER BY \"dim_product\".\"brand\"",
+   "question": "What brands do we sell?"
+  },
+  "RC02": {
+   "fingerprint": "a2ea70a03808c613",
+   "params_json": "{\"having_customer\": \"0.0\", \"pop_country_country_code\": \"--\"}",
+   "canonical_sql": "SELECT \"dim_country\".\"country_name\" AS \"country\" FROM \"contoso_served\".\"dim_country\" AS \"dim_country\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" JOIN \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" ON \"dim_country\".\"country_code\" = \"v_contoso5_sales_line\".\"sale_country_code\" WHERE \"dim_country\".\"country_code\" IS DISTINCT FROM CAST('@P_pop_country_country_code' AS TEXT) GROUP BY \"dim_country\".\"country_name\" HAVING CAST('@P_having_customer' AS TEXT) < COUNT(DISTINCT \"dim_customer\".\"customer_key\") ORDER BY \"country\"",
+   "question": "List all countries where we have customers."
+  },
+  "RC03": {
+   "fingerprint": "cabf0cba80a9b151",
+   "params_json": "{}",
+   "canonical_sql": "SELECT DISTINCT \"dim_product\".\"color\" AS \"color\" FROM \"contoso_served\".\"dim_product\" AS \"dim_product\" ORDER BY \"dim_product\".\"color\"",
+   "question": "What product colors are available in our catalog?"
+  },
+  "RC04": {
+   "fingerprint": "2e1f7375b4c2b66c",
+   "params_json": "{}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_customer\".\"customer_key\") AS \"customer\" FROM \"contoso_served\".\"dim_customer\" AS \"dim_customer\"",
+   "question": "How many customers do we have?"
+  },
+  "RC05": {
+   "fingerprint": "de00933b0cf1cd7d",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "How many stores do we have?"
+  },
+  "RC06": {
+   "fingerprint": "8473d0f6c26472df",
+   "params_json": "{}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_product\".\"product_key\") AS \"product\" FROM \"contoso_served\".\"dim_product\" AS \"dim_product\"",
+   "question": "How many products are in our catalog?"
+  },
+  "RC07": {
+   "fingerprint": "6cec05363c0334e1",
+   "params_json": "{\"customer\": \"DE\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_customer\".\"customer_key\") AS \"customer\" FROM \"contoso_served\".\"dim_customer\" AS \"dim_customer\" WHERE \"dim_customer\".\"country_code\" = CAST('@P_customer' AS TEXT)",
+   "question": "How many customers are in Germany?"
+  },
+  "RC08": {
+   "fingerprint": "48f03a42d03e84d4",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND NOT \"dim_store\".\"close_date\" IS NULL",
+   "question": "How many stores are closed?"
+  },
+  "RC09": {
+   "fingerprint": "a67a93c39e981875",
+   "params_json": "{\"brand\": \"Contoso\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_product\".\"product_key\") AS \"product\" FROM \"contoso_served\".\"dim_product\" AS \"dim_product\" WHERE \"dim_product\".\"brand\" = CAST('@P_brand' AS TEXT)",
+   "question": "How many products does the Contoso brand have?"
+  },
+  "RC10": {
+   "fingerprint": "f79babe28daeea9b",
+   "params_json": "{\"period_end\": \"2025-01-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"v_contoso5_sales_line\".\"order_key\") AS \"order\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT)",
+   "question": "How many orders were placed in 2024?"
+  },
+  "RC11": {
+   "fingerprint": "4019fb207d91df2e",
+   "params_json": "{\"period_end\": \"2024-01-01\", \"period_start\": \"2023-01-01\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"v_contoso5_sales_line\".\"product_key\") AS \"product\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT)",
+   "question": "How many distinct products were sold in 2023?"
+  },
+  "RC12": {
+   "fingerprint": "10d1235b8e3a831d",
+   "params_json": "{\"customer\": \"female\", \"customer_1\": \"Europe\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_customer\".\"customer_key\") AS \"customer\" FROM \"contoso_served\".\"dim_customer\" AS \"dim_customer\" WHERE \"dim_customer\".\"continent\" = CAST('@P_customer_1' AS TEXT) AND \"dim_customer\".\"gender\" = CAST('@P_customer' AS TEXT)",
+   "question": "How many female customers are in Europe?"
+  },
+  "RC13": {
+   "fingerprint": "caa6c557ee1952a5",
+   "params_json": "{\"currency\": \"EUR\", \"period_end\": \"2024-04-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"v_contoso5_sales_line\".\"order_key\") AS \"order\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" WHERE \"v_contoso5_sales_line\".\"currency_code\" = CAST('@P_currency' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT)",
+   "question": "How many orders were placed in euros during Q1 2024?"
+  },
+  "RC14": {
+   "fingerprint": "ac0e9fca7932749b",
+   "params_json": "{\"birth_date_from\": \"1977-12-11\", \"birth_date_to\": \"1997-12-11\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_customer\".\"customer_key\") AS \"customer\" FROM \"contoso_served\".\"dim_customer\" AS \"dim_customer\" WHERE \"dim_customer\".\"birth_date\" < CAST('@P_birth_date_to' AS TEXT) AND \"dim_customer\".\"birth_date\" >= CAST('@P_birth_date_from' AS TEXT)",
+   "question": "How many customers were between 25 and 44 years old on the 10.12.2022?"
+  },
+  "RC15": {
+   "fingerprint": "3fa0c05a8a3f0db6",
+   "params_json": "{\"customer\": \"FR\", \"period_end\": \"2024-04-01\", \"period_start\": \"2024-01-01\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"v_contoso5_sales_line\".\"product_key\") AS \"product\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_customer\" AS \"dim_customer\" ON \"dim_customer\".\"country_code\" = CAST('@P_customer' AS TEXT) AND \"dim_customer\".\"customer_key\" = \"v_contoso5_sales_line\".\"customer_key\" JOIN \"contoso_served\".\"dim_product\" AS \"dim_product\" ON \"dim_product\".\"product_key\" = \"v_contoso5_sales_line\".\"product_key\" WHERE \"v_contoso5_sales_line\".\"order_date\" < CAST('@P_period_end' AS TEXT) AND \"v_contoso5_sales_line\".\"order_date\" >= CAST('@P_period_start' AS TEXT)",
+   "question": "How many different products did customers in France buy in Q1 2024?"
+  },
+  "STORE-01": {
+   "fingerprint": "de00933b0cf1cd7d",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "How many stores are still open?"
+  },
+  "STORE-02": {
+   "fingerprint": "de00933b0cf1cd7d",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "How many stores are not closed?"
+  },
+  "STORE-03": {
+   "fingerprint": "43f1639c848b9de4",
+   "params_json": "{\"pop_store_location_code\": \"-1\", \"pop_store_status_annotation\": \"Restructured\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND \"dim_store\".\"status_annotation\" = CAST('@P_pop_store_status_annotation' AS TEXT)",
+   "question": "How many stores have been restructured?"
+  },
+  "STORE-04": {
+   "fingerprint": "f2477709905724d5",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT MIN(\"dim_store\".\"close_date\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND NOT \"dim_store\".\"close_date\" IS NULL",
+   "question": "When was the first store closed?"
+  },
+  "STORE-05": {
+   "fingerprint": "978a1495a80f0846",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT SUM(\"dim_store\".\"square_metres\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "What is the total floor space of our stores in square meters?"
+  },
+  "STORE-06": {
+   "fingerprint": "de00933b0cf1cd7d",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "How many store versions are recorded?"
+  },
+  "STORE-07": {
+   "fingerprint": "48f03a42d03e84d4",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND NOT \"dim_store\".\"close_date\" IS NULL",
+   "question": "How many of our stores have closed?"
+  },
+  "STORE-08": {
+   "fingerprint": "4bbf82451c8c2350",
+   "params_json": "{\"store\": \"Contoso Store Armagh\"}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_store\" AS \"dim_store\" ON \"dim_store\".\"store_key\" = \"v_contoso5_sales_line\".\"store_key\" AND \"dim_store\".\"store_name\" = CAST('@P_store' AS TEXT)",
+   "question": "What is the revenue of Contoso Store Armagh?"
+  },
+  "STORE-09": {
+   "fingerprint": "25021e5f897a07cf",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\"",
+   "question": "What is the revenue of all Contoso stores?"
+  },
+  "STORE-10": {
+   "fingerprint": "c5309d5a40ff69ec",
+   "params_json": "{\"country\": \"DE\", \"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"close_date\" IS NULL AND \"dim_store\".\"country_code\" = CAST('@P_country' AS TEXT) AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT)",
+   "question": "How many stores are in Germany?"
+  },
+  "STORE-11": {
+   "fingerprint": "ef6ea0afe40d39f9",
+   "params_json": "{}",
+   "canonical_sql": "SELECT SUM(\"v_contoso5_sales_line\".\"net_amount\") AS \"netrevenue\" FROM \"contoso_served\".\"v_contoso5_sales_line\" AS \"v_contoso5_sales_line\" JOIN \"contoso_served\".\"dim_store\" AS \"dim_store\" ON \"dim_store\".\"store_key\" = \"v_contoso5_sales_line\".\"store_key\" AND NOT \"dim_store\".\"close_date\" IS NULL",
+   "question": "What is the revenue of all closed stores?"
+  },
+  "STORE-12": {
+   "fingerprint": "f3487dbb8cb3c9eb",
+   "params_json": "{\"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT DISTINCT \"dim_store\".\"store_name\" AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND NOT \"dim_store\".\"close_date\" IS NULL ORDER BY \"dim_store\".\"store_name\"",
+   "question": "List all closed stores"
+  },
+  "STORE-13": {
+   "fingerprint": "05711221007b66d0",
+   "params_json": "{\"pop_store_location_code\": \"-1\", \"pop_store_status_annotation\": \"Restructured\"}",
+   "canonical_sql": "SELECT DISTINCT \"dim_store\".\"store_name\" AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND \"dim_store\".\"status_annotation\" = CAST('@P_pop_store_status_annotation' AS TEXT) ORDER BY \"dim_store\".\"store_name\"",
+   "question": "List all restructured stores"
+  },
+  "STORE-14": {
+   "fingerprint": "9a105c0122833492",
+   "params_json": "{\"country\": \"DE\", \"pop_store_location_code\": \"-1\"}",
+   "canonical_sql": "SELECT COUNT(DISTINCT \"dim_store\".\"store_key\") AS \"store\" FROM \"contoso_served\".\"dim_store\" AS \"dim_store\" WHERE \"dim_store\".\"country_code\" = CAST('@P_country' AS TEXT) AND \"dim_store\".\"location_code\" IS DISTINCT FROM CAST('@P_pop_store_location_code' AS TEXT) AND NOT \"dim_store\".\"close_date\" IS NULL",
+   "question": "How many stores in Germany are closed?"
+  }
+ },
+ "not_plannable": {
+  "ADV-10": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "ADV-12": "refusal: No known dimension matches the term 'list_price'.",
+  "ADV-14": "refusal: No product category named 'Electronics' in data/lookups/contoso5_category_name.lookup.csv: compared case- and whitespace",
+  "ADV-23": "refusal: No country named 'Turkey' in data/lookups/contoso5_country_code.lookup.csv: compared case- and whitespace-insensitively ",
+  "ADV-26": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "ADV-27": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "AGG-16": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "AGG-17": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "MQ-13": "refusal: No country named 'Hungary' in data/lookups/contoso5_country_code.lookup.csv: compared case- and whitespace-insensitively",
+  "MQ-15": "refusal: No measure or derivation rule named 'birth_date' is known to this pack.",
+  "MQ-20": "refusal: 'years_from_open_date_to_close_date' needs date arithmetic, and the caller supplied no engine date dialect for this bund",
+  "MQ-21": "refusal: UnitsSold cannot be asked for presence or absence: the query grammar's `exists` requires identity.canonical_key and an e",
+  "MQ-23": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "OPQ-01": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "OPQ-02": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "STORE-15": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso..",
+  "STORE-16": "bad-intent: ValidationError: 6 validation errors for Intent\nmeasure\n  Field required [type=missing, input_value={'pack': 'example/contoso.."
+ },
+ "same_reading": [
+  {
+   "intents": [
+    "ADV-22",
+    "AGG-01",
+    "AGG-14",
+    "MQ-12",
+    "STORE-09"
+   ],
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it"
+  },
+  {
+   "intents": [
+    "ADV-24",
+    "MQ-07"
+   ],
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it"
+  },
+  {
+   "intents": [
+    "MQ-06",
+    "MQ-14",
+    "MQ-19"
+   ],
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it"
+  },
+  {
+   "intents": [
+    "RC05",
+    "STORE-01",
+    "STORE-02",
+    "STORE-06"
+   ],
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it"
+  },
+  {
+   "intents": [
+    "RC08",
+    "STORE-07"
+   ],
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it"
+  }
+ ],
+ "expected_unread": {
+  "all_of.filters.term": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-18"
+   ]
+  },
+  "all_of.filters.utterance": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-16",
+    "ADV-17",
+    "ADV-18"
+   ]
+  },
+  "all_of.utterance": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-16",
+    "ADV-17",
+    "ADV-18"
+   ]
+  },
+  "also": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-04",
+    "ADV-11"
+   ]
+  },
+  "also.operation": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01"
+   ]
+  },
+  "compare.along": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "AGG-09"
+   ]
+  },
+  "compare.as_": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "AGG-08",
+    "AGG-09"
+   ]
+  },
+  "compare.utterance": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "AGG-08",
+    "AGG-09"
+   ]
+  },
+  "confidence": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-03",
+    "ADV-04",
+    "ADV-08",
+    "ADV-09",
+    "ADV-11",
+    "ADV-13"
+   ]
+  },
+  "denominator_operation": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-04",
+    "ADV-09",
+    "ADV-11",
+    "ADV-13"
+   ]
+  },
+  "denominator_scope": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-04",
+    "ADV-09",
+    "ADV-11",
+    "ADV-13"
+   ]
+  },
+  "filters.column": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-02",
+    "ADV-04",
+    "ADV-15",
+    "ADV-24",
+    "AGG-05",
+    "AGG-06",
+    "AGG-08",
+    "AGG-09"
+   ]
+  },
+  "filters.op": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-24",
+    "AGG-08",
+    "AGG-09"
+   ]
+  },
+  "filters.utterance": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-02",
+    "ADV-04",
+    "ADV-15",
+    "ADV-24",
+    "AGG-05",
+    "AGG-06",
+    "AGG-08",
+    "AGG-09"
+   ]
+  },
+  "having.op": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "MQ-09"
+   ]
+  },
+  "having.operation": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "MQ-09"
+   ]
+  },
+  "having.subject": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "MQ-09"
+   ]
+  },
+  "having.utterance": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-09",
+    "ADV-13",
+    "MQ-09",
+    "RC02"
+   ]
+  },
+  "join_filters.utterance": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-15",
+    "MQ-11"
+   ]
+  },
+  "operation": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-03",
+    "ADV-04",
+    "ADV-08",
+    "ADV-11"
+   ]
+  },
+  "ordering": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-03",
+    "ADV-08"
+   ]
+  },
+  "period.raw": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-04",
+    "ADV-11",
+    "ADV-18",
+    "AGG-07",
+    "AGG-15",
+    "MQ-08",
+    "MQ-16"
+   ]
+  },
+  "slices": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02"
+   ]
+  },
+  "slices.column": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-03",
+    "ADV-04",
+    "ADV-08",
+    "AGG-04",
+    "AGG-09"
+   ]
+  },
+  "slices.term": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "AGG-04"
+   ]
+  },
+  "slices.utterance": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-03",
+    "ADV-04",
+    "ADV-08",
+    "AGG-03",
+    "AGG-04",
+    "AGG-09"
+   ]
+  },
+  "stage": {
+   "why": "UNREVIEWED \u2014 a human must write why this is not a defect, or fix it",
+   "carries_no_query_meaning": false,
+   "intents": [
+    "ADV-01",
+    "ADV-02",
+    "ADV-03",
+    "ADV-04",
+    "ADV-08",
+    "ADV-09",
+    "ADV-11",
+    "ADV-13"
+   ]
+  }
+ }
+}

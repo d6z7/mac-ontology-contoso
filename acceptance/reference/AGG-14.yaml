@@ -1,0 +1,40 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+id: AGG-14
+question: What is the total net revenue converted to USD?
+expected: 218814471.66
+sql: SELECT round(sum(net_price * quantity), 2) FROM contoso_served.v_contoso5_sales_line
+note: >-
+  THE CORRECT BEHAVIOUR IS TO DO NOTHING, and that is what this reference pins. The amounts are
+  ALREADY USD — measured: the same product on the same day costs the same under every
+  CurrencyCode, ratio 1.0000 — so "converted to USD" is a no-op and the answer is identical to
+  AGG-01.
+
+  THIS REFERENCE EXISTS TO STOP A FUTURE FIX. An engine that "improves" by applying the rate
+  table here would be doing the exact thing that produced four wrong reference answers on
+  2026-09-25. Converting a USD amount by USD->local inverts it. A pass here means the engine
+  correctly recognised there was nothing to convert.
+
+  SQL REPAIRED 2026-10-19, FIGURE UNTOUCHED. The statement above could not run at all: it named
+  `v_contoso_order_line`, `dim_contoso_customer` and `dim_contoso_product` with upstream
+  PascalCase columns, and none of those exist in this bundle -- the served view is
+  `v_contoso5_sales_line` and the dimensions are `dim_customer` / `dim_product` with snake_case
+  columns. A RENAME WAS NEVER PROPAGATED HERE, so this reference's claim to be independently
+  verified had become unverifiable: nobody could re-run it. The names were translated
+  mechanically, nothing else was changed, and the repaired statement returns the approved value
+  EXACTLY. The figure is therefore re-verified, not re-decided, which is why `approved_at` still
+  carries the operator's original date.
+approved_by: operator
+approved_at: '2026-09-25'
+cloned_from:
+  bundle: example/contoso
+  path: acceptance/reference/AGG-14.yaml
+  commit: e7465b1
+  cloned_at: '2026-09-29'
+  basis: >-
+    Approved on the same landing: main.* is identical in both bundles (8 tables, row counts and
+    columns measured equal on 2026-09-29; 223 974 sales lines), so the approved value is the value
+    here too. The `sql` above is the approving bundle's served view
+    (contoso_served.v_contoso_order_line, dim_contoso_*), NOT this bundle's plane
+    (v_contoso5_sales_line, dim_*): the expected value stands, the derivation on this bundle's
+    own served plane is owed before its capture is judged against it.

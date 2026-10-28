@@ -1,0 +1,1551 @@
+id: RC15
+captured_at: '2026-10-24T21:44:55+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: products
+  operation: aggregate
+  qdmr_simplified: "  1       FROM       customers                   “customers”\n  2  ← 1  WHERE    \
+    \  in France = 'France'        “in France”\n  3  ← 2  PIVOT_TO   things they bought          “buy”\n\
+    \  4  ← 3  DURING     by quarter                  “Q1 2024”\n  5  ← 4  PIVOT_TO   products       \
+    \             “products”\n  6  ← 5  AGGREGATE  count distinct of products  “How many different products”\n\
+    \  answer: step 6   confidence: 0.81\n  UNDERSTOOD AS: How many distinct products were bought by customers\
+    \ located in France, counting only purchases made in Q1 2024 (January–March 2024). The answer is a\
+    \ single count of distinct products — not a count of purchases, customers or units, and it excludes\
+    \ products bought by customers anywhere other than France or at any other time.\n  AMBIGUOUS 'customers\
+    \ in France' — ASKS: Does \"in France\" mean the customer's own country (their address on file), or\
+    \ that the purchase was delivered to / made in France?\n      could mean: customers whose own country\
+    \ or address is France, wherever the goods went\n      could mean: purchases shipped or delivered\
+    \ to a French address, whoever the customer is\n      could mean: purchases made at a location or\
+    \ store in France\n      took: customers whose own country is France\n  AMBIGUOUS 'different products'\
+    \ — ASKS: Should two variants of the same item (say two sizes or colours) count as one product or\
+    \ two?\n      could mean: each individual product or item code counts separately\n      could mean:\
+    \ each product family, model or category counts once however many variants were bought\n      took:\
+    \ each individual product counts separately\n  AMBIGUOUS 'Q1 2024' — ASKS: Is Q1 2024 the calendar\
+    \ months January to March 2024, or your company's own first fiscal quarter?\n      could mean: calendar\
+    \ January–March 2024\n      could mean: the first quarter of your fiscal year, which may not start\
+    \ in January\n      took: calendar January–March 2024\n  AMBIGUOUS 'buy' — ASKS: Should a purchase\
+    \ count by the date it was ordered, and should cancelled or fully returned purchases still count?\n\
+    \      could mean: everything ordered in the period, including anything later cancelled or returned\n\
+    \      could mean: only completed, paid and not-returned purchases\n      could mean: counted by shipment\
+    \ or invoice date rather than order date\n      took: everything bought in the period, counted by\
+    \ the date of purchase, without excluding cancellations or returns\n  OUTPUT SHAPE: one figure · one\
+    \ row(s) · carrying how many different products"
+  understood_as_in_human_words: How many distinct products were bought by customers located in France,
+    counting only purchases made in Q1 2024 (January–March 2024). The answer is a single count of distinct
+    products — not a count of purchases, customers or units, and it excludes products bought by customers
+    anywhere other than France or at any other time.
+  population_actually_answered: 'count(DISTINCT product_key) over v_contoso5_sales_line restricted twice
+    and only twice: (1) the line''s customer, via the declared order__placed_by__customer join, has dim_customer.country_code
+    = ''FR'' — the customer''s OWN country of residence, the `customer` path of country.default.whose_country_is_asked_never_assumed,
+    chosen because the question says "customers located in France"; (2) order_date between 2024-01-01
+    and 2024-03-31 inclusive, calendar months, on order_date per order.default.period_is_order_date''s
+    `default: ordered`. No channel predicate — both shops and the web shop are included, because store.resolution.the_channel_is_the_location_sentinel
+    scopes its `physical` default with `applies: subject` and this question''s subject is products bought
+    by customers, not a Store. No trading-state, return or cancellation predicate. 432 lines, 186 orders,
+    359 distinct products.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: one figure
+    columns_the_answer_step_asks_for: []
+    figures_the_answer_step_computes:
+    - count distinct of products
+    answer_step: '6'
+    verb: aggregate
+    said: How many different products
+    stage1_confidence: 0.81
+  canonical_question: &id001
+    understood_as: How many distinct products were bought by customers located in France, counting only
+      purchases made in Q1 2024 (January–March 2024). The answer is a single count of distinct products
+      — not a count of purchases, customers or units, and it excludes products bought by customers anywhere
+      other than France or at any other time.
+    steps:
+    - id: '1'
+      do: from
+      thing: customers
+      said: customers
+    - id: '2'
+      do: where
+      of: '1'
+      thing: in France
+      op: '='
+      value: France
+      said: in France
+    - id: '3'
+      do: pivot_to
+      of: '2'
+      to: things they bought
+      said: buy
+    - id: '4'
+      do: during
+      of: '3'
+      grain: quarter
+      said: Q1 2024
+    - id: '5'
+      do: pivot_to
+      of: '4'
+      to: products
+      said: products
+    - id: '6'
+      do: aggregate
+      of: '5'
+      figures: &id002
+      - how: count distinct
+        of: products
+        said: how many different products
+      said: How many different products
+    answer: '6'
+    output_shape: &id003
+      shape: one figure
+      said: How many different products
+      key_columns: &id005 []
+      figure_columns: &id006
+      - how many different products
+      rows: one
+    ambiguities:
+    - words: customers in France
+      question: Does "in France" mean the customer's own country (their address on file), or that the
+        purchase was delivered to / made in France?
+      readings:
+      - customers whose own country or address is France, wherever the goods went
+      - purchases shipped or delivered to a French address, whoever the customer is
+      - purchases made at a location or store in France
+      assumed: customers whose own country is France
+    - words: different products
+      question: Should two variants of the same item (say two sizes or colours) count as one product or
+        two?
+      readings:
+      - each individual product or item code counts separately
+      - each product family, model or category counts once however many variants were bought
+      assumed: each individual product counts separately
+    - words: Q1 2024
+      question: Is Q1 2024 the calendar months January to March 2024, or your company's own first fiscal
+        quarter?
+      readings:
+      - calendar January–March 2024
+      - the first quarter of your fiscal year, which may not start in January
+      assumed: calendar January–March 2024
+    - words: buy
+      question: Should a purchase count by the date it was ordered, and should cancelled or fully returned
+        purchases still count?
+      readings:
+      - everything ordered in the period, including anything later cancelled or returned
+      - only completed, paid and not-returned purchases
+      - counted by shipment or invoice date rather than order date
+      assumed: everything bought in the period, counted by the date of purchase, without excluding cancellations
+        or returns
+    confidence: 0.81
+  steps: 6
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: different_products
+      type: number
+    rows:
+    - - 359
+  value: 359
+  raw: '359'
+  reading: one figure
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "customers ... located in France → the customer's OWN country of residence, dim_customer.country_code\
+      \ = 'FR', reached by the declared edge customer__based_in__country\n        could also mean: the\
+      \ store the sale was rung up in being French (store__trades_in__country), or the site (location__in__country)"
+    ref: 'country.default.whose_country_is_asked_never_assumed forbids picking silently between the store
+      and the customer, and declares the `customer` path with the surfaces ''customer country'' / ''where
+      our customers are''. The question says ''customers located in France'', which names that path, so
+      the declaration settles it rather than leaving it open. Noted also: dim_customer.country_code is
+      declared the ONLY column that can place an internet sale in a real country, and dim_store.country_code
+      carries ''--'' for the web shop, so the customer path is the only one that does not lose online
+      orders.'
+  - kind: ''
+    text: "France → the code 'FR' on the customer row; dim_customer.country_code holds exactly 8 codes\
+      \ (AU, CA, DE, FR, GB, IT, NL, US) and 'FR' is the only French one\n        could also mean: matching\
+      \ dim_country.country_name = 'France' one join further out — the same fact, one hop away, so the\
+      \ two select identically"
+    ref: dim_location.country_name is declared 'the SAME fact one hop closer'; the name's home is Country,
+      but the code is on the customer row already.
+  - kind: ''
+    text: "bought → appearing on a sales line, counted by order_date, with no completion or return test\n\
+      \        could also mean: only completed, paid, non-returned purchases, or purchases counted by\
+      \ delivery date"
+    ref: 'order.default.period_is_order_date makes order_date the period column unless the question says
+      delivered. The ''completed only'' reading is not measurable here: v_contoso5_sales_line carries
+      no order status, cancellation flag or returned quantity, so there is nothing to exclude on.'
+  - kind: ''
+    text: "bought → both sales channels, shop and web\n        could also mean: walk-in shop purchases\
+      \ only"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default with `applies:
+      subject`, and the subject here is products bought by customers, not a Store — so the default does
+      not reach this question and both channels are covered.'
+  - kind: ''
+    text: "Q1 2024 → calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products\n        could\
+      \ also mean: a fiscal first quarter starting in a month other than January"
+    ref: 'No relation in this bundle carries a fiscal year, quarter or period column, so the fiscal reading
+      cannot be measured at all; order_date is the only declared time binding (period_binding: True).'
+  - kind: ''
+    text: "bought ... in Q1 2024 → dated by when the order was PLACED (order_date) — 359 distinct products\n\
+      \        could also mean: dated by when it was DELIVERED (delivery_date) — 369 distinct products,\
+      \ 10 more"
+    ref: 'order.default.period_is_order_date declares `default: ordered` and reserves delivery_date for
+      questions that say delivered, shipped or when it arrived. This question says ''bought'', so order_date
+      applies. Disclosed because the gap is real but small (2.8%) and moves no part of the answer''s meaning.'
+  - kind: ''
+    text: "different products → each individual product counts once — the SKU, dim_product.product_key:\
+      \ 359. Identical under product_code (359) and product_name (359)\n        could also mean: each\
+      \ family or group counts once however many variants were bought — 32 sub-categories, 8 categories,\
+      \ or 11 brands"
+    ref: 'The Product concept declares a product is ''a thing Contoso sells, at the level the shelf knows
+      it: a SKU'', and Color declares colour ''the one attribute that on its own makes a new SKU — E400
+      Green and E400 Orange are two products''. The SKU reading is therefore the declared one. The roll-up
+      figures are disclosed but are degenerate as answers: 32, 8 and 11 are the COMPLETE sets in the warehouse,
+      so they would be the same for almost any question.'
+  - kind: ''
+    text: "customers located in France → the customer's own registered country, dim_customer.country_code\
+      \ = 'FR'\n        could also mean: the sale rung up at a store in France, or delivered to a French\
+      \ address"
+    ref: country.default.whose_country_is_asked_never_assumed declares the `customer` path with surfaces
+      'customer country' / 'where our customers are' and forbids silently choosing between customer and
+      store. The question names the customer, so the declaration selects it. The store reading is a different
+      population rather than another cut of this one, and dim_store.country_code carries the '--' sentinel
+      for the web shop — which that rule and country.exclusion.sentinel_is_not_a_country both forbid treating
+      as a country — so it could not place an internet order in France anyway.
+  - kind: ''
+    text: "different products → each individual product once: product_key, the SKU — 359, and identically\
+      \ 359 under product_code and product_name\n        could also mean: variants folded into a family\
+      \ — 32 sub-categories, 8 categories or 11 brands"
+    ref: 'Product declares a product is ''a thing Contoso sells, at the level the shelf knows it: a SKU'';
+      Color declares colour alone makes a new SKU (''E400 Green and E400 Orange are two products''). Measured:
+      all three item-level readings agree exactly, and each roll-up reading returns the COMPLETE warehouse
+      set, so those answer a question about breadth, not about how many products.'
+  - kind: ''
+    text: "Q1 2024 → calendar 1 January – 31 March 2024; earliest order caught 2024-01-01, latest 2024-03-30\n\
+      \        could also mean: a fiscal Q1 starting in a month other than January"
+    ref: 'No relation here carries a fiscal year, quarter or period column, and order_date is the only
+      declared time binding (period_binding: True) — so the fiscal reading is unmeasurable in this bundle,
+      not merely unchosen.'
+  - kind: ''
+    text: "bought → ordered, dated by order_date — 359 products\n        could also mean: dated by delivery\
+      \ — the same three months on delivery_date give 369 products, 10 more"
+    ref: 'order.default.period_is_order_date declares `default: ordered`, reserving delivery_date for
+      questions that say delivered or shipped. Measured and disclosed: the fork moves the figure 2.8%
+      and changes nothing about what is counted.'
+  - kind: ''
+    text: "bought → every purchase recorded in the window, cancellations and returns included\n      \
+      \  could also mean: only completed, paid, non-returned purchases"
+    ref: 'Not a choice I made: v_contoso5_sales_line carries no order status, cancellation flag or returned
+      quantity, so there is nothing to exclude on.'
+  concepts: []
+  rules:
+  - id: country.default.whose_country_is_asked_never_assumed forbids picking silently between the store
+      and the customer
+    why: '''customers ... located in France'' = the customer''s OWN country of residence, dim_customer.country_code
+      = ''FR'', reached by the declared edge customer__based_in__country'
+  - id: and declares the `customer` path with the surfaces 'customer country' / 'where our customers are'.
+      The question says 'customers located in France'
+    why: '''customers ... located in France'' = the customer''s OWN country of residence, dim_customer.country_code
+      = ''FR'', reached by the declared edge customer__based_in__country'
+  - id: which names that path
+    why: '''customers ... located in France'' = the customer''s OWN country of residence, dim_customer.country_code
+      = ''FR'', reached by the declared edge customer__based_in__country'
+  - id: 'so the declaration settles it rather than leaving it open. Noted also: dim_customer.country_code
+      is declared the ONLY column that can place an internet sale in a real country'
+    why: '''customers ... located in France'' = the customer''s OWN country of residence, dim_customer.country_code
+      = ''FR'', reached by the declared edge customer__based_in__country'
+  - id: and dim_store.country_code carries '--' for the web shop
+    why: '''customers ... located in France'' = the customer''s OWN country of residence, dim_customer.country_code
+      = ''FR'', reached by the declared edge customer__based_in__country'
+  - id: so the customer path is the only one that does not lose online orders.
+    why: '''customers ... located in France'' = the customer''s OWN country of residence, dim_customer.country_code
+      = ''FR'', reached by the declared edge customer__based_in__country'
+  - id: dim_location.country_name is declared 'the SAME fact one hop closer'
+    why: '''France'' = the code ''FR'' on the customer row; dim_customer.country_code holds exactly 8
+      codes (AU, CA, DE, FR, GB, IT, NL, US) and ''FR'' is the only French one'
+  - id: the name's home is Country
+    why: '''France'' = the code ''FR'' on the customer row; dim_customer.country_code holds exactly 8
+      codes (AU, CA, DE, FR, GB, IT, NL, US) and ''FR'' is the only French one'
+  - id: but the code is on the customer row already.
+    why: '''France'' = the code ''FR'' on the customer row; dim_customer.country_code holds exactly 8
+      codes (AU, CA, DE, FR, GB, IT, NL, US) and ''FR'' is the only French one'
+  - id: 'order.default.period_is_order_date makes order_date the period column unless the question says
+      delivered. The ''completed only'' reading is not measurable here: v_contoso5_sales_line carries
+      no order status'
+    why: '''bought'' = appearing on a sales line, counted by order_date, with no completion or return
+      test'
+  - id: cancellation flag or returned quantity
+    why: '''bought'' = appearing on a sales line, counted by order_date, with no completion or return
+      test'
+  - id: so there is nothing to exclude on.
+    why: '''bought'' = appearing on a sales line, counted by order_date, with no completion or return
+      test'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default with `applies:
+      subject`'
+    why: '''bought'' = both sales channels, shop and web'
+  - id: and the subject here is products bought by customers
+    why: '''bought'' = both sales channels, shop and web'
+  - id: not a Store — so the default does not reach this question and both channels are covered.
+    why: '''bought'' = both sales channels, shop and web'
+  - id: No relation in this bundle carries a fiscal year
+    why: '''Q1 2024'' = calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products'
+  - id: quarter or period column
+    why: '''Q1 2024'' = calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products'
+  - id: so the fiscal reading cannot be measured at all
+    why: '''Q1 2024'' = calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products'
+  - id: 'order_date is the only declared time binding (period_binding: True).'
+    why: '''Q1 2024'' = calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products'
+  - id: 'order.default.period_is_order_date declares `default: ordered` and reserves delivery_date for
+      questions that say delivered'
+    why: '''bought ... in Q1 2024'' = dated by when the order was PLACED (order_date) — 359 distinct products'
+  - id: shipped or when it arrived. This question says 'bought'
+    why: '''bought ... in Q1 2024'' = dated by when the order was PLACED (order_date) — 359 distinct products'
+  - id: so order_date applies. Disclosed because the gap is real but small (2.8%) and moves no part of
+      the answer's meaning.
+    why: '''bought ... in Q1 2024'' = dated by when the order was PLACED (order_date) — 359 distinct products'
+  - id: The Product concept declares a product is 'a thing Contoso sells
+    why: '''different products'' = each individual product counts once — the SKU, dim_product.product_key:
+      359. Identical under product_code (359) and product_name (359)'
+  - id: 'at the level the shelf knows it: a SKU'''
+    why: '''different products'' = each individual product counts once — the SKU, dim_product.product_key:
+      359. Identical under product_code (359) and product_name (359)'
+  - id: 'and Color declares colour ''the one attribute that on its own makes a new SKU — E400 Green and
+      E400 Orange are two products''. The SKU reading is therefore the declared one. The roll-up figures
+      are disclosed but are degenerate as answers: 32'
+    why: '''different products'' = each individual product counts once — the SKU, dim_product.product_key:
+      359. Identical under product_code (359) and product_name (359)'
+  - id: 8 and 11 are the COMPLETE sets in the warehouse
+    why: '''different products'' = each individual product counts once — the SKU, dim_product.product_key:
+      359. Identical under product_code (359) and product_name (359)'
+  - id: so they would be the same for almost any question.
+    why: '''different products'' = each individual product counts once — the SKU, dim_product.product_key:
+      359. Identical under product_code (359) and product_name (359)'
+  - id: country.default.whose_country_is_asked_never_assumed declares the `customer` path with surfaces
+      'customer country' / 'where our customers are' and forbids silently choosing between customer and
+      store. The question names the customer
+    why: '''customers located in France'' = the customer''s own registered country, dim_customer.country_code
+      = ''FR'''
+  - id: so the declaration selects it. The store reading is a different population rather than another
+      cut of this one
+    why: '''customers located in France'' = the customer''s own registered country, dim_customer.country_code
+      = ''FR'''
+  - id: and dim_store.country_code carries the '--' sentinel for the web shop — which that rule and country.exclusion.sentinel_is_not_a_country
+      both forbid treating as a country — so it could not place an internet order in France anyway.
+    why: '''customers located in France'' = the customer''s own registered country, dim_customer.country_code
+      = ''FR'''
+  - id: Product declares a product is 'a thing Contoso sells
+    why: '''different products'' = each individual product once: product_key, the SKU — 359, and identically
+      359 under product_code and product_name'
+  - id: 'Color declares colour alone makes a new SKU (''E400 Green and E400 Orange are two products'').
+      Measured: all three item-level readings agree exactly'
+    why: '''different products'' = each individual product once: product_key, the SKU — 359, and identically
+      359 under product_code and product_name'
+  - id: and each roll-up reading returns the COMPLETE warehouse set
+    why: '''different products'' = each individual product once: product_key, the SKU — 359, and identically
+      359 under product_code and product_name'
+  - id: so those answer a question about breadth
+    why: '''different products'' = each individual product once: product_key, the SKU — 359, and identically
+      359 under product_code and product_name'
+  - id: not about how many products.
+    why: '''different products'' = each individual product once: product_key, the SKU — 359, and identically
+      359 under product_code and product_name'
+  - id: No relation here carries a fiscal year
+    why: '''Q1 2024'' = calendar 1 January – 31 March 2024; earliest order caught 2024-01-01, latest 2024-03-30'
+  - id: 'and order_date is the only declared time binding (period_binding: True) — so the fiscal reading
+      is unmeasurable in this bundle'
+    why: '''Q1 2024'' = calendar 1 January – 31 March 2024; earliest order caught 2024-01-01, latest 2024-03-30'
+  - id: not merely unchosen.
+    why: '''Q1 2024'' = calendar 1 January – 31 March 2024; earliest order caught 2024-01-01, latest 2024-03-30'
+  - id: 'order.default.period_is_order_date declares `default: ordered`'
+    why: '''bought'' = ordered, dated by order_date — 359 products'
+  - id: 'reserving delivery_date for questions that say delivered or shipped. Measured and disclosed:
+      the fork moves the figure 2.8% and changes nothing about what is counted.'
+    why: '''bought'' = ordered, dated by order_date — 359 products'
+  - id: 'Not a choice I made: v_contoso5_sales_line carries no order status'
+    why: '''bought'' = every purchase recorded in the window, cancellations and returns included'
+  edges: []
+sql:
+- "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code\
+  \ = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+- "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
+- "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'FR'"
+- "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.delivery_date,\n  s.customer_key,\n\
+  \  s.product_key,\n  s.channel\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+  \ AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code = 'FR'"
+- "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.product_key\nFROM\
+  \ contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+  \ = c.customer_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <=\
+  \ $q1_end"
+- "SELECT DISTINCT\n  p.product_key,\n  p.product_code,\n  p.product_name,\n  p.brand,\n  p.color,\n \
+  \ p.category_name,\n  p.sub_category_name\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+  \ AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key\
+  \ = p.product_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <=\
+  \ $q1_end"
+answer_sql: "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code\
+  \ = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+sql_valid: true
+result:
+  status: ok
+  rows: 1
+  cols: &id010
+  - different_products
+  sample_rows:
+  - - 359
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id001
+  canonical_question_simplified: "  1       FROM       customers                   “customers”\n  2  ←\
+    \ 1  WHERE      in France = 'France'        “in France”\n  3  ← 2  PIVOT_TO   things they bought \
+    \         “buy”\n  4  ← 3  DURING     by quarter                  “Q1 2024”\n  5  ← 4  PIVOT_TO  \
+    \ products                    “products”\n  6  ← 5  AGGREGATE  count distinct of products  “How many\
+    \ different products”\n  answer: step 6   confidence: 0.81\n  UNDERSTOOD AS: How many distinct products\
+    \ were bought by customers located in France, counting only purchases made in Q1 2024 (January–March\
+    \ 2024). The answer is a single count of distinct products — not a count of purchases, customers or\
+    \ units, and it excludes products bought by customers anywhere other than France or at any other time.\n\
+    \  AMBIGUOUS 'customers in France' — ASKS: Does \"in France\" mean the customer's own country (their\
+    \ address on file), or that the purchase was delivered to / made in France?\n      could mean: customers\
+    \ whose own country or address is France, wherever the goods went\n      could mean: purchases shipped\
+    \ or delivered to a French address, whoever the customer is\n      could mean: purchases made at a\
+    \ location or store in France\n      took: customers whose own country is France\n  AMBIGUOUS 'different\
+    \ products' — ASKS: Should two variants of the same item (say two sizes or colours) count as one product\
+    \ or two?\n      could mean: each individual product or item code counts separately\n      could mean:\
+    \ each product family, model or category counts once however many variants were bought\n      took:\
+    \ each individual product counts separately\n  AMBIGUOUS 'Q1 2024' — ASKS: Is Q1 2024 the calendar\
+    \ months January to March 2024, or your company's own first fiscal quarter?\n      could mean: calendar\
+    \ January–March 2024\n      could mean: the first quarter of your fiscal year, which may not start\
+    \ in January\n      took: calendar January–March 2024\n  AMBIGUOUS 'buy' — ASKS: Should a purchase\
+    \ count by the date it was ordered, and should cancelled or fully returned purchases still count?\n\
+    \      could mean: everything ordered in the period, including anything later cancelled or returned\n\
+    \      could mean: only completed, paid and not-returned purchases\n      could mean: counted by shipment\
+    \ or invoice date rather than order date\n      took: everything bought in the period, counted by\
+    \ the date of purchase, without excluding cancellations or returns\n  OUTPUT SHAPE: one figure · one\
+    \ row(s) · carrying how many different products"
+  understood_as: How many distinct products were bought by customers located in France, counting only
+    purchases made in Q1 2024 (January–March 2024). The answer is a single count of distinct products
+    — not a count of purchases, customers or units, and it excludes products bought by customers anywhere
+    other than France or at any other time.
+  ambiguities_it_saw:
+  - words: customers in France
+    asks: Does "in France" mean the customer's own country (their address on file), or that the purchase
+      was delivered to / made in France?
+    readings:
+    - customers whose own country or address is France, wherever the goods went
+    - purchases shipped or delivered to a French address, whoever the customer is
+    - purchases made at a location or store in France
+    took: customers whose own country is France
+  - words: different products
+    asks: Should two variants of the same item (say two sizes or colours) count as one product or two?
+    readings:
+    - each individual product or item code counts separately
+    - each product family, model or category counts once however many variants were bought
+    took: each individual product counts separately
+  - words: Q1 2024
+    asks: Is Q1 2024 the calendar months January to March 2024, or your company's own first fiscal quarter?
+    readings:
+    - calendar January–March 2024
+    - the first quarter of your fiscal year, which may not start in January
+    took: calendar January–March 2024
+  - words: buy
+    asks: Should a purchase count by the date it was ordered, and should cancelled or fully returned purchases
+      still count?
+    readings:
+    - everything ordered in the period, including anything later cancelled or returned
+    - only completed, paid and not-returned purchases
+    - counted by shipment or invoice date rather than order date
+    took: everything bought in the period, counted by the date of purchase, without excluding cancellations
+      or returns
+  presentation:
+    claimed_answer_is: one figure
+    answer_step: '6'
+    answer_step_asks:
+      do: aggregate
+      of: '5'
+      figures: *id002
+      said: How many different products
+    confidence_stage1: 0.81
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'FR'"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.delivery_date,\n  s.customer_key,\n\
+      \  s.product_key,\n  s.channel\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+      \ AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code = 'FR'"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.product_key\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+      \ = c.customer_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date\
+      \ <= $q1_end"
+    params: &id007
+      q1_start: '2024-01-01'
+      q1_end: '2024-03-31'
+  - step: '5'
+    sql: "SELECT DISTINCT\n  p.product_key,\n  p.product_code,\n  p.product_name,\n  p.brand,\n  p.color,\n\
+      \  p.category_name,\n  p.sub_category_name\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN\
+      \ contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start\
+      \ AND s.order_date <= $q1_end"
+    params: &id008
+      q1_start: '2024-01-01'
+      q1_end: '2024-03-31'
+  - step: '6'
+    sql: "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code\
+      \ = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+    params: &id009
+      q1_start: '2024-01-01'
+      q1_end: '2024-03-31'
+  what_it_calculated: '359 individual products — SKUs, the level the shelf knows them at — were ordered
+    at least once by a customer whose own registered country is France, on an order placed between 1 January
+    and 31 March 2024. It rests on 432 purchase lines across 186 orders, so hardly anything repeated:
+    432 lines carried 359 different items. NOT COUNTED: purchases (186 orders), lines (432), units sold,
+    or customers — only 1,992 of the 4,879 French people on the register ever bought anything in any period,
+    and the Q1-2024 buyers are a subset of those. EXCLUDED FROM THE 359: products bought by customers
+    in the other seven countries; products those same French customers bought at any other time across
+    the nine-and-a-half-year history (1,888 distinct products over all time, of which this quarter is
+    359); and 2,158 of the catalogue''s 2,517 products, which no French customer bought that quarter.
+    Nothing is excluded as cancelled or returned — this bundle records no order status, cancellation flag
+    or returned quantity, so that narrower reading cannot be computed at all.'
+  rows_returned: &id004
+  - different_products: 359
+  synthesis:
+    claimed: '359'
+    shape: one figure
+    answered_population: 'count(DISTINCT product_key) over v_contoso5_sales_line restricted twice and
+      only twice: (1) the line''s customer, via the declared order__placed_by__customer join, has dim_customer.country_code
+      = ''FR'' — the customer''s OWN country of residence, the `customer` path of country.default.whose_country_is_asked_never_assumed,
+      chosen because the question says "customers located in France"; (2) order_date between 2024-01-01
+      and 2024-03-31 inclusive, calendar months, on order_date per order.default.period_is_order_date''s
+      `default: ordered`. No channel predicate — both shops and the web shop are included, because store.resolution.the_channel_is_the_location_sentinel
+      scopes its `physical` default with `applies: subject` and this question''s subject is products bought
+      by customers, not a Store. No trading-state, return or cancellation predicate. 432 lines, 186 orders,
+      359 distinct products.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: customers
+    turns:
+    - why: Establish the starting population for this step — the customer register in dim_customer — and
+        look at what country_code actually holds so the later France filter binds to a real value.
+      did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT count(*) AS customer_rows, count(DISTINCT
+        customer_key) AS distinct_customers, count(DISTINCT country_code) AS distinct_country_codes FROM
+        contoso_served.dim_customer'
+      came_back: 'dim_customer.country_code (varchar) holds 8 distinct value(s): ''AU'', ''CA'', ''DE'',
+        ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customer_rows": 104990, "distinct_customers":
+        104990, "distinct_country_codes": 8}]'
+    settled_on: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
+    means: 'The whole customer register: 104,990 people Contoso has on file, one row each, spread over
+      8 country codes — none of them the ''--'' online sentinel. This is the unrestricted starting set;
+      it is the REGISTER and not the buyer list, since the Customer concept declares only 52,189 of these
+      104,990 ever appear on a sale. Nothing about France, Q1 2024 or products has been applied yet.'
+    readings_taken:
+    - word: customers ... located in France
+      took: the customer's OWN country of residence, dim_customer.country_code = 'FR', reached by the
+        declared edge customer__based_in__country
+      could_also_mean: the store the sale was rung up in being French (store__trades_in__country), or
+        the site (location__in__country)
+      declaration: 'country.default.whose_country_is_asked_never_assumed forbids picking silently between
+        the store and the customer, and declares the `customer` path with the surfaces ''customer country''
+        / ''where our customers are''. The question says ''customers located in France'', which names
+        that path, so the declaration settles it rather than leaving it open. Noted also: dim_customer.country_code
+        is declared the ONLY column that can place an internet sale in a real country, and dim_store.country_code
+        carries ''--'' for the web shop, so the customer path is the only one that does not lose online
+        orders.'
+    - word: France
+      took: the code 'FR' on the customer row; dim_customer.country_code holds exactly 8 codes (AU, CA,
+        DE, FR, GB, IT, NL, US) and 'FR' is the only French one
+      could_also_mean: matching dim_country.country_name = 'France' one join further out — the same fact,
+        one hop away, so the two select identically
+      declaration: dim_location.country_name is declared 'the SAME fact one hop closer'; the name's home
+        is Country, but the code is on the customer row already.
+    blocked_by: []
+  - step: '2'
+    step_asks: in France
+    turns:
+    - why: Apply the France restriction to the register and see how large it is, with the other seven
+        countries beside it so the size of the French slice is readable.
+      did: "SELECT\n  country_code,\n  COUNT(*) AS customers\nFROM contoso_served.dim_customer\nGROUP\
+        \ BY\n  country_code\nORDER BY\n  customers DESC"
+      came_back: '8 row(s): [{"country_code": "US", "customers": 45183}, {"country_code": "GB", "customers":
+        14781}, {"country_code": "CA", "customers": 10111}, {"country_code": "AU", "customers": 10108},
+        {"country_code": "DE", "customers": 9981}, {"country_code": "IT", "customers": 5036}, {"country_code":
+        "NL", "customers": 4911}, {"country_code": "FR", "customers": 4879}]'
+    settled_on: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'FR'"
+    means: 'The 4,879 people on Contoso''s customer register who live in France — 4.6% of the 104,990
+      on file, the smallest of the eight countries. One row per person. These are REGISTERED French customers,
+      not French buyers: no purchase of any kind has been required yet, and the Customer concept declares
+      that only about half the register ever appears on a sale, so the French set that actually bought
+      in Q1 2024 will be far smaller.'
+    readings_taken: []
+    blocked_by: []
+  - step: '3'
+    step_asks: buy
+    turns:
+    - why: Cross the declared order__placed_by__customer edge to see what the 4,879 French customers actually
+        bought, over all time, before any period restriction narrows it.
+      did: "SELECT\n  COUNT(*) AS sales_lines,\n  COUNT(DISTINCT s.order_key) AS orders,\n  COUNT(DISTINCT\
+        \ s.customer_key) AS french_customers_who_bought,\n  COUNT(DISTINCT s.product_key) AS distinct_products,\n\
+        \  MIN(s.order_date) AS first_order,\n  MAX(s.order_date) AS last_order\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n \
+        \ c.country_code = 'FR'"
+      came_back: '1 row(s): [{"sales_lines": 7098, "orders": 2966, "french_customers_who_bought": 1992,
+        "distinct_products": 1888, "first_order": "2016-05-21", "last_order": "2025-12-31"}]'
+    settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.delivery_date,\n  s.customer_key,\n\
+      \  s.product_key,\n  s.channel\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+      \ AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code = 'FR'"
+    means: 'Every purchase line ever made by a customer who lives in France: 7,098 lines across 2,966
+      orders, placed by 1,992 people — so only 1,992 of the 4,879 registered French customers ever bought
+      anything, and the other 2,887 drop out here, as the Customer concept warned they would. Between
+      them those orders touch 1,888 distinct products, spread over the full nine and a half years from
+      2016-05-21 to 2025-12-31. One row per order line, each line carrying exactly one product. Both channels
+      are in: shop purchases and web purchases alike, because the question is about what customers bought
+      and names no channel.'
+    readings_taken:
+    - word: bought
+      took: appearing on a sales line, counted by order_date, with no completion or return test
+      could_also_mean: only completed, paid, non-returned purchases, or purchases counted by delivery
+        date
+      declaration: 'order.default.period_is_order_date makes order_date the period column unless the question
+        says delivered. The ''completed only'' reading is not measurable here: v_contoso5_sales_line carries
+        no order status, cancellation flag or returned quantity, so there is nothing to exclude on.'
+    - word: bought
+      took: both sales channels, shop and web
+      could_also_mean: walk-in shop purchases only
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default
+        with `applies: subject`, and the subject here is products bought by customers, not a Store — so
+        the default does not reach this question and both channels are covered.'
+    blocked_by: []
+  - step: '4'
+    step_asks: Q1 2024
+    turns:
+    - why: Cut the French purchase history down to January–March 2024, and price the order-date/delivery-date
+        fork in the same query rather than assuming it costs nothing.
+      did: 'SELECT count(*) FILTER (WHERE s.order_date >= :q1_start AND s.order_date <= :q1_end) AS lines_ordered_in_q1,
+        count(DISTINCT CASE WHEN s.order_date >= :q1_start AND s.order_date <= :q1_end THEN s.order_key
+        END) AS orders_in_q1, count(DISTINCT CASE WHEN s.order_date >= :q1_start AND s.order_date <= :q1_end
+        THEN s.product_key END) AS products_by_order_date, count(DISTINCT CASE WHEN s.delivery_date >=
+        :q1_start AND s.delivery_date <= :q1_end THEN s.product_key END) AS products_by_delivery_date,
+        min(CASE WHEN s.order_date >= :q1_start AND s.order_date <= :q1_end THEN s.order_date END) AS
+        first_order_in_q1, max(CASE WHEN s.order_date >= :q1_start AND s.order_date <= :q1_end THEN s.order_date
+        END) AS last_order_in_q1 FROM contoso_served.v_contoso5_sales_line s JOIN contoso_served.dim_customer
+        c ON s.customer_key = c.customer_key WHERE c.country_code = ''FR'' params {"q1_start": "2024-01-01",
+        "q1_end": "2024-03-31"}'
+      came_back: '1 row(s): [{"lines_ordered_in_q1": 432, "orders_in_q1": 186, "products_by_order_date":
+        359, "products_by_delivery_date": 369, "first_order_in_q1": "2024-01-01", "last_order_in_q1":
+        "2024-03-30"}]'
+    settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.product_key\n\
+      FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+      \ = c.customer_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date\
+      \ <= $q1_end"
+    means: 'What French-resident customers bought in the first three calendar months of 2024: 432 purchase
+      lines across 186 orders, running from 2024-01-01 to 2024-03-30 — so the window is genuinely populated
+      at both ends and nothing was ordered on the final day of March. Those 432 lines touch 359 distinct
+      products, meaning almost every line is a different item and very little repeats. Reading the same
+      three months on the delivery date instead of the order date would give 369 distinct products, 10
+      more: the choice of date column moves this answer by about 3%, and it is the kind of difference
+      that is invisible in the figure alone, which is why the figure carries the order-date label.'
+    readings_taken:
+    - word: Q1 2024
+      took: calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products
+      could_also_mean: a fiscal first quarter starting in a month other than January
+      declaration: 'No relation in this bundle carries a fiscal year, quarter or period column, so the
+        fiscal reading cannot be measured at all; order_date is the only declared time binding (period_binding:
+        True).'
+    - word: bought ... in Q1 2024
+      took: dated by when the order was PLACED (order_date) — 359 distinct products
+      could_also_mean: dated by when it was DELIVERED (delivery_date) — 369 distinct products, 10 more
+      declaration: 'order.default.period_is_order_date declares `default: ordered` and reserves delivery_date
+        for questions that say delivered, shipped or when it arrived. This question says ''bought'', so
+        order_date applies. Disclosed because the gap is real but small (2.8%) and moves no part of the
+        answer''s meaning.'
+    blocked_by: []
+  - step: '5'
+    step_asks: products
+    turns:
+    - why: Cross to the product dimension and price the "different products" fork now — SKU, product code,
+        product name, sub-category, category and brand counted over the same 432 lines, so the reader
+        can see what each reading of "different" would cost.
+      did: 'SELECT count(DISTINCT p.product_key) AS distinct_skus, count(DISTINCT p.product_code) AS distinct_product_codes,
+        count(DISTINCT p.product_name) AS distinct_product_names, count(DISTINCT p.sub_category_name)
+        AS distinct_sub_categories, count(DISTINCT p.category_name) AS distinct_categories, count(DISTINCT
+        p.brand) AS distinct_brands FROM contoso_served.v_contoso5_sales_line s JOIN contoso_served.dim_customer
+        c ON s.customer_key = c.customer_key JOIN contoso_served.dim_product p ON s.product_key = p.product_key
+        WHERE c.country_code = ''FR'' AND s.order_date >= :q1_start AND s.order_date <= :q1_end params
+        {"q1_start": "2024-01-01", "q1_end": "2024-03-31"}'
+      came_back: '1 row(s): [{"distinct_skus": 359, "distinct_product_codes": 359, "distinct_product_names":
+        359, "distinct_sub_categories": 32, "distinct_categories": 8, "distinct_brands": 11}]'
+    settled_on: "SELECT DISTINCT\n  p.product_key,\n  p.product_code,\n  p.product_name,\n  p.brand,\n\
+      \  p.color,\n  p.category_name,\n  p.sub_category_name\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+      \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start\
+      \ AND s.order_date <= $q1_end"
+    means: 'The set of individual products that customers living in France ordered during January to March
+      2024 — one row per product, 359 of them, each with its code, name, brand, colour and category. Counting
+      them as shelf SKUs, as source product codes or as product names gives the identical 359, so the
+      "do two colours of one model count twice" question has no bite in this data: every SKU here carries
+      its own code and its own name. Rolled up instead, those same 432 purchases span 32 sub-categories,
+      8 categories and 11 brands — but those are ALL the sub-categories, ALL the categories and ALL the
+      brands the warehouse holds, so they describe how broadly the French quarter sold rather than how
+      many products it bought.'
+    readings_taken:
+    - word: different products
+      took: 'each individual product counts once — the SKU, dim_product.product_key: 359. Identical under
+        product_code (359) and product_name (359)'
+      could_also_mean: each family or group counts once however many variants were bought — 32 sub-categories,
+        8 categories, or 11 brands
+      declaration: 'The Product concept declares a product is ''a thing Contoso sells, at the level the
+        shelf knows it: a SKU'', and Color declares colour ''the one attribute that on its own makes a
+        new SKU — E400 Green and E400 Orange are two products''. The SKU reading is therefore the declared
+        one. The roll-up figures are disclosed but are degenerate as answers: 32, 8 and 11 are the COMPLETE
+        sets in the warehouse, so they would be the same for almost any question.'
+    blocked_by: []
+  - step: '6'
+    step_asks: How many different products
+    turns:
+    - why: Produce the single figure the question asks for, as its own query, before claiming it.
+      did: 'SELECT count(DISTINCT s.product_key) AS different_products FROM contoso_served.v_contoso5_sales_line
+        s JOIN contoso_served.dim_customer c ON s.customer_key = c.customer_key WHERE c.country_code =
+        ''FR'' AND s.order_date >= :q1_start AND s.order_date <= :q1_end params {"q1_start": "2024-01-01",
+        "q1_end": "2024-03-31"}'
+      came_back: '1 row(s): [{"different_products": 359}]'
+    - why: 359 distinct products, confirmed by the answer step's own query and matching the step-5 SKU
+        count; every fork in the question was either settled by a declaration or measured and found immaterial,
+        so the figure can be claimed with its readings stated.
+      did: "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n \
+        \ c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 1 row(s): [{"different_products": 359}]  Give `claimed_answer`
+        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
+        rows settle the question, do not decline.'
+    settled_on: "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code\
+      \ = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+    means: '359 individual products — SKUs, the level the shelf knows them at — were ordered at least
+      once by a customer whose own registered country is France, on an order placed between 1 January
+      and 31 March 2024. It rests on 432 purchase lines across 186 orders, so hardly anything repeated:
+      432 lines carried 359 different items. NOT COUNTED: purchases (186 orders), lines (432), units sold,
+      or customers — only 1,992 of the 4,879 French people on the register ever bought anything in any
+      period, and the Q1-2024 buyers are a subset of those. EXCLUDED FROM THE 359: products bought by
+      customers in the other seven countries; products those same French customers bought at any other
+      time across the nine-and-a-half-year history (1,888 distinct products over all time, of which this
+      quarter is 359); and 2,158 of the catalogue''s 2,517 products, which no French customer bought that
+      quarter. Nothing is excluded as cancelled or returned — this bundle records no order status, cancellation
+      flag or returned quantity, so that narrower reading cannot be computed at all.'
+    readings_taken:
+    - word: customers located in France
+      took: the customer's own registered country, dim_customer.country_code = 'FR'
+      could_also_mean: the sale rung up at a store in France, or delivered to a French address
+      declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` path with
+        surfaces 'customer country' / 'where our customers are' and forbids silently choosing between
+        customer and store. The question names the customer, so the declaration selects it. The store
+        reading is a different population rather than another cut of this one, and dim_store.country_code
+        carries the '--' sentinel for the web shop — which that rule and country.exclusion.sentinel_is_not_a_country
+        both forbid treating as a country — so it could not place an internet order in France anyway.
+    - word: different products
+      took: 'each individual product once: product_key, the SKU — 359, and identically 359 under product_code
+        and product_name'
+      could_also_mean: variants folded into a family — 32 sub-categories, 8 categories or 11 brands
+      declaration: 'Product declares a product is ''a thing Contoso sells, at the level the shelf knows
+        it: a SKU''; Color declares colour alone makes a new SKU (''E400 Green and E400 Orange are two
+        products''). Measured: all three item-level readings agree exactly, and each roll-up reading returns
+        the COMPLETE warehouse set, so those answer a question about breadth, not about how many products.'
+    - word: Q1 2024
+      took: calendar 1 January – 31 March 2024; earliest order caught 2024-01-01, latest 2024-03-30
+      could_also_mean: a fiscal Q1 starting in a month other than January
+      declaration: 'No relation here carries a fiscal year, quarter or period column, and order_date is
+        the only declared time binding (period_binding: True) — so the fiscal reading is unmeasurable
+        in this bundle, not merely unchosen.'
+    - word: bought
+      took: ordered, dated by order_date — 359 products
+      could_also_mean: dated by delivery — the same three months on delivery_date give 369 products, 10
+        more
+      declaration: 'order.default.period_is_order_date declares `default: ordered`, reserving delivery_date
+        for questions that say delivered or shipped. Measured and disclosed: the fork moves the figure
+        2.8% and changes nothing about what is counted.'
+    - word: bought
+      took: every purchase recorded in the window, cancellations and returns included
+      could_also_mean: only completed, paid, non-returned purchases
+      declaration: 'Not a choice I made: v_contoso5_sales_line carries no order status, cancellation flag
+        or returned quantity, so there is nothing to exclude on.'
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: How many distinct products were bought by customers located in France, counting only purchases
+      made in Q1 2024 (January–March 2024). The answer is a single count of distinct products — not a
+      count of purchases, customers or units, and it excludes products bought by customers anywhere other
+      than France or at any other time.
+    population: 'count(DISTINCT product_key) over v_contoso5_sales_line restricted twice and only twice:
+      (1) the line''s customer, via the declared order__placed_by__customer join, has dim_customer.country_code
+      = ''FR'' — the customer''s OWN country of residence, the `customer` path of country.default.whose_country_is_asked_never_assumed,
+      chosen because the question says "customers located in France"; (2) order_date between 2024-01-01
+      and 2024-03-31 inclusive, calendar months, on order_date per order.default.period_is_order_date''s
+      `default: ordered`. No channel predicate — both shops and the web shop are included, because store.resolution.the_channel_is_the_location_sentinel
+      scopes its `physical` default with `applies: subject` and this question''s subject is products bought
+      by customers, not a Store. No trading-state, return or cancellation predicate. 432 lines, 186 orders,
+      359 distinct products.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1       FROM       customers                   “customers”\n  2  ← 1  WHERE   \
+      \   in France = 'France'        “in France”\n  3  ← 2  PIVOT_TO   things they bought          “buy”\n\
+      \  4  ← 3  DURING     by quarter                  “Q1 2024”\n  5  ← 4  PIVOT_TO   products     \
+      \               “products”\n  6  ← 5  AGGREGATE  count distinct of products  “How many different\
+      \ products”\n  answer: step 6   confidence: 0.81"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: customers in France
+      asks: Does "in France" mean the customer's own country (their address on file), or that the purchase
+        was delivered to / made in France?
+      readings:
+      - customers whose own country or address is France, wherever the goods went
+      - purchases shipped or delivered to a French address, whoever the customer is
+      - purchases made at a location or store in France
+      took: customers whose own country is France
+    - words: different products
+      asks: Should two variants of the same item (say two sizes or colours) count as one product or two?
+      readings:
+      - each individual product or item code counts separately
+      - each product family, model or category counts once however many variants were bought
+      took: each individual product counts separately
+    - words: Q1 2024
+      asks: Is Q1 2024 the calendar months January to March 2024, or your company's own first fiscal quarter?
+      readings:
+      - calendar January–March 2024
+      - the first quarter of your fiscal year, which may not start in January
+      took: calendar January–March 2024
+    - words: buy
+      asks: Should a purchase count by the date it was ordered, and should cancelled or fully returned
+        purchases still count?
+      readings:
+      - everything ordered in the period, including anything later cancelled or returned
+      - only completed, paid and not-returned purchases
+      - counted by shipment or invoice date rather than order date
+      took: everything bought in the period, counted by the date of purchase, without excluding cancellations
+        or returns
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.81 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id001
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: customers ... located in France
+      took: the customer's OWN country of residence, dim_customer.country_code = 'FR', reached by the
+        declared edge customer__based_in__country
+      could_also_mean: the store the sale was rung up in being French (store__trades_in__country), or
+        the site (location__in__country)
+      declaration: 'country.default.whose_country_is_asked_never_assumed forbids picking silently between
+        the store and the customer, and declares the `customer` path with the surfaces ''customer country''
+        / ''where our customers are''. The question says ''customers located in France'', which names
+        that path, so the declaration settles it rather than leaving it open. Noted also: dim_customer.country_code
+        is declared the ONLY column that can place an internet sale in a real country, and dim_store.country_code
+        carries ''--'' for the web shop, so the customer path is the only one that does not lose online
+        orders.'
+    - word: France
+      took: the code 'FR' on the customer row; dim_customer.country_code holds exactly 8 codes (AU, CA,
+        DE, FR, GB, IT, NL, US) and 'FR' is the only French one
+      could_also_mean: matching dim_country.country_name = 'France' one join further out — the same fact,
+        one hop away, so the two select identically
+      declaration: dim_location.country_name is declared 'the SAME fact one hop closer'; the name's home
+        is Country, but the code is on the customer row already.
+    - word: bought
+      took: appearing on a sales line, counted by order_date, with no completion or return test
+      could_also_mean: only completed, paid, non-returned purchases, or purchases counted by delivery
+        date
+      declaration: 'order.default.period_is_order_date makes order_date the period column unless the question
+        says delivered. The ''completed only'' reading is not measurable here: v_contoso5_sales_line carries
+        no order status, cancellation flag or returned quantity, so there is nothing to exclude on.'
+    - word: bought
+      took: both sales channels, shop and web
+      could_also_mean: walk-in shop purchases only
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default
+        with `applies: subject`, and the subject here is products bought by customers, not a Store — so
+        the default does not reach this question and both channels are covered.'
+    - word: Q1 2024
+      took: calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products
+      could_also_mean: a fiscal first quarter starting in a month other than January
+      declaration: 'No relation in this bundle carries a fiscal year, quarter or period column, so the
+        fiscal reading cannot be measured at all; order_date is the only declared time binding (period_binding:
+        True).'
+    - word: bought ... in Q1 2024
+      took: dated by when the order was PLACED (order_date) — 359 distinct products
+      could_also_mean: dated by when it was DELIVERED (delivery_date) — 369 distinct products, 10 more
+      declaration: 'order.default.period_is_order_date declares `default: ordered` and reserves delivery_date
+        for questions that say delivered, shipped or when it arrived. This question says ''bought'', so
+        order_date applies. Disclosed because the gap is real but small (2.8%) and moves no part of the
+        answer''s meaning.'
+    - word: different products
+      took: 'each individual product counts once — the SKU, dim_product.product_key: 359. Identical under
+        product_code (359) and product_name (359)'
+      could_also_mean: each family or group counts once however many variants were bought — 32 sub-categories,
+        8 categories, or 11 brands
+      declaration: 'The Product concept declares a product is ''a thing Contoso sells, at the level the
+        shelf knows it: a SKU'', and Color declares colour ''the one attribute that on its own makes a
+        new SKU — E400 Green and E400 Orange are two products''. The SKU reading is therefore the declared
+        one. The roll-up figures are disclosed but are degenerate as answers: 32, 8 and 11 are the COMPLETE
+        sets in the warehouse, so they would be the same for almost any question.'
+    - word: customers located in France
+      took: the customer's own registered country, dim_customer.country_code = 'FR'
+      could_also_mean: the sale rung up at a store in France, or delivered to a French address
+      declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` path with
+        surfaces 'customer country' / 'where our customers are' and forbids silently choosing between
+        customer and store. The question names the customer, so the declaration selects it. The store
+        reading is a different population rather than another cut of this one, and dim_store.country_code
+        carries the '--' sentinel for the web shop — which that rule and country.exclusion.sentinel_is_not_a_country
+        both forbid treating as a country — so it could not place an internet order in France anyway.
+    - word: different products
+      took: 'each individual product once: product_key, the SKU — 359, and identically 359 under product_code
+        and product_name'
+      could_also_mean: variants folded into a family — 32 sub-categories, 8 categories or 11 brands
+      declaration: 'Product declares a product is ''a thing Contoso sells, at the level the shelf knows
+        it: a SKU''; Color declares colour alone makes a new SKU (''E400 Green and E400 Orange are two
+        products''). Measured: all three item-level readings agree exactly, and each roll-up reading returns
+        the COMPLETE warehouse set, so those answer a question about breadth, not about how many products.'
+    - word: Q1 2024
+      took: calendar 1 January – 31 March 2024; earliest order caught 2024-01-01, latest 2024-03-30
+      could_also_mean: a fiscal Q1 starting in a month other than January
+      declaration: 'No relation here carries a fiscal year, quarter or period column, and order_date is
+        the only declared time binding (period_binding: True) — so the fiscal reading is unmeasurable
+        in this bundle, not merely unchosen.'
+    - word: bought
+      took: ordered, dated by order_date — 359 products
+      could_also_mean: dated by delivery — the same three months on delivery_date give 369 products, 10
+        more
+      declaration: 'order.default.period_is_order_date declares `default: ordered`, reserving delivery_date
+        for questions that say delivered or shipped. Measured and disclosed: the fork moves the figure
+        2.8% and changes nothing about what is counted.'
+    - word: bought
+      took: every purchase recorded in the window, cancellations and returns included
+      could_also_mean: only completed, paid, non-returned purchases
+      declaration: 'Not a choice I made: v_contoso5_sales_line carries no order status, cancellation flag
+        or returned quantity, so there is nothing to exclude on.'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 6 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5 -> 6
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer\n\
+        \n-- step 2\nSELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code =\
+        \ 'FR'\n\n-- step 3\nSELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.delivery_date,\n\
+        \  s.customer_key,\n  s.product_key,\n  s.channel\nFROM contoso_served.v_contoso5_sales_line AS\
+        \ s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code\
+        \ = 'FR'\n\n-- step 4\nSELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n\
+        \  s.product_key\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+        \ AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code = 'FR' AND s.order_date\
+        \ >= $q1_start AND s.order_date <= $q1_end\n\n-- step 5\nSELECT DISTINCT\n  p.product_key,\n \
+        \ p.product_code,\n  p.product_name,\n  p.brand,\n  p.color,\n  p.category_name,\n  p.sub_category_name\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key\nJOIN contoso_served.dim_product AS p\n  ON s.product_key = p.product_key\n\
+        WHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end\n\n--\
+        \ step 6\nSELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n \
+        \ c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: '359 individual products — SKUs, the level the shelf knows them at — were ordered
+      at least once by a customer whose own registered country is France, on an order placed between 1
+      January and 31 March 2024. It rests on 432 purchase lines across 186 orders, so hardly anything
+      repeated: 432 lines carried 359 different items. NOT COUNTED: purchases (186 orders), lines (432),
+      units sold, or customers — only 1,992 of the 4,879 French people on the register ever bought anything
+      in any period, and the Q1-2024 buyers are a subset of those. EXCLUDED FROM THE 359: products bought
+      by customers in the other seven countries; products those same French customers bought at any other
+      time across the nine-and-a-half-year history (1,888 distinct products over all time, of which this
+      quarter is 359); and 2,158 of the catalogue''s 2,517 products, which no French customer bought that
+      quarter. Nothing is excluded as cancelled or returned — this bundle records no order status, cancellation
+      flag or returned quantity, so that narrower reading cannot be computed at all.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'one figure' · graded EXACT
+  detail:
+    claimed_answer: '359'
+    walk_bucket: EXACT
+    walk_why: '''359'''
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many different products did customers in France buy in Q1 2024?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: How many distinct products were bought by customers located in France, counting only purchases
+      made in Q1 2024 (January–March 2024). The answer is a single count of distinct products — not a
+      count of purchases, customers or units, and it excludes products bought by customers anywhere other
+      than France or at any other time.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1       FROM       customers                   “customers”'
+    - '  2  ← 1  WHERE      in France = ''France''        “in France”'
+    - '  3  ← 2  PIVOT_TO   things they bought          “buy”'
+    - '  4  ← 3  DURING     by quarter                  “Q1 2024”'
+    - '  5  ← 4  PIVOT_TO   products                    “products”'
+    - '  6  ← 5  AGGREGATE  count distinct of products  “How many different products”'
+    - '  answer: step 6   confidence: 0.81'
+    - '  UNDERSTOOD AS: How many distinct products were bought by customers located in France, counting
+      only purchases made in Q1 2024 (January–March 2024). The answer is a single count of distinct products
+      — not a count of purchases, customers or units, and it excludes products bought by customers anywhere
+      other than France or at any other time.'
+    - '  AMBIGUOUS ''customers in France'' — ASKS: Does "in France" mean the customer''s own country (their
+      address on file), or that the purchase was delivered to / made in France?'
+    - '      could mean: customers whose own country or address is France, wherever the goods went'
+    - '      could mean: purchases shipped or delivered to a French address, whoever the customer is'
+    - '      could mean: purchases made at a location or store in France'
+    - '      took: customers whose own country is France'
+    - '  AMBIGUOUS ''different products'' — ASKS: Should two variants of the same item (say two sizes
+      or colours) count as one product or two?'
+    - '      could mean: each individual product or item code counts separately'
+    - '      could mean: each product family, model or category counts once however many variants were
+      bought'
+    - '      took: each individual product counts separately'
+    - '  AMBIGUOUS ''Q1 2024'' — ASKS: Is Q1 2024 the calendar months January to March 2024, or your company''s
+      own first fiscal quarter?'
+    - '      could mean: calendar January–March 2024'
+    - '      could mean: the first quarter of your fiscal year, which may not start in January'
+    - '      took: calendar January–March 2024'
+    - '  AMBIGUOUS ''buy'' — ASKS: Should a purchase count by the date it was ordered, and should cancelled
+      or fully returned purchases still count?'
+    - '      could mean: everything ordered in the period, including anything later cancelled or returned'
+    - '      could mean: only completed, paid and not-returned purchases'
+    - '      could mean: counted by shipment or invoice date rather than order date'
+    - '      took: everything bought in the period, counted by the date of purchase, without excluding
+      cancellations or returns'
+    - '  OUTPUT SHAPE: one figure · one row(s) · carrying how many different products'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - one figure
+    - - said
+      - How many different products
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+    - - rows
+      - one
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: customers in France
+      asks: Does "in France" mean the customer's own country (their address on file), or that the purchase
+        was delivered to / made in France?
+      readings:
+      - customers whose own country or address is France, wherever the goods went
+      - purchases shipped or delivered to a French address, whoever the customer is
+      - purchases made at a location or store in France
+      took: customers whose own country is France
+    - words: different products
+      asks: Should two variants of the same item (say two sizes or colours) count as one product or two?
+      readings:
+      - each individual product or item code counts separately
+      - each product family, model or category counts once however many variants were bought
+      took: each individual product counts separately
+    - words: Q1 2024
+      asks: Is Q1 2024 the calendar months January to March 2024, or your company's own first fiscal quarter?
+      readings:
+      - calendar January–March 2024
+      - the first quarter of your fiscal year, which may not start in January
+      took: calendar January–March 2024
+    - words: buy
+      asks: Should a purchase count by the date it was ordered, and should cancelled or fully returned
+        purchases still count?
+      readings:
+      - everything ordered in the period, including anything later cancelled or returned
+      - only completed, paid and not-returned purchases
+      - counted by shipment or invoice date rather than order date
+      took: everything bought in the period, counted by the date of purchase, without excluding cancellations
+        or returns
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'FR'"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.delivery_date,\n  s.customer_key,\n\
+        \  s.product_key,\n  s.channel\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+        \ AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code = 'FR'"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.product_key\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date\
+        \ <= $q1_end"
+      params: *id007
+    - step: '5'
+      sql: "SELECT DISTINCT\n  p.product_key,\n  p.product_code,\n  p.product_name,\n  p.brand,\n  p.color,\n\
+        \  p.category_name,\n  p.sub_category_name\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN\
+        \ contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >=\
+        \ $q1_start AND s.order_date <= $q1_end"
+      params: *id008
+    - step: '6'
+      sql: "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n \
+        \ c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+      params: *id009
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: '359 individual products — SKUs, the level the shelf knows them at — were ordered at least
+      once by a customer whose own registered country is France, on an order placed between 1 January
+      and 31 March 2024. It rests on 432 purchase lines across 186 orders, so hardly anything repeated:
+      432 lines carried 359 different items. NOT COUNTED: purchases (186 orders), lines (432), units sold,
+      or customers — only 1,992 of the 4,879 French people on the register ever bought anything in any
+      period, and the Q1-2024 buyers are a subset of those. EXCLUDED FROM THE 359: products bought by
+      customers in the other seven countries; products those same French customers bought at any other
+      time across the nine-and-a-half-year history (1,888 distinct products over all time, of which this
+      quarter is 359); and 2,158 of the catalogue''s 2,517 products, which no French customer bought that
+      quarter. Nothing is excluded as cancelled or returned — this bundle records no order status, cancellation
+      flag or returned quantity, so that narrower reading cannot be computed at all.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id010
+      rows: *id004
+      row_count: 1
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '359'
+    - - shape
+      - one figure
+    - - population it answered over
+      - 'count(DISTINCT product_key) over v_contoso5_sales_line restricted twice and only twice: (1) the
+        line''s customer, via the declared order__placed_by__customer join, has dim_customer.country_code
+        = ''FR'' — the customer''s OWN country of residence, the `customer` path of country.default.whose_country_is_asked_never_assumed,
+        chosen because the question says "customers located in France"; (2) order_date between 2024-01-01
+        and 2024-03-31 inclusive, calendar months, on order_date per order.default.period_is_order_date''s
+        `default: ordered`. No channel predicate — both shops and the web shop are included, because store.resolution.the_channel_is_the_location_sentinel
+        scopes its `physical` default with `applies: subject` and this question''s subject is products
+        bought by customers, not a Store. No trading-state, return or cancellation predicate. 432 lines,
+        186 orders, 359 distinct products.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: customers
+      turns:
+      - why: Establish the starting population for this step — the customer register in dim_customer —
+          and look at what country_code actually holds so the later France filter binds to a real value.
+        did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT count(*) AS customer_rows, count(DISTINCT
+          customer_key) AS distinct_customers, count(DISTINCT country_code) AS distinct_country_codes
+          FROM contoso_served.dim_customer'
+        came_back: 'dim_customer.country_code (varchar) holds 8 distinct value(s): ''AU'', ''CA'', ''DE'',
+          ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customer_rows": 104990, "distinct_customers":
+          104990, "distinct_country_codes": 8}]'
+      settled_on: "SELECT\n  customer_key,\n  country_code,\n  continent,\n  state\nFROM contoso_served.dim_customer"
+      means: 'The whole customer register: 104,990 people Contoso has on file, one row each, spread over
+        8 country codes — none of them the ''--'' online sentinel. This is the unrestricted starting set;
+        it is the REGISTER and not the buyer list, since the Customer concept declares only 52,189 of
+        these 104,990 ever appear on a sale. Nothing about France, Q1 2024 or products has been applied
+        yet.'
+      readings_taken:
+      - word: customers ... located in France
+        took: the customer's OWN country of residence, dim_customer.country_code = 'FR', reached by the
+          declared edge customer__based_in__country
+        could_also_mean: the store the sale was rung up in being French (store__trades_in__country), or
+          the site (location__in__country)
+        declaration: 'country.default.whose_country_is_asked_never_assumed forbids picking silently between
+          the store and the customer, and declares the `customer` path with the surfaces ''customer country''
+          / ''where our customers are''. The question says ''customers located in France'', which names
+          that path, so the declaration settles it rather than leaving it open. Noted also: dim_customer.country_code
+          is declared the ONLY column that can place an internet sale in a real country, and dim_store.country_code
+          carries ''--'' for the web shop, so the customer path is the only one that does not lose online
+          orders.'
+      - word: France
+        took: the code 'FR' on the customer row; dim_customer.country_code holds exactly 8 codes (AU,
+          CA, DE, FR, GB, IT, NL, US) and 'FR' is the only French one
+        could_also_mean: matching dim_country.country_name = 'France' one join further out — the same
+          fact, one hop away, so the two select identically
+        declaration: dim_location.country_name is declared 'the SAME fact one hop closer'; the name's
+          home is Country, but the code is on the customer row already.
+      blocked_by: []
+    - step: '2'
+      step_asks: in France
+      turns:
+      - why: Apply the France restriction to the register and see how large it is, with the other seven
+          countries beside it so the size of the French slice is readable.
+        did: "SELECT\n  country_code,\n  COUNT(*) AS customers\nFROM contoso_served.dim_customer\nGROUP\
+          \ BY\n  country_code\nORDER BY\n  customers DESC"
+        came_back: '8 row(s): [{"country_code": "US", "customers": 45183}, {"country_code": "GB", "customers":
+          14781}, {"country_code": "CA", "customers": 10111}, {"country_code": "AU", "customers": 10108},
+          {"country_code": "DE", "customers": 9981}, {"country_code": "IT", "customers": 5036}, {"country_code":
+          "NL", "customers": 4911}, {"country_code": "FR", "customers": 4879}]'
+      settled_on: "SELECT\n  customer_key\nFROM contoso_served.dim_customer\nWHERE\n  country_code = 'FR'"
+      means: 'The 4,879 people on Contoso''s customer register who live in France — 4.6% of the 104,990
+        on file, the smallest of the eight countries. One row per person. These are REGISTERED French
+        customers, not French buyers: no purchase of any kind has been required yet, and the Customer
+        concept declares that only about half the register ever appears on a sale, so the French set that
+        actually bought in Q1 2024 will be far smaller.'
+      readings_taken: []
+      blocked_by: []
+    - step: '3'
+      step_asks: buy
+      turns:
+      - why: Cross the declared order__placed_by__customer edge to see what the 4,879 French customers
+          actually bought, over all time, before any period restriction narrows it.
+        did: "SELECT\n  COUNT(*) AS sales_lines,\n  COUNT(DISTINCT s.order_key) AS orders,\n  COUNT(DISTINCT\
+          \ s.customer_key) AS french_customers_who_bought,\n  COUNT(DISTINCT s.product_key) AS distinct_products,\n\
+          \  MIN(s.order_date) AS first_order,\n  MAX(s.order_date) AS last_order\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n\
+          \  c.country_code = 'FR'"
+        came_back: '1 row(s): [{"sales_lines": 7098, "orders": 2966, "french_customers_who_bought": 1992,
+          "distinct_products": 1888, "first_order": "2016-05-21", "last_order": "2025-12-31"}]'
+      settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.delivery_date,\n  s.customer_key,\n\
+        \  s.product_key,\n  s.channel\nFROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer\
+        \ AS c\n  ON s.customer_key = c.customer_key\nWHERE\n  c.country_code = 'FR'"
+      means: 'Every purchase line ever made by a customer who lives in France: 7,098 lines across 2,966
+        orders, placed by 1,992 people — so only 1,992 of the 4,879 registered French customers ever bought
+        anything, and the other 2,887 drop out here, as the Customer concept warned they would. Between
+        them those orders touch 1,888 distinct products, spread over the full nine and a half years from
+        2016-05-21 to 2025-12-31. One row per order line, each line carrying exactly one product. Both
+        channels are in: shop purchases and web purchases alike, because the question is about what customers
+        bought and names no channel.'
+      readings_taken:
+      - word: bought
+        took: appearing on a sales line, counted by order_date, with no completion or return test
+        could_also_mean: only completed, paid, non-returned purchases, or purchases counted by delivery
+          date
+        declaration: 'order.default.period_is_order_date makes order_date the period column unless the
+          question says delivered. The ''completed only'' reading is not measurable here: v_contoso5_sales_line
+          carries no order status, cancellation flag or returned quantity, so there is nothing to exclude
+          on.'
+      - word: bought
+        took: both sales channels, shop and web
+        could_also_mean: walk-in shop purchases only
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default
+          with `applies: subject`, and the subject here is products bought by customers, not a Store —
+          so the default does not reach this question and both channels are covered.'
+      blocked_by: []
+    - step: '4'
+      step_asks: Q1 2024
+      turns:
+      - why: Cut the French purchase history down to January–March 2024, and price the order-date/delivery-date
+          fork in the same query rather than assuming it costs nothing.
+        did: 'SELECT count(*) FILTER (WHERE s.order_date >= :q1_start AND s.order_date <= :q1_end) AS
+          lines_ordered_in_q1, count(DISTINCT CASE WHEN s.order_date >= :q1_start AND s.order_date <=
+          :q1_end THEN s.order_key END) AS orders_in_q1, count(DISTINCT CASE WHEN s.order_date >= :q1_start
+          AND s.order_date <= :q1_end THEN s.product_key END) AS products_by_order_date, count(DISTINCT
+          CASE WHEN s.delivery_date >= :q1_start AND s.delivery_date <= :q1_end THEN s.product_key END)
+          AS products_by_delivery_date, min(CASE WHEN s.order_date >= :q1_start AND s.order_date <= :q1_end
+          THEN s.order_date END) AS first_order_in_q1, max(CASE WHEN s.order_date >= :q1_start AND s.order_date
+          <= :q1_end THEN s.order_date END) AS last_order_in_q1 FROM contoso_served.v_contoso5_sales_line
+          s JOIN contoso_served.dim_customer c ON s.customer_key = c.customer_key WHERE c.country_code
+          = ''FR'' params {"q1_start": "2024-01-01", "q1_end": "2024-03-31"}'
+        came_back: '1 row(s): [{"lines_ordered_in_q1": 432, "orders_in_q1": 186, "products_by_order_date":
+          359, "products_by_delivery_date": 369, "first_order_in_q1": "2024-01-01", "last_order_in_q1":
+          "2024-03-30"}]'
+      settled_on: "SELECT\n  s.order_key,\n  s.line_number,\n  s.order_date,\n  s.customer_key,\n  s.product_key\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key\
+        \ = c.customer_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date\
+        \ <= $q1_end"
+      means: 'What French-resident customers bought in the first three calendar months of 2024: 432 purchase
+        lines across 186 orders, running from 2024-01-01 to 2024-03-30 — so the window is genuinely populated
+        at both ends and nothing was ordered on the final day of March. Those 432 lines touch 359 distinct
+        products, meaning almost every line is a different item and very little repeats. Reading the same
+        three months on the delivery date instead of the order date would give 369 distinct products,
+        10 more: the choice of date column moves this answer by about 3%, and it is the kind of difference
+        that is invisible in the figure alone, which is why the figure carries the order-date label.'
+      readings_taken:
+      - word: Q1 2024
+        took: calendar 2024-01-01 to 2024-03-31; 432 lines, 359 distinct products
+        could_also_mean: a fiscal first quarter starting in a month other than January
+        declaration: 'No relation in this bundle carries a fiscal year, quarter or period column, so the
+          fiscal reading cannot be measured at all; order_date is the only declared time binding (period_binding:
+          True).'
+      - word: bought ... in Q1 2024
+        took: dated by when the order was PLACED (order_date) — 359 distinct products
+        could_also_mean: dated by when it was DELIVERED (delivery_date) — 369 distinct products, 10 more
+        declaration: 'order.default.period_is_order_date declares `default: ordered` and reserves delivery_date
+          for questions that say delivered, shipped or when it arrived. This question says ''bought'',
+          so order_date applies. Disclosed because the gap is real but small (2.8%) and moves no part
+          of the answer''s meaning.'
+      blocked_by: []
+    - step: '5'
+      step_asks: products
+      turns:
+      - why: Cross to the product dimension and price the "different products" fork now — SKU, product
+          code, product name, sub-category, category and brand counted over the same 432 lines, so the
+          reader can see what each reading of "different" would cost.
+        did: 'SELECT count(DISTINCT p.product_key) AS distinct_skus, count(DISTINCT p.product_code) AS
+          distinct_product_codes, count(DISTINCT p.product_name) AS distinct_product_names, count(DISTINCT
+          p.sub_category_name) AS distinct_sub_categories, count(DISTINCT p.category_name) AS distinct_categories,
+          count(DISTINCT p.brand) AS distinct_brands FROM contoso_served.v_contoso5_sales_line s JOIN
+          contoso_served.dim_customer c ON s.customer_key = c.customer_key JOIN contoso_served.dim_product
+          p ON s.product_key = p.product_key WHERE c.country_code = ''FR'' AND s.order_date >= :q1_start
+          AND s.order_date <= :q1_end params {"q1_start": "2024-01-01", "q1_end": "2024-03-31"}'
+        came_back: '1 row(s): [{"distinct_skus": 359, "distinct_product_codes": 359, "distinct_product_names":
+          359, "distinct_sub_categories": 32, "distinct_categories": 8, "distinct_brands": 11}]'
+      settled_on: "SELECT DISTINCT\n  p.product_key,\n  p.product_code,\n  p.product_name,\n  p.brand,\n\
+        \  p.color,\n  p.category_name,\n  p.sub_category_name\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nJOIN contoso_served.dim_product\
+        \ AS p\n  ON s.product_key = p.product_key\nWHERE\n  c.country_code = 'FR' AND s.order_date >=\
+        \ $q1_start AND s.order_date <= $q1_end"
+      means: 'The set of individual products that customers living in France ordered during January to
+        March 2024 — one row per product, 359 of them, each with its code, name, brand, colour and category.
+        Counting them as shelf SKUs, as source product codes or as product names gives the identical 359,
+        so the "do two colours of one model count twice" question has no bite in this data: every SKU
+        here carries its own code and its own name. Rolled up instead, those same 432 purchases span 32
+        sub-categories, 8 categories and 11 brands — but those are ALL the sub-categories, ALL the categories
+        and ALL the brands the warehouse holds, so they describe how broadly the French quarter sold rather
+        than how many products it bought.'
+      readings_taken:
+      - word: different products
+        took: 'each individual product counts once — the SKU, dim_product.product_key: 359. Identical
+          under product_code (359) and product_name (359)'
+        could_also_mean: each family or group counts once however many variants were bought — 32 sub-categories,
+          8 categories, or 11 brands
+        declaration: 'The Product concept declares a product is ''a thing Contoso sells, at the level
+          the shelf knows it: a SKU'', and Color declares colour ''the one attribute that on its own makes
+          a new SKU — E400 Green and E400 Orange are two products''. The SKU reading is therefore the
+          declared one. The roll-up figures are disclosed but are degenerate as answers: 32, 8 and 11
+          are the COMPLETE sets in the warehouse, so they would be the same for almost any question.'
+      blocked_by: []
+    - step: '6'
+      step_asks: How many different products
+      turns:
+      - why: Produce the single figure the question asks for, as its own query, before claiming it.
+        did: 'SELECT count(DISTINCT s.product_key) AS different_products FROM contoso_served.v_contoso5_sales_line
+          s JOIN contoso_served.dim_customer c ON s.customer_key = c.customer_key WHERE c.country_code
+          = ''FR'' AND s.order_date >= :q1_start AND s.order_date <= :q1_end params {"q1_start": "2024-01-01",
+          "q1_end": "2024-03-31"}'
+        came_back: '1 row(s): [{"different_products": 359}]'
+      - why: 359 distinct products, confirmed by the answer step's own query and matching the step-5 SKU
+          count; every fork in the question was either settled by a declaration or measured and found
+          immaterial, so the figure can be claimed with its readings stated.
+        did: "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n\
+          \  c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 1 row(s): [{"different_products": 359}]  Give
+          `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from the closed
+          list. If these rows settle the question, do not decline.'
+      settled_on: "SELECT\n  COUNT(DISTINCT s.product_key) AS different_products\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS s\nJOIN contoso_served.dim_customer AS c\n  ON s.customer_key = c.customer_key\nWHERE\n \
+        \ c.country_code = 'FR' AND s.order_date >= $q1_start AND s.order_date <= $q1_end"
+      means: '359 individual products — SKUs, the level the shelf knows them at — were ordered at least
+        once by a customer whose own registered country is France, on an order placed between 1 January
+        and 31 March 2024. It rests on 432 purchase lines across 186 orders, so hardly anything repeated:
+        432 lines carried 359 different items. NOT COUNTED: purchases (186 orders), lines (432), units
+        sold, or customers — only 1,992 of the 4,879 French people on the register ever bought anything
+        in any period, and the Q1-2024 buyers are a subset of those. EXCLUDED FROM THE 359: products bought
+        by customers in the other seven countries; products those same French customers bought at any
+        other time across the nine-and-a-half-year history (1,888 distinct products over all time, of
+        which this quarter is 359); and 2,158 of the catalogue''s 2,517 products, which no French customer
+        bought that quarter. Nothing is excluded as cancelled or returned — this bundle records no order
+        status, cancellation flag or returned quantity, so that narrower reading cannot be computed at
+        all.'
+      readings_taken:
+      - word: customers located in France
+        took: the customer's own registered country, dim_customer.country_code = 'FR'
+        could_also_mean: the sale rung up at a store in France, or delivered to a French address
+        declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` path
+          with surfaces 'customer country' / 'where our customers are' and forbids silently choosing between
+          customer and store. The question names the customer, so the declaration selects it. The store
+          reading is a different population rather than another cut of this one, and dim_store.country_code
+          carries the '--' sentinel for the web shop — which that rule and country.exclusion.sentinel_is_not_a_country
+          both forbid treating as a country — so it could not place an internet order in France anyway.
+      - word: different products
+        took: 'each individual product once: product_key, the SKU — 359, and identically 359 under product_code
+          and product_name'
+        could_also_mean: variants folded into a family — 32 sub-categories, 8 categories or 11 brands
+        declaration: 'Product declares a product is ''a thing Contoso sells, at the level the shelf knows
+          it: a SKU''; Color declares colour alone makes a new SKU (''E400 Green and E400 Orange are two
+          products''). Measured: all three item-level readings agree exactly, and each roll-up reading
+          returns the COMPLETE warehouse set, so those answer a question about breadth, not about how
+          many products.'
+      - word: Q1 2024
+        took: calendar 1 January – 31 March 2024; earliest order caught 2024-01-01, latest 2024-03-30
+        could_also_mean: a fiscal Q1 starting in a month other than January
+        declaration: 'No relation here carries a fiscal year, quarter or period column, and order_date
+          is the only declared time binding (period_binding: True) — so the fiscal reading is unmeasurable
+          in this bundle, not merely unchosen.'
+      - word: bought
+        took: ordered, dated by order_date — 359 products
+        could_also_mean: dated by delivery — the same three months on delivery_date give 369 products,
+          10 more
+        declaration: 'order.default.period_is_order_date declares `default: ordered`, reserving delivery_date
+          for questions that say delivered or shipped. Measured and disclosed: the fork moves the figure
+          2.8% and changes nothing about what is counted.'
+      - word: bought
+        took: every purchase recorded in the window, cancellations and returns included
+        could_also_mean: only completed, paid, non-returned purchases
+        declaration: 'Not a choice I made: v_contoso5_sales_line carries no order status, cancellation
+          flag or returned quantity, so there is nothing to exclude on.'
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id001
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+- '6'
+v3_answer_step: '6'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: '''359'''
+v3_seconds: 249.9

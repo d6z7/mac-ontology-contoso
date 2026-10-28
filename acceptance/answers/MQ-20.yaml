@@ -1,0 +1,1485 @@
+id: MQ-20
+captured_at: '2026-10-24T21:44:53+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: time the store was open for
+  operation: aggregate
+  qdmr_simplified: "  1         FROM       stores                                     “our ... stores”\n\
+    \  2  ← 1    WHERE      closed = True                              “closed stores”\n  3  ← 2    PIVOT_TO\
+    \   the date the store closed                  “closed”\n  4  ← 2    PIVOT_TO   the date the store\
+    \ opened                  “was open”\n  5  ← 3+4  COMPUTE    difference -> time the store was open\
+    \ for  “time ... were open for”\n  6  ← 5    AGGREGATE  avg of time the store was open for       \
+    \  “average time our closed stores were open for”\n  answer: step 6   confidence: 0.78   A DAG   step(s)\
+    \ 2 feed more than one   converging at 5\n  UNDERSTOOD AS: Across only those of our stores that are\
+    \ closed (no longer operating), I take the length of time each one was open — from when it opened\
+    \ to when it closed — and average those lengths into a single figure. Stores that are still operating\
+    \ are excluded, and no date window is applied: every closed store counts.\n  AMBIGUOUS 'closed stores'\
+    \ — ASKS: By \"closed\" do you mean stores that have shut down permanently, or also stores that are\
+    \ temporarily shut, or simply stores that are not open right now?\n      could mean: Stores that have\
+    \ permanently shut down\n      could mean: Stores that are temporarily closed as well as permanently\
+    \ shut ones\n      could mean: Stores that are not open for business at this moment (outside trading\
+    \ hours)\n      took: Stores that have permanently shut down\n  AMBIGUOUS 'time ... were open for'\
+    \ — ASKS: Do you want the calendar span from a store's opening day to its closing day, or the total\
+    \ number of trading hours it was actually open for business?\n      could mean: The stretch of calendar\
+    \ time from opening to closing (e.g. in days or years)\n      could mean: The total hours it was actually\
+    \ open for business over its lifetime\n      took: The stretch of calendar time from opening to closing\n\
+    \  AMBIGUOUS 'average' — ASKS: Should every closed store count equally towards the average, or should\
+    \ the average be weighted by something like store size or revenue?\n      could mean: A plain average\
+    \ where each closed store counts once\n      could mean: An average weighted by store size, revenue\
+    \ or similar\n      took: A plain average where each closed store counts once\n  AMBIGUOUS 'our closed\
+    \ stores' — ASKS: Should this cover every closed store on record, or only those that closed within\
+    \ a particular period such as the last few years?\n      could mean: Every store that has ever closed\n\
+    \      could mean: Only stores that closed within a recent period you have in mind\n      took: Every\
+    \ store that has ever closed\n  cannot_express: The unit the average should be reported in (days,\
+    \ months, years) — the question does not say\n  cannot_express: Any handling of closed stores with\
+    \ a missing opening or closing date\n  OUTPUT SHAPE: one figure · one row(s) · carrying average time\
+    \ open for"
+  understood_as_in_human_words: 'Across only those of our stores that are closed (no longer operating),
+    I take the length of time each one was open — from when it opened to when it closed — and average
+    those lengths into a single figure. Stores that are still operating are excluded, and no date window
+    is applied: every closed store counts.'
+  population_actually_answered: 'The 16 physical premises in contoso_served.dim_store with close_date
+    IS NOT NULL — every store that has ceased trading, counting BOTH the 9 marked ''Closed'' and the 7
+    marked ''Restructured'', because store.resolution.active_is_the_absent_close_date defines the `closed`
+    population as the non-null close_date and the bare word "closed" is that column''s declared surface.
+    Restricted to location_code <> -1, the declared `physical` default for Store-subject questions, which
+    removes only the online store — a row with no close date that the closed filter drops anyway, so the
+    restriction changes no figure. Grain is PREMISES not site (16 closed shops on 16 sites), per dim_store.store_key#finer_than:
+    location_code, because opening and closing dates are declared properties of premises rather than of
+    a place. No date window.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: one figure
+    columns_the_answer_step_asks_for: []
+    figures_the_answer_step_computes:
+    - avg of time the store was open for
+    answer_step: '6'
+    verb: aggregate
+    said: average time our closed stores were open for
+    stage1_confidence: 0.78
+  canonical_question: &id001
+    understood_as: 'Across only those of our stores that are closed (no longer operating), I take the
+      length of time each one was open — from when it opened to when it closed — and average those lengths
+      into a single figure. Stores that are still operating are excluded, and no date window is applied:
+      every closed store counts.'
+    steps:
+    - id: '1'
+      do: from
+      thing: stores
+      said: our ... stores
+    - id: '2'
+      do: where
+      of: '1'
+      thing: closed
+      op: '='
+      value: true
+      said: closed stores
+    - id: '3'
+      do: pivot_to
+      of: '2'
+      to: the date the store closed
+      said: closed
+    - id: '4'
+      do: pivot_to
+      of: '2'
+      to: the date the store opened
+      said: was open
+    - id: '5'
+      do: compute
+      how: difference
+      inputs:
+      - step: '3'
+        said: closed
+      - step: '4'
+        said: opened
+      as: time the store was open for
+      said: time ... were open for
+    - id: '6'
+      do: aggregate
+      of: '5'
+      figures: &id002
+      - how: avg
+        of: time the store was open for
+        said: average time ... were open for
+      said: average time our closed stores were open for
+    answer: '6'
+    output_shape: &id004
+      shape: one figure
+      said: the average time our closed stores were open for
+      rows: one
+      key_columns: &id006 []
+      figure_columns: &id007
+      - average time open for
+    ambiguities:
+    - words: closed stores
+      question: By "closed" do you mean stores that have shut down permanently, or also stores that are
+        temporarily shut, or simply stores that are not open right now?
+      readings:
+      - Stores that have permanently shut down
+      - Stores that are temporarily closed as well as permanently shut ones
+      - Stores that are not open for business at this moment (outside trading hours)
+      assumed: Stores that have permanently shut down
+    - words: time ... were open for
+      question: Do you want the calendar span from a store's opening day to its closing day, or the total
+        number of trading hours it was actually open for business?
+      readings:
+      - The stretch of calendar time from opening to closing (e.g. in days or years)
+      - The total hours it was actually open for business over its lifetime
+      assumed: The stretch of calendar time from opening to closing
+    - words: average
+      question: Should every closed store count equally towards the average, or should the average be
+        weighted by something like store size or revenue?
+      readings:
+      - A plain average where each closed store counts once
+      - An average weighted by store size, revenue or similar
+      assumed: A plain average where each closed store counts once
+    - words: our closed stores
+      question: Should this cover every closed store on record, or only those that closed within a particular
+        period such as the last few years?
+      readings:
+      - Every store that has ever closed
+      - Only stores that closed within a recent period you have in mind
+      assumed: Every store that has ever closed
+    cannot_express: &id003
+    - The unit the average should be reported in (days, months, years) — the question does not say
+    - Any handling of closed stores with a missing opening or closing date
+    confidence: 0.78
+  steps: 6
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: avg_days_open
+      type: number
+    - name: avg_years_open
+      type: number
+    rows:
+    - - 2257.4375
+      - 6.180527036276523
+  value: 2257.4375
+  raw: '2257.4375'
+  reading: one figure
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "our ... stores → physical shops only — 73 premises rows, excluding the online store, per the\
+      \ declared `default: physical` for questions whose subject is a Store\n        could also mean:\
+      \ all 74 rows including the web shop"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default: physical).
+      Measured immaterial to this question: the online row has no close_date, so both readings leave the
+      same 16 closed stores.'
+  - kind: ''
+    text: "stores → the premises — one row per shop per trading period, 73 of them, which is the grain\
+      \ that owns open_date and close_date\n        could also mean: the site/place — 66 distinct location_code,\
+      \ where a re-let site would count once instead of once per tenancy"
+    ref: 'dim_store.store_key#finer_than: location_code, and the Store concept: opening and closing dates
+      are properties of premises, not of a place. A trading span only exists at the premises grain, so
+      the question''s figure cannot be computed on sites.'
+  - kind: ''
+    text: "closed stores with a missing date → no such rows exist — open_date is non-null on all 73 physical\
+      \ premises and all 16 closed ones carry a close_date\n        could also mean: nothing; the document\
+      \ listed this as something it could not express, and the data makes the handling moot"
+    ref: declaration://none
+  - kind: ''
+    text: "closed stores → all 16 premises that have ceased trading, close_date IS NOT NULL — average\
+      \ span 2,257.4 days / 6.18 years\n        could also mean: only the 9 shut for good (status_annotation\
+      \ = 'Closed'), excluding the 7 restructured — average span 2,472.3 days / 6.77 years, about 7 months\
+      \ longer"
+    ref: 'store.resolution.active_is_the_absent_close_date: the `closed` population is close_date IS NOT
+      NULL, and the rule binds close_date as a way of asking about the state. ''closed'' is the declared
+      surface of dim_store.close_date; the narrower `shut` population surfaces only under a qualifier
+      (shut down / for good / permanently / not replaced), which the question did not use. Confidence
+      C — a person ruled it.'
+  - kind: ''
+    text: "time ... were open for → the calendar span from open_date to close_date, measured in days and\
+      \ reported in years, since those are the only two dates premises carry\n        could also mean:\
+      \ the total trading hours actually open for business"
+    ref: 'Not expressible: dim_store holds no trading-hours or opening-hours column, so the hours reading
+      cannot be computed from this bundle at all.'
+  - kind: ''
+    text: "the date the store closed → dim_store.close_date, the premises' own closing day\n        could\
+      \ also mean: nothing else in this bundle — it is the only closing-date column, declared as the trading-state\
+      \ column and surfacing as 'closed', 'closing date', 'when it closed'"
+    ref: declaration://none
+  - kind: ''
+    text: "the date the store opened → dim_store.open_date, the premises' own opening day — the day THIS\
+      \ shop began trading, not the day the site first held any shop\n        could also mean: the earliest\
+      \ opening across all premises that ever stood on the same site, which for a re-let site would start\
+      \ the clock before this shop existed"
+    ref: 'dim_store.store_key#finer_than: location_code, and the Store concept — opening and closing dates
+      are properties of premises, not of a place. The per-premises reading is the only one on which a
+      single store''s trading span is defined.'
+  - kind: ''
+    text: "time ... were open for → elapsed calendar days from open_date to close_date — close_date minus\
+      \ open_date\n        could also mean: an inclusive count treating both the opening and closing day\
+      \ as trading days, which adds exactly 1 day to every store and moves the average from 2,257.4 to\
+      \ 2,258.4 days"
+    ref: No declaration on this; the two differ by 0.04% so I took the elapsed reading and disclose the
+      other.
+  - kind: ''
+    text: "time → reported in days, with years alongside (days / 365.25)\n        could also mean: months,\
+      \ or years using 365 or a calendar-aware year"
+    ref: The decomposition's own cannot_express flags that the question names no unit. Days and years
+      here are one quantity in two units, so no figure changes — only its label.
+  - kind: ''
+    text: "closed stores → all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years\n \
+      \       could also mean: only the 9 shut for good, excluding the 7 closed-and-replaced — 2,472.3\
+      \ days / 6.77 years, about 7 months longer. (The 7 restructured alone: 1,981.1 days / 5.42 years.)"
+    ref: 'store.resolution.active_is_the_absent_close_date, confidence C — a person ruled it: the `closed`
+      population IS close_date IS NOT NULL, and the rule binds that column as a legitimate way to ask
+      about trading state. The narrower `shut` population surfaces only under a qualifier (''shut down'',
+      ''shut for good'', ''closed permanently'', ''closed and not replaced''), none of which the question
+      used. This is the only fork that materially moves the answer, and the declaration settles it, so
+      it is applied rather than asked.'
+  - kind: ''
+    text: "average → a plain mean, each closed store counting once — 2,257.4375 days\n        could also\
+      \ mean: weighted by floor area or revenue, or the median, which is 2,224 days / 6.09 years and lies\
+      \ close to the mean"
+    ref: No weighting is declared and none was asked for; square_metres is declared a STOCK and revenue
+      is a separate concept, so neither is an implied weight.
+  - kind: ''
+    text: "time ... were open for → elapsed calendar days from open_date to close_date, reported in days\
+      \ with years alongside (days / 365.25)\n        could also mean: the total hours actually trading\
+      \ over the shop's life"
+    ref: Not expressible — dim_store holds no opening-hours or trading-days column, so the hours reading
+      cannot be computed from this bundle at all. An inclusive count treating both first and last day
+      as trading would give 2,258.4375 days, 0.04% different. The question named no unit, which the decomposition
+      itself flagged; days and years are one quantity in two units, so no figure changes with the choice.
+  - kind: ''
+    text: "our ... stores → physical shops only — the declared `physical` default for a question whose\
+      \ subject is a Store\n        could also mean: both channels, including the web shop"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default: physical).
+      Measured immaterial: the online row carries no close_date, so both readings select the identical
+      16 stores and give the identical 2,257.4375.'
+  concepts: []
+  rules:
+  - id: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject'
+    why: '''our ... stores'' = physical shops only — 73 premises rows, excluding the online store, per
+      the declared `default: physical` for questions whose subject is a Store'
+  - id: 'default: physical). Measured immaterial to this question: the online row has no close_date'
+    why: '''our ... stores'' = physical shops only — 73 premises rows, excluding the online store, per
+      the declared `default: physical` for questions whose subject is a Store'
+  - id: so both readings leave the same 16 closed stores.
+    why: '''our ... stores'' = physical shops only — 73 premises rows, excluding the online store, per
+      the declared `default: physical` for questions whose subject is a Store'
+  - id: 'dim_store.store_key#finer_than: location_code'
+    why: '''stores'' = the premises — one row per shop per trading period, 73 of them, which is the grain
+      that owns open_date and close_date'
+  - id: 'and the Store concept: opening and closing dates are properties of premises'
+    why: '''stores'' = the premises — one row per shop per trading period, 73 of them, which is the grain
+      that owns open_date and close_date'
+  - id: not of a place. A trading span only exists at the premises grain
+    why: '''stores'' = the premises — one row per shop per trading period, 73 of them, which is the grain
+      that owns open_date and close_date'
+  - id: so the question's figure cannot be computed on sites.
+    why: '''stores'' = the premises — one row per shop per trading period, 73 of them, which is the grain
+      that owns open_date and close_date'
+  - id: 'store.resolution.active_is_the_absent_close_date: the `closed` population is close_date IS NOT
+      NULL'
+    why: '''closed stores'' = all 16 premises that have ceased trading, close_date IS NOT NULL — average
+      span 2,257.4 days / 6.18 years'
+  - id: and the rule binds close_date as a way of asking about the state. 'closed' is the declared surface
+      of dim_store.close_date
+    why: '''closed stores'' = all 16 premises that have ceased trading, close_date IS NOT NULL — average
+      span 2,257.4 days / 6.18 years'
+  - id: the narrower `shut` population surfaces only under a qualifier (shut down / for good / permanently
+      / not replaced)
+    why: '''closed stores'' = all 16 premises that have ceased trading, close_date IS NOT NULL — average
+      span 2,257.4 days / 6.18 years'
+  - id: which the question did not use. Confidence C — a person ruled it.
+    why: '''closed stores'' = all 16 premises that have ceased trading, close_date IS NOT NULL — average
+      span 2,257.4 days / 6.18 years'
+  - id: 'Not expressible: dim_store holds no trading-hours or opening-hours column'
+    why: '''time ... were open for'' = the calendar span from open_date to close_date, measured in days
+      and reported in years, since those are the only two dates premises carry'
+  - id: so the hours reading cannot be computed from this bundle at all.
+    why: '''time ... were open for'' = the calendar span from open_date to close_date, measured in days
+      and reported in years, since those are the only two dates premises carry'
+  - id: and the Store concept — opening and closing dates are properties of premises
+    why: '''the date the store opened'' = dim_store.open_date, the premises'' own opening day — the day
+      THIS shop began trading, not the day the site first held any shop'
+  - id: not of a place. The per-premises reading is the only one on which a single store's trading span
+      is defined.
+    why: '''the date the store opened'' = dim_store.open_date, the premises'' own opening day — the day
+      THIS shop began trading, not the day the site first held any shop'
+  - id: No declaration on this
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date — close_date
+      minus open_date'
+  - id: the two differ by 0.04% so I took the elapsed reading and disclose the other.
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date — close_date
+      minus open_date'
+  - id: The decomposition's own cannot_express flags that the question names no unit. Days and years here
+      are one quantity in two units
+    why: '''time'' = reported in days, with years alongside (days / 365.25)'
+  - id: so no figure changes — only its label.
+    why: '''time'' = reported in days, with years alongside (days / 365.25)'
+  - id: store.resolution.active_is_the_absent_close_date
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: 'confidence C — a person ruled it: the `closed` population IS close_date IS NOT NULL'
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: and the rule binds that column as a legitimate way to ask about trading state. The narrower `shut`
+      population surfaces only under a qualifier ('shut down'
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: '''shut for good'''
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: '''closed permanently'''
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: '''closed and not replaced'')'
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: none of which the question used. This is the only fork that materially moves the answer
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: and the declaration settles it
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: so it is applied rather than asked.
+    why: '''closed stores'' = all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years'
+  - id: No weighting is declared and none was asked for
+    why: '''average'' = a plain mean, each closed store counting once — 2,257.4375 days'
+  - id: square_metres is declared a STOCK and revenue is a separate concept
+    why: '''average'' = a plain mean, each closed store counting once — 2,257.4375 days'
+  - id: so neither is an implied weight.
+    why: '''average'' = a plain mean, each closed store counting once — 2,257.4375 days'
+  - id: Not expressible — dim_store holds no opening-hours or trading-days column
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date, reported in
+      days with years alongside (days / 365.25)'
+  - id: so the hours reading cannot be computed from this bundle at all. An inclusive count treating both
+      first and last day as trading would give 2
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date, reported in
+      days with years alongside (days / 365.25)'
+  - id: 258.4375 days
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date, reported in
+      days with years alongside (days / 365.25)'
+  - id: 0.04% different. The question named no unit
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date, reported in
+      days with years alongside (days / 365.25)'
+  - id: which the decomposition itself flagged
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date, reported in
+      days with years alongside (days / 365.25)'
+  - id: days and years are one quantity in two units
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date, reported in
+      days with years alongside (days / 365.25)'
+  - id: so no figure changes with the choice.
+    why: '''time ... were open for'' = elapsed calendar days from open_date to close_date, reported in
+      days with years alongside (days / 365.25)'
+  - id: 'default: physical). Measured immaterial: the online row carries no close_date'
+    why: '''our ... stores'' = physical shops only — the declared `physical` default for a question whose
+      subject is a Store'
+  - id: so both readings select the identical 16 stores and give the identical 2
+    why: '''our ... stores'' = physical shops only — the declared `physical` default for a question whose
+      subject is a Store'
+  - id: 257.4375.
+    why: '''our ... stores'' = physical shops only — the declared `physical` default for a question whose
+      subject is a Store'
+  edges: []
+sql:
+- "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY', open_date,\
+  \ close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code <>\
+  \ -1 AND NOT close_date IS NULL"
+- "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+  \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1\nORDER BY\n  store_key"
+- "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n  status_annotation\n\
+  FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n \
+  \ open_date"
+- "SELECT\n  store_key,\n  store_name,\n  close_date\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+  \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  close_date"
+- "SELECT\n  store_key,\n  store_name,\n  open_date\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+  \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  open_date"
+- "SELECT\n  store_key,\n  store_name,\n  country_code,\n  status_annotation,\n  open_date,\n  close_date,\n\
+  \  DATE_DIFF('DAY', open_date, close_date) AS days_open,\n  ROUND(DATE_DIFF('DAY', open_date, close_date)\
+  \ / 365.25, 2) AS years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date\
+  \ IS NULL\nORDER BY\n  days_open DESC"
+answer_sql: "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY',\
+  \ open_date, close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+  \ <> -1 AND NOT close_date IS NULL"
+sql_valid: true
+result:
+  status: ok
+  rows: 1
+  cols: &id008
+  - avg_days_open
+  - avg_years_open
+  sample_rows:
+  - - 2257.4375
+    - 6.180527036276523
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id001
+  canonical_question_simplified: "  1         FROM       stores                                     “our\
+    \ ... stores”\n  2  ← 1    WHERE      closed = True                              “closed stores”\n\
+    \  3  ← 2    PIVOT_TO   the date the store closed                  “closed”\n  4  ← 2    PIVOT_TO\
+    \   the date the store opened                  “was open”\n  5  ← 3+4  COMPUTE    difference -> time\
+    \ the store was open for  “time ... were open for”\n  6  ← 5    AGGREGATE  avg of time the store was\
+    \ open for         “average time our closed stores were open for”\n  answer: step 6   confidence:\
+    \ 0.78   A DAG   step(s) 2 feed more than one   converging at 5\n  UNDERSTOOD AS: Across only those\
+    \ of our stores that are closed (no longer operating), I take the length of time each one was open\
+    \ — from when it opened to when it closed — and average those lengths into a single figure. Stores\
+    \ that are still operating are excluded, and no date window is applied: every closed store counts.\n\
+    \  AMBIGUOUS 'closed stores' — ASKS: By \"closed\" do you mean stores that have shut down permanently,\
+    \ or also stores that are temporarily shut, or simply stores that are not open right now?\n      could\
+    \ mean: Stores that have permanently shut down\n      could mean: Stores that are temporarily closed\
+    \ as well as permanently shut ones\n      could mean: Stores that are not open for business at this\
+    \ moment (outside trading hours)\n      took: Stores that have permanently shut down\n  AMBIGUOUS\
+    \ 'time ... were open for' — ASKS: Do you want the calendar span from a store's opening day to its\
+    \ closing day, or the total number of trading hours it was actually open for business?\n      could\
+    \ mean: The stretch of calendar time from opening to closing (e.g. in days or years)\n      could\
+    \ mean: The total hours it was actually open for business over its lifetime\n      took: The stretch\
+    \ of calendar time from opening to closing\n  AMBIGUOUS 'average' — ASKS: Should every closed store\
+    \ count equally towards the average, or should the average be weighted by something like store size\
+    \ or revenue?\n      could mean: A plain average where each closed store counts once\n      could\
+    \ mean: An average weighted by store size, revenue or similar\n      took: A plain average where each\
+    \ closed store counts once\n  AMBIGUOUS 'our closed stores' — ASKS: Should this cover every closed\
+    \ store on record, or only those that closed within a particular period such as the last few years?\n\
+    \      could mean: Every store that has ever closed\n      could mean: Only stores that closed within\
+    \ a recent period you have in mind\n      took: Every store that has ever closed\n  cannot_express:\
+    \ The unit the average should be reported in (days, months, years) — the question does not say\n \
+    \ cannot_express: Any handling of closed stores with a missing opening or closing date\n  OUTPUT SHAPE:\
+    \ one figure · one row(s) · carrying average time open for"
+  understood_as: 'Across only those of our stores that are closed (no longer operating), I take the length
+    of time each one was open — from when it opened to when it closed — and average those lengths into
+    a single figure. Stores that are still operating are excluded, and no date window is applied: every
+    closed store counts.'
+  ambiguities_it_saw:
+  - words: closed stores
+    asks: By "closed" do you mean stores that have shut down permanently, or also stores that are temporarily
+      shut, or simply stores that are not open right now?
+    readings:
+    - Stores that have permanently shut down
+    - Stores that are temporarily closed as well as permanently shut ones
+    - Stores that are not open for business at this moment (outside trading hours)
+    took: Stores that have permanently shut down
+  - words: time ... were open for
+    asks: Do you want the calendar span from a store's opening day to its closing day, or the total number
+      of trading hours it was actually open for business?
+    readings:
+    - The stretch of calendar time from opening to closing (e.g. in days or years)
+    - The total hours it was actually open for business over its lifetime
+    took: The stretch of calendar time from opening to closing
+  - words: average
+    asks: Should every closed store count equally towards the average, or should the average be weighted
+      by something like store size or revenue?
+    readings:
+    - A plain average where each closed store counts once
+    - An average weighted by store size, revenue or similar
+    took: A plain average where each closed store counts once
+  - words: our closed stores
+    asks: Should this cover every closed store on record, or only those that closed within a particular
+      period such as the last few years?
+    readings:
+    - Every store that has ever closed
+    - Only stores that closed within a recent period you have in mind
+    took: Every store that has ever closed
+  presentation:
+    claimed_answer_is: one figure
+    answer_step: '6'
+    answer_step_asks:
+      do: aggregate
+      of: '5'
+      figures: *id002
+      said: average time our closed stores were open for
+    confidence_stage1: 0.78
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+      \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1\nORDER BY\n  store_key"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
+      \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date\
+      \ IS NULL\nORDER BY\n  open_date"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  store_key,\n  store_name,\n  close_date\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  close_date"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  store_key,\n  store_name,\n  open_date\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  open_date"
+    params: {}
+  - step: '5'
+    sql: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  status_annotation,\n  open_date,\n \
+      \ close_date,\n  DATE_DIFF('DAY', open_date, close_date) AS days_open,\n  ROUND(DATE_DIFF('DAY',\
+      \ open_date, close_date) / 365.25, 2) AS years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  days_open DESC"
+    params: {}
+  - step: '6'
+    sql: "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY',\
+      \ open_date, close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND NOT close_date IS NULL"
+    params: {}
+  what_it_calculated: 'One row, one figure: Contoso''s closed shops were open for an average of 2,257.4375
+    days — 6.18 years — measured as elapsed calendar time from each shop''s opening day to its closing
+    day, averaged over all 16 physical premises that have ceased trading, each counting once. WHAT THE
+    FIGURE DOES NOT INCLUDE: the 57 shops still trading, which have no closing date and therefore no finished
+    lifetime to average (including them would measure age-so-far, a different quantity); the online store,
+    which has never closed; and any sense of hours actually open for business, which this bundle does
+    not record. No date window was applied — every store that has ever closed is in it, with closings
+    running 2013-12-05 to 2019-11-03 and the openings behind them from 2005-04-04. The individual lives
+    ranged from 937 days to 4,259 days, so the single average hides a wide spread.'
+  rows_returned: &id005
+  - avg_days_open: 2257.4375
+    avg_years_open: 6.180527036276523
+  synthesis:
+    claimed: '2257.4375'
+    shape: one figure
+    answered_population: 'The 16 physical premises in contoso_served.dim_store with close_date IS NOT
+      NULL — every store that has ceased trading, counting BOTH the 9 marked ''Closed'' and the 7 marked
+      ''Restructured'', because store.resolution.active_is_the_absent_close_date defines the `closed`
+      population as the non-null close_date and the bare word "closed" is that column''s declared surface.
+      Restricted to location_code <> -1, the declared `physical` default for Store-subject questions,
+      which removes only the online store — a row with no close date that the closed filter drops anyway,
+      so the restriction changes no figure. Grain is PREMISES not site (16 closed shops on 16 sites),
+      per dim_store.store_key#finer_than: location_code, because opening and closing dates are declared
+      properties of premises rather than of a place. No date window.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: our ... stores
+    turns:
+    - why: Establish the Store base population and check, before building on it, how many rows exist,
+        how the online sentinel sits, and whether open/close dates are ever missing.
+      did: 'probe ''dim_store.close_date'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN ''online''
+        ELSE ''physical'' END AS channel, count(*) AS store_rows, count(DISTINCT location_code) AS sites,
+        sum(CASE WHEN close_date IS NOT NULL THEN 1 ELSE 0 END) AS with_close_date, sum(CASE WHEN close_date
+        IS NULL THEN 1 ELSE 0 END) AS no_close_date, sum(CASE WHEN open_date IS NULL THEN 1 ELSE 0 END)
+        AS missing_open_date, min(open_date) AS earliest_open, max(close_date) AS latest_close FROM contoso_served.dim_store
+        GROUP BY 1 ORDER BY 1'
+      came_back: 'dim_store.close_date (date) holds 15 distinct value(s): datetime.date(2013, 12, 5),
+        datetime.date(2014, 3, 9), datetime.date(2015, 3, 3), datetime.date(2015, 4, 4), datetime.date(2015,
+        5, 5), datetime.date(2015, 6, 3), datetime.date(2015, 7, 6), datetime.date(2015, 8, 8), datetime.date(2016,
+        7, 7), datetime.date(2017, 8, 3), datetime.date(2018, 2, 2), datetime.date(2018, 9, 9), datetime.date(2019,
+        8, 3), datetime.date(2019, 8, 8), datetime.date(2019, 11, 3)   AND ALSO: 2 row(s): [{"channel":
+        "online", "store_rows": 1, "sites": 1, "with_close_date": 0, "no_close_date": 1, "missing_open_date":
+        0, "earliest_open": "2010-01-01", "latest_close": null}, {"channel": "physical", "store_rows":
+        73, "sites": 66, "with_close_date": 16, "no_close_date": 57, "missing_open_date": 0, "earliest_open":
+        "2005-03-04", "latest_close": "2019-11-03"}]'
+    settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+      \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1\n\
+      ORDER BY\n  store_key"
+    means: One row per physical shop Contoso has ever traded from — 73 premises standing on 66 sites —
+      each carrying the day it opened, the day it closed if it has stopped trading (16 of them have),
+      and the source's note on why. This is the pool of stores the later steps narrow to the closed ones
+      and measure a trading span over; no store has been dropped for being closed, old, or outside any
+      date window.
+    readings_taken:
+    - word: our ... stores
+      took: 'physical shops only — 73 premises rows, excluding the online store, per the declared `default:
+        physical` for questions whose subject is a Store'
+      could_also_mean: all 74 rows including the web shop
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical). Measured immaterial to this question: the online row has no close_date, so both readings
+        leave the same 16 closed stores.'
+    - word: stores
+      took: the premises — one row per shop per trading period, 73 of them, which is the grain that owns
+        open_date and close_date
+      could_also_mean: the site/place — 66 distinct location_code, where a re-let site would count once
+        instead of once per tenancy
+      declaration: 'dim_store.store_key#finer_than: location_code, and the Store concept: opening and
+        closing dates are properties of premises, not of a place. A trading span only exists at the premises
+        grain, so the question''s figure cannot be computed on sites.'
+    - word: closed stores with a missing date
+      took: no such rows exist — open_date is non-null on all 73 physical premises and all 16 closed ones
+        carry a close_date
+      could_also_mean: nothing; the document listed this as something it could not express, and the data
+        makes the handling moot
+      declaration: null
+    blocked_by: []
+  - step: '2'
+    step_asks: closed stores
+    turns:
+    - why: Measure what each reading of "closed" would give — all ceased premises, versus only those shut
+        for good, versus those restructured — before deciding which population step 2 selects.
+      did: "SELECT\n  CASE\n    WHEN GROUPING(status_annotation) = 1\n    THEN 'ALL CLOSED (ceased trading)'\n\
+        \    ELSE status_annotation\n  END AS population,\n  COUNT(*) AS stores,\n  ROUND(AVG(DATE_DIFF('DAY',\
+        \ open_date, close_date)), 1) AS avg_days_open,\n  ROUND(AVG(DATE_DIFF('DAY', open_date, close_date))\
+        \ / 365.25, 2) AS avg_years_open,\n  MIN(DATE_DIFF('DAY', open_date, close_date)) AS shortest_days,\n\
+        \  MAX(DATE_DIFF('DAY', open_date, close_date)) AS longest_days,\n  MIN(open_date) AS earliest_open,\n\
+        \  MAX(close_date) AS latest_close\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1\
+        \ AND NOT close_date IS NULL\nGROUP BY\n  ROLLUP (\n    status_annotation\n  )\nORDER BY\n  1"
+      came_back: '3 row(s): [{"population": "ALL CLOSED (ceased trading)", "stores": 16, "avg_days_open":
+        2257.4, "avg_years_open": 6.18, "shortest_days": 937, "longest_days": 4259, "earliest_open": "2005-04-04",
+        "latest_close": "2019-11-03"}, {"population": "Closed", "stores": 9, "avg_days_open": 2472.3,
+        "avg_years_open": 6.77, "shortest_days": 1519, "longest_days": 4259, "earliest_open": "2007-05-07",
+        "latest_close": "2019-11-03"}, {"population": "Restructured", "stores": 7, "avg_days_open": 1981.1,
+        "avg_years_open": 5.42, "shortest_days": 937, "longest_days": 3167, "earliest_open": "2005-04-04",
+        "latest_close": "2018-02-02"}]'
+    settled_on: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
+      \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date\
+      \ IS NULL\nORDER BY\n  open_date"
+    means: 'The 16 physical shops Contoso has stopped trading from — one row per premises, each with the
+      day it opened and the day it closed, and the source''s note on whether it was shut for good (9)
+      or closed and replaced (7). These are every store that has ever closed, with no date window: closings
+      run from 2013-12-05 to 2019-11-03 and the openings behind them from 2005-04-04. The 57 shops still
+      trading are excluded, as is the online store, which has never closed.'
+    readings_taken:
+    - word: closed stores
+      took: all 16 premises that have ceased trading, close_date IS NOT NULL — average span 2,257.4 days
+        / 6.18 years
+      could_also_mean: only the 9 shut for good (status_annotation = 'Closed'), excluding the 7 restructured
+        — average span 2,472.3 days / 6.77 years, about 7 months longer
+      declaration: 'store.resolution.active_is_the_absent_close_date: the `closed` population is close_date
+        IS NOT NULL, and the rule binds close_date as a way of asking about the state. ''closed'' is the
+        declared surface of dim_store.close_date; the narrower `shut` population surfaces only under a
+        qualifier (shut down / for good / permanently / not replaced), which the question did not use.
+        Confidence C — a person ruled it.'
+    - word: time ... were open for
+      took: the calendar span from open_date to close_date, measured in days and reported in years, since
+        those are the only two dates premises carry
+      could_also_mean: the total trading hours actually open for business
+      declaration: 'Not expressible: dim_store holds no trading-hours or opening-hours column, so the
+        hours reading cannot be computed from this bundle at all.'
+    blocked_by: []
+  - step: '3'
+    step_asks: closed
+    turns: []
+    settled_on: "SELECT\n  store_key,\n  store_name,\n  close_date\nFROM contoso_served.dim_store\nWHERE\n\
+      \  location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n  close_date"
+    means: The day each of the 16 closed shops stopped trading — one row per premises, earliest 2013-12-05
+      and latest 2019-11-03. Every one of the 16 has a closing date, so nothing drops out here; two shops
+      share a date, which is why there are 15 distinct days over 16 stores.
+    readings_taken:
+    - word: the date the store closed
+      took: dim_store.close_date, the premises' own closing day
+      could_also_mean: nothing else in this bundle — it is the only closing-date column, declared as the
+        trading-state column and surfacing as 'closed', 'closing date', 'when it closed'
+      declaration: null
+    blocked_by: []
+  - step: '4'
+    step_asks: was open
+    turns: []
+    settled_on: "SELECT\n  store_key,\n  store_name,\n  open_date\nFROM contoso_served.dim_store\nWHERE\n\
+      \  location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n  open_date"
+    means: The day each of the 16 closed shops first opened for trade — one row per premises, running
+      from 2005-04-04 to 2015-06-06-ish at the latest end, all present and none missing. Paired with step
+      3's closing dates these bracket each shop's trading life; every opening date precedes its own closing
+      date, so no span will come out negative or zero.
+    readings_taken:
+    - word: the date the store opened
+      took: dim_store.open_date, the premises' own opening day — the day THIS shop began trading, not
+        the day the site first held any shop
+      could_also_mean: the earliest opening across all premises that ever stood on the same site, which
+        for a re-let site would start the clock before this shop existed
+      declaration: 'dim_store.store_key#finer_than: location_code, and the Store concept — opening and
+        closing dates are properties of premises, not of a place. The per-premises reading is the only
+        one on which a single store''s trading span is defined.'
+    blocked_by: []
+  - step: '5'
+    step_asks: time ... were open for
+    turns: []
+    settled_on: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  status_annotation,\n  open_date,\n\
+      \  close_date,\n  DATE_DIFF('DAY', open_date, close_date) AS days_open,\n  ROUND(DATE_DIFF('DAY',\
+      \ open_date, close_date) / 365.25, 2) AS years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  days_open DESC"
+    means: 'How long each of the 16 closed shops was open for — one row per premises, the elapsed calendar
+      time from the day it opened to the day it shut, in days and the same figure in years. The spans
+      run from 937 days (2.56 years) at the shortest to 4,259 days (11.66 years) at the longest, so this
+      is a genuinely spread set and not sixteen near-identical lives. This is calendar time the shop existed
+      as a going concern, NOT hours it was trading and not days it actually took money: no opening-hours
+      or trading-days data exists in this bundle.'
+    readings_taken:
+    - word: time ... were open for
+      took: elapsed calendar days from open_date to close_date — close_date minus open_date
+      could_also_mean: an inclusive count treating both the opening and closing day as trading days, which
+        adds exactly 1 day to every store and moves the average from 2,257.4 to 2,258.4 days
+      declaration: No declaration on this; the two differ by 0.04% so I took the elapsed reading and disclose
+        the other.
+    - word: time
+      took: reported in days, with years alongside (days / 365.25)
+      could_also_mean: months, or years using 365 or a calendar-aware year
+      declaration: The decomposition's own cannot_express flags that the question names no unit. Days
+        and years here are one quantity in two units, so no figure changes — only its label.
+    blocked_by: []
+  - step: '6'
+    step_asks: average time our closed stores were open for
+    turns:
+    - why: Average the 16 per-store spans into the single figure the question asks for, confirming unrounded
+        what step 2's ROLLUP already measured over this same population.
+      did: "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY',\
+        \ open_date, close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n \
+        \ location_code <> -1 AND NOT close_date IS NULL"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 1 row(s): [{"avg_days_open": 2257.4375, "avg_years_open":
+        6.180527036276523}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is`
+        from the closed list. If these rows settle the question, do not decline.'
+    settled_on: "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY',\
+      \ open_date, close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+      \ <> -1 AND NOT close_date IS NULL"
+    means: 'One row, one figure: Contoso''s closed shops were open for an average of 2,257.4375 days —
+      6.18 years — measured as elapsed calendar time from each shop''s opening day to its closing day,
+      averaged over all 16 physical premises that have ceased trading, each counting once. WHAT THE FIGURE
+      DOES NOT INCLUDE: the 57 shops still trading, which have no closing date and therefore no finished
+      lifetime to average (including them would measure age-so-far, a different quantity); the online
+      store, which has never closed; and any sense of hours actually open for business, which this bundle
+      does not record. No date window was applied — every store that has ever closed is in it, with closings
+      running 2013-12-05 to 2019-11-03 and the openings behind them from 2005-04-04. The individual lives
+      ranged from 937 days to 4,259 days, so the single average hides a wide spread.'
+    readings_taken:
+    - word: closed stores
+      took: all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years
+      could_also_mean: 'only the 9 shut for good, excluding the 7 closed-and-replaced — 2,472.3 days /
+        6.77 years, about 7 months longer. (The 7 restructured alone: 1,981.1 days / 5.42 years.)'
+      declaration: 'store.resolution.active_is_the_absent_close_date, confidence C — a person ruled it:
+        the `closed` population IS close_date IS NOT NULL, and the rule binds that column as a legitimate
+        way to ask about trading state. The narrower `shut` population surfaces only under a qualifier
+        (''shut down'', ''shut for good'', ''closed permanently'', ''closed and not replaced''), none
+        of which the question used. This is the only fork that materially moves the answer, and the declaration
+        settles it, so it is applied rather than asked.'
+    - word: average
+      took: a plain mean, each closed store counting once — 2,257.4375 days
+      could_also_mean: weighted by floor area or revenue, or the median, which is 2,224 days / 6.09 years
+        and lies close to the mean
+      declaration: No weighting is declared and none was asked for; square_metres is declared a STOCK
+        and revenue is a separate concept, so neither is an implied weight.
+    - word: time ... were open for
+      took: elapsed calendar days from open_date to close_date, reported in days with years alongside
+        (days / 365.25)
+      could_also_mean: the total hours actually trading over the shop's life
+      declaration: Not expressible — dim_store holds no opening-hours or trading-days column, so the hours
+        reading cannot be computed from this bundle at all. An inclusive count treating both first and
+        last day as trading would give 2,258.4375 days, 0.04% different. The question named no unit, which
+        the decomposition itself flagged; days and years are one quantity in two units, so no figure changes
+        with the choice.
+    - word: our ... stores
+      took: physical shops only — the declared `physical` default for a question whose subject is a Store
+      could_also_mean: both channels, including the web shop
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical). Measured immaterial: the online row carries no close_date, so both readings select
+        the identical 16 stores and give the identical 2,257.4375.'
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: 'Across only those of our stores that are closed (no longer operating), I take the length of
+      time each one was open — from when it opened to when it closed — and average those lengths into
+      a single figure. Stores that are still operating are excluded, and no date window is applied: every
+      closed store counts.'
+    population: 'The 16 physical premises in contoso_served.dim_store with close_date IS NOT NULL — every
+      store that has ceased trading, counting BOTH the 9 marked ''Closed'' and the 7 marked ''Restructured'',
+      because store.resolution.active_is_the_absent_close_date defines the `closed` population as the
+      non-null close_date and the bare word "closed" is that column''s declared surface. Restricted to
+      location_code <> -1, the declared `physical` default for Store-subject questions, which removes
+      only the online store — a row with no close date that the closed filter drops anyway, so the restriction
+      changes no figure. Grain is PREMISES not site (16 closed shops on 16 sites), per dim_store.store_key#finer_than:
+      location_code, because opening and closing dates are declared properties of premises rather than
+      of a place. No date window.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1         FROM       stores                                     “our ... stores”\n\
+      \  2  ← 1    WHERE      closed = True                              “closed stores”\n  3  ← 2   \
+      \ PIVOT_TO   the date the store closed                  “closed”\n  4  ← 2    PIVOT_TO   the date\
+      \ the store opened                  “was open”\n  5  ← 3+4  COMPUTE    difference -> time the store\
+      \ was open for  “time ... were open for”\n  6  ← 5    AGGREGATE  avg of time the store was open\
+      \ for         “average time our closed stores were open for”\n  answer: step 6   confidence: 0.78\
+      \   A DAG   step(s) 2 feed more than one   converging at 5"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: closed stores
+      asks: By "closed" do you mean stores that have shut down permanently, or also stores that are temporarily
+        shut, or simply stores that are not open right now?
+      readings:
+      - Stores that have permanently shut down
+      - Stores that are temporarily closed as well as permanently shut ones
+      - Stores that are not open for business at this moment (outside trading hours)
+      took: Stores that have permanently shut down
+    - words: time ... were open for
+      asks: Do you want the calendar span from a store's opening day to its closing day, or the total
+        number of trading hours it was actually open for business?
+      readings:
+      - The stretch of calendar time from opening to closing (e.g. in days or years)
+      - The total hours it was actually open for business over its lifetime
+      took: The stretch of calendar time from opening to closing
+    - words: average
+      asks: Should every closed store count equally towards the average, or should the average be weighted
+        by something like store size or revenue?
+      readings:
+      - A plain average where each closed store counts once
+      - An average weighted by store size, revenue or similar
+      took: A plain average where each closed store counts once
+    - words: our closed stores
+      asks: Should this cover every closed store on record, or only those that closed within a particular
+        period such as the last few years?
+      readings:
+      - Every store that has ever closed
+      - Only stores that closed within a recent period you have in mind
+      took: Every store that has ever closed
+- stage: cannot_express
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: *id003
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id004
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.78 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id001
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: our ... stores
+      took: 'physical shops only — 73 premises rows, excluding the online store, per the declared `default:
+        physical` for questions whose subject is a Store'
+      could_also_mean: all 74 rows including the web shop
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical). Measured immaterial to this question: the online row has no close_date, so both readings
+        leave the same 16 closed stores.'
+    - word: stores
+      took: the premises — one row per shop per trading period, 73 of them, which is the grain that owns
+        open_date and close_date
+      could_also_mean: the site/place — 66 distinct location_code, where a re-let site would count once
+        instead of once per tenancy
+      declaration: 'dim_store.store_key#finer_than: location_code, and the Store concept: opening and
+        closing dates are properties of premises, not of a place. A trading span only exists at the premises
+        grain, so the question''s figure cannot be computed on sites.'
+    - word: closed stores with a missing date
+      took: no such rows exist — open_date is non-null on all 73 physical premises and all 16 closed ones
+        carry a close_date
+      could_also_mean: nothing; the document listed this as something it could not express, and the data
+        makes the handling moot
+      declaration: null
+    - word: closed stores
+      took: all 16 premises that have ceased trading, close_date IS NOT NULL — average span 2,257.4 days
+        / 6.18 years
+      could_also_mean: only the 9 shut for good (status_annotation = 'Closed'), excluding the 7 restructured
+        — average span 2,472.3 days / 6.77 years, about 7 months longer
+      declaration: 'store.resolution.active_is_the_absent_close_date: the `closed` population is close_date
+        IS NOT NULL, and the rule binds close_date as a way of asking about the state. ''closed'' is the
+        declared surface of dim_store.close_date; the narrower `shut` population surfaces only under a
+        qualifier (shut down / for good / permanently / not replaced), which the question did not use.
+        Confidence C — a person ruled it.'
+    - word: time ... were open for
+      took: the calendar span from open_date to close_date, measured in days and reported in years, since
+        those are the only two dates premises carry
+      could_also_mean: the total trading hours actually open for business
+      declaration: 'Not expressible: dim_store holds no trading-hours or opening-hours column, so the
+        hours reading cannot be computed from this bundle at all.'
+    - word: the date the store closed
+      took: dim_store.close_date, the premises' own closing day
+      could_also_mean: nothing else in this bundle — it is the only closing-date column, declared as the
+        trading-state column and surfacing as 'closed', 'closing date', 'when it closed'
+      declaration: null
+    - word: the date the store opened
+      took: dim_store.open_date, the premises' own opening day — the day THIS shop began trading, not
+        the day the site first held any shop
+      could_also_mean: the earliest opening across all premises that ever stood on the same site, which
+        for a re-let site would start the clock before this shop existed
+      declaration: 'dim_store.store_key#finer_than: location_code, and the Store concept — opening and
+        closing dates are properties of premises, not of a place. The per-premises reading is the only
+        one on which a single store''s trading span is defined.'
+    - word: time ... were open for
+      took: elapsed calendar days from open_date to close_date — close_date minus open_date
+      could_also_mean: an inclusive count treating both the opening and closing day as trading days, which
+        adds exactly 1 day to every store and moves the average from 2,257.4 to 2,258.4 days
+      declaration: No declaration on this; the two differ by 0.04% so I took the elapsed reading and disclose
+        the other.
+    - word: time
+      took: reported in days, with years alongside (days / 365.25)
+      could_also_mean: months, or years using 365 or a calendar-aware year
+      declaration: The decomposition's own cannot_express flags that the question names no unit. Days
+        and years here are one quantity in two units, so no figure changes — only its label.
+    - word: closed stores
+      took: all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years
+      could_also_mean: 'only the 9 shut for good, excluding the 7 closed-and-replaced — 2,472.3 days /
+        6.77 years, about 7 months longer. (The 7 restructured alone: 1,981.1 days / 5.42 years.)'
+      declaration: 'store.resolution.active_is_the_absent_close_date, confidence C — a person ruled it:
+        the `closed` population IS close_date IS NOT NULL, and the rule binds that column as a legitimate
+        way to ask about trading state. The narrower `shut` population surfaces only under a qualifier
+        (''shut down'', ''shut for good'', ''closed permanently'', ''closed and not replaced''), none
+        of which the question used. This is the only fork that materially moves the answer, and the declaration
+        settles it, so it is applied rather than asked.'
+    - word: average
+      took: a plain mean, each closed store counting once — 2,257.4375 days
+      could_also_mean: weighted by floor area or revenue, or the median, which is 2,224 days / 6.09 years
+        and lies close to the mean
+      declaration: No weighting is declared and none was asked for; square_metres is declared a STOCK
+        and revenue is a separate concept, so neither is an implied weight.
+    - word: time ... were open for
+      took: elapsed calendar days from open_date to close_date, reported in days with years alongside
+        (days / 365.25)
+      could_also_mean: the total hours actually trading over the shop's life
+      declaration: Not expressible — dim_store holds no opening-hours or trading-days column, so the hours
+        reading cannot be computed from this bundle at all. An inclusive count treating both first and
+        last day as trading would give 2,258.4375 days, 0.04% different. The question named no unit, which
+        the decomposition itself flagged; days and years are one quantity in two units, so no figure changes
+        with the choice.
+    - word: our ... stores
+      took: physical shops only — the declared `physical` default for a question whose subject is a Store
+      could_also_mean: both channels, including the web shop
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+        physical). Measured immaterial: the online row carries no close_date, so both readings select
+        the identical 16 stores and give the identical 2,257.4375.'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 6 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5 -> 6
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+        \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <>\
+        \ -1\nORDER BY\n  store_key\n\n-- step 2\nSELECT\n  store_key,\n  store_name,\n  country_code,\n\
+        \  state,\n  open_date,\n  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n\
+        \  location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n  open_date\n\n-- step 3\nSELECT\n\
+        \  store_key,\n  store_name,\n  close_date\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  close_date\n\n-- step 4\nSELECT\n  store_key,\n\
+        \  store_name,\n  open_date\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT\
+        \ close_date IS NULL\nORDER BY\n  open_date\n\n-- step 5\nSELECT\n  store_key,\n  store_name,\n\
+        \  country_code,\n  status_annotation,\n  open_date,\n  close_date,\n  DATE_DIFF('DAY', open_date,\
+        \ close_date) AS days_open,\n  ROUND(DATE_DIFF('DAY', open_date, close_date) / 365.25, 2) AS years_open\n\
+        FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date IS NULL\nORDER\
+        \ BY\n  days_open DESC\n\n-- step 6\nSELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS\
+        \ avg_days_open,\n  AVG(DATE_DIFF('DAY', open_date, close_date)) / 365.25 AS avg_years_open\n\
+        FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date IS NULL"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id005
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'One row, one figure: Contoso''s closed shops were open for an average of 2,257.4375
+      days — 6.18 years — measured as elapsed calendar time from each shop''s opening day to its closing
+      day, averaged over all 16 physical premises that have ceased trading, each counting once. WHAT THE
+      FIGURE DOES NOT INCLUDE: the 57 shops still trading, which have no closing date and therefore no
+      finished lifetime to average (including them would measure age-so-far, a different quantity); the
+      online store, which has never closed; and any sense of hours actually open for business, which this
+      bundle does not record. No date window was applied — every store that has ever closed is in it,
+      with closings running 2013-12-05 to 2019-11-03 and the openings behind them from 2005-04-04. The
+      individual lives ranged from 937 days to 4,259 days, so the single average hides a wide spread.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'one figure' · graded WRONG
+  detail:
+    claimed_answer: '2257.4375'
+    walk_bucket: WRONG
+    walk_why: claimed '2257.4375', reference 6.0625
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: What is the average time our closed stores were open for?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'Across only those of our stores that are closed (no longer operating), I take the length of
+      time each one was open — from when it opened to when it closed — and average those lengths into
+      a single figure. Stores that are still operating are excluded, and no date window is applied: every
+      closed store counts.'
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1         FROM       stores                                     “our ... stores”'
+    - '  2  ← 1    WHERE      closed = True                              “closed stores”'
+    - '  3  ← 2    PIVOT_TO   the date the store closed                  “closed”'
+    - '  4  ← 2    PIVOT_TO   the date the store opened                  “was open”'
+    - '  5  ← 3+4  COMPUTE    difference -> time the store was open for  “time ... were open for”'
+    - '  6  ← 5    AGGREGATE  avg of time the store was open for         “average time our closed stores
+      were open for”'
+    - '  answer: step 6   confidence: 0.78   A DAG   step(s) 2 feed more than one   converging at 5'
+    - '  UNDERSTOOD AS: Across only those of our stores that are closed (no longer operating), I take
+      the length of time each one was open — from when it opened to when it closed — and average those
+      lengths into a single figure. Stores that are still operating are excluded, and no date window is
+      applied: every closed store counts.'
+    - '  AMBIGUOUS ''closed stores'' — ASKS: By "closed" do you mean stores that have shut down permanently,
+      or also stores that are temporarily shut, or simply stores that are not open right now?'
+    - '      could mean: Stores that have permanently shut down'
+    - '      could mean: Stores that are temporarily closed as well as permanently shut ones'
+    - '      could mean: Stores that are not open for business at this moment (outside trading hours)'
+    - '      took: Stores that have permanently shut down'
+    - '  AMBIGUOUS ''time ... were open for'' — ASKS: Do you want the calendar span from a store''s opening
+      day to its closing day, or the total number of trading hours it was actually open for business?'
+    - '      could mean: The stretch of calendar time from opening to closing (e.g. in days or years)'
+    - '      could mean: The total hours it was actually open for business over its lifetime'
+    - '      took: The stretch of calendar time from opening to closing'
+    - '  AMBIGUOUS ''average'' — ASKS: Should every closed store count equally towards the average, or
+      should the average be weighted by something like store size or revenue?'
+    - '      could mean: A plain average where each closed store counts once'
+    - '      could mean: An average weighted by store size, revenue or similar'
+    - '      took: A plain average where each closed store counts once'
+    - '  AMBIGUOUS ''our closed stores'' — ASKS: Should this cover every closed store on record, or only
+      those that closed within a particular period such as the last few years?'
+    - '      could mean: Every store that has ever closed'
+    - '      could mean: Only stores that closed within a recent period you have in mind'
+    - '      took: Every store that has ever closed'
+    - '  cannot_express: The unit the average should be reported in (days, months, years) — the question
+      does not say'
+    - '  cannot_express: Any handling of closed stores with a missing opening or closing date'
+    - '  OUTPUT SHAPE: one figure · one row(s) · carrying average time open for'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - one figure
+    - - said
+      - the average time our closed stores were open for
+    - - rows
+      - one
+    - - key_columns
+      - *id006
+    - - figure_columns
+      - *id007
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: closed stores
+      asks: By "closed" do you mean stores that have shut down permanently, or also stores that are temporarily
+        shut, or simply stores that are not open right now?
+      readings:
+      - Stores that have permanently shut down
+      - Stores that are temporarily closed as well as permanently shut ones
+      - Stores that are not open for business at this moment (outside trading hours)
+      took: Stores that have permanently shut down
+    - words: time ... were open for
+      asks: Do you want the calendar span from a store's opening day to its closing day, or the total
+        number of trading hours it was actually open for business?
+      readings:
+      - The stretch of calendar time from opening to closing (e.g. in days or years)
+      - The total hours it was actually open for business over its lifetime
+      took: The stretch of calendar time from opening to closing
+    - words: average
+      asks: Should every closed store count equally towards the average, or should the average be weighted
+        by something like store size or revenue?
+      readings:
+      - A plain average where each closed store counts once
+      - An average weighted by store size, revenue or similar
+      took: A plain average where each closed store counts once
+    - words: our closed stores
+      asks: Should this cover every closed store on record, or only those that closed within a particular
+        period such as the last few years?
+      readings:
+      - Every store that has ever closed
+      - Only stores that closed within a recent period you have in mind
+      took: Every store that has ever closed
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n  close_date,\n\
+        \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1\nORDER BY\n\
+        \  store_key"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
+        \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date\
+        \ IS NULL\nORDER BY\n  open_date"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  store_key,\n  store_name,\n  close_date\nFROM contoso_served.dim_store\nWHERE\n\
+        \  location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n  close_date"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  store_key,\n  store_name,\n  open_date\nFROM contoso_served.dim_store\nWHERE\n \
+        \ location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n  open_date"
+      params: {}
+    - step: '5'
+      sql: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  status_annotation,\n  open_date,\n\
+        \  close_date,\n  DATE_DIFF('DAY', open_date, close_date) AS days_open,\n  ROUND(DATE_DIFF('DAY',\
+        \ open_date, close_date) / 365.25, 2) AS years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  days_open DESC"
+      params: {}
+    - step: '6'
+      sql: "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY',\
+        \ open_date, close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n \
+        \ location_code <> -1 AND NOT close_date IS NULL"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'One row, one figure: Contoso''s closed shops were open for an average of 2,257.4375 days —
+      6.18 years — measured as elapsed calendar time from each shop''s opening day to its closing day,
+      averaged over all 16 physical premises that have ceased trading, each counting once. WHAT THE FIGURE
+      DOES NOT INCLUDE: the 57 shops still trading, which have no closing date and therefore no finished
+      lifetime to average (including them would measure age-so-far, a different quantity); the online
+      store, which has never closed; and any sense of hours actually open for business, which this bundle
+      does not record. No date window was applied — every store that has ever closed is in it, with closings
+      running 2013-12-05 to 2019-11-03 and the openings behind them from 2005-04-04. The individual lives
+      ranged from 937 days to 4,259 days, so the single average hides a wide spread.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id008
+      rows: *id005
+      row_count: 1
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '2257.4375'
+    - - shape
+      - one figure
+    - - population it answered over
+      - 'The 16 physical premises in contoso_served.dim_store with close_date IS NOT NULL — every store
+        that has ceased trading, counting BOTH the 9 marked ''Closed'' and the 7 marked ''Restructured'',
+        because store.resolution.active_is_the_absent_close_date defines the `closed` population as the
+        non-null close_date and the bare word "closed" is that column''s declared surface. Restricted
+        to location_code <> -1, the declared `physical` default for Store-subject questions, which removes
+        only the online store — a row with no close date that the closed filter drops anyway, so the restriction
+        changes no figure. Grain is PREMISES not site (16 closed shops on 16 sites), per dim_store.store_key#finer_than:
+        location_code, because opening and closing dates are declared properties of premises rather than
+        of a place. No date window.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: our ... stores
+      turns:
+      - why: Establish the Store base population and check, before building on it, how many rows exist,
+          how the online sentinel sits, and whether open/close dates are ever missing.
+        did: 'probe ''dim_store.close_date'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN ''online''
+          ELSE ''physical'' END AS channel, count(*) AS store_rows, count(DISTINCT location_code) AS sites,
+          sum(CASE WHEN close_date IS NOT NULL THEN 1 ELSE 0 END) AS with_close_date, sum(CASE WHEN close_date
+          IS NULL THEN 1 ELSE 0 END) AS no_close_date, sum(CASE WHEN open_date IS NULL THEN 1 ELSE 0 END)
+          AS missing_open_date, min(open_date) AS earliest_open, max(close_date) AS latest_close FROM
+          contoso_served.dim_store GROUP BY 1 ORDER BY 1'
+        came_back: 'dim_store.close_date (date) holds 15 distinct value(s): datetime.date(2013, 12, 5),
+          datetime.date(2014, 3, 9), datetime.date(2015, 3, 3), datetime.date(2015, 4, 4), datetime.date(2015,
+          5, 5), datetime.date(2015, 6, 3), datetime.date(2015, 7, 6), datetime.date(2015, 8, 8), datetime.date(2016,
+          7, 7), datetime.date(2017, 8, 3), datetime.date(2018, 2, 2), datetime.date(2018, 9, 9), datetime.date(2019,
+          8, 3), datetime.date(2019, 8, 8), datetime.date(2019, 11, 3)   AND ALSO: 2 row(s): [{"channel":
+          "online", "store_rows": 1, "sites": 1, "with_close_date": 0, "no_close_date": 1, "missing_open_date":
+          0, "earliest_open": "2010-01-01", "latest_close": null}, {"channel": "physical", "store_rows":
+          73, "sites": 66, "with_close_date": 16, "no_close_date": 57, "missing_open_date": 0, "earliest_open":
+          "2005-03-04", "latest_close": "2019-11-03"}]'
+      settled_on: "SELECT\n  store_key,\n  location_code,\n  store_name,\n  country_code,\n  open_date,\n\
+        \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <>\
+        \ -1\nORDER BY\n  store_key"
+      means: One row per physical shop Contoso has ever traded from — 73 premises standing on 66 sites
+        — each carrying the day it opened, the day it closed if it has stopped trading (16 of them have),
+        and the source's note on why. This is the pool of stores the later steps narrow to the closed
+        ones and measure a trading span over; no store has been dropped for being closed, old, or outside
+        any date window.
+      readings_taken:
+      - word: our ... stores
+        took: 'physical shops only — 73 premises rows, excluding the online store, per the declared `default:
+          physical` for questions whose subject is a Store'
+        could_also_mean: all 74 rows including the web shop
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+          physical). Measured immaterial to this question: the online row has no close_date, so both readings
+          leave the same 16 closed stores.'
+      - word: stores
+        took: the premises — one row per shop per trading period, 73 of them, which is the grain that
+          owns open_date and close_date
+        could_also_mean: the site/place — 66 distinct location_code, where a re-let site would count once
+          instead of once per tenancy
+        declaration: 'dim_store.store_key#finer_than: location_code, and the Store concept: opening and
+          closing dates are properties of premises, not of a place. A trading span only exists at the
+          premises grain, so the question''s figure cannot be computed on sites.'
+      - word: closed stores with a missing date
+        took: no such rows exist — open_date is non-null on all 73 physical premises and all 16 closed
+          ones carry a close_date
+        could_also_mean: nothing; the document listed this as something it could not express, and the
+          data makes the handling moot
+        declaration: null
+      blocked_by: []
+    - step: '2'
+      step_asks: closed stores
+      turns:
+      - why: Measure what each reading of "closed" would give — all ceased premises, versus only those
+          shut for good, versus those restructured — before deciding which population step 2 selects.
+        did: "SELECT\n  CASE\n    WHEN GROUPING(status_annotation) = 1\n    THEN 'ALL CLOSED (ceased trading)'\n\
+          \    ELSE status_annotation\n  END AS population,\n  COUNT(*) AS stores,\n  ROUND(AVG(DATE_DIFF('DAY',\
+          \ open_date, close_date)), 1) AS avg_days_open,\n  ROUND(AVG(DATE_DIFF('DAY', open_date, close_date))\
+          \ / 365.25, 2) AS avg_years_open,\n  MIN(DATE_DIFF('DAY', open_date, close_date)) AS shortest_days,\n\
+          \  MAX(DATE_DIFF('DAY', open_date, close_date)) AS longest_days,\n  MIN(open_date) AS earliest_open,\n\
+          \  MAX(close_date) AS latest_close\nFROM contoso_served.dim_store\nWHERE\n  location_code <>\
+          \ -1 AND NOT close_date IS NULL\nGROUP BY\n  ROLLUP (\n    status_annotation\n  )\nORDER BY\n\
+          \  1"
+        came_back: '3 row(s): [{"population": "ALL CLOSED (ceased trading)", "stores": 16, "avg_days_open":
+          2257.4, "avg_years_open": 6.18, "shortest_days": 937, "longest_days": 4259, "earliest_open":
+          "2005-04-04", "latest_close": "2019-11-03"}, {"population": "Closed", "stores": 9, "avg_days_open":
+          2472.3, "avg_years_open": 6.77, "shortest_days": 1519, "longest_days": 4259, "earliest_open":
+          "2007-05-07", "latest_close": "2019-11-03"}, {"population": "Restructured", "stores": 7, "avg_days_open":
+          1981.1, "avg_years_open": 5.42, "shortest_days": 937, "longest_days": 3167, "earliest_open":
+          "2005-04-04", "latest_close": "2018-02-02"}]'
+      settled_on: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
+        \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND NOT close_date\
+        \ IS NULL\nORDER BY\n  open_date"
+      means: 'The 16 physical shops Contoso has stopped trading from — one row per premises, each with
+        the day it opened and the day it closed, and the source''s note on whether it was shut for good
+        (9) or closed and replaced (7). These are every store that has ever closed, with no date window:
+        closings run from 2013-12-05 to 2019-11-03 and the openings behind them from 2005-04-04. The 57
+        shops still trading are excluded, as is the online store, which has never closed.'
+      readings_taken:
+      - word: closed stores
+        took: all 16 premises that have ceased trading, close_date IS NOT NULL — average span 2,257.4
+          days / 6.18 years
+        could_also_mean: only the 9 shut for good (status_annotation = 'Closed'), excluding the 7 restructured
+          — average span 2,472.3 days / 6.77 years, about 7 months longer
+        declaration: 'store.resolution.active_is_the_absent_close_date: the `closed` population is close_date
+          IS NOT NULL, and the rule binds close_date as a way of asking about the state. ''closed'' is
+          the declared surface of dim_store.close_date; the narrower `shut` population surfaces only under
+          a qualifier (shut down / for good / permanently / not replaced), which the question did not
+          use. Confidence C — a person ruled it.'
+      - word: time ... were open for
+        took: the calendar span from open_date to close_date, measured in days and reported in years,
+          since those are the only two dates premises carry
+        could_also_mean: the total trading hours actually open for business
+        declaration: 'Not expressible: dim_store holds no trading-hours or opening-hours column, so the
+          hours reading cannot be computed from this bundle at all.'
+      blocked_by: []
+    - step: '3'
+      step_asks: closed
+      turns: []
+      settled_on: "SELECT\n  store_key,\n  store_name,\n  close_date\nFROM contoso_served.dim_store\n\
+        WHERE\n  location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n  close_date"
+      means: The day each of the 16 closed shops stopped trading — one row per premises, earliest 2013-12-05
+        and latest 2019-11-03. Every one of the 16 has a closing date, so nothing drops out here; two
+        shops share a date, which is why there are 15 distinct days over 16 stores.
+      readings_taken:
+      - word: the date the store closed
+        took: dim_store.close_date, the premises' own closing day
+        could_also_mean: nothing else in this bundle — it is the only closing-date column, declared as
+          the trading-state column and surfacing as 'closed', 'closing date', 'when it closed'
+        declaration: null
+      blocked_by: []
+    - step: '4'
+      step_asks: was open
+      turns: []
+      settled_on: "SELECT\n  store_key,\n  store_name,\n  open_date\nFROM contoso_served.dim_store\nWHERE\n\
+        \  location_code <> -1 AND NOT close_date IS NULL\nORDER BY\n  open_date"
+      means: The day each of the 16 closed shops first opened for trade — one row per premises, running
+        from 2005-04-04 to 2015-06-06-ish at the latest end, all present and none missing. Paired with
+        step 3's closing dates these bracket each shop's trading life; every opening date precedes its
+        own closing date, so no span will come out negative or zero.
+      readings_taken:
+      - word: the date the store opened
+        took: dim_store.open_date, the premises' own opening day — the day THIS shop began trading, not
+          the day the site first held any shop
+        could_also_mean: the earliest opening across all premises that ever stood on the same site, which
+          for a re-let site would start the clock before this shop existed
+        declaration: 'dim_store.store_key#finer_than: location_code, and the Store concept — opening and
+          closing dates are properties of premises, not of a place. The per-premises reading is the only
+          one on which a single store''s trading span is defined.'
+      blocked_by: []
+    - step: '5'
+      step_asks: time ... were open for
+      turns: []
+      settled_on: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  status_annotation,\n  open_date,\n\
+        \  close_date,\n  DATE_DIFF('DAY', open_date, close_date) AS days_open,\n  ROUND(DATE_DIFF('DAY',\
+        \ open_date, close_date) / 365.25, 2) AS years_open\nFROM contoso_served.dim_store\nWHERE\n  location_code\
+        \ <> -1 AND NOT close_date IS NULL\nORDER BY\n  days_open DESC"
+      means: 'How long each of the 16 closed shops was open for — one row per premises, the elapsed calendar
+        time from the day it opened to the day it shut, in days and the same figure in years. The spans
+        run from 937 days (2.56 years) at the shortest to 4,259 days (11.66 years) at the longest, so
+        this is a genuinely spread set and not sixteen near-identical lives. This is calendar time the
+        shop existed as a going concern, NOT hours it was trading and not days it actually took money:
+        no opening-hours or trading-days data exists in this bundle.'
+      readings_taken:
+      - word: time ... were open for
+        took: elapsed calendar days from open_date to close_date — close_date minus open_date
+        could_also_mean: an inclusive count treating both the opening and closing day as trading days,
+          which adds exactly 1 day to every store and moves the average from 2,257.4 to 2,258.4 days
+        declaration: No declaration on this; the two differ by 0.04% so I took the elapsed reading and
+          disclose the other.
+      - word: time
+        took: reported in days, with years alongside (days / 365.25)
+        could_also_mean: months, or years using 365 or a calendar-aware year
+        declaration: The decomposition's own cannot_express flags that the question names no unit. Days
+          and years here are one quantity in two units, so no figure changes — only its label.
+      blocked_by: []
+    - step: '6'
+      step_asks: average time our closed stores were open for
+      turns:
+      - why: Average the 16 per-store spans into the single figure the question asks for, confirming unrounded
+          what step 2's ROLLUP already measured over this same population.
+        did: "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY',\
+          \ open_date, close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n\
+          \  location_code <> -1 AND NOT close_date IS NULL"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 1 row(s): [{"avg_days_open": 2257.4375, "avg_years_open":
+          6.180527036276523}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is`
+          from the closed list. If these rows settle the question, do not decline.'
+      settled_on: "SELECT\n  AVG(DATE_DIFF('DAY', open_date, close_date)) AS avg_days_open,\n  AVG(DATE_DIFF('DAY',\
+        \ open_date, close_date)) / 365.25 AS avg_years_open\nFROM contoso_served.dim_store\nWHERE\n \
+        \ location_code <> -1 AND NOT close_date IS NULL"
+      means: 'One row, one figure: Contoso''s closed shops were open for an average of 2,257.4375 days
+        — 6.18 years — measured as elapsed calendar time from each shop''s opening day to its closing
+        day, averaged over all 16 physical premises that have ceased trading, each counting once. WHAT
+        THE FIGURE DOES NOT INCLUDE: the 57 shops still trading, which have no closing date and therefore
+        no finished lifetime to average (including them would measure age-so-far, a different quantity);
+        the online store, which has never closed; and any sense of hours actually open for business, which
+        this bundle does not record. No date window was applied — every store that has ever closed is
+        in it, with closings running 2013-12-05 to 2019-11-03 and the openings behind them from 2005-04-04.
+        The individual lives ranged from 937 days to 4,259 days, so the single average hides a wide spread.'
+      readings_taken:
+      - word: closed stores
+        took: all 16 premises that have ceased trading — 2,257.4375 days / 6.18 years
+        could_also_mean: 'only the 9 shut for good, excluding the 7 closed-and-replaced — 2,472.3 days
+          / 6.77 years, about 7 months longer. (The 7 restructured alone: 1,981.1 days / 5.42 years.)'
+        declaration: 'store.resolution.active_is_the_absent_close_date, confidence C — a person ruled
+          it: the `closed` population IS close_date IS NOT NULL, and the rule binds that column as a legitimate
+          way to ask about trading state. The narrower `shut` population surfaces only under a qualifier
+          (''shut down'', ''shut for good'', ''closed permanently'', ''closed and not replaced''), none
+          of which the question used. This is the only fork that materially moves the answer, and the
+          declaration settles it, so it is applied rather than asked.'
+      - word: average
+        took: a plain mean, each closed store counting once — 2,257.4375 days
+        could_also_mean: weighted by floor area or revenue, or the median, which is 2,224 days / 6.09
+          years and lies close to the mean
+        declaration: No weighting is declared and none was asked for; square_metres is declared a STOCK
+          and revenue is a separate concept, so neither is an implied weight.
+      - word: time ... were open for
+        took: elapsed calendar days from open_date to close_date, reported in days with years alongside
+          (days / 365.25)
+        could_also_mean: the total hours actually trading over the shop's life
+        declaration: Not expressible — dim_store holds no opening-hours or trading-days column, so the
+          hours reading cannot be computed from this bundle at all. An inclusive count treating both first
+          and last day as trading would give 2,258.4375 days, 0.04% different. The question named no unit,
+          which the decomposition itself flagged; days and years are one quantity in two units, so no
+          figure changes with the choice.
+      - word: our ... stores
+        took: physical shops only — the declared `physical` default for a question whose subject is a
+          Store
+        could_also_mean: both channels, including the web shop
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel (applies: subject, default:
+          physical). Measured immaterial: the online row carries no close_date, so both readings select
+          the identical 16 stores and give the identical 2,257.4375.'
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id001
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+- '6'
+v3_answer_step: '6'
+v3_gaps: []
+v3_bucket: WRONG
+v3_why: claimed '2257.4375', reference 6.0625
+v3_seconds: 240.0

@@ -1,0 +1,47 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED: `approved_by` is empty. An agent computed this figure and an agent may not
+# sign a reference.
+id: AGG-17
+question: >-
+  What percentage of total net revenue was rung up by shops sited in Germany?
+expected: 6.573
+sql: >-
+  SELECT ROUND(100.0 * SUM(CASE WHEN co.country_name = 'Germany' THEN l.net_amount ELSE 0 END)
+               / SUM(l.net_amount), 4)
+    FROM contoso_served.v_contoso5_sales_line l
+    JOIN contoso_served.dim_store   s  ON l.store_key = s.store_key
+    JOIN contoso_served.dim_country co ON s.country_code = co.country_code
+note: >-
+  THE OTHER HALF OF THE PAIR added 2026-10-23 with AGG-16, and the more informative of the two.
+  See AGG-16 for what the pair is testing and for the walk's refusal of AGG-12 in its own words.
+
+  WHY THIS SIDE IS THE DISCRIMINATING ONE. The customer reading, 11.2601, is also AGG-12's approved
+  figure — so an agent that ignored the question's wording entirely and answered AGG-12's number
+  would still pass AGG-16 by luck. It cannot pass THIS one that way: 6.573 is reachable only by
+  taking the store path, which is the path `shops sited in` names
+  (`store__trades_in__country`, surfaces "store country", "where we trade", "trading country").
+  A pair where only one half can be passed by accident is half a test; this is the half that
+  carries the weight, and AGG-16 is there to show the same instrument answers both.
+
+  THE WEB SHOP IS WHY THE TWO FIGURES ARE SO FAR APART, and it is not a rounding story: the store
+  path attributes a sale to the premises that rang it up, and the web shop is a sentinel row with
+  no country, so 86,790,054.13 of online revenue falls out of every country on this path while
+  staying in the denominator. Hence 14,382,768.44 of 218,814,471.66 = 6.573%, against
+  24,638,830.18 = 11.2601% on the customer path, which can place an online sale in a real country
+  because the CUSTOMER has one. Both figures are correct about different things; neither is a
+  better answer to AGG-12's wording, which is why that question is answered by refusing.
+
+  THE DENOMINATOR IS DELIBERATELY NOT NARROWED to physical sales. Dividing German shop revenue by
+  physical-only revenue (132,024,417.53) gives 10.894% — a third figure, and a reasonable question,
+  but not this one. This asks for a share of TOTAL net revenue, and `revenue_means_both_channels`
+  (ruled 2026-10-18) fixes that total at both channels.
+expected_by: agent
+expected_at: '2026-10-23'
+approved_by: null
+approved_at: null
+awaiting_approval: >-
+  The arithmetic is re-runnable and agrees with the figure the walk itself published for this
+  reading. What needs a signature is that "shops sited in Germany" is the store path and that the
+  denominator stays total revenue including the web shop, rather than physical-only.

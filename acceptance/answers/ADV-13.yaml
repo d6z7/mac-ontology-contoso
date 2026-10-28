@@ -1,0 +1,1783 @@
+id: ADV-13
+captured_at: '2026-10-24T21:44:53+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: store
+  operation: select
+  qdmr_simplified: "  1         FROM       stores                                                    \
+    \                           “stores”\n  2  ← 1    PIVOT_TO   what the store sells                \
+    \                                                 “sell”\n  3  ← 2    GROUP_BY   by store        \
+    \                                                                     “stores”\n  4  ← 3    AGGREGATE\
+    \  sum of how much it sells                                                             “sell”\n \
+    \ 5  ← 3+4  HAVING     figure_step='4' op='>' than={'over_the_groups': 'avg', 'said': 'the average\
+    \ store'}  “sell more than the average store”\n  6  ← 5+4  ORDER_BY   step 4 desc limit 5        \
+    \                                                          “top 5 stores”\n  7  ← 6    SELECT    \
+    \ store, how much it sells                                                             “List top 5\
+    \ stores”\n  answer: step 7   confidence: 0.52   A DAG   step(s) 3, 4 feed more than one   converging\
+    \ at 5, 6\n  UNDERSTOOD AS: You want the 5 highest-selling stores, counting only stores whose own\
+    \ sales are above the average store's sales, with each store shown next to how much it sells. One\
+    \ row per store. The question doesn't say what \"sell\" is measured in (money or units) or over what\
+    \ period, so this takes it as total sales value over all time available.\n  AMBIGUOUS 'sell' — ASKS:\
+    \ When you say how much a store sells, do you mean sales revenue, number of units sold, or number\
+    \ of sales/transactions?\n      could mean: total sales revenue (money)\n      could mean: total units\
+    \ sold (quantity)\n      could mean: number of sales / transactions\n      took: total sales revenue\
+    \ (money)\n  AMBIGUOUS 'sell more than the average store' — ASKS: Over what time period should the\
+    \ sales be measured — all time, this year, last 12 months, or something else?\n      could mean: all\
+    \ time, every sale on record\n      could mean: the current year\n      could mean: the last 12 months\n\
+    \      could mean: some other period you have in mind\n      took: all time, every sale on record\n\
+    \  AMBIGUOUS 'the average store' — ASKS: Should the average be the average sales across all stores,\
+    \ or only across stores that had any sales in the period?\n      could mean: average across every\
+    \ store, including ones with no sales\n      could mean: average across only the stores that actually\
+    \ had sales\n      took: average across every store that appears with sales\n  AMBIGUOUS 'top 5' —\
+    \ ASKS: Should the top 5 be ranked by the same sales figure used for the above-average test, or by\
+    \ something else such as growth?\n      could mean: ranked by the same sales figure\n      could mean:\
+    \ ranked by something else, e.g. growth or profit\n      took: ranked by the same sales figure\n \
+    \ cannot_express: which figure 'sell' stands for is never named in the question, so the steps carry\
+    \ it only as the question's own word\n  OUTPUT SHAPE: a list of names and figures · many row(s) ·\
+    \ named by store · carrying how much it sells"
+  understood_as_in_human_words: You want the 5 highest-selling stores, counting only stores whose own
+    sales are above the average store's sales, with each store shown next to how much it sells. One row
+    per store. The question doesn't say what "sell" is measured in (money or units) or over what period,
+    so this takes it as total sales value over all time available.
+  population_actually_answered: 'The 57 rows of dim_store with location_code &lt;&gt; -1 and close_date
+    IS NULL, and their 127,699 sales lines. Physical because store.resolution.the_channel_is_the_location_sentinel
+    declares `applies: subject, default: physical` and this question''s subject is a Store; still-trading
+    because store.resolution.active_is_the_absent_close_date declares `applies: subject, default: active`
+    and the question named no status; all time because order.default.an_unscoped_question_covers_all_time,
+    so no period filter, 2016-05-18 to 2025-12-31. The average that each of these five had to beat is
+    the plain mean of those same 57 shops, each counting once — and since every one of the 57 has sales,
+    that is also the average over shops-with-sales. One row per premises, which here is also one per site:
+    57 shops on 57 distinct sites.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: a list of names and figures
+    columns_the_answer_step_asks_for: &id001
+    - store
+    - how much it sells
+    figures_the_answer_step_computes: []
+    answer_step: '7'
+    verb: select
+    said: List top 5 stores
+    stage1_confidence: 0.52
+  canonical_question: &id002
+    understood_as: You want the 5 highest-selling stores, counting only stores whose own sales are above
+      the average store's sales, with each store shown next to how much it sells. One row per store. The
+      question doesn't say what "sell" is measured in (money or units) or over what period, so this takes
+      it as total sales value over all time available.
+    steps:
+    - id: '1'
+      do: from
+      thing: stores
+      said: stores
+    - id: '2'
+      do: pivot_to
+      of: '1'
+      to: what the store sells
+      said: sell
+    - id: '3'
+      do: group_by
+      of: '2'
+      thing: store
+      said: stores
+    - id: '4'
+      do: aggregate
+      of: '3'
+      figures:
+      - how: sum
+        of: how much it sells
+        said: sell
+      said: sell
+    - id: '5'
+      do: having
+      of: '3'
+      figure_step: '4'
+      op: '>'
+      than:
+        over_the_groups: avg
+        said: the average store
+      said: sell more than the average store
+    - id: '6'
+      do: order_by
+      of: '5'
+      by_step: '4'
+      direction: desc
+      limit: 5
+      said: top 5 stores
+    - id: '7'
+      do: select
+      of: '6'
+      columns: *id001
+      said: List top 5 stores
+    answer: '7'
+    output_shape: &id004
+      shape: a list of names and figures
+      rows: many
+      key_columns: &id006
+      - store
+      figure_columns: &id007
+      - how much it sells
+      said: top 5 stores that sell more than the average store
+    ambiguities:
+    - words: sell
+      question: When you say how much a store sells, do you mean sales revenue, number of units sold,
+        or number of sales/transactions?
+      readings:
+      - total sales revenue (money)
+      - total units sold (quantity)
+      - number of sales / transactions
+      assumed: total sales revenue (money)
+    - words: sell more than the average store
+      question: Over what time period should the sales be measured — all time, this year, last 12 months,
+        or something else?
+      readings:
+      - all time, every sale on record
+      - the current year
+      - the last 12 months
+      - some other period you have in mind
+      assumed: all time, every sale on record
+    - words: the average store
+      question: Should the average be the average sales across all stores, or only across stores that
+        had any sales in the period?
+      readings:
+      - average across every store, including ones with no sales
+      - average across only the stores that actually had sales
+      assumed: average across every store that appears with sales
+    - words: top 5
+      question: Should the top 5 be ranked by the same sales figure used for the above-average test, or
+        by something else such as growth?
+      readings:
+      - ranked by the same sales figure
+      - ranked by something else, e.g. growth or profit
+      assumed: ranked by the same sales figure
+    cannot_express: &id003
+    - which figure 'sell' stands for is never named in the question, so the steps carry it only as the
+      question's own word
+    confidence: 0.52
+  steps: 7
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: store_name
+      type: string
+    - name: net_revenue
+      type: string
+    rows:
+    - - Contoso Store Connecticut
+      - '3897804.53'
+    - - Contoso Store Northwest Territories
+      - '3655942.73'
+    - - Contoso Store Newfoundland and Labrador
+      - '3648990.89'
+    - - Contoso Store Kansas
+      - '3608331.57'
+    - - Contoso Store South Carolina
+      - '3591981.03'
+  value: null
+  raw: '[{"store": "Contoso Store Connecticut", "net_revenue_usd": 3897804.53}, {"store": "Contoso Store
+    Northwest Territories", "net_revenue_usd": 3655942.73}, {"store": "Contoso Store Newfoundland and
+    Labrador", "net_revenue_usd": 3648990.89}, {"store": "Contoso Store Kansas", "net_revenue_usd": 3608331.57},
+    {"store": "Contoso Store South Carolina", "net_revenue_usd": 3591981.03}]'
+  reading: a list of names and figures
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "stores → trading physical shops — 57 of them, the population both `applies: subject` defaults\
+      \ select for a question whose subject is a Store\n        could also mean: all 74 rows the dimension\
+      \ records (web shop and closed premises included), or 58 if only the closed ones are dropped"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date
+      — the first''s `why` cites this very question shape (ADV-13): letting the web shop in lifts the
+      above-average bar from 2,265,860.50 to 3,723,174.18 and leaves only 2 stores above it, ''where the
+      answer is five'''
+  - kind: ''
+    text: "stores → the premises (store_key), not the place it stands on (location_code)\n        could\
+      \ also mean: the 67 sites, where a re-let site counts once rather than once per tenancy — but measured\
+      \ above it makes no difference inside this population: the 57 trading shops sit on 57 distinct sites"
+    ref: 'dim_store.store_key `finer_than: location_code`, and the Store grounding''s snapshot_rule: ''once
+      the `active` population has selected the trading rows there is one row per store already — 57 rows
+      over 57 location codes'''
+  - kind: ''
+    text: "sell → still unresolved between money and volume — the pivot carries net_amount, gross_amount\
+      \ and quantity side by side so step 4 can rank on each and see whether they name the same five shops\n\
+      \        could also mean: number of transactions (53,362 orders at these shops)"
+    ref: net_revenue.default.revenue_means_net fixes net over gross if the figure is money; money-vs-units
+      has no declaration and stays open until it can be priced on the ranking
+  - kind: ''
+    text: "a note on the declaration's own figures → my measurement of the trading-shop pool, 128,818,965.21\
+      \ over 57 shops, which puts the average store at about 2,260,684\n        could also mean: the 2,265,860.50\
+      \ bar quoted inside store.resolution.the_channel_is_the_location_sentinel's `why`, which is 335,083.29\
+      \ of revenue higher than what the same population measures today — the same offset appears in its\
+      \ 3,723,174.18 figure, so it is one consistent difference and not noise"
+    ref: the rule's quoted numbers come from the ADV-13 measurement of 2026-10-23; I use them for what
+      they settle (the population is physical and trading) and my own figures for the arithmetic, and
+      will say so again if the final bar differs
+  - kind: ''
+    text: "the average store → the plain mean of the 57 per-shop totals, each shop counting once regardless\
+      \ of size\n        could also mean: the average across only shops that had sales — identical here,\
+      \ because all 57 trading shops have sales; or revenue-weighted, which is not what 'the average store'\
+      \ says"
+    ref: none; the readings coincide at this population, which the `store_groups` figure in this result
+      proves
+  - kind: ''
+    text: "store → the premises, one group per store_key, named by store_name\n        could also mean:\
+      \ the site — but step 1 measured 57 shops over 57 distinct sites, so grouping either way gives the\
+      \ same 57 groups"
+    ref: 'dim_store.store_key `finer_than: location_code`, plus the Store grounding''s snapshot_rule'
+  - kind: ''
+    text: "sell → all four readings measured side by side before choosing — net money, gross money, units,\
+      \ orders\n        could also mean: any one of them; net money is the default if a reading must be\
+      \ picked, since 'sales' is a declared surface of net_amount"
+    ref: net_revenue.default.revenue_means_net settles net against gross and requires the answer to say
+      NET; money against volume is undeclared, so this result decides whether it needs asking
+  - kind: ''
+    text: "the average store → the unweighted mean of the 57 trading shops' own totals\n        could\
+      \ also mean: a mean that includes the web shop as a 58th store, which the declaration's own worked\
+      \ example says lifts the bar from roughly 2.27M to roughly 3.72M and leaves only 2 shops above it\
+      \ instead of five"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel, `applies: subject`, `default: physical`
+      — this question''s subject is a Store, and its `why` cites exactly this failure'
+  - kind: ''
+    text: "top 5 → ranked by the same figure the above-average test used, so the cut and the ranking agree\n\
+      \        could also mean: ranked by growth or profit, which the question does not mention"
+    ref: none; the step document itself orders by the figure of step 4
+  - kind: ''
+    text: "sell / sells → money the shop took from customers, net of discount — the reading nearest the\
+      \ question's own word, 'sales' being a declared surface of net_amount\n        could also mean:\
+      \ items sold, which MOVES TWO OF THE FIVE NAMES: Kansas 11,474, Connecticut 11,207, Arkansas 11,112,\
+      \ Nunavut 11,072, Northwest Territories 11,028 — Arkansas and Nunavut in, Newfoundland and Labrador\
+      \ and South Carolina out. Orders served picks that same five (Kansas 1,504, Arkansas 1,475, Connecticut\
+      \ 1,469, Northwest Territories 1,465, Nunavut 1,439), so the choice is value against volume and\
+      \ nothing else. Kansas, Connecticut and Northwest Territories are on the list whichever is meant;\
+      \ no reading changes the above-average cut, which removes nobody — the bars are 2,259,981.85 USD,\
+      \ 7,044.9 items, 936.2 orders. If you meant volume, ask again and the other two names are ready"
+    ref: none names the word 'sell'; net_revenue.default.revenue_means_net settles net against gross only
+      once the figure is money
+  - kind: ''
+    text: "sell, as money → net — after discount, 128,818,965.21 across the 57 shops\n        could also\
+      \ mean: gross, at list price, 136,994,253.13 across the same shops; I did not rank on it, so I cannot\
+      \ say whether it reorders these five"
+    ref: net_revenue.default.revenue_means_net — answer with net_amount and say NET
+  - kind: ''
+    text: "stores → the 57 physical shops still trading, so the ranking and the average are both over\
+      \ those\n        could also mean: counting the web shop as a 58th store, which would take first\
+      \ place outright with 86,790,054.13 and raise the bar to about 3.72M, leaving only two shops above\
+      \ it"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date,
+      both `applies: subject`; the first''s `why` cites this exact question shape (ADV-13) and states
+      the answer is five, not two'
+  - kind: ''
+    text: "the average store → 2,259,981.85 — the plain mean of the 57 shops' own takings, each shop counting\
+      \ once\n        could also mean: the average over only shops with sales, identical here because\
+      \ all 57 have sales"
+    ref: none; the readings coincide at this population
+  - kind: ''
+    text: "over what period → all time: every order from 2016-05-18 to 2025-12-31\n        could also\
+      \ mean: this year or the last twelve months, neither of which the question named"
+    ref: order.default.an_unscoped_question_covers_all_time, ruled 2026-09-30
+  - kind: ''
+    text: "a caveat on the declared bar → my measured average of 2,259,981.85\n        could also mean:\
+      \ 2,265,860.50, quoted inside store.resolution.the_channel_is_the_location_sentinel from the ADV-13\
+      \ run of 2026-10-23 — exactly 335,083.29 more revenue over the same 57 shops, and the same offset\
+      \ appears in its 3,723,174.18 figure, so one of the two measurements has moved. It changes no name\
+      \ on this list, but somebody should find out which"
+    ref: the rule's `why`, relied on here for the population and not for its arithmetic
+  concepts: []
+  rules:
+  - id: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date
+      — the first''s `why` cites this very question shape (ADV-13): letting the web shop in lifts the
+      above-average bar from 2'
+    why: '''stores'' = trading physical shops — 57 of them, the population both `applies: subject` defaults
+      select for a question whose subject is a Store'
+  - id: '265'
+    why: '''stores'' = trading physical shops — 57 of them, the population both `applies: subject` defaults
+      select for a question whose subject is a Store'
+  - id: 860.50 to 3
+    why: '''stores'' = trading physical shops — 57 of them, the population both `applies: subject` defaults
+      select for a question whose subject is a Store'
+  - id: '723'
+    why: '''stores'' = trading physical shops — 57 of them, the population both `applies: subject` defaults
+      select for a question whose subject is a Store'
+  - id: 174.18 and leaves only 2 stores above it
+    why: '''stores'' = trading physical shops — 57 of them, the population both `applies: subject` defaults
+      select for a question whose subject is a Store'
+  - id: '''where the answer is five'''
+    why: '''stores'' = trading physical shops — 57 of them, the population both `applies: subject` defaults
+      select for a question whose subject is a Store'
+  - id: 'dim_store.store_key `finer_than: location_code`'
+    why: '''stores'' = the premises (store_key), not the place it stands on (location_code)'
+  - id: 'and the Store grounding''s snapshot_rule: ''once the `active` population has selected the trading
+      rows there is one row per store already — 57 rows over 57 location codes'''
+    why: '''stores'' = the premises (store_key), not the place it stands on (location_code)'
+  - id: net_revenue.default.revenue_means_net fixes net over gross if the figure is money
+    why: '''sell'' = still unresolved between money and volume — the pivot carries net_amount, gross_amount
+      and quantity side by side so step 4 can rank on each and see whether they name the same five shops'
+  - id: money-vs-units has no declaration and stays open until it can be priced on the ranking
+    why: '''sell'' = still unresolved between money and volume — the pivot carries net_amount, gross_amount
+      and quantity side by side so step 4 can rank on each and see whether they name the same five shops'
+  - id: the rule's quoted numbers come from the ADV-13 measurement of 2026-10-23
+    why: '"a note on the declaration''s own figures" = my measurement of the trading-shop pool, 128,818,965.21
+      over 57 shops, which puts the average store at about 2,260,684'
+  - id: I use them for what they settle (the population is physical and trading) and my own figures for
+      the arithmetic
+    why: '"a note on the declaration''s own figures" = my measurement of the trading-shop pool, 128,818,965.21
+      over 57 shops, which puts the average store at about 2,260,684'
+  - id: and will say so again if the final bar differs
+    why: '"a note on the declaration''s own figures" = my measurement of the trading-shop pool, 128,818,965.21
+      over 57 shops, which puts the average store at about 2,260,684'
+  - id: the readings coincide at this population
+    why: '''the average store'' = the plain mean of the 57 per-shop totals, each shop counting once regardless
+      of size'
+  - id: which the `store_groups` figure in this result proves
+    why: '''the average store'' = the plain mean of the 57 per-shop totals, each shop counting once regardless
+      of size'
+  - id: plus the Store grounding's snapshot_rule
+    why: '''store'' = the premises, one group per store_key, named by store_name'
+  - id: net_revenue.default.revenue_means_net settles net against gross and requires the answer to say
+      NET
+    why: '''sell'' = all four readings measured side by side before choosing — net money, gross money,
+      units, orders'
+  - id: money against volume is undeclared
+    why: '''sell'' = all four readings measured side by side before choosing — net money, gross money,
+      units, orders'
+  - id: so this result decides whether it needs asking
+    why: '''sell'' = all four readings measured side by side before choosing — net money, gross money,
+      units, orders'
+  - id: store.resolution.the_channel_is_the_location_sentinel
+    why: '''the average store'' = the unweighted mean of the 57 trading shops'' own totals'
+  - id: '`applies: subject`'
+    why: '''the average store'' = the unweighted mean of the 57 trading shops'' own totals'
+  - id: '`default: physical` — this question''s subject is a Store'
+    why: '''the average store'' = the unweighted mean of the 57 trading shops'' own totals'
+  - id: and its `why` cites exactly this failure
+    why: '''the average store'' = the unweighted mean of the 57 trading shops'' own totals'
+  - id: the step document itself orders by the figure of step 4
+    why: '''top 5'' = ranked by the same figure the above-average test used, so the cut and the ranking
+      agree'
+  - id: none names the word 'sell'
+    why: '''sell / sells'' = money the shop took from customers, net of discount — the reading nearest
+      the question''s own word, ''sales'' being a declared surface of net_amount'
+  - id: net_revenue.default.revenue_means_net settles net against gross only once the figure is money
+    why: '''sell / sells'' = money the shop took from customers, net of discount — the reading nearest
+      the question''s own word, ''sales'' being a declared surface of net_amount'
+  - id: net_revenue.default.revenue_means_net — answer with net_amount and say NET
+    why: '''sell, as money'' = net — after discount, 128,818,965.21 across the 57 shops'
+  - id: store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date
+    why: '''stores'' = the 57 physical shops still trading, so the ranking and the average are both over
+      those'
+  - id: 'both `applies: subject`'
+    why: '''stores'' = the 57 physical shops still trading, so the ranking and the average are both over
+      those'
+  - id: the first's `why` cites this exact question shape (ADV-13) and states the answer is five
+    why: '''stores'' = the 57 physical shops still trading, so the ranking and the average are both over
+      those'
+  - id: not two
+    why: '''stores'' = the 57 physical shops still trading, so the ranking and the average are both over
+      those'
+  - id: order.default.an_unscoped_question_covers_all_time
+    why: '''over what period'' = all time: every order from 2016-05-18 to 2025-12-31'
+  - id: ruled 2026-09-30
+    why: '''over what period'' = all time: every order from 2016-05-18 to 2025-12-31'
+  - id: the rule's `why`
+    why: '''a caveat on the declared bar'' = my measured average of 2,259,981.85'
+  - id: relied on here for the population and not for its arithmetic
+    why: '''a caveat on the declared bar'' = my measured average of 2,259,981.85'
+  edges: []
+sql:
+- "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+  \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+- "SELECT\n  store_key,\n  store_name,\n  location_code,\n  country_code,\n  state,\n  open_date\nFROM\
+  \ contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n  store_key"
+- "SELECT\n  l.store_key,\n  s.store_name,\n  l.order_key,\n  l.line_number,\n  l.order_date,\n  l.net_amount,\n\
+  \  l.gross_amount,\n  l.quantity\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store\
+  \ AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL"
+- "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+  \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\nFROM\
+  \ contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key =\
+  \ s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+- "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+  \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\nFROM\
+  \ contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key =\
+  \ s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+- "WITH per_store AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount) AS net_revenue\n\
+  \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store AS s\n    ON l.store_key\
+  \ = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date IS NULL\n  GROUP BY\n    1,\n \
+  \   2\n)\nSELECT\n  store_key,\n  store_name,\n  net_revenue\nFROM per_store\nWHERE\n  net_revenue >\
+  \ (\n    SELECT\n      AVG(net_revenue)\n    FROM per_store\n  )"
+- "WITH ps AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount) AS net_revenue\n\
+  \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store AS s\n    ON l.store_key\
+  \ = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date IS NULL\n  GROUP BY\n    1,\n \
+  \   2\n)\nSELECT\n  store_name,\n  ROUND(net_revenue, 2) AS net_revenue\nFROM ps\nWHERE\n  net_revenue\
+  \ > (\n    SELECT\n      AVG(net_revenue)\n    FROM ps\n  )\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+answer_sql: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+  \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+  \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+sql_valid: true
+result:
+  status: ok
+  rows: 5
+  cols: &id008
+  - store_name
+  - net_revenue
+  sample_rows:
+  - - Contoso Store Connecticut
+    - '3897804.53'
+  - - Contoso Store Northwest Territories
+    - '3655942.73'
+  - - Contoso Store Newfoundland and Labrador
+    - '3648990.89'
+  - - Contoso Store Kansas
+    - '3608331.57'
+  - - Contoso Store South Carolina
+    - '3591981.03'
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1         FROM       stores                                      \
+    \                                         “stores”\n  2  ← 1    PIVOT_TO   what the store sells  \
+    \                                                               “sell”\n  3  ← 2    GROUP_BY   by\
+    \ store                                                                             “stores”\n  4\
+    \  ← 3    AGGREGATE  sum of how much it sells                                                    \
+    \         “sell”\n  5  ← 3+4  HAVING     figure_step='4' op='>' than={'over_the_groups': 'avg', 'said':\
+    \ 'the average store'}  “sell more than the average store”\n  6  ← 5+4  ORDER_BY   step 4 desc limit\
+    \ 5                                                                  “top 5 stores”\n  7  ← 6    SELECT\
+    \     store, how much it sells                                                             “List top\
+    \ 5 stores”\n  answer: step 7   confidence: 0.52   A DAG   step(s) 3, 4 feed more than one   converging\
+    \ at 5, 6\n  UNDERSTOOD AS: You want the 5 highest-selling stores, counting only stores whose own\
+    \ sales are above the average store's sales, with each store shown next to how much it sells. One\
+    \ row per store. The question doesn't say what \"sell\" is measured in (money or units) or over what\
+    \ period, so this takes it as total sales value over all time available.\n  AMBIGUOUS 'sell' — ASKS:\
+    \ When you say how much a store sells, do you mean sales revenue, number of units sold, or number\
+    \ of sales/transactions?\n      could mean: total sales revenue (money)\n      could mean: total units\
+    \ sold (quantity)\n      could mean: number of sales / transactions\n      took: total sales revenue\
+    \ (money)\n  AMBIGUOUS 'sell more than the average store' — ASKS: Over what time period should the\
+    \ sales be measured — all time, this year, last 12 months, or something else?\n      could mean: all\
+    \ time, every sale on record\n      could mean: the current year\n      could mean: the last 12 months\n\
+    \      could mean: some other period you have in mind\n      took: all time, every sale on record\n\
+    \  AMBIGUOUS 'the average store' — ASKS: Should the average be the average sales across all stores,\
+    \ or only across stores that had any sales in the period?\n      could mean: average across every\
+    \ store, including ones with no sales\n      could mean: average across only the stores that actually\
+    \ had sales\n      took: average across every store that appears with sales\n  AMBIGUOUS 'top 5' —\
+    \ ASKS: Should the top 5 be ranked by the same sales figure used for the above-average test, or by\
+    \ something else such as growth?\n      could mean: ranked by the same sales figure\n      could mean:\
+    \ ranked by something else, e.g. growth or profit\n      took: ranked by the same sales figure\n \
+    \ cannot_express: which figure 'sell' stands for is never named in the question, so the steps carry\
+    \ it only as the question's own word\n  OUTPUT SHAPE: a list of names and figures · many row(s) ·\
+    \ named by store · carrying how much it sells"
+  understood_as: You want the 5 highest-selling stores, counting only stores whose own sales are above
+    the average store's sales, with each store shown next to how much it sells. One row per store. The
+    question doesn't say what "sell" is measured in (money or units) or over what period, so this takes
+    it as total sales value over all time available.
+  ambiguities_it_saw:
+  - words: sell
+    asks: When you say how much a store sells, do you mean sales revenue, number of units sold, or number
+      of sales/transactions?
+    readings:
+    - total sales revenue (money)
+    - total units sold (quantity)
+    - number of sales / transactions
+    took: total sales revenue (money)
+  - words: sell more than the average store
+    asks: Over what time period should the sales be measured — all time, this year, last 12 months, or
+      something else?
+    readings:
+    - all time, every sale on record
+    - the current year
+    - the last 12 months
+    - some other period you have in mind
+    took: all time, every sale on record
+  - words: the average store
+    asks: Should the average be the average sales across all stores, or only across stores that had any
+      sales in the period?
+    readings:
+    - average across every store, including ones with no sales
+    - average across only the stores that actually had sales
+    took: average across every store that appears with sales
+  - words: top 5
+    asks: Should the top 5 be ranked by the same sales figure used for the above-average test, or by something
+      else such as growth?
+    readings:
+    - ranked by the same sales figure
+    - ranked by something else, e.g. growth or profit
+    took: ranked by the same sales figure
+  presentation:
+    claimed_answer_is: a list of names and figures
+    answer_step: '7'
+    answer_step_asks:
+      do: select
+      of: '6'
+      columns: *id001
+      said: List top 5 stores
+    confidence_stage1: 0.52
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  store_key,\n  store_name,\n  location_code,\n  country_code,\n  state,\n  open_date\n\
+      FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n \
+      \ store_key"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  l.store_key,\n  s.store_name,\n  l.order_key,\n  l.line_number,\n  l.order_date,\n\
+      \  l.net_amount,\n  l.gross_amount,\n  l.quantity\nFROM contoso_served.v_contoso5_sales_line AS\
+      \ l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+      \ <> -1 AND s.close_date IS NULL"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+      \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+      FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+      \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+      \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+      FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+      \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+    params: {}
+  - step: '5'
+    sql: "WITH per_store AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount) AS\
+      \ net_revenue\n  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store\
+      \ AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date IS\
+      \ NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_key,\n  store_name,\n  net_revenue\nFROM per_store\n\
+      WHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM per_store\n  )"
+    params: {}
+  - step: '6'
+    sql: "WITH ps AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount) AS net_revenue\n\
+      \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store AS s\n    ON\
+      \ l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date IS NULL\n  GROUP\
+      \ BY\n    1,\n    2\n)\nSELECT\n  store_name,\n  ROUND(net_revenue, 2) AS net_revenue\nFROM ps\n\
+      WHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM ps\n  )\nORDER BY\n  net_revenue\
+      \ DESC\nLIMIT 5"
+    params: {}
+  - step: '7'
+    sql: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+      \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+    params: {}
+  what_it_calculated: 'The five biggest-selling shops of the 57 Contoso still trades from, biggest first,
+    and against each the money its customers were actually charged — after discount, in USD — summed over
+    every order on record from 2016-05-18 to 2025-12-31. One row per shop. All five are far above the
+    average trading shop, which takes 2,259,981.85 over the same period, so the "more than the average
+    store" condition cuts nobody from this list: the fifth shop is 1.59 times the average. Not in these
+    figures: the web shop, which took 86,790,054.13 on its own and would head the list if it counted as
+    a store; the 16 closed premises, 3,205,452.33 between them; the discount itself, 8,175,287.92 across
+    these 57 shops, which is the gap between this net figure and the list-price one.'
+  rows_returned: &id005
+  - store_name: Contoso Store Connecticut
+    net_revenue: '3897804.53'
+  - store_name: Contoso Store Northwest Territories
+    net_revenue: '3655942.73'
+  - store_name: Contoso Store Newfoundland and Labrador
+    net_revenue: '3648990.89'
+  - store_name: Contoso Store Kansas
+    net_revenue: '3608331.57'
+  - store_name: Contoso Store South Carolina
+    net_revenue: '3591981.03'
+  synthesis:
+    claimed: '[{"store": "Contoso Store Connecticut", "net_revenue_usd": 3897804.53}, {"store": "Contoso
+      Store Northwest Territories", "net_revenue_usd": 3655942.73}, {"store": "Contoso Store Newfoundland
+      and Labrador", "net_revenue_usd": 3648990.89}, {"store": "Contoso Store Kansas", "net_revenue_usd":
+      3608331.57}, {"store": "Contoso Store South Carolina", "net_revenue_usd": 3591981.03}]'
+    shape: a list of names and figures
+    answered_population: 'The 57 rows of dim_store with location_code &lt;&gt; -1 and close_date IS NULL,
+      and their 127,699 sales lines. Physical because store.resolution.the_channel_is_the_location_sentinel
+      declares `applies: subject, default: physical` and this question''s subject is a Store; still-trading
+      because store.resolution.active_is_the_absent_close_date declares `applies: subject, default: active`
+      and the question named no status; all time because order.default.an_unscoped_question_covers_all_time,
+      so no period filter, 2016-05-18 to 2025-12-31. The average that each of these five had to beat is
+      the plain mean of those same 57 shops, each counting once — and since every one of the 57 has sales,
+      that is also the average over shops-with-sales. One row per premises, which here is also one per
+      site: 57 shops on 57 distinct sites.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: stores
+    turns:
+    - why: 'Establish the store population for step 1 by measuring how dim_store''s 74 rows split by channel
+        sentinel and trading state, so the two `applies: subject` defaults (physical, active) can be applied
+        with their row counts verified rather than assumed.'
+      did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN ''online''
+        ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''active'' ELSE ''closed''
+        END AS trading_state, count(*) AS store_rows, count(DISTINCT location_code) AS sites FROM contoso_served.dim_store
+        GROUP BY 1,2 ORDER BY 1,2'
+      came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'', ''Restructured''   AND
+        ALSO: 3 row(s): [{"channel": "online", "trading_state": "active", "store_rows": 1, "sites": 1},
+        {"channel": "physical", "trading_state": "active", "store_rows": 57, "sites": 57}, {"channel":
+        "physical", "trading_state": "closed", "store_rows": 16, "sites": 14}]'
+    settled_on: "SELECT\n  store_key,\n  store_name,\n  location_code,\n  country_code,\n  state,\n  open_date\n\
+      FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n \
+      \ store_key"
+    means: 'The shops Contoso sells from and has not closed: 57 physical premises, one row each, each
+      with its name, the site it stands on, the country and region it trades in, and the day it opened.
+      No sales are attached yet — this is only the set of stores the rest of the question will measure
+      and rank. It leaves out the web shop (1 row) and the 16 premises that have a closing date, which
+      stand on 14 sites.'
+    readings_taken:
+    - word: stores
+      took: 'trading physical shops — 57 of them, the population both `applies: subject` defaults select
+        for a question whose subject is a Store'
+      could_also_mean: all 74 rows the dimension records (web shop and closed premises included), or 58
+        if only the closed ones are dropped
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date
+        — the first''s `why` cites this very question shape (ADV-13): letting the web shop in lifts the
+        above-average bar from 2,265,860.50 to 3,723,174.18 and leaves only 2 stores above it, ''where
+        the answer is five'''
+    - word: stores
+      took: the premises (store_key), not the place it stands on (location_code)
+      could_also_mean: 'the 67 sites, where a re-let site counts once rather than once per tenancy — but
+        measured above it makes no difference inside this population: the 57 trading shops sit on 57 distinct
+        sites'
+      declaration: 'dim_store.store_key `finer_than: location_code`, and the Store grounding''s snapshot_rule:
+        ''once the `active` population has selected the trading rows there is one row per store already
+        — 57 rows over 57 location codes'''
+    blocked_by: []
+  - step: '2'
+    step_asks: sell
+    turns:
+    - why: Attach sales to the 57 trading shops and, in the same pass, price the three readings of "sell"
+        and the two pools step 1 excluded, so the cost of every restriction on the table is a measured
+        number rather than an inference.
+      did: "SELECT\n  CASE\n    WHEN s.location_code = -1\n    THEN 'online sentinel'\n    WHEN NOT s.close_date\
+        \ IS NULL\n    THEN 'closed premises'\n    ELSE 'trading shop'\n  END AS bucket,\n  COUNT(DISTINCT\
+        \ s.store_key) AS stores,\n  COUNT(*) AS sales_lines,\n  MIN(l.order_date) AS first_order,\n \
+        \ MAX(l.order_date) AS last_order,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n  ROUND(SUM(l.gross_amount),\
+        \ 2) AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+        \ = s.store_key\nGROUP BY\n  1\nORDER BY\n  1"
+      came_back: '3 row(s): [{"bucket": "closed premises", "stores": 6, "sales_lines": 2725, "first_order":
+        "2016-05-18", "last_order": "2019-11-02", "net_revenue": "3205452.33", "gross_revenue": "3405539.83",
+        "units_sold": 8653, "orders": 1140}, {"bucket": "online sentinel", "stores": 1, "sales_lines":
+        93550, "first_order": "2016-05-18", "last_order": "2025-12-31", "net_revenue": "86790054.13",
+        "gross_revenue": "92201749.70", "units_sold": 293411, "orders": 38968}, {"bucket": "trading shop",
+        "stores": 57, "sales_lines": 127699, "first_order": "2016-05-18", "last_order": "2025-12-31",
+        "net_revenue": "128818965.21", "gross_revenue": "136994253.13", "units_sold": 401557, "orders":
+        53362}]'
+    settled_on: "SELECT\n  l.store_key,\n  s.store_name,\n  l.order_key,\n  l.line_number,\n  l.order_date,\n\
+      \  l.net_amount,\n  l.gross_amount,\n  l.quantity\nFROM contoso_served.v_contoso5_sales_line AS\
+      \ l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+      \ <> -1 AND s.close_date IS NULL"
+    means: 'One row: the whole body of trade done by the 57 shops Contoso still trades from — how many
+      individual order lines they rang up over the ten years on record, how many of those lines are distinct
+      order-line keys (the two must match, or the join to the store dimension has duplicated sales), how
+      many of the 57 shops actually appear, and what the customers were charged for it all after discount.
+      It is the pool every later step measures; it excludes the web shop''s 93,550 lines and 86,790,054.13,
+      and the 2,725 lines and 3,205,452.33 belonging to the 16 closed premises.'
+    readings_taken:
+    - word: sell
+      took: still unresolved between money and volume — the pivot carries net_amount, gross_amount and
+        quantity side by side so step 4 can rank on each and see whether they name the same five shops
+      could_also_mean: number of transactions (53,362 orders at these shops)
+      declaration: net_revenue.default.revenue_means_net fixes net over gross if the figure is money;
+        money-vs-units has no declaration and stays open until it can be priced on the ranking
+    - word: a note on the declaration's own figures
+      took: my measurement of the trading-shop pool, 128,818,965.21 over 57 shops, which puts the average
+        store at about 2,260,684
+      could_also_mean: the 2,265,860.50 bar quoted inside store.resolution.the_channel_is_the_location_sentinel's
+        `why`, which is 335,083.29 of revenue higher than what the same population measures today — the
+        same offset appears in its 3,723,174.18 figure, so it is one consistent difference and not noise
+      declaration: the rule's quoted numbers come from the ADV-13 measurement of 2026-10-23; I use them
+        for what they settle (the population is physical and trading) and my own figures for the arithmetic,
+        and will say so again if the final bar differs
+    blocked_by: []
+  - step: '3'
+    step_asks: stores
+    turns: []
+    settled_on: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+      \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+      FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+      \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+    means: 'One row describing the 57 per-shop totals the grouping produces: how many shops ended up as
+      groups (must be 57, one per trading shop, or the grain has slipped), whether all 57 carry different
+      names, and then what the typical shop sells over the ten years on record, said four ways — money
+      charged after discount, money at list before discount, items out the door, and separate orders served.
+      The three averages are the bar the next step tests each shop against, and the smallest and largest
+      shop''s takings show how far apart the 57 are.'
+    readings_taken:
+    - word: the average store
+      took: the plain mean of the 57 per-shop totals, each shop counting once regardless of size
+      could_also_mean: the average across only shops that had sales — identical here, because all 57 trading
+        shops have sales; or revenue-weighted, which is not what 'the average store' says
+      declaration: none; the readings coincide at this population, which the `store_groups` figure in
+        this result proves
+    - word: store
+      took: the premises, one group per store_key, named by store_name
+      could_also_mean: the site — but step 1 measured 57 shops over 57 distinct sites, so grouping either
+        way gives the same 57 groups
+      declaration: 'dim_store.store_key `finer_than: location_code`, plus the Store grounding''s snapshot_rule'
+    blocked_by: []
+  - step: '4'
+    step_asks: sell
+    turns: []
+    settled_on: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+      \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+      FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+      \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+    means: 'The shops that come near the top on any reading of "how much it sells": for each, what it
+      took after discount over the ten years on record, what that would have been at list, how many items
+      it moved and how many separate orders it served — and its position among the 57 trading shops under
+      each of those four, plus whether it beats the typical shop on each. Carried alongside is the bar
+      itself (what the average of the 57 shops comes to, said each way) and how many of the 57 clear it.
+      One row per shop that reaches the top seven on at least one reading; if the four rankings name the
+      same five shops, the question''s open word costs nothing.'
+    readings_taken:
+    - word: sell
+      took: all four readings measured side by side before choosing — net money, gross money, units, orders
+      could_also_mean: any one of them; net money is the default if a reading must be picked, since 'sales'
+        is a declared surface of net_amount
+      declaration: net_revenue.default.revenue_means_net settles net against gross and requires the answer
+        to say NET; money against volume is undeclared, so this result decides whether it needs asking
+    blocked_by: []
+  - step: '5'
+    step_asks: sell more than the average store
+    turns: []
+    settled_on: "WITH per_store AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount)\
+      \ AS net_revenue\n  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store\
+      \ AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date IS\
+      \ NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_key,\n  store_name,\n  net_revenue\nFROM per_store\n\
+      WHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM per_store\n  )"
+    means: 'The shops that reach the top seven of the 57 trading shops on at least one reading of "how
+      much it sells" — money charged after discount, items sold, or orders served — each shown with all
+      three figures over the whole ten years on record and its rank under each. Carried on every row:
+      what the typical one of the 57 shops sells, said all three ways, which is the bar "more than the
+      average store" sets; and how many of the 57 clear that bar under each reading. What this tells me
+      is whether the three readings put the same shops at the top, and how big the qualifying set is before
+      the top-5 cut.'
+    readings_taken:
+    - word: the average store
+      took: the unweighted mean of the 57 trading shops' own totals
+      could_also_mean: a mean that includes the web shop as a 58th store, which the declaration's own
+        worked example says lifts the bar from roughly 2.27M to roughly 3.72M and leaves only 2 shops
+        above it instead of five
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel, `applies: subject`, `default:
+        physical` — this question''s subject is a Store, and its `why` cites exactly this failure'
+    blocked_by: []
+  - step: '6'
+    step_asks: top 5 stores
+    turns: []
+    settled_on: "WITH ps AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount) AS\
+      \ net_revenue\n  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store\
+      \ AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date IS\
+      \ NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_name,\n  ROUND(net_revenue, 2) AS net_revenue\n\
+      FROM ps\nWHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM ps\n  )\nORDER BY\n\
+      \  net_revenue DESC\nLIMIT 5"
+    means: 'The eight biggest-selling of the 57 shops Contoso still trades from, each one already past
+      the test of selling more than the typical shop: what each took from customers after discount over
+      the whole ten years on record, how many items it moved and how many orders it served, ordered by
+      takings. Repeated on every row is the bar each had to beat — the average of the 57 shops'' own takings
+      — said in money, items and orders, and the count of shops that average is over. I ask for eight
+      rather than five so I can see whether the sixth and seventh are close enough that the choice of
+      figure would reshuffle the five.'
+    readings_taken:
+    - word: top 5
+      took: ranked by the same figure the above-average test used, so the cut and the ranking agree
+      could_also_mean: ranked by growth or profit, which the question does not mention
+      declaration: none; the step document itself orders by the figure of step 4
+    blocked_by: []
+  - step: '7'
+    step_asks: List top 5 stores
+    turns:
+    - why: No rows have come back since step 2 — the last four queries all used WITH clauses and window
+        functions and returned nothing to me — so this is the same ranking written in the plain join-and-group
+        form that did come back, and I will not claim an answer until I can see the shops and their figures.
+      did: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n  SUM(l.quantity)\
+        \ AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 8"
+      came_back: '8 row(s): [{"store_name": "Contoso Store Connecticut", "net_revenue": "3897804.53",
+        "units_sold": 11207, "orders": 1469}, {"store_name": "Contoso Store Northwest Territories", "net_revenue":
+        "3655942.73", "units_sold": 11028, "orders": 1465}, {"store_name": "Contoso Store Newfoundland
+        and Labrador", "net_revenue": "3648990.89", "units_sold": 10664, "orders": 1403}, {"store_name":
+        "Contoso Store Kansas", "net_revenue": "3608331.57", "units_sold": 11474, "orders": 1504}, {"store_name":
+        "Contoso Store South Carolina", "net_revenue": "3591981.03", "units_sold": 10746, "orders": 1435},
+        {"store_name": "Contoso Store Oregon", "net_revenue": "3491334.99", "units_sold": 10642, "orders":
+        1436}, {"store_name": "Contoso Store Arkansas", "net_revenue": "3453234.34", "units_sold": 11112,
+        "orders": 1475}, {"store_name": "Contoso Store Nunavut", "net_revenue": "3273260.91", "units_sold":
+        11072, "orders": 1439}]'
+    - why: 'Price the money-against-volume fork properly: the eight biggest by money are only 10,642–11,474
+        items apart, so shops outside that list could easily outsell them in items — I cannot tell whether
+        "sells" changes the five until I rank the same 57 shops by units.'
+      did: "SELECT\n  s.store_name,\n  SUM(l.quantity) AS units_sold,\n  ROUND(SUM(l.net_amount), 2) AS\
+        \ net_revenue,\n  COUNT(DISTINCT l.order_key) AS orders\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  units_sold DESC\nLIMIT 8"
+      came_back: '8 row(s): [{"store_name": "Contoso Store Kansas", "units_sold": 11474, "net_revenue":
+        "3608331.57", "orders": 1504}, {"store_name": "Contoso Store Connecticut", "units_sold": 11207,
+        "net_revenue": "3897804.53", "orders": 1469}, {"store_name": "Contoso Store Arkansas", "units_sold":
+        11112, "net_revenue": "3453234.34", "orders": 1475}, {"store_name": "Contoso Store Nunavut", "units_sold":
+        11072, "net_revenue": "3273260.91", "orders": 1439}, {"store_name": "Contoso Store Northwest Territories",
+        "units_sold": 11028, "net_revenue": "3655942.73", "orders": 1465}, {"store_name": "Contoso Store
+        South Carolina", "units_sold": 10746, "net_revenue": "3591981.03", "orders": 1435}, {"store_name":
+        "Contoso Store Newfoundland and Labrador", "units_sold": 10664, "net_revenue": "3648990.89", "orders":
+        1403}, {"store_name": "Contoso Store Oregon", "units_sold": 10642, "net_revenue": "3491334.99",
+        "orders": 1436}]'
+    - why: Two of the five names already change between money and items, so the fork is material and I
+        will be handing back a question — I want the third reading the decomposition named (sales counted
+        as transactions) measured too, so the person can answer by pointing at a list rather than at a
+        word.
+      did: "SELECT\n  s.store_name,\n  COUNT(DISTINCT l.order_key) AS orders,\n  SUM(l.quantity) AS units_sold,\n\
+        \  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS l\n\
+        JOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code <>\
+        \ -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  orders DESC\nLIMIT 8"
+      came_back: '8 row(s): [{"store_name": "Contoso Store Kansas", "orders": 1504, "units_sold": 11474,
+        "net_revenue": "3608331.57"}, {"store_name": "Contoso Store Arkansas", "orders": 1475, "units_sold":
+        11112, "net_revenue": "3453234.34"}, {"store_name": "Contoso Store Connecticut", "orders": 1469,
+        "units_sold": 11207, "net_revenue": "3897804.53"}, {"store_name": "Contoso Store Northwest Territories",
+        "orders": 1465, "units_sold": 11028, "net_revenue": "3655942.73"}, {"store_name": "Contoso Store
+        Nunavut", "orders": 1439, "units_sold": 11072, "net_revenue": "3273260.91"}, {"store_name": "Contoso
+        Store Oregon", "orders": 1436, "units_sold": 10642, "net_revenue": "3491334.99"}, {"store_name":
+        "Contoso Store South Carolina", "orders": 1435, "units_sold": 10746, "net_revenue": "3591981.03"},
+        {"store_name": "Contoso Store Newfoundland and Labrador", "orders": 1403, "units_sold": 10664,
+        "net_revenue": "3648990.89"}]'
+    - why: All three readings of "sells" are now measured over the same 57 shops and they disagree on
+        two of the five names, with nothing in the declarations naming the word — so the answer is the
+        question, with each reading's list attached so it can be settled by pointing.
+      did: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 5 row(s): [{"store_name": "Contoso Store Connecticut",
+        "net_revenue": "3897804.53"}, {"store_name": "Contoso Store Northwest Territories", "net_revenue":
+        "3655942.73"}, {"store_name": "Contoso Store Newfoundland and Labrador", "net_revenue": "3648990.89"},
+        {"store_name": "Contoso Store Kansas", "net_revenue": "3608331.57"}, {"store_name": "Contoso Store
+        South Carolina", "net_revenue": "3591981.03"}]  Give `claimed_answer` as the value a person would
+        be handed, and `claimed_answer_is` from the closed list. If these rows settle the question, do
+        not decline.'
+    settled_on: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+      \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+      \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+    means: 'The five biggest-selling shops of the 57 Contoso still trades from, biggest first, and against
+      each the money its customers were actually charged — after discount, in USD — summed over every
+      order on record from 2016-05-18 to 2025-12-31. One row per shop. All five are far above the average
+      trading shop, which takes 2,259,981.85 over the same period, so the "more than the average store"
+      condition cuts nobody from this list: the fifth shop is 1.59 times the average. Not in these figures:
+      the web shop, which took 86,790,054.13 on its own and would head the list if it counted as a store;
+      the 16 closed premises, 3,205,452.33 between them; the discount itself, 8,175,287.92 across these
+      57 shops, which is the gap between this net figure and the list-price one.'
+    readings_taken:
+    - word: sell / sells
+      took: money the shop took from customers, net of discount — the reading nearest the question's own
+        word, 'sales' being a declared surface of net_amount
+      could_also_mean: 'items sold, which MOVES TWO OF THE FIVE NAMES: Kansas 11,474, Connecticut 11,207,
+        Arkansas 11,112, Nunavut 11,072, Northwest Territories 11,028 — Arkansas and Nunavut in, Newfoundland
+        and Labrador and South Carolina out. Orders served picks that same five (Kansas 1,504, Arkansas
+        1,475, Connecticut 1,469, Northwest Territories 1,465, Nunavut 1,439), so the choice is value
+        against volume and nothing else. Kansas, Connecticut and Northwest Territories are on the list
+        whichever is meant; no reading changes the above-average cut, which removes nobody — the bars
+        are 2,259,981.85 USD, 7,044.9 items, 936.2 orders. If you meant volume, ask again and the other
+        two names are ready'
+      declaration: none names the word 'sell'; net_revenue.default.revenue_means_net settles net against
+        gross only once the figure is money
+    - word: sell, as money
+      took: net — after discount, 128,818,965.21 across the 57 shops
+      could_also_mean: gross, at list price, 136,994,253.13 across the same shops; I did not rank on it,
+        so I cannot say whether it reorders these five
+      declaration: net_revenue.default.revenue_means_net — answer with net_amount and say NET
+    - word: stores
+      took: the 57 physical shops still trading, so the ranking and the average are both over those
+      could_also_mean: counting the web shop as a 58th store, which would take first place outright with
+        86,790,054.13 and raise the bar to about 3.72M, leaving only two shops above it
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date,
+        both `applies: subject`; the first''s `why` cites this exact question shape (ADV-13) and states
+        the answer is five, not two'
+    - word: the average store
+      took: 2,259,981.85 — the plain mean of the 57 shops' own takings, each shop counting once
+      could_also_mean: the average over only shops with sales, identical here because all 57 have sales
+      declaration: none; the readings coincide at this population
+    - word: over what period
+      took: 'all time: every order from 2016-05-18 to 2025-12-31'
+      could_also_mean: this year or the last twelve months, neither of which the question named
+      declaration: order.default.an_unscoped_question_covers_all_time, ruled 2026-09-30
+    - word: a caveat on the declared bar
+      took: my measured average of 2,259,981.85
+      could_also_mean: 2,265,860.50, quoted inside store.resolution.the_channel_is_the_location_sentinel
+        from the ADV-13 run of 2026-10-23 — exactly 335,083.29 more revenue over the same 57 shops, and
+        the same offset appears in its 3,723,174.18 figure, so one of the two measurements has moved.
+        It changes no name on this list, but somebody should find out which
+      declaration: the rule's `why`, relied on here for the population and not for its arithmetic
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: You want the 5 highest-selling stores, counting only stores whose own sales are above the average
+      store's sales, with each store shown next to how much it sells. One row per store. The question
+      doesn't say what "sell" is measured in (money or units) or over what period, so this takes it as
+      total sales value over all time available.
+    population: 'The 57 rows of dim_store with location_code &lt;&gt; -1 and close_date IS NULL, and their
+      127,699 sales lines. Physical because store.resolution.the_channel_is_the_location_sentinel declares
+      `applies: subject, default: physical` and this question''s subject is a Store; still-trading because
+      store.resolution.active_is_the_absent_close_date declares `applies: subject, default: active` and
+      the question named no status; all time because order.default.an_unscoped_question_covers_all_time,
+      so no period filter, 2016-05-18 to 2025-12-31. The average that each of these five had to beat is
+      the plain mean of those same 57 shops, each counting once — and since every one of the 57 has sales,
+      that is also the average over shops-with-sales. One row per premises, which here is also one per
+      site: 57 shops on 57 distinct sites.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1         FROM       stores                                                   \
+      \                            “stores”\n  2  ← 1    PIVOT_TO   what the store sells             \
+      \                                                    “sell”\n  3  ← 2    GROUP_BY   by store   \
+      \                                                                          “stores”\n  4  ← 3  \
+      \  AGGREGATE  sum of how much it sells                                                         \
+      \    “sell”\n  5  ← 3+4  HAVING     figure_step='4' op='>' than={'over_the_groups': 'avg', 'said':\
+      \ 'the average store'}  “sell more than the average store”\n  6  ← 5+4  ORDER_BY   step 4 desc limit\
+      \ 5                                                                  “top 5 stores”\n  7  ← 6  \
+      \  SELECT     store, how much it sells                                                         \
+      \    “List top 5 stores”\n  answer: step 7   confidence: 0.52   A DAG   step(s) 3, 4 feed more than\
+      \ one   converging at 5, 6"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: sell
+      asks: When you say how much a store sells, do you mean sales revenue, number of units sold, or number
+        of sales/transactions?
+      readings:
+      - total sales revenue (money)
+      - total units sold (quantity)
+      - number of sales / transactions
+      took: total sales revenue (money)
+    - words: sell more than the average store
+      asks: Over what time period should the sales be measured — all time, this year, last 12 months,
+        or something else?
+      readings:
+      - all time, every sale on record
+      - the current year
+      - the last 12 months
+      - some other period you have in mind
+      took: all time, every sale on record
+    - words: the average store
+      asks: Should the average be the average sales across all stores, or only across stores that had
+        any sales in the period?
+      readings:
+      - average across every store, including ones with no sales
+      - average across only the stores that actually had sales
+      took: average across every store that appears with sales
+    - words: top 5
+      asks: Should the top 5 be ranked by the same sales figure used for the above-average test, or by
+        something else such as growth?
+      readings:
+      - ranked by the same sales figure
+      - ranked by something else, e.g. growth or profit
+      took: ranked by the same sales figure
+- stage: cannot_express
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: *id003
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id004
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.52 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: stores
+      took: 'trading physical shops — 57 of them, the population both `applies: subject` defaults select
+        for a question whose subject is a Store'
+      could_also_mean: all 74 rows the dimension records (web shop and closed premises included), or 58
+        if only the closed ones are dropped
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date
+        — the first''s `why` cites this very question shape (ADV-13): letting the web shop in lifts the
+        above-average bar from 2,265,860.50 to 3,723,174.18 and leaves only 2 stores above it, ''where
+        the answer is five'''
+    - word: stores
+      took: the premises (store_key), not the place it stands on (location_code)
+      could_also_mean: 'the 67 sites, where a re-let site counts once rather than once per tenancy — but
+        measured above it makes no difference inside this population: the 57 trading shops sit on 57 distinct
+        sites'
+      declaration: 'dim_store.store_key `finer_than: location_code`, and the Store grounding''s snapshot_rule:
+        ''once the `active` population has selected the trading rows there is one row per store already
+        — 57 rows over 57 location codes'''
+    - word: sell
+      took: still unresolved between money and volume — the pivot carries net_amount, gross_amount and
+        quantity side by side so step 4 can rank on each and see whether they name the same five shops
+      could_also_mean: number of transactions (53,362 orders at these shops)
+      declaration: net_revenue.default.revenue_means_net fixes net over gross if the figure is money;
+        money-vs-units has no declaration and stays open until it can be priced on the ranking
+    - word: a note on the declaration's own figures
+      took: my measurement of the trading-shop pool, 128,818,965.21 over 57 shops, which puts the average
+        store at about 2,260,684
+      could_also_mean: the 2,265,860.50 bar quoted inside store.resolution.the_channel_is_the_location_sentinel's
+        `why`, which is 335,083.29 of revenue higher than what the same population measures today — the
+        same offset appears in its 3,723,174.18 figure, so it is one consistent difference and not noise
+      declaration: the rule's quoted numbers come from the ADV-13 measurement of 2026-10-23; I use them
+        for what they settle (the population is physical and trading) and my own figures for the arithmetic,
+        and will say so again if the final bar differs
+    - word: the average store
+      took: the plain mean of the 57 per-shop totals, each shop counting once regardless of size
+      could_also_mean: the average across only shops that had sales — identical here, because all 57 trading
+        shops have sales; or revenue-weighted, which is not what 'the average store' says
+      declaration: none; the readings coincide at this population, which the `store_groups` figure in
+        this result proves
+    - word: store
+      took: the premises, one group per store_key, named by store_name
+      could_also_mean: the site — but step 1 measured 57 shops over 57 distinct sites, so grouping either
+        way gives the same 57 groups
+      declaration: 'dim_store.store_key `finer_than: location_code`, plus the Store grounding''s snapshot_rule'
+    - word: sell
+      took: all four readings measured side by side before choosing — net money, gross money, units, orders
+      could_also_mean: any one of them; net money is the default if a reading must be picked, since 'sales'
+        is a declared surface of net_amount
+      declaration: net_revenue.default.revenue_means_net settles net against gross and requires the answer
+        to say NET; money against volume is undeclared, so this result decides whether it needs asking
+    - word: the average store
+      took: the unweighted mean of the 57 trading shops' own totals
+      could_also_mean: a mean that includes the web shop as a 58th store, which the declaration's own
+        worked example says lifts the bar from roughly 2.27M to roughly 3.72M and leaves only 2 shops
+        above it instead of five
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel, `applies: subject`, `default:
+        physical` — this question''s subject is a Store, and its `why` cites exactly this failure'
+    - word: top 5
+      took: ranked by the same figure the above-average test used, so the cut and the ranking agree
+      could_also_mean: ranked by growth or profit, which the question does not mention
+      declaration: none; the step document itself orders by the figure of step 4
+    - word: sell / sells
+      took: money the shop took from customers, net of discount — the reading nearest the question's own
+        word, 'sales' being a declared surface of net_amount
+      could_also_mean: 'items sold, which MOVES TWO OF THE FIVE NAMES: Kansas 11,474, Connecticut 11,207,
+        Arkansas 11,112, Nunavut 11,072, Northwest Territories 11,028 — Arkansas and Nunavut in, Newfoundland
+        and Labrador and South Carolina out. Orders served picks that same five (Kansas 1,504, Arkansas
+        1,475, Connecticut 1,469, Northwest Territories 1,465, Nunavut 1,439), so the choice is value
+        against volume and nothing else. Kansas, Connecticut and Northwest Territories are on the list
+        whichever is meant; no reading changes the above-average cut, which removes nobody — the bars
+        are 2,259,981.85 USD, 7,044.9 items, 936.2 orders. If you meant volume, ask again and the other
+        two names are ready'
+      declaration: none names the word 'sell'; net_revenue.default.revenue_means_net settles net against
+        gross only once the figure is money
+    - word: sell, as money
+      took: net — after discount, 128,818,965.21 across the 57 shops
+      could_also_mean: gross, at list price, 136,994,253.13 across the same shops; I did not rank on it,
+        so I cannot say whether it reorders these five
+      declaration: net_revenue.default.revenue_means_net — answer with net_amount and say NET
+    - word: stores
+      took: the 57 physical shops still trading, so the ranking and the average are both over those
+      could_also_mean: counting the web shop as a 58th store, which would take first place outright with
+        86,790,054.13 and raise the bar to about 3.72M, leaving only two shops above it
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date,
+        both `applies: subject`; the first''s `why` cites this exact question shape (ADV-13) and states
+        the answer is five, not two'
+    - word: the average store
+      took: 2,259,981.85 — the plain mean of the 57 shops' own takings, each shop counting once
+      could_also_mean: the average over only shops with sales, identical here because all 57 have sales
+      declaration: none; the readings coincide at this population
+    - word: over what period
+      took: 'all time: every order from 2016-05-18 to 2025-12-31'
+      could_also_mean: this year or the last twelve months, neither of which the question named
+      declaration: order.default.an_unscoped_question_covers_all_time, ruled 2026-09-30
+    - word: a caveat on the declared bar
+      took: my measured average of 2,259,981.85
+      could_also_mean: 2,265,860.50, quoted inside store.resolution.the_channel_is_the_location_sentinel
+        from the ADV-13 run of 2026-10-23 — exactly 335,083.29 more revenue over the same 57 shops, and
+        the same offset appears in its 3,723,174.18 figure, so one of the two measurements has moved.
+        It changes no name on this list, but somebody should find out which
+      declaration: the rule's `why`, relied on here for the population and not for its arithmetic
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 7 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  store_key,\n  store_name,\n  location_code,\n  country_code,\n  state,\n\
+        \  open_date\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\n\
+        ORDER BY\n  store_key\n\n-- step 2\nSELECT\n  l.store_key,\n  s.store_name,\n  l.order_key,\n\
+        \  l.line_number,\n  l.order_date,\n  l.net_amount,\n  l.gross_amount,\n  l.quantity\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL\n\n-- step 3\nSELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount)\
+        \ AS net_revenue,\n  SUM(l.gross_amount) AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n\
+        \  COUNT(DISTINCT l.order_key) AS orders\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN\
+        \ contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code <> -1\
+        \ AND s.close_date IS NULL\nGROUP BY\n  1,\n  2\n\n-- step 4\nSELECT\n  s.store_key,\n  s.store_name,\n\
+        \  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount) AS gross_revenue,\n  SUM(l.quantity)\
+        \ AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2\n\n-- step 5\nWITH per_store AS (\n  SELECT\n\
+        \    s.store_key,\n    s.store_name,\n    SUM(l.net_amount) AS net_revenue\n  FROM contoso_served.v_contoso5_sales_line\
+        \ AS l\n  JOIN contoso_served.dim_store AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code\
+        \ <> -1 AND s.close_date IS NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_key,\n  store_name,\n\
+        \  net_revenue\nFROM per_store\nWHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n\
+        \    FROM per_store\n  )\n\n-- step 6\nWITH ps AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n\
+        \    SUM(l.net_amount) AS net_revenue\n  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN\
+        \ contoso_served.dim_store AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code\
+        \ <> -1 AND s.close_date IS NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_name,\n  ROUND(net_revenue,\
+        \ 2) AS net_revenue\nFROM ps\nWHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n \
+        \   FROM ps\n  )\nORDER BY\n  net_revenue DESC\nLIMIT 5\n\n-- step 7\nSELECT\n  s.store_name,\n\
+        \  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line AS l\n\
+        JOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code <>\
+        \ -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id005
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'The five biggest-selling shops of the 57 Contoso still trades from, biggest first,
+      and against each the money its customers were actually charged — after discount, in USD — summed
+      over every order on record from 2016-05-18 to 2025-12-31. One row per shop. All five are far above
+      the average trading shop, which takes 2,259,981.85 over the same period, so the "more than the average
+      store" condition cuts nobody from this list: the fifth shop is 1.59 times the average. Not in these
+      figures: the web shop, which took 86,790,054.13 on its own and would head the list if it counted
+      as a store; the 16 closed premises, 3,205,452.33 between them; the discount itself, 8,175,287.92
+      across these 57 shops, which is the gap between this net figure and the list-price one.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'a list of names and figures' · graded EXACT
+  detail:
+    claimed_answer: '[{"store": "Contoso Store Connecticut", "net_revenue_usd": 3897804.53}, {"store":
+      "Contoso Store Northwest Territories", "net_revenue_usd": 3655942.73}, {"store": "Contoso Store
+      Newfoundland and Labrador", "net_revenue_usd": 3648990.89}, {"store": "Contoso Store Kansas", "net_revenue_usd":
+      3608331.57}, {"store": "Contoso Store South Carolina", "net_revenue_usd": 3591981.03}]'
+    walk_bucket: EXACT
+    walk_why: 5 row(s) match, in the reference's order
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: List top 5 stores that sell more than the average store
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: You want the 5 highest-selling stores, counting only stores whose own sales are above the average
+      store's sales, with each store shown next to how much it sells. One row per store. The question
+      doesn't say what "sell" is measured in (money or units) or over what period, so this takes it as
+      total sales value over all time available.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1         FROM       stores                                                                               “stores”'
+    - '  2  ← 1    PIVOT_TO   what the store sells                                                                 “sell”'
+    - '  3  ← 2    GROUP_BY   by store                                                                             “stores”'
+    - '  4  ← 3    AGGREGATE  sum of how much it sells                                                             “sell”'
+    - '  5  ← 3+4  HAVING     figure_step=''4'' op=''>'' than={''over_the_groups'': ''avg'', ''said'':
+      ''the average store''}  “sell more than the average store”'
+    - '  6  ← 5+4  ORDER_BY   step 4 desc limit 5                                                                  “top
+      5 stores”'
+    - '  7  ← 6    SELECT     store, how much it sells                                                             “List
+      top 5 stores”'
+    - '  answer: step 7   confidence: 0.52   A DAG   step(s) 3, 4 feed more than one   converging at 5,
+      6'
+    - '  UNDERSTOOD AS: You want the 5 highest-selling stores, counting only stores whose own sales are
+      above the average store''s sales, with each store shown next to how much it sells. One row per store.
+      The question doesn''t say what "sell" is measured in (money or units) or over what period, so this
+      takes it as total sales value over all time available.'
+    - '  AMBIGUOUS ''sell'' — ASKS: When you say how much a store sells, do you mean sales revenue, number
+      of units sold, or number of sales/transactions?'
+    - '      could mean: total sales revenue (money)'
+    - '      could mean: total units sold (quantity)'
+    - '      could mean: number of sales / transactions'
+    - '      took: total sales revenue (money)'
+    - '  AMBIGUOUS ''sell more than the average store'' — ASKS: Over what time period should the sales
+      be measured — all time, this year, last 12 months, or something else?'
+    - '      could mean: all time, every sale on record'
+    - '      could mean: the current year'
+    - '      could mean: the last 12 months'
+    - '      could mean: some other period you have in mind'
+    - '      took: all time, every sale on record'
+    - '  AMBIGUOUS ''the average store'' — ASKS: Should the average be the average sales across all stores,
+      or only across stores that had any sales in the period?'
+    - '      could mean: average across every store, including ones with no sales'
+    - '      could mean: average across only the stores that actually had sales'
+    - '      took: average across every store that appears with sales'
+    - '  AMBIGUOUS ''top 5'' — ASKS: Should the top 5 be ranked by the same sales figure used for the
+      above-average test, or by something else such as growth?'
+    - '      could mean: ranked by the same sales figure'
+    - '      could mean: ranked by something else, e.g. growth or profit'
+    - '      took: ranked by the same sales figure'
+    - '  cannot_express: which figure ''sell'' stands for is never named in the question, so the steps
+      carry it only as the question''s own word'
+    - '  OUTPUT SHAPE: a list of names and figures · many row(s) · named by store · carrying how much
+      it sells'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a list of names and figures
+    - - rows
+      - many
+    - - key_columns
+      - *id006
+    - - figure_columns
+      - *id007
+    - - said
+      - top 5 stores that sell more than the average store
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: sell
+      asks: When you say how much a store sells, do you mean sales revenue, number of units sold, or number
+        of sales/transactions?
+      readings:
+      - total sales revenue (money)
+      - total units sold (quantity)
+      - number of sales / transactions
+      took: total sales revenue (money)
+    - words: sell more than the average store
+      asks: Over what time period should the sales be measured — all time, this year, last 12 months,
+        or something else?
+      readings:
+      - all time, every sale on record
+      - the current year
+      - the last 12 months
+      - some other period you have in mind
+      took: all time, every sale on record
+    - words: the average store
+      asks: Should the average be the average sales across all stores, or only across stores that had
+        any sales in the period?
+      readings:
+      - average across every store, including ones with no sales
+      - average across only the stores that actually had sales
+      took: average across every store that appears with sales
+    - words: top 5
+      asks: Should the top 5 be ranked by the same sales figure used for the above-average test, or by
+        something else such as growth?
+      readings:
+      - ranked by the same sales figure
+      - ranked by something else, e.g. growth or profit
+      took: ranked by the same sales figure
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  store_key,\n  store_name,\n  location_code,\n  country_code,\n  state,\n  open_date\n\
+        FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n\
+        \  store_key"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  l.store_key,\n  s.store_name,\n  l.order_key,\n  l.line_number,\n  l.order_date,\n\
+        \  l.net_amount,\n  l.gross_amount,\n  l.quantity\nFROM contoso_served.v_contoso5_sales_line AS\
+        \ l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+        \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+        \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+        \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+        \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+      params: {}
+    - step: '5'
+      sql: "WITH per_store AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount)\
+        \ AS net_revenue\n  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store\
+        \ AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date\
+        \ IS NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_key,\n  store_name,\n  net_revenue\n\
+        FROM per_store\nWHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM per_store\n\
+        \  )"
+      params: {}
+    - step: '6'
+      sql: "WITH ps AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount) AS net_revenue\n\
+        \  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store AS s\n    ON\
+        \ l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date IS NULL\n  GROUP\
+        \ BY\n    1,\n    2\n)\nSELECT\n  store_name,\n  ROUND(net_revenue, 2) AS net_revenue\nFROM ps\n\
+        WHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM ps\n  )\nORDER BY\n  net_revenue\
+        \ DESC\nLIMIT 5"
+      params: {}
+    - step: '7'
+      sql: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'The five biggest-selling shops of the 57 Contoso still trades from, biggest first, and against
+      each the money its customers were actually charged — after discount, in USD — summed over every
+      order on record from 2016-05-18 to 2025-12-31. One row per shop. All five are far above the average
+      trading shop, which takes 2,259,981.85 over the same period, so the "more than the average store"
+      condition cuts nobody from this list: the fifth shop is 1.59 times the average. Not in these figures:
+      the web shop, which took 86,790,054.13 on its own and would head the list if it counted as a store;
+      the 16 closed premises, 3,205,452.33 between them; the discount itself, 8,175,287.92 across these
+      57 shops, which is the gap between this net figure and the list-price one.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id008
+      rows: *id005
+      row_count: 5
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '[{"store": "Contoso Store Connecticut", "net_revenue_usd": 3897804.53}, {"store": "Contoso Store
+        Northwest Territories", "net_revenue_usd": 3655942.73}, {"store": "Contoso Store Newfoundland
+        and Labrador", "net_revenue_usd": 3648990.89}, {"store": "Contoso Store Kansas", "net_revenue_usd":
+        3608331.57}, {"store": "Contoso Store South Carolina", "net_revenue_usd": 3591981.03}]'
+    - - shape
+      - a list of names and figures
+    - - population it answered over
+      - 'The 57 rows of dim_store with location_code &lt;&gt; -1 and close_date IS NULL, and their 127,699
+        sales lines. Physical because store.resolution.the_channel_is_the_location_sentinel declares `applies:
+        subject, default: physical` and this question''s subject is a Store; still-trading because store.resolution.active_is_the_absent_close_date
+        declares `applies: subject, default: active` and the question named no status; all time because
+        order.default.an_unscoped_question_covers_all_time, so no period filter, 2016-05-18 to 2025-12-31.
+        The average that each of these five had to beat is the plain mean of those same 57 shops, each
+        counting once — and since every one of the 57 has sales, that is also the average over shops-with-sales.
+        One row per premises, which here is also one per site: 57 shops on 57 distinct sites.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: stores
+      turns:
+      - why: 'Establish the store population for step 1 by measuring how dim_store''s 74 rows split by
+          channel sentinel and trading state, so the two `applies: subject` defaults (physical, active)
+          can be applied with their row counts verified rather than assumed.'
+        did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN location_code = -1 THEN
+          ''online'' ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''active'' ELSE
+          ''closed'' END AS trading_state, count(*) AS store_rows, count(DISTINCT location_code) AS sites
+          FROM contoso_served.dim_store GROUP BY 1,2 ORDER BY 1,2'
+        came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'',
+          ''Restructured''   AND ALSO: 3 row(s): [{"channel": "online", "trading_state": "active", "store_rows":
+          1, "sites": 1}, {"channel": "physical", "trading_state": "active", "store_rows": 57, "sites":
+          57}, {"channel": "physical", "trading_state": "closed", "store_rows": 16, "sites": 14}]'
+      settled_on: "SELECT\n  store_key,\n  store_name,\n  location_code,\n  country_code,\n  state,\n\
+        \  open_date\nFROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\n\
+        ORDER BY\n  store_key"
+      means: 'The shops Contoso sells from and has not closed: 57 physical premises, one row each, each
+        with its name, the site it stands on, the country and region it trades in, and the day it opened.
+        No sales are attached yet — this is only the set of stores the rest of the question will measure
+        and rank. It leaves out the web shop (1 row) and the 16 premises that have a closing date, which
+        stand on 14 sites.'
+      readings_taken:
+      - word: stores
+        took: 'trading physical shops — 57 of them, the population both `applies: subject` defaults select
+          for a question whose subject is a Store'
+        could_also_mean: all 74 rows the dimension records (web shop and closed premises included), or
+          58 if only the closed ones are dropped
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date
+          — the first''s `why` cites this very question shape (ADV-13): letting the web shop in lifts
+          the above-average bar from 2,265,860.50 to 3,723,174.18 and leaves only 2 stores above it, ''where
+          the answer is five'''
+      - word: stores
+        took: the premises (store_key), not the place it stands on (location_code)
+        could_also_mean: 'the 67 sites, where a re-let site counts once rather than once per tenancy —
+          but measured above it makes no difference inside this population: the 57 trading shops sit on
+          57 distinct sites'
+        declaration: 'dim_store.store_key `finer_than: location_code`, and the Store grounding''s snapshot_rule:
+          ''once the `active` population has selected the trading rows there is one row per store already
+          — 57 rows over 57 location codes'''
+      blocked_by: []
+    - step: '2'
+      step_asks: sell
+      turns:
+      - why: Attach sales to the 57 trading shops and, in the same pass, price the three readings of "sell"
+          and the two pools step 1 excluded, so the cost of every restriction on the table is a measured
+          number rather than an inference.
+        did: "SELECT\n  CASE\n    WHEN s.location_code = -1\n    THEN 'online sentinel'\n    WHEN NOT\
+          \ s.close_date IS NULL\n    THEN 'closed premises'\n    ELSE 'trading shop'\n  END AS bucket,\n\
+          \  COUNT(DISTINCT s.store_key) AS stores,\n  COUNT(*) AS sales_lines,\n  MIN(l.order_date) AS\
+          \ first_order,\n  MAX(l.order_date) AS last_order,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n\
+          \  ROUND(SUM(l.gross_amount), 2) AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT\
+          \ l.order_key) AS orders\nFROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store\
+          \ AS s\n  ON l.store_key = s.store_key\nGROUP BY\n  1\nORDER BY\n  1"
+        came_back: '3 row(s): [{"bucket": "closed premises", "stores": 6, "sales_lines": 2725, "first_order":
+          "2016-05-18", "last_order": "2019-11-02", "net_revenue": "3205452.33", "gross_revenue": "3405539.83",
+          "units_sold": 8653, "orders": 1140}, {"bucket": "online sentinel", "stores": 1, "sales_lines":
+          93550, "first_order": "2016-05-18", "last_order": "2025-12-31", "net_revenue": "86790054.13",
+          "gross_revenue": "92201749.70", "units_sold": 293411, "orders": 38968}, {"bucket": "trading
+          shop", "stores": 57, "sales_lines": 127699, "first_order": "2016-05-18", "last_order": "2025-12-31",
+          "net_revenue": "128818965.21", "gross_revenue": "136994253.13", "units_sold": 401557, "orders":
+          53362}]'
+      settled_on: "SELECT\n  l.store_key,\n  s.store_name,\n  l.order_key,\n  l.line_number,\n  l.order_date,\n\
+        \  l.net_amount,\n  l.gross_amount,\n  l.quantity\nFROM contoso_served.v_contoso5_sales_line AS\
+        \ l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL"
+      means: 'One row: the whole body of trade done by the 57 shops Contoso still trades from — how many
+        individual order lines they rang up over the ten years on record, how many of those lines are
+        distinct order-line keys (the two must match, or the join to the store dimension has duplicated
+        sales), how many of the 57 shops actually appear, and what the customers were charged for it all
+        after discount. It is the pool every later step measures; it excludes the web shop''s 93,550 lines
+        and 86,790,054.13, and the 2,725 lines and 3,205,452.33 belonging to the 16 closed premises.'
+      readings_taken:
+      - word: sell
+        took: still unresolved between money and volume — the pivot carries net_amount, gross_amount and
+          quantity side by side so step 4 can rank on each and see whether they name the same five shops
+        could_also_mean: number of transactions (53,362 orders at these shops)
+        declaration: net_revenue.default.revenue_means_net fixes net over gross if the figure is money;
+          money-vs-units has no declaration and stays open until it can be priced on the ranking
+      - word: a note on the declaration's own figures
+        took: my measurement of the trading-shop pool, 128,818,965.21 over 57 shops, which puts the average
+          store at about 2,260,684
+        could_also_mean: the 2,265,860.50 bar quoted inside store.resolution.the_channel_is_the_location_sentinel's
+          `why`, which is 335,083.29 of revenue higher than what the same population measures today —
+          the same offset appears in its 3,723,174.18 figure, so it is one consistent difference and not
+          noise
+        declaration: the rule's quoted numbers come from the ADV-13 measurement of 2026-10-23; I use them
+          for what they settle (the population is physical and trading) and my own figures for the arithmetic,
+          and will say so again if the final bar differs
+      blocked_by: []
+    - step: '3'
+      step_asks: stores
+      turns: []
+      settled_on: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+        \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+        \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+      means: 'One row describing the 57 per-shop totals the grouping produces: how many shops ended up
+        as groups (must be 57, one per trading shop, or the grain has slipped), whether all 57 carry different
+        names, and then what the typical shop sells over the ten years on record, said four ways — money
+        charged after discount, money at list before discount, items out the door, and separate orders
+        served. The three averages are the bar the next step tests each shop against, and the smallest
+        and largest shop''s takings show how far apart the 57 are.'
+      readings_taken:
+      - word: the average store
+        took: the plain mean of the 57 per-shop totals, each shop counting once regardless of size
+        could_also_mean: the average across only shops that had sales — identical here, because all 57
+          trading shops have sales; or revenue-weighted, which is not what 'the average store' says
+        declaration: none; the readings coincide at this population, which the `store_groups` figure in
+          this result proves
+      - word: store
+        took: the premises, one group per store_key, named by store_name
+        could_also_mean: the site — but step 1 measured 57 shops over 57 distinct sites, so grouping either
+          way gives the same 57 groups
+        declaration: 'dim_store.store_key `finer_than: location_code`, plus the Store grounding''s snapshot_rule'
+      blocked_by: []
+    - step: '4'
+      step_asks: sell
+      turns: []
+      settled_on: "SELECT\n  s.store_key,\n  s.store_name,\n  SUM(l.net_amount) AS net_revenue,\n  SUM(l.gross_amount)\
+        \ AS gross_revenue,\n  SUM(l.quantity) AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\n\
+        FROM contoso_served.v_contoso5_sales_line AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key\
+        \ = s.store_key\nWHERE\n  s.location_code <> -1 AND s.close_date IS NULL\nGROUP BY\n  1,\n  2"
+      means: 'The shops that come near the top on any reading of "how much it sells": for each, what it
+        took after discount over the ten years on record, what that would have been at list, how many
+        items it moved and how many separate orders it served — and its position among the 57 trading
+        shops under each of those four, plus whether it beats the typical shop on each. Carried alongside
+        is the bar itself (what the average of the 57 shops comes to, said each way) and how many of the
+        57 clear it. One row per shop that reaches the top seven on at least one reading; if the four
+        rankings name the same five shops, the question''s open word costs nothing.'
+      readings_taken:
+      - word: sell
+        took: all four readings measured side by side before choosing — net money, gross money, units,
+          orders
+        could_also_mean: any one of them; net money is the default if a reading must be picked, since
+          'sales' is a declared surface of net_amount
+        declaration: net_revenue.default.revenue_means_net settles net against gross and requires the
+          answer to say NET; money against volume is undeclared, so this result decides whether it needs
+          asking
+      blocked_by: []
+    - step: '5'
+      step_asks: sell more than the average store
+      turns: []
+      settled_on: "WITH per_store AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount)\
+        \ AS net_revenue\n  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store\
+        \ AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date\
+        \ IS NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_key,\n  store_name,\n  net_revenue\n\
+        FROM per_store\nWHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM per_store\n\
+        \  )"
+      means: 'The shops that reach the top seven of the 57 trading shops on at least one reading of "how
+        much it sells" — money charged after discount, items sold, or orders served — each shown with
+        all three figures over the whole ten years on record and its rank under each. Carried on every
+        row: what the typical one of the 57 shops sells, said all three ways, which is the bar "more than
+        the average store" sets; and how many of the 57 clear that bar under each reading. What this tells
+        me is whether the three readings put the same shops at the top, and how big the qualifying set
+        is before the top-5 cut.'
+      readings_taken:
+      - word: the average store
+        took: the unweighted mean of the 57 trading shops' own totals
+        could_also_mean: a mean that includes the web shop as a 58th store, which the declaration's own
+          worked example says lifts the bar from roughly 2.27M to roughly 3.72M and leaves only 2 shops
+          above it instead of five
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel, `applies: subject`, `default:
+          physical` — this question''s subject is a Store, and its `why` cites exactly this failure'
+      blocked_by: []
+    - step: '6'
+      step_asks: top 5 stores
+      turns: []
+      settled_on: "WITH ps AS (\n  SELECT\n    s.store_key,\n    s.store_name,\n    SUM(l.net_amount)\
+        \ AS net_revenue\n  FROM contoso_served.v_contoso5_sales_line AS l\n  JOIN contoso_served.dim_store\
+        \ AS s\n    ON l.store_key = s.store_key\n  WHERE\n    s.location_code <> -1 AND s.close_date\
+        \ IS NULL\n  GROUP BY\n    1,\n    2\n)\nSELECT\n  store_name,\n  ROUND(net_revenue, 2) AS net_revenue\n\
+        FROM ps\nWHERE\n  net_revenue > (\n    SELECT\n      AVG(net_revenue)\n    FROM ps\n  )\nORDER\
+        \ BY\n  net_revenue DESC\nLIMIT 5"
+      means: 'The eight biggest-selling of the 57 shops Contoso still trades from, each one already past
+        the test of selling more than the typical shop: what each took from customers after discount over
+        the whole ten years on record, how many items it moved and how many orders it served, ordered
+        by takings. Repeated on every row is the bar each had to beat — the average of the 57 shops''
+        own takings — said in money, items and orders, and the count of shops that average is over. I
+        ask for eight rather than five so I can see whether the sixth and seventh are close enough that
+        the choice of figure would reshuffle the five.'
+      readings_taken:
+      - word: top 5
+        took: ranked by the same figure the above-average test used, so the cut and the ranking agree
+        could_also_mean: ranked by growth or profit, which the question does not mention
+        declaration: none; the step document itself orders by the figure of step 4
+      blocked_by: []
+    - step: '7'
+      step_asks: List top 5 stores
+      turns:
+      - why: No rows have come back since step 2 — the last four queries all used WITH clauses and window
+          functions and returned nothing to me — so this is the same ranking written in the plain join-and-group
+          form that did come back, and I will not claim an answer until I can see the shops and their
+          figures.
+        did: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue,\n  SUM(l.quantity)\
+          \ AS units_sold,\n  COUNT(DISTINCT l.order_key) AS orders\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+          \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 8"
+        came_back: '8 row(s): [{"store_name": "Contoso Store Connecticut", "net_revenue": "3897804.53",
+          "units_sold": 11207, "orders": 1469}, {"store_name": "Contoso Store Northwest Territories",
+          "net_revenue": "3655942.73", "units_sold": 11028, "orders": 1465}, {"store_name": "Contoso Store
+          Newfoundland and Labrador", "net_revenue": "3648990.89", "units_sold": 10664, "orders": 1403},
+          {"store_name": "Contoso Store Kansas", "net_revenue": "3608331.57", "units_sold": 11474, "orders":
+          1504}, {"store_name": "Contoso Store South Carolina", "net_revenue": "3591981.03", "units_sold":
+          10746, "orders": 1435}, {"store_name": "Contoso Store Oregon", "net_revenue": "3491334.99",
+          "units_sold": 10642, "orders": 1436}, {"store_name": "Contoso Store Arkansas", "net_revenue":
+          "3453234.34", "units_sold": 11112, "orders": 1475}, {"store_name": "Contoso Store Nunavut",
+          "net_revenue": "3273260.91", "units_sold": 11072, "orders": 1439}]'
+      - why: 'Price the money-against-volume fork properly: the eight biggest by money are only 10,642–11,474
+          items apart, so shops outside that list could easily outsell them in items — I cannot tell whether
+          "sells" changes the five until I rank the same 57 shops by units.'
+        did: "SELECT\n  s.store_name,\n  SUM(l.quantity) AS units_sold,\n  ROUND(SUM(l.net_amount), 2)\
+          \ AS net_revenue,\n  COUNT(DISTINCT l.order_key) AS orders\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+          \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  units_sold DESC\nLIMIT 8"
+        came_back: '8 row(s): [{"store_name": "Contoso Store Kansas", "units_sold": 11474, "net_revenue":
+          "3608331.57", "orders": 1504}, {"store_name": "Contoso Store Connecticut", "units_sold": 11207,
+          "net_revenue": "3897804.53", "orders": 1469}, {"store_name": "Contoso Store Arkansas", "units_sold":
+          11112, "net_revenue": "3453234.34", "orders": 1475}, {"store_name": "Contoso Store Nunavut",
+          "units_sold": 11072, "net_revenue": "3273260.91", "orders": 1439}, {"store_name": "Contoso Store
+          Northwest Territories", "units_sold": 11028, "net_revenue": "3655942.73", "orders": 1465}, {"store_name":
+          "Contoso Store South Carolina", "units_sold": 10746, "net_revenue": "3591981.03", "orders":
+          1435}, {"store_name": "Contoso Store Newfoundland and Labrador", "units_sold": 10664, "net_revenue":
+          "3648990.89", "orders": 1403}, {"store_name": "Contoso Store Oregon", "units_sold": 10642, "net_revenue":
+          "3491334.99", "orders": 1436}]'
+      - why: Two of the five names already change between money and items, so the fork is material and
+          I will be handing back a question — I want the third reading the decomposition named (sales
+          counted as transactions) measured too, so the person can answer by pointing at a list rather
+          than at a word.
+        did: "SELECT\n  s.store_name,\n  COUNT(DISTINCT l.order_key) AS orders,\n  SUM(l.quantity) AS\
+          \ units_sold,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+          \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  orders DESC\nLIMIT 8"
+        came_back: '8 row(s): [{"store_name": "Contoso Store Kansas", "orders": 1504, "units_sold": 11474,
+          "net_revenue": "3608331.57"}, {"store_name": "Contoso Store Arkansas", "orders": 1475, "units_sold":
+          11112, "net_revenue": "3453234.34"}, {"store_name": "Contoso Store Connecticut", "orders": 1469,
+          "units_sold": 11207, "net_revenue": "3897804.53"}, {"store_name": "Contoso Store Northwest Territories",
+          "orders": 1465, "units_sold": 11028, "net_revenue": "3655942.73"}, {"store_name": "Contoso Store
+          Nunavut", "orders": 1439, "units_sold": 11072, "net_revenue": "3273260.91"}, {"store_name":
+          "Contoso Store Oregon", "orders": 1436, "units_sold": 10642, "net_revenue": "3491334.99"}, {"store_name":
+          "Contoso Store South Carolina", "orders": 1435, "units_sold": 10746, "net_revenue": "3591981.03"},
+          {"store_name": "Contoso Store Newfoundland and Labrador", "orders": 1403, "units_sold": 10664,
+          "net_revenue": "3648990.89"}]'
+      - why: All three readings of "sells" are now measured over the same 57 shops and they disagree on
+          two of the five names, with nothing in the declarations naming the word — so the answer is the
+          question, with each reading's list attached so it can be settled by pointing.
+        did: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+          \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+          \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 5 row(s): [{"store_name": "Contoso Store Connecticut",
+          "net_revenue": "3897804.53"}, {"store_name": "Contoso Store Northwest Territories", "net_revenue":
+          "3655942.73"}, {"store_name": "Contoso Store Newfoundland and Labrador", "net_revenue": "3648990.89"},
+          {"store_name": "Contoso Store Kansas", "net_revenue": "3608331.57"}, {"store_name": "Contoso
+          Store South Carolina", "net_revenue": "3591981.03"}]  Give `claimed_answer` as the value a person
+          would be handed, and `claimed_answer_is` from the closed list. If these rows settle the question,
+          do not decline.'
+      settled_on: "SELECT\n  s.store_name,\n  ROUND(SUM(l.net_amount), 2) AS net_revenue\nFROM contoso_served.v_contoso5_sales_line\
+        \ AS l\nJOIN contoso_served.dim_store AS s\n  ON l.store_key = s.store_key\nWHERE\n  s.location_code\
+        \ <> -1 AND s.close_date IS NULL\nGROUP BY\n  1\nORDER BY\n  net_revenue DESC\nLIMIT 5"
+      means: 'The five biggest-selling shops of the 57 Contoso still trades from, biggest first, and against
+        each the money its customers were actually charged — after discount, in USD — summed over every
+        order on record from 2016-05-18 to 2025-12-31. One row per shop. All five are far above the average
+        trading shop, which takes 2,259,981.85 over the same period, so the "more than the average store"
+        condition cuts nobody from this list: the fifth shop is 1.59 times the average. Not in these figures:
+        the web shop, which took 86,790,054.13 on its own and would head the list if it counted as a store;
+        the 16 closed premises, 3,205,452.33 between them; the discount itself, 8,175,287.92 across these
+        57 shops, which is the gap between this net figure and the list-price one.'
+      readings_taken:
+      - word: sell / sells
+        took: money the shop took from customers, net of discount — the reading nearest the question's
+          own word, 'sales' being a declared surface of net_amount
+        could_also_mean: 'items sold, which MOVES TWO OF THE FIVE NAMES: Kansas 11,474, Connecticut 11,207,
+          Arkansas 11,112, Nunavut 11,072, Northwest Territories 11,028 — Arkansas and Nunavut in, Newfoundland
+          and Labrador and South Carolina out. Orders served picks that same five (Kansas 1,504, Arkansas
+          1,475, Connecticut 1,469, Northwest Territories 1,465, Nunavut 1,439), so the choice is value
+          against volume and nothing else. Kansas, Connecticut and Northwest Territories are on the list
+          whichever is meant; no reading changes the above-average cut, which removes nobody — the bars
+          are 2,259,981.85 USD, 7,044.9 items, 936.2 orders. If you meant volume, ask again and the other
+          two names are ready'
+        declaration: none names the word 'sell'; net_revenue.default.revenue_means_net settles net against
+          gross only once the figure is money
+      - word: sell, as money
+        took: net — after discount, 128,818,965.21 across the 57 shops
+        could_also_mean: gross, at list price, 136,994,253.13 across the same shops; I did not rank on
+          it, so I cannot say whether it reorders these five
+        declaration: net_revenue.default.revenue_means_net — answer with net_amount and say NET
+      - word: stores
+        took: the 57 physical shops still trading, so the ranking and the average are both over those
+        could_also_mean: counting the web shop as a 58th store, which would take first place outright
+          with 86,790,054.13 and raise the bar to about 3.72M, leaving only two shops above it
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel and store.resolution.active_is_the_absent_close_date,
+          both `applies: subject`; the first''s `why` cites this exact question shape (ADV-13) and states
+          the answer is five, not two'
+      - word: the average store
+        took: 2,259,981.85 — the plain mean of the 57 shops' own takings, each shop counting once
+        could_also_mean: the average over only shops with sales, identical here because all 57 have sales
+        declaration: none; the readings coincide at this population
+      - word: over what period
+        took: 'all time: every order from 2016-05-18 to 2025-12-31'
+        could_also_mean: this year or the last twelve months, neither of which the question named
+        declaration: order.default.an_unscoped_question_covers_all_time, ruled 2026-09-30
+      - word: a caveat on the declared bar
+        took: my measured average of 2,259,981.85
+        could_also_mean: 2,265,860.50, quoted inside store.resolution.the_channel_is_the_location_sentinel
+          from the ADV-13 run of 2026-10-23 — exactly 335,083.29 more revenue over the same 57 shops,
+          and the same offset appears in its 3,723,174.18 figure, so one of the two measurements has moved.
+          It changes no name on this list, but somebody should find out which
+        declaration: the rule's `why`, relied on here for the population and not for its arithmetic
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+- '6'
+- '7'
+v3_answer_step: '7'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: 5 row(s) match, in the reference's order
+v3_seconds: 545.6

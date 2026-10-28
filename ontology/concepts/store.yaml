@@ -1,0 +1,233 @@
+metadata:
+  source: CONTOSO5
+  version: '1.1'
+  schema_version: '0.3.0-develop'
+  confidence: I
+  provenance: authored
+concept:
+  name: Store
+  class: entity
+  definition: >-
+    THE PREMISES Contoso sells from — a shop that stood on one place for one trading period, with its
+    own name, floor area, opening date and closing date. It is what every sale is recorded against.
+
+    A PLACE MAY HOLD A SUCCESSION OF PREMISES, so a store is NOT its place: see the Location concept
+    for the place, and `dim_store.store_key#rulings.finer_than` for the declaration that one rolls up
+    into the other. The account is knowledge/store.md.
+
+    THIS DEFINITION CARRIES NO COUNTS, by the operator's ruling of 2026-10-24: "you are disclosing
+    values that variy through the time as constnts?!?!?! this is no go ... you can decribe things
+    without constants too". It used to say how many stores there were and how many were trading,
+    which was a measurement of one day frozen into a sentence — and it disagreed with this concept's
+    own `counts:` key, which is how one word came to name two grains. Counts belong where they can
+    be re-measured: data/profiles/dim_store.yaml.
+grounding:
+  # THE COLUMN FACTS LIVE ON THE RELATION (v0.1.20): ontology/relations/dim_store.yaml. What stays
+  # here is what is Store's rather than dim_store's — which columns it exposes and in what order a
+  # reader should meet them, and what ONE STORE IS.
+  bindings:
+    - relation: dim_store
+      # THE ORDER A READER MEETS THEM, which is the one thing `serves` carries that the relation
+      # file cannot: identity first, then the join, then the name, then where it is, then when it
+      # traded, then how big it is. `store_key` is served because the relation's key names it — a
+      # key column the concept does not serve is a load error, and Order failed exactly that way
+      # on `line_number` when the sales line migrated.
+      serves: [store_key, store_code, store_name, country_code, state,
+               open_date, close_date, status_annotation, square_metres]
+      # A STORE IS THE PREMISES, SO IT IS COUNTED BY `store_key` — ruled by the operator 2026-10-24:
+      # "a Store is a PLACE on one location you can shop at ... store is part of location".
+      #
+      # THIS SAID THE OPPOSITE UNTIL TODAY. It read "ONE STORE IS A LOCATION, NOT A ROW" and counted
+      # `location_code`, which made Store and Location the same cardinality — two concepts, one
+      # grain, and no way to ask about either without the other's answer being possible. The data
+      # plane never agreed with it: `dim_store.sql` says "A UNIT IS NOT A SITE", the sales line says
+      # `store_key -- FK -> dim_store (the UNIT, never the site)`, and every revenue figure in the
+      # bundle hangs off the premises. The ontology was the only plane claiming otherwise.
+      #
+      # WHAT THE TWO GRAINS NOW ARE, each with a home: the PREMISES is `store_key` here, and the
+      # PLACE is the Location concept over `dim_location`. `dim_store.store_key` declares
+      # `finer_than: location_code`, whose vocabulary definition carries the clause that was missing
+      # from every store answer — "an answer must DISCLOSE which level it used".
+      #
+      # WHAT THIS MOVES, named so neither reads as a regression: "How many stores are closed?"
+      # (RC08) becomes the count of closed PREMISES, not of places that have ever had one — the
+      # walk answered it that way and was graded wrong twice. And "How many store versions are
+      # currently active?" (STORE-15) loses its subject: a row IS a store now, so "version" names
+      # nothing and that question is "How many stores do we have?" asked twice.
+      counts: store_key
+  snapshot_rule: 'Nothing is collapsed: once the `active` population has selected the trading rows there
+    is one row per store already — 57 rows over 57 location codes, because a location has at most one
+    store with no close date. Why, and the collapse this replaced, is in knowledge/store.md.'
+contract:
+  rules:
+  - id: store.resolution.the_channel_is_the_location_sentinel
+    kind: mac.concept.rule.resolution
+    confidence: P
+    scope: CONTOSO5
+    binds:
+    - store_code
+    realized_by:
+    - udf: mac.canon.population_select
+      params:
+        # `default: physical` KEPT, `applies: always` REMOVED — so this default holds only when the
+        # question is ABOUT a store, which is `applies`'s own default value (`subject`).
+        #
+        # OPERATOR RULING 2026-10-18: "now i am for correctnes and correct is that both internet and
+        # physical shops combined make revenue." A revenue question's SUBJECT is NetRevenue (since
+        # 2026-10-26, Order, the fact node serving `net_amount`), not
+        # Store — `dim_store` is only on its route — so the channel default no longer reaches it and
+        # unqualified revenue is 218,814,471.66 over both channels.
+        #
+        # A FIRST CUT REMOVED THE DEFAULT ALTOGETHER AND OVER-REACHED. Measured 2026-10-18: "how
+        # many stores do we have" then answers 58 instead of 57, because the `--` sentinel is
+        # counted as a store. The ruling is about REVENUE; whether the online channel is a shop you
+        # can count is a different question nobody asked. Scoping the default to the subject changes
+        # exactly what was ruled and nothing else:
+        #     unqualified revenue   218,814,471.66   both channels   (Store is not the subject)
+        #     how many stores                   57   physical shops  (Store IS the subject)
+        #
+        # AND ROUTE-INDEPENDENCE SURVIVES, which is what `applies: always` was really defending.
+        # The 2026-10-10 defect was that populations were collected from every concept a join path
+        # crossed, so one question had three answers (218.8M / 218.8M / 128.8M) depending on whether
+        # `dim_store` happened to be on the path. `subject` is not route-dependent: it reads the
+        # question's own subject, which no join path can change. It is the same scope the
+        # trading-state rule beside this one already uses, for the same reason.
+        #
+        # WHAT WAS HERE, 2026-10-10 to 2026-10-18: `default: physical` + `applies: always`, under
+        # "if the revenue is asked without specifying a channel then only shop is assumed". Reversed
+        # on the operator's own words: "then it was aimed at simplicity ... now i am for correctnes
+        # and correct is that both internet and physical shops combined make revenue."
+        #
+        # `applies:` WENT WITH IT, NOT SEPARATELY. It governs the DEFAULT's reach and nothing else
+        # ("`subject` — this default holds when the question is ABOUT this concept — or `always`"),
+        # so keeping it beside no default would be a declaration governing nothing, which is the
+        # shape this estate refuses everywhere else.
+        #
+        # WHAT THE 2026-10-10 RULING WAS RIGHT ABOUT, and it still matters: before it, the channel
+        # was decided BY ACCIDENT OF ROUTE. Populations were collected from every concept a join
+        # path crossed, so measured that day:
+        #     total revenue        218,814,471.53   online INCLUDED — dim_store never joined
+        #     revenue by product   218,814,471.53   online INCLUDED
+        #     revenue by country   128,818,965.21   online EXCLUDED, because the route to Country
+        #                                           went through dim_store
+        # One question, three answers, decided by unweighted BFS. That defect was in the ROUTE, not
+        # in the default, and `applies: always` was the fix for a symptom of it.
+        # `applies: subject` WRITTEN OUT 2026-10-23, AND IT CHANGES NO BEHAVIOUR. It was already
+        # the reader's value — `planner/populations.py:219` reads
+        # `str(params.get("applies") or "subject")` — so this line is a no-op for the planner and
+        # the whole point of writing it.
+        #
+        # WHY IT HAD TO BE WRITTEN. The scope was a PYTHON DEFAULT and a comment in this file, and
+        # nowhere a reader could find it. The operator's ruling of 2026-10-18 turns entirely on it:
+        # it is the only reason unqualified revenue is 218,814,471.66 while "how many stores do we
+        # have" is 57. MEASURED 2026-10-23: the V3 walk, which reads these declarations as its only
+        # input and has no planner, was asked "how many store versions are currently active" and
+        # DECLINED — offering "58 (both channels: 57 physical + 1 online) or 57 (physical only)" —
+        # because it could see `default: physical` and could not see what that default is scoped
+        # to. It was right to decline on what it could read. That is this estate's named defect
+        # inverted: not a declaration with no reader, but a BEHAVIOUR WITH NO DECLARATION.
+        applies: subject
+        default: physical
+        populations:
+          physical:
+            all:
+            - column: store_code
+              op: ne
+              value: -1
+          online:
+            all:
+            - column: store_code
+              op: eq
+              value: -1
+  - id: store.resolution.active_is_the_absent_close_date
+    kind: mac.concept.rule.resolution
+    confidence: C
+    scope: CONTOSO5
+    binds:
+    - close_date
+    - status_annotation
+    realized_by:
+    - udf: mac.canon.population_select
+      params:
+        # `applies: subject` WRITTEN OUT 2026-10-23, for the reason recorded on the channel rule
+        # above and on the same authority: this file's own prose already said the two rules share
+        # one scope ("It is the same scope the trading-state rule beside this one already uses, for
+        # the same reason"). A no-op for the planner, readable for the first time by anything else.
+        applies: subject
+        default: active
+        populations:
+          closed:
+            all:
+            - column: close_date
+              op: is_not_null
+            surfaces:
+            - ceased
+            - no longer trading
+            - not active
+            - inactive
+          active:
+            not: closed
+            surfaces:
+            - open
+            - still open
+            - trading
+            - not closed
+            - operating
+          shut:
+            of: closed
+            all:
+            - column: status_annotation
+              op: eq
+              value: Closed
+            surfaces:
+            - shut down
+            - shut for good
+            - closed permanently
+            - closed and not replaced
+          restructured:
+            of: closed
+            all:
+            - column: status_annotation
+              op: eq
+              value: Restructured
+            surfaces:
+            - rebuilt
+            - replaced
+            - closed and reopened
+  # RETIRED 2026-10-25, AND IT IS THE ONE OF FOUR THAT IS NOT A RESTATEMENT. The declaration is
+  # OWED, not unnecessary, and this comment is the only thing standing in for it.
+  #
+  # IT SAID: a question asking what the store dimension RECORDS — how many versions, how many rows,
+  # list all restructured stores — covers every row of dim_store including the online sentinel, with
+  # no channel predicate and no trading-state predicate. "How many stores do we have" is a different
+  # question and keeps the `physical` default of
+  # [[store.resolution.the_channel_is_the_location_sentinel]].
+  #
+  # WHY NO CANON CAN CARRY IT, MEASURED RATHER THAN ASSERTED. The obvious route is a third named
+  # population on the rule above — populations bind by the question's own words, so naming one
+  # `versions` would sidestep `applies:` entirely, which is the conflict this rule reports. The
+  # runtime REFUSES it: `planner/predicates.parse` rejects a population body with no predicate in
+  # every shape it can be written — no `all:` at all, `all: []`, and `all: true` — because "a
+  # predicate is a conjunction". EVERY ROW is the ABSENCE of a predicate, and `population_select`
+  # has no way to say that. None of the other 21 canons is about the difference between a question
+  # about the RECORD and a question about what is TRADING.
+  #
+  # THE RISK, STATED WITH ITS UNCERTAINTY RATHER THAN A FIGURE I CANNOT SUPPORT. STORE-06 "How many
+  # store versions are recorded?" carries a signed reference, and its last capture AGREES with it.
+  # That capture was taken the day before this rule was committed, and the rule was authored that
+  # same day against a walk that had answered one row short. So whether the agreement survives this
+  # retirement is UNKNOWN: it depends on whether the walk read this rule off disk before it was
+  # committed, which the capture does not record.
+  #
+  # I FIRST WROTE A FIGURE HERE AND IT WAS WRONG. I quoted "the walk answers 73" from this rule's
+  # own retired prose, which recorded a measurement taken BEFORE the rule existed, while the run
+  # record for that question says otherwise. Read the rows, never the prose — including a rule's own.
+  # Re-asking STORE-06 is the only thing that settles it, and that is a run, not a reading.
+  #
+  # Queued with the choice stated in
+  # meaning-as-code#decisions/PROPOSED-2026-10-25_four-rules-need-a-canon.md.
+  #
+  # AND THE RULE BODY IS NOT LOST: it is in commit 6e4cf75 and in that record, in full.
+governance:
+  owner: operator
+  last_reviewed: '2026-09-30'

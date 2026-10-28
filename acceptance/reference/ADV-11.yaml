@@ -1,0 +1,98 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED: `approved_by` is empty. An agent may not sign a reference.
+id: ADV-11
+question: Show revenue from new customers with first order from 2024 onwards vs customers older then 2024
+expected:
+  rows: 2
+  ordered: true
+  cols: [cohort, customers, net_revenue]
+  values:
+  - - older than 2024
+    - 41392
+    - 193043381.89
+  - - new in 2024
+    - 10797
+    - 25771089.77
+sql: >-
+  WITH f AS (SELECT customer_key, MIN(order_date) AS first_order
+             FROM contoso_served.v_contoso5_sales_line GROUP BY 1)
+  SELECT CASE WHEN f.first_order < DATE '2024-01-01' THEN 'older than 2024'
+              ELSE 'new in 2024' END AS cohort,
+         COUNT(DISTINCT l.customer_key) AS customers,
+         ROUND(SUM(l.net_amount), 2) AS net_revenue
+  FROM contoso_served.v_contoso5_sales_line l JOIN f USING (customer_key)
+  GROUP BY 1 ORDER BY 1 DESC
+note: 'USD, NET, both channels, REVENUE FROM 2024 ONWARDS — the operator''s window, 2026-10-23: "i actually
+  meant from 2024 onwards". The warehouse ends 2025-12-31, so the window is 2024-01-01 to 2025-12-31.
+
+
+  REWORDED BY THE OPERATOR from "Revenue from new customers (first order in 2024) vs returning customers".
+  The rewording names both cohorts by their FIRST ORDER DATE, which is what made the question answerable.
+
+
+  THESE TWO COHORTS DO NOT EXHAUST THE WINDOW, and that is stated here rather than left for a reader
+  to find. A THIRD group exists: 4,865 customers whose first order was in 2025. They are neither "new
+  with first order in 2024" nor "older than 2024", and they carry 10,257,871.11 of revenue inside the
+  window. The question does not name them, so this answer does not include them — but any reading of
+  these two figures as "the whole of 2024 onwards" is wrong by exactly that amount. THE CROSS-CHECK:
+  15,513,218.65 + 35,146,090.74 + 10,257,871.11 = 60,917,180.50 against the window''s own net of 60,917,180.51,
+  the cent being rounding applied once per cohort.
+
+
+  WHAT IT SHOWS. The 5,932 customers who arrived in 2024 brought 15,513,218.65 over two years — 2,615
+  each — while the 14,062 who were already customers brought 35,146,090.74, or 2,500 each. So a new
+  customer is worth very slightly MORE per head over this window than an established one, and the established
+  cohort''s larger total is headcount rather than loyalty. A reading of this answer as "our old customers
+  are more valuable" would be wrong.
+
+
+  AN EARLIER DRAFT SCOPED THE REVENUE TO 2024 ALONE (13,050,244.21 new against 18,589,446.72 returning)
+  and had the attraction of partitioning that year exactly. The operator widened the window, which brings
+  the 2025 cohort into existence and is why the remainder is disclosed above.
+    CORRECTED 2026-10-23, AND THE ERROR WAS MINE, NOT THE ENGINE''S. The operator said "i actually
+    meant from 2024 onwards" and that clarified the COHORT boundary — new customers are those whose
+    first order is 2024 OR LATER. I attached it to the REVENUE instead, and wrote an expectation
+    column named `net_2024_onwards` holding 5,932 / 15,513,218.65 and 14,062 / 35,146,090.74. Those
+    figures answer a question nobody asked.
+
+    THE RULING GIVES ONE ANSWER AND THERE IS NO AMBIGUITY HERE. Operator, 2026-10-23: "the part of
+    the question does not specify window which is older customer and onother part does. ruling says
+    if no window is speicified take all periods, otherwise obey window." Applied: the COHORTS carry
+    windows the question names — first order from 2024 onwards, first order before 2024 — so those
+    are obeyed; the REVENUE carries none, so it covers all periods, by
+    order.default.an_unscoped_question_covers_all_time (C, operator ruling 2026-09-30), whose
+    `never` forbids "any other window the question did not name".
+
+    THE COMPLETENESS CHECK THAT WOULD HAVE CAUGHT ME, and which I never ran: the two cohorts
+    partition every customer who ever ordered, exactly once. 41.392 + 10.797 = 52.189, every
+    customer with a sales line; 193.043.381,89 + 25.771.089,77 = 218.814.471,66, the bundle''s
+    entire net revenue. My wrong figures covered 19.994 of 52.189 customers and 50,7M of 218,8M,
+    and broke that partition in a way one subtraction exposes.
+
+    THE WALK ANSWERED THIS CORRECTLY AND WAS GRADED WRONG TWICE, citing the rule in its own words:
+    "an_unscoped_question_covers_all_time forbids narrowing the money to a window the question did
+    not name". The engine read the declaration; the reference did not.
+
+    WHAT THIS QUESTION IS FOR, now that it is right: it is the corpus''s test that the
+    unscoped-period ruling is honoured on a measure whose COHORT is scoped — the one shape where a
+    reader is most tempted to carry the cohort''s window onto the money.
+
+    AND THE QUESTION''S OWN WORDS MOVED TOO, 2026-10-23, because correcting only the revenue
+    repeated the very mistake it corrected. The wording said "first order IN 2024", which literally
+    means calendar 2024 — 5.932 customers — while the operator''s clarification and this
+    expectation use 2024 ONWARDS — 10.797, including 2025''s first-time buyers. The walk read the
+    words and answered 5.932; it was right about the words. A clarification that lives in a note and
+    contradicts the question is the same defect twice, so the question now says "from 2024
+    onwards" and the note records only WHY, not WHAT.'
+expected_by: agent
+expected_at: '2026-10-23'
+approved_by: null
+approved_at: null
+depends_on_rulings:
+- decisions/RULED-2026-10-18_both-channels-make-revenue.md
+awaiting_approval: 'The arithmetic is re-runnable and the three cohorts sum to the window''s own total.
+  What needs a signature: that the answer reports only the TWO cohorts the question names, leaving the
+  4,865 customers who first ordered in 2025 out of the figures and in the note. The alternative is a
+  three-row answer that covers the window completely.'

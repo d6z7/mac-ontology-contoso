@@ -1,0 +1,113 @@
+metadata:
+  source: CONTOSO5
+  version: '1.1'
+  schema_version: '0.3.0-develop'
+  confidence: I
+  provenance: authored
+concept:
+  name: Country
+  class: enumeration
+  definition: A country Contoso sells in — 8 of them, plus one `--` sentinel that is not a place. The
+    account is knowledge/country.md.
+grounding:
+  # The column facts live on the relation (v0.1.20): ontology/relations/dim_country.yaml.
+  bindings:
+    - relation: dim_country
+      serves: [country_code, country_name]
+  note: nine codes as stored, eight as meant — one is a duplicate spelling
+contract:
+  rules:
+  - id: country.exclusion.sentinel_is_not_a_country
+    kind: mac.concept.rule.exclusion
+    confidence: P
+    scope: CONTOSO5
+    binds:
+    - country_code
+    realized_by:
+    - udf: mac.canon.population_select
+      params:
+        default: real
+        populations:
+          real:
+            all:
+            - column: country_code
+              op: ne
+              value: --
+          sentinel:
+            all:
+            - column: country_code
+              op: eq
+              value: --
+  - id: country.default.whose_country_is_asked_never_assumed
+    kind: mac.concept.rule.default
+    confidence: C
+    scope: CONTOSO5
+    binds:
+    - country_code
+    realized_by:
+    - udf: mac.canon.path_select
+      params:
+        # THE UNNAMED CASE IS THE COUNTRY OF THE SALE. Operator ruling 2026-10-25 ("ok go B1 now"),
+        # recorded in
+        # meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md: a shop
+        # sale is trade in the country the SHOP stands in, a web sale in the country the CUSTOMER
+        # lives in. That is `territory` below, and it is the default.
+        #
+        # IT PREFERS NEITHER RELATION. The attribution reads the sale's own channel, pre-derived
+        # on the fact as `sale_country_code`, rather than ranking the store above the customer or
+        # the reverse. The axis PARTITIONS the sales line: every line reaches a country, none lands
+        # on the `--` sentinel, and the parts sum to the whole with nothing double counted. The
+        # figures that prove it are in the ruling and nowhere else — a count typed here is true the
+        # day it is typed and a lie after the next load.
+        #
+        # TWO EARLIER RULINGS ARE SUPERSEDED AND BOTH ARE RECORDED WHERE THEY WERE MADE. The
+        # first named the STORE as the unqualified reading and disclosed nothing about what that
+        # left out. The second removed every default — "THERE IS NO DEFAULT ... THROW IT OUT ...
+        # DEFAULT IS ASK" — which was right while no reading could produce the ruled figure, and
+        # held until `sale_country_code` existed. `default: customer` was offered then and refused,
+        # because the two readings MEAN different things and agree in this warehouse only by an
+        # accident of the data: no physical sale here crosses a border.
+        #
+        # ONE ATTRIBUTION EDGE REACHES EVERY MEASURE, since 2026-10-26. Until then this bundle
+        # declared a fact-to-dimension edge PER MEASURE CONCEPT, so the sale's attribution was seven
+        # edges and `territory` could name only the NetRevenue copy: the default reached a revenue
+        # question and NOT a margin, cost, discount or units one, which still asked. The measures
+        # are now columns of Order, the one fact node on the sales line, and `territory` names its
+        # one attribution edge. See edges.yaml's header and
+        # meaning-as-code#decisions/HANDOVER-2026-10-26_one-fact-node-per-grain.md.
+        #
+        # THE RULE ID IS KEPT DELIBERATELY, and it is now imprecise: there IS a default. Renaming it
+        # touches 106 files, most of them frozen acceptance captures that legitimately record the id
+        # the run actually read, so the rename is a separate measured move and not a side effect of
+        # this one.
+        default: territory
+        paths:
+          territory:
+            via: order__attributed_to__country
+            surfaces:
+            - country of the sale
+            - where the sale was made
+            - trade in
+            - business in
+            - market
+          store:
+            via: store__trades_in__country
+            surfaces:
+            - store country
+            - where we trade
+            - trading country
+          customer:
+            via: customer__based_in__country
+            surfaces:
+            - customer country
+            - where our customers are
+            - customer countries
+          location:
+            via: location__in__country
+            surfaces:
+            - site country
+            - location country
+    decided_in: meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md
+governance:
+  owner: operator
+  last_reviewed: '2026-09-30'

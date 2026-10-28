@@ -1,0 +1,376 @@
+# governance/tombstones.yaml — DECLARED RETIREMENTS. The half of a removal that is a declaration.
+#
+# WHY THIS FILE EXISTS AT ALL, and why it was empty until now. The Estate Graph classifies every
+# object that vanishes between two builds as `disappeared`, and then asks ONE question of it: was
+# it declared? An entry here makes it `declared_retired`. Without one it reads "UNDECLARED — a
+# silent break or an unrecorded rename", which is what thirty-eight objects of this bundle read on
+# 2026-10-25, every one of them, because this file did not exist and nobody had ever written one.
+#
+# The mechanism was complete the whole time: `pointer_load._load_tombstones` reads it, REFUSES an
+# entry missing `retired_at` or `reason` rather than loading it quietly, marks the object retired,
+# and keeps its id as a node so live references to it still resolve and the closure still spans it.
+# Only the rows were missing.
+#
+# THESE FOUR ARE MINE, removed on 2026-10-25, and I wrote none of them until the operator asked why
+# the system compiles with thirty-eight undeclared breaks in it. The sequence that should have run
+# is: ask the graph what points at the object, remove it, record it HERE, rebuild, and let the gate
+# refuse what is undeclared. I did the second step only.
+spec_version: mac.tombstones/1
+metadata:
+  schema_version: '0.3.0-develop'
+
+retired:
+
+  # ── THREE MEASURED RESTATEMENTS. Each one's fact survives in a COLUMN declaration, which is named
+  #    as the successor: that is the whole content of the retirement, and the reason it loses nothing.
+  - object_id: contoso5:rule/net_revenue.default.revenue_means_net
+    retired_at: '2026-10-25'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.net_amount
+    reason: >-
+      a restatement. It said an unqualified "revenue" or "sales" means the net amount. The word
+      already binds at the column: `net_amount.surfaces` carries revenue, sales, net, net revenue,
+      net sales, turnover, takings and what we charged, while `gross_amount.surfaces` carries the
+      gross names. The default IS the surface list, so the rule was a second home for it.
+    migration_hint: >-
+      read the routing off `v_contoso5_sales_line.net_amount.surfaces` and
+      `gross_amount.surfaces`. Nothing to migrate; the declaration that answers was already there.
+
+  - object_id: contoso5:rule/product.ambiguity.list_price_is_not_revenue
+    retired_at: '2026-10-25'
+    retired_in: contoso5
+    reason: >-
+      a restatement. It forbade multiplying list price by quantity sold. The original successor
+      (`dim_product.list_price`) was itself retired on 2026-10-26 when Product stopped serving
+      standing price columns. The same law now lives on the sales line: `unit_price` and
+      `unit_cost` are intensive per-unit factors, and summed money is carried on `gross_amount`,
+      `net_amount` and `cost_amount`.
+    migration_hint: >-
+      read the prohibition from `v_contoso5_sales_line.unit_price.offers.aggregate.type` and
+      `unit_cost.offers.aggregate.type` (`intensive`), and read revenue from `net_amount` /
+      `gross_amount`.
+
+  - object_id: contoso5:rule/currency.ambiguity.code_is_not_the_unit_of_the_amounts
+    retired_at: '2026-10-25'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.currency_code
+    reason: >-
+      a restatement. It said a currency-code filter does not re-denominate the amounts. Two column
+      declarations carry that: the amount columns declare `offers.aggregate.unit: USD`, which no
+      filter on another column can change, and `currency_code` declares `offers.axis: categorical`,
+      a legitimate axis and nothing more. The conversion itself belongs to ExchangeRate, where two
+      rules are bound to canons and enforced.
+    migration_hint: >-
+      unit from `offers.aggregate.unit` on the amount columns; the conversion from
+      `exchange_rate.aggregation.convert_per_day_never_average` and
+      `order.resolution.rate_on_order_date`, both bound.
+
+  # ── THE FOURTH IS NOT A RESTATEMENT AND HAS NO SUCCESSOR. `superseded_by` is deliberately absent
+  #    rather than guessed: naming one would be the "a successor is not written by naming it" defect.
+  - object_id: contoso5:rule/store.resolution.a_version_is_a_row_and_a_row_has_no_channel
+    retired_at: '2026-10-25'
+    retired_in: contoso5
+    reason: >-
+      a REAL GAP, retired because no mechanism can carry it and a rule must be bound. It said a
+      question about what the store dimension RECORDS covers every row, the online sentinel
+      included, while a question about trading stores keeps the physical default. `applies: subject`
+      cannot separate them, because the subject is a Store either way. The nearest route was TESTED:
+      a third named population would sidestep `applies` entirely, but `planner/predicates.parse`
+      refuses a population with no predicate in every shape it can be written, and EVERY ROW is the
+      absence of one. No other canon is about the difference between the RECORD and what is TRADING.
+    migration_hint: >-
+      NOTHING CARRIES THIS TODAY. The two ways to close it, and the reason neither is picked here,
+      are in meaning-as-code#decisions/PROPOSED-2026-10-25_four-rules-need-a-canon.md. The rule's
+      full text is in commit 6e4cf75 and quoted in the concept file that used to carry it.
+
+  - object_id: contoso5:column/dim_product.list_price
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    reason: >-
+      retired by operator ruling: Product serves no standing price. The source still has
+      `main.product.Price`; it is deliberately not promoted because it is undated. Price questions
+      read dated sales-line facts.
+    migration_hint: >-
+      use `v_contoso5_sales_line.unit_price` (before discount) and `net_price` (after discount);
+      for product qualification, read the product's latest line `unit_price` with date carried.
+
+  - object_id: contoso5:column/dim_product.list_cost
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    reason: >-
+      retired by operator ruling: Product serves no standing cost. The source still has
+      `main.product.Cost`; it is deliberately not promoted because it is undated. Cost questions
+      read dated sales-line facts.
+    migration_hint: >-
+      use `v_contoso5_sales_line.unit_cost` for per-unit cost and `cost_amount` for summed cost.
+
+  - object_id: contoso5:rule/product.resolution.a_products_price_is_its_catalogue_price
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    reason: >-
+      this rule bound Product price/cost readings to retired columns (`list_price`, `list_cost`).
+      With those columns withdrawn, the rule's subject disappeared.
+    migration_hint: >-
+      product-money reads route through sales lines: latest line `unit_price` for a product-level
+      current price, and `net_amount` / `gross_amount` / `cost_amount` for line sums.
+
+  # ── ONE FACT NODE PER GRAIN, 2026-10-26. Operator ruling "i rule to move it in", ontology 1.1.
+  #    Six measure concepts each served one column of v_contoso5_sales_line at the sales line's
+  #    own grain and each declared its own copy of every edge to a dimension: 45 edges over 15
+  #    distinct joins. Their measures are now COLUMNS served by Order, the one fact node, and each
+  #    concept's successor is the column it measured. Record: meaning-as-code#decisions/HANDOVER-2026-10-26_one-fact-node-per-grain.md
+  - object_id: contoso5:concept/net_revenue
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.net_amount
+    reason: >-
+      NetRevenue was a measure concept over one column, `net_amount`, of the sales line, at the grain
+      Order already reads. Folded into Order as a served column (one fact node per grain);
+      its price ratio (`net_revenue.default.a_price_is_revenue_per_article`) is on Order with `denominator: quantity`; its 2026-09-30 price reading is on `net_amount`'s description.
+    migration_hint: >-
+      read the figure from `v_contoso5_sales_line.net_amount` through Order: its meaning is the
+      column's description, its names are the column's surfaces, its additivity is the
+      column's `offers.aggregate`. Edges to dimensions start at Order (`order__*`).
+  - object_id: contoso5:concept/gross_revenue
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.gross_amount
+    reason: >-
+      GrossRevenue was a measure concept over one column, `gross_amount`, of the sales line, at the grain
+      Order already reads. Folded into Order as a served column (one fact node per grain);
+      it carried no rules.
+    migration_hint: >-
+      read the figure from `v_contoso5_sales_line.gross_amount` through Order: its meaning is the
+      column's description, its names are the column's surfaces, its additivity is the
+      column's `offers.aggregate`. Edges to dimensions start at Order (`order__*`).
+  - object_id: contoso5:concept/sales_cost
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.cost_amount
+    reason: >-
+      SalesCost was a measure concept over one column, `cost_amount`, of the sales line, at the grain
+      Order already reads. Folded into Order as a served column (one fact node per grain);
+      it carried no rules; the markup ratio that divided by it now divides by `cost_amount`.
+    migration_hint: >-
+      read the figure from `v_contoso5_sales_line.cost_amount` through Order: its meaning is the
+      column's description, its names are the column's surfaces, its additivity is the
+      column's `offers.aggregate`. Edges to dimensions start at Order (`order__*`).
+  - object_id: contoso5:concept/margin
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.margin_amount
+    reason: >-
+      Margin was a measure concept over one column, `margin_amount`, of the sales line, at the grain
+      Order already reads. Folded into Order as a served column (one fact node per grain);
+      its two ratios (`margin.aggregation.two_named_ratios`) are on Order, dividing by `net_amount` and `cost_amount`.
+    migration_hint: >-
+      read the figure from `v_contoso5_sales_line.margin_amount` through Order: its meaning is the
+      column's description, its names are the column's surfaces, its additivity is the
+      column's `offers.aggregate`. Edges to dimensions start at Order (`order__*`).
+  - object_id: contoso5:concept/discount
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.discount_amount
+    reason: >-
+      Discount was a measure concept over one column, `discount_amount`, of the sales line, at the grain
+      Order already reads. Folded into Order as a served column (one fact node per grain);
+      its percent ratio (`discount.aggregation.percent_is_over_gross`) is on Order, dividing by `gross_amount`.
+    migration_hint: >-
+      read the figure from `v_contoso5_sales_line.discount_amount` through Order: its meaning is the
+      column's description, its names are the column's surfaces, its additivity is the
+      column's `offers.aggregate`. Edges to dimensions start at Order (`order__*`).
+  - object_id: contoso5:concept/units_sold
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:column/v_contoso5_sales_line.quantity
+    reason: >-
+      UnitsSold was a measure concept over one column, `quantity`, of the sales line, at the grain
+      Order already reads. Folded into Order as a served column (one fact node per grain);
+      it carried no rules; the price ratio that divided by it now divides by `quantity`.
+    migration_hint: >-
+      read the figure from `v_contoso5_sales_line.quantity` through Order: its meaning is the
+      column's description, its names are the column's surfaces, its additivity is the
+      column's `offers.aggregate`. Edges to dimensions start at Order (`order__*`).
+
+  #    THE THIRTY PER-MEASURE EDGES. Each repeated one of Order's five fact-to-dimension joins for
+  #    one retired measure concept, with the same join rule; the successor is Order's copy.
+  - object_id: contoso5:edge/net_revenue__by__customer
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_by__customer
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_by__customer`.
+  - object_id: contoso5:edge/net_revenue__by__store
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_at__store
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_at__store`.
+  - object_id: contoso5:edge/net_revenue__in__currency
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__paid_in__currency
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__paid_in__currency`.
+  - object_id: contoso5:edge/net_revenue__by__product
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__of__product
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__of__product`.
+  - object_id: contoso5:edge/net_revenue__attributed_to__country
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__attributed_to__country
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__attributed_to__country`.
+  - object_id: contoso5:edge/gross_revenue__by__customer
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_by__customer
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_by__customer`.
+  - object_id: contoso5:edge/gross_revenue__by__store
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_at__store
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_at__store`.
+  - object_id: contoso5:edge/gross_revenue__in__currency
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__paid_in__currency
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__paid_in__currency`.
+  - object_id: contoso5:edge/gross_revenue__by__product
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__of__product
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__of__product`.
+  - object_id: contoso5:edge/gross_revenue__attributed_to__country
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__attributed_to__country
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__attributed_to__country`.
+  - object_id: contoso5:edge/sales_cost__by__customer
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_by__customer
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_by__customer`.
+  - object_id: contoso5:edge/sales_cost__by__store
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_at__store
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_at__store`.
+  - object_id: contoso5:edge/sales_cost__in__currency
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__paid_in__currency
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__paid_in__currency`.
+  - object_id: contoso5:edge/sales_cost__by__product
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__of__product
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__of__product`.
+  - object_id: contoso5:edge/sales_cost__attributed_to__country
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__attributed_to__country
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__attributed_to__country`.
+  - object_id: contoso5:edge/margin__by__customer
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_by__customer
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_by__customer`.
+  - object_id: contoso5:edge/margin__by__store
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_at__store
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_at__store`.
+  - object_id: contoso5:edge/margin__in__currency
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__paid_in__currency
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__paid_in__currency`.
+  - object_id: contoso5:edge/margin__by__product
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__of__product
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__of__product`.
+  - object_id: contoso5:edge/margin__attributed_to__country
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__attributed_to__country
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__attributed_to__country`.
+  - object_id: contoso5:edge/discount__by__customer
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_by__customer
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_by__customer`.
+  - object_id: contoso5:edge/discount__by__store
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_at__store
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_at__store`.
+  - object_id: contoso5:edge/discount__in__currency
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__paid_in__currency
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__paid_in__currency`.
+  - object_id: contoso5:edge/discount__by__product
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__of__product
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__of__product`.
+  - object_id: contoso5:edge/discount__attributed_to__country
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__attributed_to__country
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__attributed_to__country`.
+  - object_id: contoso5:edge/units_sold__by__customer
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_by__customer
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_by__customer`.
+  - object_id: contoso5:edge/units_sold__by__store
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__placed_at__store
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__placed_at__store`.
+  - object_id: contoso5:edge/units_sold__in__currency
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__paid_in__currency
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__paid_in__currency`.
+  - object_id: contoso5:edge/units_sold__by__product
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__of__product
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__of__product`.
+  - object_id: contoso5:edge/units_sold__attributed_to__country
+    retired_at: '2026-10-26'
+    retired_in: contoso5
+    superseded_by: contoso5:edge/order__attributed_to__country
+    reason: a per-measure copy of Order's join; the measure is now a column of Order.
+    migration_hint: reach the dimension from Order over `order__attributed_to__country`.

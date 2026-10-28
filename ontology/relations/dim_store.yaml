@@ -1,0 +1,156 @@
+# CONTOSO5 > the store row, SEMANTICALLY — what a question may do with each of its columns.
+#
+# ONE CONCEPT READS THIS RELATION TODAY, so this file de-duplicates nothing. It is here for the
+# other two reasons the form exists, and both are measurable.
+#
+# FIRST, THE ROW IS NOT THE THING, and this relation is the estate's proof. `key: store_key` is
+# the ROW — 74 of them, one per store per trading period — while a STORE is its `location_code`:
+# 67 of those, 57 trading. Store declares that with `bindings[].counts: location_code`, and the
+# two facts are read by different questions: a foreign key lands on the ROW key, a sample is drawn
+# at the MEMBER grain. Holding both in one `key:` field is what broke two readers on 2026-10-08 —
+# FK-EDGE lost dim_store's destination ("0 concept(s) taking the referenced column as a canonical
+# key") and MEMBER-GRAIN would have drawn 74 trading periods for 67 stores. The relation owns the
+# row; the concept owns what it counts.
+#
+# SECOND, A TWO-FORM ESTATE IS THE LIABILITY. Every one of the ten blind readers found on
+# 2026-10-08 was blind because `source:` and `bindings:` coexisted: each had a path that handled
+# one form and silently returned nothing for the other, and `PASS over a shrunken population` is
+# how that reads from outside. A reader that handles only `source:` sees NOTHING here and fails
+# loudly, which is the better failure.
+#
+# The data plane's view of the same relation is data/datasets/dim_store.yaml.
+
+metadata:
+  source: CONTOSO5
+  schema_version: '0.3.0-develop'
+  confidence: C
+  provenance: authored
+
+relation:
+  name: dim_store
+  # THE ROW, NOT THE STORE. See the header: `location_code` is what Store counts, and it is not a
+  # key of this relation — 67 distinct over 74 rows.
+  key: store_key
+
+columns:
+  store_key:
+    description: >-
+      THE PREMISES — one row per shop per trading period, and the grain every sale is recorded
+      against: `v_contoso5_sales_line.store_key` points here, never at the site. A shop has its own
+      name, floor area, opening date and closing date, because those are properties of premises and
+      not of a place. `999999` is the online outlet.
+
+      A PLACE MAY HOLD A SUCCESSION OF PREMISES, which is why this is finer than `location_code` and
+      why the two must never be used interchangeably: summing floor area over premises counts a
+      re-let site once per tenancy, and counting premises answers a different question from counting
+      sites. The `finer_than` ruling below is what says so to a reader.
+    surfaces: ['store id', 'premises']
+    rulings:
+      #: PREMISES WITHIN A PLACE. `finer_than` is the bundle's declared way to say one column rolls
+      #: up into another — `dim_product.sub_category_name finer_than category_name` is the same
+      #: shape, a finer level inside a coarser one in one relation. The vocabulary's own definition
+      #: is the reason this belongs here: "THIS COLUMN DISTINGUISHES MORE MEMBERS than the named
+      #: column, which it rolls up into. Both are legitimate axes and AN ANSWER MUST DISCLOSE WHICH
+      #: LEVEL IT USED."
+      #:
+      #: THAT LAST CLAUSE IS THE FACT THAT WAS MISSING, and it cost real answers. Asked "How many
+      #: stores are closed?" (RC08) the walk counted premises; asked "How many different sites that
+      #: had shops were closed?" (STORE-16) it counted sites one way and places-with-nothing-trading
+      #: another. Every one of those is a legitimate level and NOTHING DECLARED THAT A LEVEL HAD
+      #: BEEN CHOSEN, so the choice was made silently and differently each time. It was not an
+      #: undeclared FACT — both columns were declared, and the relation between them sat in a `#`
+      #: comment on the Store concept's binding, where no reader and no gate can see it.
+      finer_than: store_code
+    offers: {}
+  store_code:
+    description: >-
+      THE SITE, and what a store is counted by: 67 distinct over 74 rows. The value -1 is the
+      ONLINE SENTINEL and not a place — it is how the physical/online channel split is declared
+      (store.resolution.the_channel_is_the_location_sentinel: `physical` is <> -1, `online` is =
+      -1).
+    surfaces: ['site', 'location', 'channel', 'physical or online']
+    offers: {}
+    # THE JOIN TO Location, and also the column Store counts. Both are true of the column and
+    # neither is the relation's key; `counts` lives on the binding because it is the CONCEPT's
+    # statement about what one instance is.
+    references: Location
+  store_name:
+    description: >-
+      the store's name as a reader would see it. 'Online store' is the single non-physical
+      outlet. A reading that finds the online channel by MATCHING THIS NAME is right by luck;
+      the channel is the `location_code` predicate.
+    surfaces: ['shop name', 'name of the store']
+    offers:
+      axis: categorical
+    rulings:
+      # THE NAME OF THE PLACE, NOT OF THE PREMISES — corrected 2026-10-24, and the rows said so all
+      # along. `check_relation_claims` measures a `label_of` for injectivity and refused the old
+      # declaration in its own words: "`label_of: store_key` is not injective: 67 label(s) over 74
+      # `store_key` value(s) — 7 pairing(s) beyond one per label, so a label covers more than one
+      # `store_key` and a question that groups on the label merges them".
+      #
+      # WHY IT IS A PLACE NAME. Every name is `Contoso Store <State>`, so a re-let site keeps the
+      # name its predecessor had: "Contoso Store New Brunswick" names three successive premises.
+      # Measured — the name maps to exactly one `location_code` and to several `store_key`s. So it
+      # labels the SITE, and under the operator's ruling of the same day (a store is the PREMISES,
+      # counted by `store_key`) that makes it the label of the thing a store SITS ON.
+      #
+      # THE OLD COMMENT ASSERTED THE OPPOSITE AND WAS NEVER TRUE: "57 names over 57 store keys,
+      # 1:1". That is the count of TRADING rows, not of rows, and it was written when a store was
+      # declared to be a location — so the sentence happened to be consistent with the old grain and
+      # silently wrong about this column. A constant frozen into a comment, exactly the class the
+      # operator ruled out on 2026-10-24.
+      #
+      # WHAT STILL HOLDS from the original ruling of 2026-10-08: this column is what "list the
+      # stores" must SHOW. Without the declaration the answering column came from the physical
+      # descriptor's line order, and reversing `data/datasets/dim_store.yaml`'s `value` columns made
+      # that question answer with `square_metres` — floor areas instead of names. Group on the
+      # labelled column and display this one.
+      label_of: store_code
+      naming: common
+  country_code:
+    description: >-
+      the country the store trades in. The online store carries '--', the sentinel dim_country
+      names 'Online' and country.exclusion.sentinel_is_not_a_country excludes — so this column
+      cannot attribute an internet sale to a real country.
+    surfaces: ['store country code']
+    offers:
+      axis: categorical
+  state:
+    description: >-
+      the state, province or region the store sits in, within its country.
+    surfaces: ['province', 'region', 'county']
+    offers:
+      axis: categorical
+  open_date:
+    description: >-
+      the day the store opened for trade.
+    surfaces: ['opened', 'opening date', 'when it opened']
+    offers:
+      axis: time
+      extremum: [min, max]
+  close_date:
+    description: >-
+      the day the store closed, or null if it is still trading. THE TRADING-STATE COLUMN:
+      `active` is this being null (store.resolution.active_is_the_absent_close_date).
+    surfaces: ['closed', 'closing date', 'when it closed']
+    offers:
+      axis: time
+      extremum: [min, max]
+  status_annotation:
+    description: >-
+      why a store stopped trading, where the source said: blank on 57 rows, 'Closed' on 9,
+      'Restructured' on 7, null on the online sentinel. Prose from the source, not a closed
+      vocabulary of this bundle's own.
+    surfaces: ['status', 'why it closed', 'store status']
+    offers:
+      axis: categorical
+  square_metres:
+    description: >-
+      the store's floor area in square metres.
+    surfaces: ['floor space', 'size', 'area', 'square meters', 'how big']
+    offers:
+      aggregate:
+        type: stock
+        unit: m2
+      extremum: [min, max]

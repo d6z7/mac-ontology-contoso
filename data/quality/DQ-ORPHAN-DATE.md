@@ -1,0 +1,34 @@
+---
+type: DQ Issue
+title: raw landing `date` is consumed by no transformation
+description: 4,018 rows harvested and never curated; no data/transforms/*.yaml declares
+  it as an input
+tags:
+- CONTOSO5
+- severity:medium
+- confidence:?
+- lifecycle:draft
+---
+
+`DQ-ORPHAN-DATE` · severity **medium** · confidence **?** · disposition **open — nobody has ruled**
+
+## Finding
+4,018 rows harvested and never curated; no data/transforms/*.yaml declares it as an input
+
+## Current handling
+—
+
+## Residual risk
+—
+
+## Sign-off required
+—
+
+## Disposition
+
+**open** — ruled by **nobody named**.
+
+_No reason recorded. `accepted` and `wont_fix` both require one._
+
+## Table
+- [currencyexchange](../sources/currencyexchange.md)

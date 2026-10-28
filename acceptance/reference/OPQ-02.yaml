@@ -1,0 +1,46 @@
+# THE APPROVED ANSWER. A person ran the query, read the number and said yes.
+# The next run either returns this or it does not. PASS or FAIL, nothing else.
+#
+# NOT YET APPROVED. `approved_by` IS DELIBERATELY EMPTY — see OPQ-01. An agent may not sign a
+# reference, and this one encodes a RULING, which makes the signature matter more rather than less.
+id: OPQ-02
+question: what is the sales ratio from the internet business compared with physical stores in Germany
+expected: 0.7131
+sql: |
+  SELECT ROUND(SUM(CASE WHEN st.store_code = -1 AND cc.country_name = 'Germany'
+                        THEN sl.net_amount ELSE 0 END)
+               / NULLIF(SUM(CASE WHEN st.store_code <> -1 AND cs.country_name = 'Germany'
+                                 THEN sl.net_amount ELSE 0 END), 0), 4)
+  FROM contoso_served.v_contoso5_sales_line sl
+  JOIN contoso_served.dim_store st ON sl.store_key = st.store_key
+  JOIN contoso_served.dim_country cs ON st.country_code = cs.country_code
+  JOIN contoso_served.dim_customer cu ON sl.customer_key = cu.customer_key
+  JOIN contoso_served.dim_country cc ON cu.country_code = cc.country_code
+note: >-
+  THE OPERATOR'S OWN QUESTION, 2026-10-22, and the hardest one in this corpus. 10,256,061.74 USD
+  over 14,382,768.44 USD.
+
+  EACH SIDE OF THE RATIO TAKES A DIFFERENT COUNTRY PATH, and that is the point of the question. The
+  INTERNET half is Germany by the CUSTOMER's country (customer__based_in__country, `cc` above),
+  because the online store carries country_code '--' — the sentinel dim_country names 'Online' and
+  country.exclusion.sentinel_is_not_a_country excludes — so there is no store country to attribute
+  it by, and the store path returns 0. The PHYSICAL half is Germany by the STORE's country
+  (store__trades_in__country, `cs`). Operator ruling of 2026-10-22: "revenue in germany is the
+  revenue from stores in germany and from customers in germany who bought internet. stores only is
+  not enough."
+
+  AND THE DATA CANNOT TELL YOU THIS. Measured 2026-10-22: 0 of 130,424 physical sales lines cross a
+  border, so attributing BOTH halves by the customer's country gives the identical 0.7131, and the
+  same holds for all 8 countries (difference 0.00 everywhere). Two different models of the business,
+  observationally indistinguishable in this warehouse. A run that reaches 0.7131 by filtering
+  customers only is right by luck, and this reference exists to make the difference statable even
+  though no measurement can expose it.
+expected_by: agent
+expected_at: '2026-10-22'
+approved_by:
+approved_at:
+awaiting_approval: >-
+  The arithmetic is re-runnable; the RULING is what needs a signature. Specifically: that the
+  internet half is attributed by the customer's country and the physical half by the store's, rather
+  than both by the customer — a choice this bundle's data cannot distinguish and the next bundle's
+  might.

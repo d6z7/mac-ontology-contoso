@@ -1,0 +1,120 @@
+# CONTOSO5 > the product row, SEMANTICALLY — what a question may do with each of its columns.
+#
+# FOUR CONCEPTS READ THIS ONE RELATION: Product (the article), and Brand, Color and
+# ProductCategory, which are member-sets OVER the product row — closed value sets whose members
+# are columns of it rather than rows of a table of their own. Until this file existed each carried
+# its own copy of these column facts, and the copies were INCOMPLETE rather than contradictory:
+# five columns were declared two ways, and in every one of the five the difference was one concept
+# knowing something the other did not.
+#
+#   brand              Brand carried its `value_register`; Product's copy did not
+#   color              Color carried its `value_register`; Product's copy did not
+#   category_name      ProductCategory carried its `value_register`; Product's copy did not
+#   sub_category_name  ProductCategory carried `finer_than: category_name`; Product's copy did not
+#   product_key        Brand, Color and ProductCategory carried `references: Product`
+#
+# So a question routed through `Product` could not resolve "Contoso" to a brand code by register,
+# and a breakdown by sub-category reached through `Product` lost the roll-up disclosure — not
+# because anyone decided that, but because the second copy was written without them. The union is
+# simply the truth, which is what one home buys.
+#
+# The data plane's view of the same relation is data/datasets/dim_product.yaml.
+
+metadata:
+  source: CONTOSO5
+  schema_version: '0.3.0-develop'
+  confidence: C
+  provenance: authored
+
+relation:
+  name: dim_product
+  # ONE KEY, where four were declared. Product said `product_key` (the relation's real grain,
+  # 2517 rows / 2517 distinct / 0 nulls), Brand said `brand`, Color said `color` and
+  # ProductCategory said `category_name`. Those last three are not grains of this relation at
+  # all — they are what ONE INSTANCE OF THOSE CONCEPTS is, which is `bindings[].counts`, and
+  # that is where they now live.
+  key: product_key
+
+columns:
+  product_key:
+    description: >-
+      the row key: one row per product, 2,517 of them.
+    surfaces: ['product id']
+    offers: {}
+    # KEPT FROM THE THREE MEMBER-SETS' COPIES rather than dropped. `product_key`'s values do
+    # identify one row of Product, so the statement is true of the column — but it is also the
+    # relation's OWN primary key, which makes it self-referential for Product itself, and the
+    # 2026-10-08 review had already flagged these three as the anomaly in contoso5's 25
+    # references: "a pointer inside one relation that no descriptor can see". Preserved because
+    # dropping a declaration during a mechanical move is how declarations get lost; whether a
+    # relation's own key should carry `references` to the concept it keys is a question for the
+    # operator, recorded here rather than decided by a merge.
+    references: Product
+
+  product_code:
+    description: >-
+      the product's code in the source system, unique across all 2,517 rows.
+    surfaces: ['sku', 'article number']
+    offers:
+      axis: categorical
+    rulings:
+      label_of: product_key
+      naming: code
+  product_name:
+    description: >-
+      the product's name as a reader would see it.
+    surfaces: ['name of the product', 'what it is called']
+    offers:
+      axis: categorical
+    rulings:
+      label_of: product_key
+      naming: common
+  manufacturer:
+    description: >-
+      who made the product.
+    surfaces: ['maker', 'made by']
+    offers:
+      axis: categorical
+    rulings:
+      # 11 manufacturers over 11 brands — 1:1, so cardinality cannot say which is the name and a
+      # person must. Group on `brand`, SHOW this.
+      label_of: brand
+      naming: legal
+
+  brand:
+    description: >-
+      the brand the product is sold under. 11 brands over 2,517 products, so a question about
+      brands wants the 11 and not the 2,517.
+    surfaces: ['label', 'marque']
+    offers:
+      axis: categorical
+  color:
+    description: >-
+      the product's colour.
+    surfaces: ['colour']
+    offers:
+      axis: categorical
+  category_name:
+    description: >-
+      the product's top-level category.
+    surfaces: ['top category']
+    offers:
+      axis: categorical
+  sub_category_name:
+    description: >-
+      the product's sub-category, one level below `category_name`. Which of the two a question
+      means is a declared ambiguity (product_category.ambiguity.which_level).
+    surfaces: ['lower category']
+    offers:
+      axis: categorical
+    rulings:
+      # 32 sub-categories rolling cleanly into 8 categories — every child has exactly one parent,
+      # so a category answer is computable from sub-category rows and the level used must be
+      # DISCLOSED. Reached through Product this disclosure did not exist.
+      finer_than: category_name
+
+
+
+governance:
+  owner: operator
+  last_reviewed: 2026-10-08

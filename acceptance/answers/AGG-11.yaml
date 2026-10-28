@@ -1,0 +1,1692 @@
+id: AGG-11
+captured_at: '2026-10-24T21:44:52+00:00'
+ontology_fingerprint: 0d005cb5612ea9b3
+acceptance_fingerprint: 2ec94494afcc4218
+projection_fingerprint: 4702762cd1902fc3
+engine:
+  interpret: live
+  provider: v3-walk
+  model: claude-opus-5
+  mode: llm-execute
+  athena: false
+  run_file: full_rerun.json
+  note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
+    bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+connection:
+  view_schema: contoso_served
+  target: contoso5.duckdb
+  connector: duckdb
+route: v3-walk
+answer: ''
+intent:
+  subject: quantity sold
+  operation: select
+  qdmr_simplified: "  1         FROM       products                “products”\n  2  ← 1    GROUP_BY  \
+    \ by product              “products”\n  3  ← 2    AGGREGATE  sum of quantity sold    “quantity sold”\n\
+    \  4  ← 3+3  ORDER_BY   step 3 desc limit 3     “top 3 products by quantity sold”\n  5  ← 4    SELECT\
+    \     product, quantity sold  “top 3 products by quantity sold”\n  answer: step 5   confidence: 0.86\n\
+    \  UNDERSTOOD AS: You want the three products that sold the most units, ranked by the total quantity\
+    \ sold across all sales on record (no date range given, so all time), with one row per product showing\
+    \ the product and its total quantity sold. Nothing is excluded — returns, cancellations and discounts\
+    \ are not filtered out because the question doesn't mention them.\n  AMBIGUOUS 'quantity sold' — ASKS:\
+    \ Do you mean the total number of units sold, or the number of separate orders/transactions the product\
+    \ appeared in?\n      could mean: total units sold (adding up the quantity on each sale line)\n  \
+    \    could mean: number of orders or transactions that included the product\n      took: total units\
+    \ sold\n  AMBIGUOUS 'top 3 products by quantity sold' — ASKS: Over what time period — all time, or\
+    \ a specific window like this year or last month?\n      could mean: all sales on record, with no\
+    \ date limit\n      could mean: a specific recent period, e.g. this year, last quarter or last month\n\
+    \      took: all sales on record, no date limit\n  AMBIGUOUS 'products' — ASKS: Should each row be\
+    \ a product as you'd list it in a catalogue, or each individual variant/SKU (size, colour, pack) counted\
+    \ separately?\n      could mean: one row per catalogue product, combining all its variants\n     \
+    \ could mean: one row per individual variant or SKU\n      took: one row per catalogue product\n \
+    \ AMBIGUOUS 'sold' — ASKS: Should returned, refunded or cancelled sales be left out of the quantity?\n\
+    \      could mean: count everything sold, gross, including items later returned or cancelled\n   \
+    \   could mean: count net quantity, subtracting returns and excluding cancelled orders\n      took:\
+    \ count everything sold, gross\n  OUTPUT SHAPE: a list of names and figures · many row(s) · named\
+    \ by product · carrying quantity sold"
+  understood_as_in_human_words: You want the three products that sold the most units, ranked by the total
+    quantity sold across all sales on record (no date range given, so all time), with one row per product
+    showing the product and its total quantity sold. Nothing is excluded — returns, cancellations and
+    discounts are not filtered out because the question doesn't mention them.
+  population_actually_answered: 'All 2,517 products ranked over all 223,974 sale lines, then the top three
+    taken — the only narrowing is the "top 3" the question itself asks for. No channel predicate, because
+    the subject is a measure and store.resolution.the_channel_is_the_location_sentinel scopes its `physical`
+    default `applies: subject`, so the web shop counts alongside the physical shops. No date predicate:
+    the window is the full measured extent of order_date, 2016-05-18 to 2025-12-31. No trading-state,
+    country, brand or category predicate. No product lost to the join — measured, all 2,517 catalogue
+    products appear on at least one sale line and no sale line names a product outside the catalogue.
+    One row is one product_key, the SKU grain.'
+  how_the_result_must_be_presented:
+    shape_it_committed_to: a list of names and figures
+    columns_the_answer_step_asks_for: &id001
+    - product
+    - quantity sold
+    figures_the_answer_step_computes: []
+    answer_step: '5'
+    verb: select
+    said: top 3 products by quantity sold
+    stage1_confidence: 0.86
+  canonical_question: &id002
+    understood_as: You want the three products that sold the most units, ranked by the total quantity
+      sold across all sales on record (no date range given, so all time), with one row per product showing
+      the product and its total quantity sold. Nothing is excluded — returns, cancellations and discounts
+      are not filtered out because the question doesn't mention them.
+    steps:
+    - id: '1'
+      do: from
+      thing: products
+      said: products
+    - id: '2'
+      do: group_by
+      of: '1'
+      thing: product
+      said: products
+    - id: '3'
+      do: aggregate
+      of: '2'
+      said: quantity sold
+      figures:
+      - how: sum
+        of: quantity sold
+        said: quantity sold
+    - id: '4'
+      do: order_by
+      of: '3'
+      by_step: '3'
+      direction: desc
+      limit: 3
+      said: top 3 products by quantity sold
+    - id: '5'
+      do: select
+      of: '4'
+      columns: *id001
+      said: top 3 products by quantity sold
+    answer: '5'
+    output_shape: &id003
+      shape: a list of names and figures
+      rows: many
+      key_columns: &id005
+      - product
+      figure_columns: &id006
+      - quantity sold
+      said: top 3 products by quantity sold
+    ambiguities:
+    - words: quantity sold
+      question: Do you mean the total number of units sold, or the number of separate orders/transactions
+        the product appeared in?
+      readings:
+      - total units sold (adding up the quantity on each sale line)
+      - number of orders or transactions that included the product
+      assumed: total units sold
+    - words: top 3 products by quantity sold
+      question: Over what time period — all time, or a specific window like this year or last month?
+      readings:
+      - all sales on record, with no date limit
+      - a specific recent period, e.g. this year, last quarter or last month
+      assumed: all sales on record, no date limit
+    - words: products
+      question: Should each row be a product as you'd list it in a catalogue, or each individual variant/SKU
+        (size, colour, pack) counted separately?
+      readings:
+      - one row per catalogue product, combining all its variants
+      - one row per individual variant or SKU
+      assumed: one row per catalogue product
+    - words: sold
+      question: Should returned, refunded or cancelled sales be left out of the quantity?
+      readings:
+      - count everything sold, gross, including items later returned or cancelled
+      - count net quantity, subtracting returns and excluding cancelled orders
+      assumed: count everything sold, gross
+    confidence: 0.86
+  steps: 5
+  note: a canonical question — a DAG of steps — not a flat Intent
+answer_parts:
+  table:
+    columns:
+    - name: product_name
+      type: string
+    - name: units_sold
+      type: number
+    rows:
+    - - Adventure Works Desktop PC1.80 ED180 Brown
+      - 1542
+    - - Adventure Works Desktop PC2.30 MD230 Black
+      - 1482
+    - - Adventure Works Desktop PC1.80 ED182 Black
+      - 1474
+  value: null
+  raw: '[{"product": "Adventure Works Desktop PC1.80 ED180 Brown", "quantity sold": 1542}, {"product":
+    "Adventure Works Desktop PC2.30 MD230 Black", "quantity sold": 1482}, {"product": "Adventure Works
+    Desktop PC1.80 ED182 Black", "quantity sold": 1474}]'
+  reading: a list of names and figures
+  status: ok
+  confidence: I
+  assumptions:
+  - kind: ''
+    text: "products → one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct\
+      \ keys, so the row IS the product\n        could also mean: one row per catalogue model, combining\
+      \ colour variants — 'A. Datum Advanced Digital Camera M300' as one product rather than seven coloured\
+      \ ones"
+    ref: 'Settled by declaration, so I did not ask: the Product concept is ''a thing Contoso sells, at
+      the level the shelf knows it: a SKU'', and Color declares colour as ''the one attribute that on
+      its own makes a new SKU — E400 Green and E400 Orange are two products''. The bundle also holds no
+      model-level column: a catalogue-model grouping would have to be invented by stripping a colour word
+      off product_name, which no declaration authorises.'
+  - kind: ''
+    text: "product → shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name\
+      \ per product, so grouping on it cannot merge two products\n        could also mean: shown by `product_code`\
+      \ (the SKU/article number, also 2,517 distinct) or by the bare `product_key`"
+    ref: '`product_name` is declared `naming: common`, #1 of 5 in the preference order common > legal
+      > long > short > code, and the declaration says the column nearest `common` is what an answer should
+      show; `product_code` is `naming: code`, #5, available if the reader asks for it by name.'
+  - kind: ''
+    text: "products → one group per `product_key`, i.e. per SKU, carrying `product_name` for display\n\
+      \        could also mean: one group per catalogue model with colour variants combined"
+    ref: 'Settled at step 1 by the Product concept (''at the level the shelf knows it: a SKU'') and by
+      Color (''the one attribute that on its own makes a new SKU''); no model-level column exists to group
+      on.'
+  - kind: ''
+    text: "products → products that have sold — but this restricts nothing, measured: all 2,517 have\n\
+      \        could also mean: the full catalogue including never-sold products, which would show as\
+      \ rows with zero quantity"
+    ref: 'The readings AGREE here, so I take one and disclose both: 2,517 either way. Had any product
+      never sold, a zero-quantity row could not reach a top 3 regardless.'
+  - kind: ''
+    text: "sold → both channels — web-shop and walk-in lines alike\n        could also mean: physical\
+      \ shops only"
+    ref: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default `applies:
+      subject`, and the subject here is a measure rather than a Store; the rule says in terms that a measure
+      question never reaches that default, and the operator''s ruling of 2026-10-18 is that an unqualified
+      question spans both channels.'
+  - kind: ''
+    text: "quantity sold → total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading\
+      \ three products\n        could also mean: the number of separate orders the product appeared in,\
+      \ which gives a DIFFERENT three: ED182 Black 466 orders, ED180 Black 458, ED180 Brown 457. Under\
+      \ that reading PC2.30 MD230 Black (2nd by units) falls to 21st, and ED180 Black (2nd by orders)\
+      \ is only 15th by units"
+    ref: 'Settled by declaration, so I apply units and do not ask: the UnitsSold measure is declared as
+      ''how many items went out: the quantity on a sale, summed'', `quantity` is declared ''how many units
+      of the product the line sold'' with surfaces including ''units sold'', ''how many'' and ''volume'',
+      and it is declared a FLOW on which SUM over any grouping is correct. The orders reading is a different
+      declared measure — Order, counted by distinct order_key — and the question names neither orders
+      nor transactions.'
+  - kind: ''
+    text: "sold → gross — every unit on every line\n        could also mean: net of returns, refunds and\
+      \ cancellations"
+    ref: 'Both readings give the SAME figure here, so there is nothing to choose: the sales relation declares
+      no return, refund, cancellation or line-status column, and measured just now the quantity on every
+      line lies between 1 and 10, so no line can be a reversal of another.'
+  - kind: ''
+    text: "quantity sold → all time — no date predicate\n        could also mean: a recent window such\
+      \ as this year or last quarter"
+    ref: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling of 2026-09-30:
+      a measure asked for with no period named covers the full extent of order_date and the answer must
+      state the first and last date it included. I will state the measured window on the answer step.'
+  - kind: ''
+    text: "top 3 → exactly three rows, ranked on total units descending\n        could also mean: more\
+      \ than three rows if the third place were tied"
+    ref: 'Not a live fork, measured: third place has 1,474 units and fourth 1,462, so no tie-break is
+      needed and no fourth product has a claim.'
+  - kind: ''
+    text: "by quantity sold → ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482,\
+      \ then 426 ED182 Black 1,474\n        could also mean: ranked by number of orders the product appeared\
+      \ in, which puts a different three on the list: 426 ED182 Black 466 orders, 425 ED180 Black 458,\
+      \ 431 ED180 Brown 457 — a different winner and one different member"
+    ref: Settled at step 3 by the UnitsSold declaration ('the quantity on a sale, summed') and by `quantity`'s
+      own surfaces, which include 'units sold'; the orders reading is the separate Order measure, which
+      the question does not name.
+  - kind: ''
+    text: "quantity sold → total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474\n\
+      \        could also mean: the number of separate ORDERS a product appeared in, which gives a different\
+      \ answer: Adventure Works Desktop PC1.80 ED182 Black 466 orders, Adventure Works Desktop PC1.80\
+      \ ED180 Black 458, Adventure Works Desktop PC1.80 ED180 Brown 457. If you meant orders, two things\
+      \ change — the winner becomes ED182 Black rather than ED180 Brown, and PC2.30 MD230 Black leaves\
+      \ the list altogether (21st by orders, though 2nd by units) in favour of ED180 Black (2nd by orders,\
+      \ but only 15th by units). What it does NOT change: ED180 Brown and ED182 Black are in the top three\
+      \ either way, and all four products in play are Adventure Works desktop PCs"
+    ref: 'I did not ask, because a declaration fixes it: UnitsSold is declared ''how many items went out:
+      the quantity on a sale, summed'', and `quantity` is declared ''how many units of the product the
+      line sold'', surfacing as ''units sold'', ''how many'' and ''volume''. The orders reading is a separate
+      declared measure — Order, counted by distinct order_key — which this question does not name.'
+  - kind: ''
+    text: "products → one row per SKU, 2,517 of them; measured one name and one code per key, so each\
+      \ name identifies exactly one product\n        could also mean: one row per catalogue model with\
+      \ colour variants combined, which would merge ED180 Brown and ED180 Black into a single 'Adventure\
+      \ Works Desktop PC1.80 ED180' and would likely reorder the list"
+    ref: 'Settled by declaration: Product is ''a thing Contoso sells, at the level the shelf knows it:
+      a SKU'', and Color declares colour ''the one attribute that on its own makes a new SKU — E400 Green
+      and E400 Orange are two products''. The model-level reading is not available here in any case: no
+      model column exists, and it could only be built by stripping a colour word off the product name,
+      which no declaration authorises.'
+  - kind: ''
+    text: "sold → gross — every unit on every sale line\n        could also mean: net of returns, refunds\
+      \ and cancelled orders"
+    ref: 'The readings give the SAME figures, so there was nothing to choose and nothing to ask: the sales
+      relation declares no return, refund, cancellation or line-status column, and measured over all 223,974
+      lines the quantity runs from 1 to 10, so no line can be a reversal of another.'
+  - kind: ''
+    text: "top 3 products by quantity sold → all time — the whole record, 2016-05-18 to 2025-12-31\n \
+      \       could also mean: a recent window such as this year, last quarter or last month"
+    ref: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling of 2026-09-30:
+      a measure asked for with no period named covers the full extent of order_date, and the answer must
+      state the first and last date it included — stated above. Note the record ends 2025-12-31, ten months
+      before today, so any ''recent'' reading would anchor to the data''s vintage rather than the calendar.'
+  - kind: ''
+    text: "products → the name, `product_name`, as the thing shown\n        could also mean: the product\
+      \ code / SKU number, or the internal product key"
+    ref: '`product_name` is declared `naming: common`, first of five in the preference order common >
+      legal > long > short > code, and the declaration says the column nearest `common` is what an answer
+      should show. The keys are available if wanted: 431, 423 and 426 in that order.'
+  concepts: []
+  rules:
+  - id: Settled by declaration
+    why: '''products'' = one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct
+      keys, so the row IS the product'
+  - id: 'so I did not ask: the Product concept is ''a thing Contoso sells'
+    why: '''products'' = one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct
+      keys, so the row IS the product'
+  - id: 'at the level the shelf knows it: a SKU'''
+    why: '''products'' = one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct
+      keys, so the row IS the product'
+  - id: 'and Color declares colour as ''the one attribute that on its own makes a new SKU — E400 Green
+      and E400 Orange are two products''. The bundle also holds no model-level column: a catalogue-model
+      grouping would have to be invented by stripping a colour word off product_name'
+    why: '''products'' = one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct
+      keys, so the row IS the product'
+  - id: which no declaration authorises.
+    why: '''products'' = one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct
+      keys, so the row IS the product'
+  - id: '`product_name` is declared `naming: common`'
+    why: '''product'' = shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name
+      per product, so grouping on it cannot merge two products'
+  - id: '#1 of 5 in the preference order common > legal > long > short > code'
+    why: '''product'' = shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name
+      per product, so grouping on it cannot merge two products'
+  - id: and the declaration says the column nearest `common` is what an answer should show
+    why: '''product'' = shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name
+      per product, so grouping on it cannot merge two products'
+  - id: '`product_code` is `naming: code`'
+    why: '''product'' = shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name
+      per product, so grouping on it cannot merge two products'
+  - id: '#5'
+    why: '''product'' = shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name
+      per product, so grouping on it cannot merge two products'
+  - id: available if the reader asks for it by name.
+    why: '''product'' = shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name
+      per product, so grouping on it cannot merge two products'
+  - id: 'Settled at step 1 by the Product concept (''at the level the shelf knows it: a SKU'') and by
+      Color (''the one attribute that on its own makes a new SKU'')'
+    why: '''products'' = one group per `product_key`, i.e. per SKU, carrying `product_name` for display'
+  - id: no model-level column exists to group on.
+    why: '''products'' = one group per `product_key`, i.e. per SKU, carrying `product_name` for display'
+  - id: The readings AGREE here
+    why: '''products'' = products that have sold — but this restricts nothing, measured: all 2,517 have'
+  - id: 'so I take one and disclose both: 2'
+    why: '''products'' = products that have sold — but this restricts nothing, measured: all 2,517 have'
+  - id: 517 either way. Had any product never sold
+    why: '''products'' = products that have sold — but this restricts nothing, measured: all 2,517 have'
+  - id: a zero-quantity row could not reach a top 3 regardless.
+    why: '''products'' = products that have sold — but this restricts nothing, measured: all 2,517 have'
+  - id: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default `applies:
+      subject`'
+    why: '''sold'' = both channels — web-shop and walk-in lines alike'
+  - id: and the subject here is a measure rather than a Store
+    why: '''sold'' = both channels — web-shop and walk-in lines alike'
+  - id: the rule says in terms that a measure question never reaches that default
+    why: '''sold'' = both channels — web-shop and walk-in lines alike'
+  - id: and the operator's ruling of 2026-10-18 is that an unqualified question spans both channels.
+    why: '''sold'' = both channels — web-shop and walk-in lines alike'
+  - id: 'so I apply units and do not ask: the UnitsSold measure is declared as ''how many items went out:
+      the quantity on a sale'
+    why: '''quantity sold'' = total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading
+      three products'
+  - id: summed'
+    why: '''quantity sold'' = total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading
+      three products'
+  - id: '`quantity` is declared ''how many units of the product the line sold'' with surfaces including
+      ''units sold'''
+    why: '''quantity sold'' = total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading
+      three products'
+  - id: '''how many'' and ''volume'''
+    why: '''quantity sold'' = total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading
+      three products'
+  - id: and it is declared a FLOW on which SUM over any grouping is correct. The orders reading is a different
+      declared measure — Order
+    why: '''quantity sold'' = total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading
+      three products'
+  - id: counted by distinct order_key — and the question names neither orders nor transactions.
+    why: '''quantity sold'' = total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading
+      three products'
+  - id: Both readings give the SAME figure here
+    why: '''sold'' = gross — every unit on every line'
+  - id: 'so there is nothing to choose: the sales relation declares no return'
+    why: '''sold'' = gross — every unit on every line'
+  - id: refund
+    why: '''sold'' = gross — every unit on every line'
+  - id: cancellation or line-status column
+    why: '''sold'' = gross — every unit on every line'
+  - id: and measured just now the quantity on every line lies between 1 and 10
+    why: '''sold'' = gross — every unit on every line'
+  - id: so no line can be a reversal of another.
+    why: '''sold'' = gross — every unit on every line'
+  - id: order.default.an_unscoped_question_covers_all_time
+    why: '''quantity sold'' = all time — no date predicate'
+  - id: confidence C
+    why: '''quantity sold'' = all time — no date predicate'
+  - id: 'operator ruling of 2026-09-30: a measure asked for with no period named covers the full extent
+      of order_date and the answer must state the first and last date it included. I will state the measured
+      window on the answer step.'
+    why: '''quantity sold'' = all time — no date predicate'
+  - id: Not a live fork
+    why: '''top 3'' = exactly three rows, ranked on total units descending'
+  - id: 'measured: third place has 1'
+    why: '''top 3'' = exactly three rows, ranked on total units descending'
+  - id: 474 units and fourth 1
+    why: '''top 3'' = exactly three rows, ranked on total units descending'
+  - id: '462'
+    why: '''top 3'' = exactly three rows, ranked on total units descending'
+  - id: so no tie-break is needed and no fourth product has a claim.
+    why: '''top 3'' = exactly three rows, ranked on total units descending'
+  - id: Settled at step 3 by the UnitsSold declaration ('the quantity on a sale
+    why: '''by quantity sold'' = ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482,
+      then 426 ED182 Black 1,474'
+  - id: summed') and by `quantity`'s own surfaces
+    why: '''by quantity sold'' = ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482,
+      then 426 ED182 Black 1,474'
+  - id: which include 'units sold'
+    why: '''by quantity sold'' = ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482,
+      then 426 ED182 Black 1,474'
+  - id: the orders reading is the separate Order measure
+    why: '''by quantity sold'' = ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482,
+      then 426 ED182 Black 1,474'
+  - id: which the question does not name.
+    why: '''by quantity sold'' = ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482,
+      then 426 ED182 Black 1,474'
+  - id: I did not ask
+    why: '''quantity sold'' = total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+  - id: 'because a declaration fixes it: UnitsSold is declared ''how many items went out: the quantity
+      on a sale'
+    why: '''quantity sold'' = total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+  - id: and `quantity` is declared 'how many units of the product the line sold'
+    why: '''quantity sold'' = total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+  - id: surfacing as 'units sold'
+    why: '''quantity sold'' = total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+  - id: '''how many'' and ''volume''. The orders reading is a separate declared measure — Order'
+    why: '''quantity sold'' = total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+  - id: counted by distinct order_key — which this question does not name.
+    why: '''quantity sold'' = total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+  - id: 'Settled by declaration: Product is ''a thing Contoso sells'
+    why: '''products'' = one row per SKU, 2,517 of them; measured one name and one code per key, so each
+      name identifies exactly one product'
+  - id: 'and Color declares colour ''the one attribute that on its own makes a new SKU — E400 Green and
+      E400 Orange are two products''. The model-level reading is not available here in any case: no model
+      column exists'
+    why: '''products'' = one row per SKU, 2,517 of them; measured one name and one code per key, so each
+      name identifies exactly one product'
+  - id: and it could only be built by stripping a colour word off the product name
+    why: '''products'' = one row per SKU, 2,517 of them; measured one name and one code per key, so each
+      name identifies exactly one product'
+  - id: The readings give the SAME figures
+    why: '''sold'' = gross — every unit on every sale line'
+  - id: 'so there was nothing to choose and nothing to ask: the sales relation declares no return'
+    why: '''sold'' = gross — every unit on every sale line'
+  - id: and measured over all 223
+    why: '''sold'' = gross — every unit on every sale line'
+  - id: 974 lines the quantity runs from 1 to 10
+    why: '''sold'' = gross — every unit on every sale line'
+  - id: 'operator ruling of 2026-09-30: a measure asked for with no period named covers the full extent
+      of order_date'
+    why: '''top 3 products by quantity sold'' = all time — the whole record, 2016-05-18 to 2025-12-31'
+  - id: and the answer must state the first and last date it included — stated above. Note the record
+      ends 2025-12-31
+    why: '''top 3 products by quantity sold'' = all time — the whole record, 2016-05-18 to 2025-12-31'
+  - id: ten months before today
+    why: '''top 3 products by quantity sold'' = all time — the whole record, 2016-05-18 to 2025-12-31'
+  - id: so any 'recent' reading would anchor to the data's vintage rather than the calendar.
+    why: '''top 3 products by quantity sold'' = all time — the whole record, 2016-05-18 to 2025-12-31'
+  - id: first of five in the preference order common > legal > long > short > code
+    why: '''products'' = the name, `product_name`, as the thing shown'
+  - id: 'and the declaration says the column nearest `common` is what an answer should show. The keys
+      are available if wanted: 431'
+    why: '''products'' = the name, `product_name`, as the thing shown'
+  - id: 423 and 426 in that order.
+    why: '''products'' = the name, `product_name`, as the thing shown'
+  edges: []
+sql:
+- "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product AS p\n\
+  JOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n\
+  \  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+- "SELECT\n  product_key,\n  product_name\nFROM contoso_served.dim_product"
+- "SELECT\n  p.product_key,\n  p.product_name\nFROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line\
+  \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name"
+- "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+  \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP BY\n\
+  \  p.product_key,\n  p.product_name"
+- "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+  \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP BY\n\
+  \  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+answer_sql: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+  \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP BY\n\
+  \  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+sql_valid: true
+result:
+  status: ok
+  rows: 3
+  cols: &id007
+  - product_name
+  - units_sold
+  sample_rows:
+  - - Adventure Works Desktop PC1.80 ED180 Brown
+    - 1542
+  - - Adventure Works Desktop PC2.30 MD230 Black
+    - 1482
+  - - Adventure Works Desktop PC1.80 ED182 Black
+    - 1474
+  capped: false
+prompt:
+  chars: 84131
+  lines: 1027
+  sections:
+  - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 2 — system prompt for walking one step
+  - STAGE 2 — the declarations, sent once
+  file: acceptance/prompts/465e28b73001.txt
+  sha: 465e28b73001
+  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
+    it is now.'
+error: null
+v3_report:
+  canonical_question_json: *id002
+  canonical_question_simplified: "  1         FROM       products                “products”\n  2  ← 1\
+    \    GROUP_BY   by product              “products”\n  3  ← 2    AGGREGATE  sum of quantity sold  \
+    \  “quantity sold”\n  4  ← 3+3  ORDER_BY   step 3 desc limit 3     “top 3 products by quantity sold”\n\
+    \  5  ← 4    SELECT     product, quantity sold  “top 3 products by quantity sold”\n  answer: step\
+    \ 5   confidence: 0.86\n  UNDERSTOOD AS: You want the three products that sold the most units, ranked\
+    \ by the total quantity sold across all sales on record (no date range given, so all time), with one\
+    \ row per product showing the product and its total quantity sold. Nothing is excluded — returns,\
+    \ cancellations and discounts are not filtered out because the question doesn't mention them.\n  AMBIGUOUS\
+    \ 'quantity sold' — ASKS: Do you mean the total number of units sold, or the number of separate orders/transactions\
+    \ the product appeared in?\n      could mean: total units sold (adding up the quantity on each sale\
+    \ line)\n      could mean: number of orders or transactions that included the product\n      took:\
+    \ total units sold\n  AMBIGUOUS 'top 3 products by quantity sold' — ASKS: Over what time period —\
+    \ all time, or a specific window like this year or last month?\n      could mean: all sales on record,\
+    \ with no date limit\n      could mean: a specific recent period, e.g. this year, last quarter or\
+    \ last month\n      took: all sales on record, no date limit\n  AMBIGUOUS 'products' — ASKS: Should\
+    \ each row be a product as you'd list it in a catalogue, or each individual variant/SKU (size, colour,\
+    \ pack) counted separately?\n      could mean: one row per catalogue product, combining all its variants\n\
+    \      could mean: one row per individual variant or SKU\n      took: one row per catalogue product\n\
+    \  AMBIGUOUS 'sold' — ASKS: Should returned, refunded or cancelled sales be left out of the quantity?\n\
+    \      could mean: count everything sold, gross, including items later returned or cancelled\n   \
+    \   could mean: count net quantity, subtracting returns and excluding cancelled orders\n      took:\
+    \ count everything sold, gross\n  OUTPUT SHAPE: a list of names and figures · many row(s) · named\
+    \ by product · carrying quantity sold"
+  understood_as: You want the three products that sold the most units, ranked by the total quantity sold
+    across all sales on record (no date range given, so all time), with one row per product showing the
+    product and its total quantity sold. Nothing is excluded — returns, cancellations and discounts are
+    not filtered out because the question doesn't mention them.
+  ambiguities_it_saw:
+  - words: quantity sold
+    asks: Do you mean the total number of units sold, or the number of separate orders/transactions the
+      product appeared in?
+    readings:
+    - total units sold (adding up the quantity on each sale line)
+    - number of orders or transactions that included the product
+    took: total units sold
+  - words: top 3 products by quantity sold
+    asks: Over what time period — all time, or a specific window like this year or last month?
+    readings:
+    - all sales on record, with no date limit
+    - a specific recent period, e.g. this year, last quarter or last month
+    took: all sales on record, no date limit
+  - words: products
+    asks: Should each row be a product as you'd list it in a catalogue, or each individual variant/SKU
+      (size, colour, pack) counted separately?
+    readings:
+    - one row per catalogue product, combining all its variants
+    - one row per individual variant or SKU
+    took: one row per catalogue product
+  - words: sold
+    asks: Should returned, refunded or cancelled sales be left out of the quantity?
+    readings:
+    - count everything sold, gross, including items later returned or cancelled
+    - count net quantity, subtracting returns and excluding cancelled orders
+    took: count everything sold, gross
+  presentation:
+    claimed_answer_is: a list of names and figures
+    answer_step: '5'
+    answer_step_asks:
+      do: select
+      of: '4'
+      columns: *id001
+      said: top 3 products by quantity sold
+    confidence_stage1: 0.86
+  sql_by_step:
+  - step: '1'
+    sql: "SELECT\n  product_key,\n  product_name\nFROM contoso_served.dim_product"
+    params: {}
+  - step: '2'
+    sql: "SELECT\n  p.product_key,\n  p.product_name\nFROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line\
+      \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name"
+    params: {}
+  - step: '3'
+    sql: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+      \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+      \ BY\n  p.product_key,\n  p.product_name"
+    params: {}
+  - step: '4'
+    sql: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+      \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+      \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+    params: {}
+  - step: '5'
+    sql: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+      \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+      \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+    params: {}
+  what_it_calculated: 'The three products of which Contoso shifted the most individual items, best first,
+    with how many items: Adventure Works Desktop PC1.80 ED180 Brown 1,542 units, Adventure Works Desktop
+    PC2.30 MD230 Black 1,482 units, Adventure Works Desktop PC1.80 ED182 Black 1,474 units. The figure
+    counts PIECES — the quantity on every sale line that named the product, added up — so one order taking
+    three of something contributes three; it is not a count of orders, lines or customers. It covers every
+    order on record, 2016-05-18 to 2025-12-31, and both channels, the web shop and the walk-in shops together.
+    WHAT IS NOT IN IT: nothing is netted off for returns, refunds or cancellations, because this bundle
+    records none — no such column exists and no line carries a negative quantity, so gross and net are
+    the same number here. No category, brand, country, store or trading-state restriction was applied.
+    And these are SKUs: ED180 Brown and ED180 Black count as two different products, which is the level
+    this warehouse calls a product. The third place is not close-run — fourth has 1,462 units, so no tie-break
+    was needed.'
+  rows_returned: &id004
+  - product_name: Adventure Works Desktop PC1.80 ED180 Brown
+    units_sold: 1542
+  - product_name: Adventure Works Desktop PC2.30 MD230 Black
+    units_sold: 1482
+  - product_name: Adventure Works Desktop PC1.80 ED182 Black
+    units_sold: 1474
+  synthesis:
+    claimed: '[{"product": "Adventure Works Desktop PC1.80 ED180 Brown", "quantity sold": 1542}, {"product":
+      "Adventure Works Desktop PC2.30 MD230 Black", "quantity sold": 1482}, {"product": "Adventure Works
+      Desktop PC1.80 ED182 Black", "quantity sold": 1474}]'
+    shape: a list of names and figures
+    answered_population: 'All 2,517 products ranked over all 223,974 sale lines, then the top three taken
+      — the only narrowing is the "top 3" the question itself asks for. No channel predicate, because
+      the subject is a measure and store.resolution.the_channel_is_the_location_sentinel scopes its `physical`
+      default `applies: subject`, so the web shop counts alongside the physical shops. No date predicate:
+      the window is the full measured extent of order_date, 2016-05-18 to 2025-12-31. No trading-state,
+      country, brand or category predicate. No product lost to the join — measured, all 2,517 catalogue
+      products appear on at least one sale line and no sale line names a product outside the catalogue.
+      One row is one product_key, the SKU grain.'
+    gaps: []
+    stopped_at: null
+  thinking:
+  - step: '1'
+    step_asks: products
+    turns:
+    - why: 'Establish the base relation for "products" and measure the SKU-vs-catalogue-name grain fork
+        at the same time: does product_name repeat across product_key?'
+      did: 'probe ''dim_product.product_name'' AND ALSO: SELECT COUNT(*) AS row_count, COUNT(DISTINCT
+        product_key) AS distinct_keys, COUNT(DISTINCT product_name) AS distinct_names, COUNT(DISTINCT
+        product_code) AS distinct_codes FROM contoso_served.dim_product'
+      came_back: 'dim_product.product_name (varchar) holds 60+ distinct value(s), first 60: ''A. Datum
+        Advanced Digital Camera M300 Azure'', ''A. Datum Advanced Digital Camera M300 Black'', ''A. Datum
+        Advanced Digital Camera M300 Green'', ''A. Datum Advanced Digital Camera M300 Grey'', ''A. Datum
+        Advanced Digital Camera M300 Orange'', ''A. Datum Advanced Digital Camera M300 Pink'', ''A. Datum
+        Advanced Digital Camera M300 Silver'', ''A. Datum All in One Digital Camera M200 Azure'', ''A.
+        Datum All in One Digital Camera M200 Black'', ''A. Datum All in One Digital Camera M200 Green'',
+        ''A. Datum All in One Digital Camera M200 Grey'', ''A. Datum All in One Digital Camera M200 Orange'',
+        ''A. Datum All in One Digital Camera M200 Pink'', ''A. Datum All in One Digital Camera M200 Silver'',
+        ''A. Datum Bridge Digital Camera M300 Azure'', ''A. Datum Bridge Digital Camera M300 Black'',
+        ''A. Datum Bridge Digital Camera M300 Green'', ''A. Datum Bridge Digital Camera M300 Grey'', ''A.
+        Datum Bridge Digital Camera M300 Orange'', ''A. Datum Bridge Digital Camera M300 Pink'', ''A.
+        Datum Bridge Digital Camera M300 Silver'', ''A. Datum Compact Digital Camera M200 Azure'', ''A.
+        Datum Compact Digital Camera M200 Black'', ''A. Datum Compact Digital Camera M200 Green'', '''
+    - why: The probe listed values but not the counts I need; run them now to establish the base relation's
+        grain — is one row one product_key, and does product_name identify it uniquely (the names carry
+        the colour, e.g. 'M300 Azure' / 'M300 Black', which is exactly the SKU-vs-catalogue fork the question
+        raises).
+      did: "SELECT\n  COUNT(*) AS row_count,\n  COUNT(DISTINCT product_key) AS distinct_keys,\n  COUNT(DISTINCT\
+        \ product_name) AS distinct_names,\n  COUNT(DISTINCT product_code) AS distinct_codes,\n  COUNT(*)\
+        \ - COUNT(product_name) AS null_names\nFROM contoso_served.dim_product"
+      came_back: '1 row(s): [{"row_count": 2517, "distinct_keys": 2517, "distinct_names": 2517, "distinct_codes":
+        2517, "null_names": 0}]'
+    settled_on: "SELECT\n  product_key,\n  product_name\nFROM contoso_served.dim_product"
+    means: 'Every product Contoso sells, at the level the shelf knows it — one row per SKU, 2,517 of them,
+      each with its key and the name a reader would recognise (the name carries the colour, so ''M300
+      Azure'' and ''M300 Black'' are two rows). This is the whole CATALOGUE with nothing excluded: it
+      is not the list of products that have sold, and roughly a portion of these will have no sale at
+      all, which only shows up once the sales lines are joined in at the aggregate step. No date, no channel
+      and no category restriction is applied here, and none is implied.'
+    readings_taken:
+    - word: products
+      took: one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct keys,
+        so the row IS the product
+      could_also_mean: one row per catalogue model, combining colour variants — 'A. Datum Advanced Digital
+        Camera M300' as one product rather than seven coloured ones
+      declaration: 'Settled by declaration, so I did not ask: the Product concept is ''a thing Contoso
+        sells, at the level the shelf knows it: a SKU'', and Color declares colour as ''the one attribute
+        that on its own makes a new SKU — E400 Green and E400 Orange are two products''. The bundle also
+        holds no model-level column: a catalogue-model grouping would have to be invented by stripping
+        a colour word off product_name, which no declaration authorises.'
+    - word: product
+      took: shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name per product,
+        so grouping on it cannot merge two products
+      could_also_mean: shown by `product_code` (the SKU/article number, also 2,517 distinct) or by the
+        bare `product_key`
+      declaration: '`product_name` is declared `naming: common`, #1 of 5 in the preference order common
+        > legal > long > short > code, and the declaration says the column nearest `common` is what an
+        answer should show; `product_code` is `naming: code`, #5, available if the reader asks for it
+        by name.'
+    blocked_by: []
+  - step: '2'
+    step_asks: products
+    turns:
+    - why: 'Fix what the group-by axis ranges over before anything is summed on it: how many of the 2,517
+        catalogue products actually appear on a sale line, and whether any line points at a product the
+        catalogue does not hold.'
+      did: "SELECT\n  COUNT(*) AS sales_lines,\n  COUNT(DISTINCT s.product_key) AS products_on_a_sale,\n\
+        \  COUNT(DISTINCT CASE WHEN p.product_key IS NULL THEN s.product_key END) AS line_keys_not_in_catalogue\n\
+        FROM contoso_served.v_contoso5_sales_line AS s\nLEFT JOIN contoso_served.dim_product AS p\n  ON\
+        \ s.product_key = p.product_key"
+      came_back: '1 row(s): [{"sales_lines": 223974, "products_on_a_sale": 2517, "line_keys_not_in_catalogue":
+        0}]'
+    settled_on: "SELECT\n  p.product_key,\n  p.product_name\nFROM contoso_served.dim_product AS p\nJOIN\
+      \ contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n\
+      \  p.product_name"
+    means: 'The 2,517 products Contoso sells, each one now standing for the bundle of sale lines that
+      sold it — one group per SKU, gathering all 223,974 sale lines on record between them. Nothing is
+      measured yet: this is the axis the quantity will be summed along. Every product has at least one
+      line, so no group is empty and no product is dropped by the join. The groups span the full ten years
+      of sales and both channels, shop and web, with no date, category or channel restriction.'
+    readings_taken:
+    - word: products
+      took: one group per `product_key`, i.e. per SKU, carrying `product_name` for display
+      could_also_mean: one group per catalogue model with colour variants combined
+      declaration: 'Settled at step 1 by the Product concept (''at the level the shelf knows it: a SKU'')
+        and by Color (''the one attribute that on its own makes a new SKU''); no model-level column exists
+        to group on.'
+    - word: products
+      took: 'products that have sold — but this restricts nothing, measured: all 2,517 have'
+      could_also_mean: the full catalogue including never-sold products, which would show as rows with
+        zero quantity
+      declaration: 'The readings AGREE here, so I take one and disclose both: 2,517 either way. Had any
+        product never sold, a zero-quantity row could not reach a top 3 regardless.'
+    - word: sold
+      took: both channels — web-shop and walk-in lines alike
+      could_also_mean: physical shops only
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default
+        `applies: subject`, and the subject here is a measure rather than a Store; the rule says in terms
+        that a measure question never reaches that default, and the operator''s ruling of 2026-10-18 is
+        that an unqualified question spans both channels.'
+    blocked_by: []
+  - step: '3'
+    step_asks: quantity sold
+    turns:
+    - why: Price the declared fork in "quantity sold" in one shot — units summed versus orders the product
+        appeared in — by computing both per product and returning everything ranked top-5 on either reading,
+        so I can see whether the two readings pick the same three products and whether anything is tied
+        at the cut.
+      did: "WITH agg AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    SUM(s.quantity) AS units_sold,\n\
+        \    COUNT(DISTINCT s.order_key) AS orders_with_product,\n    COUNT(*) AS sales_lines\n  FROM\
+        \ contoso_served.dim_product AS p\n  JOIN contoso_served.v_contoso5_sales_line AS s\n    ON s.product_key\
+        \ = p.product_key\n  GROUP BY\n    p.product_key,\n    p.product_name\n), ranked AS (\n  SELECT\n\
+        \    agg.*,\n    RANK() OVER (ORDER BY units_sold DESC) AS rank_by_units,\n    RANK() OVER (ORDER\
+        \ BY orders_with_product DESC) AS rank_by_orders\n  FROM agg\n)\nSELECT\n  product_key,\n  product_name,\n\
+        \  units_sold,\n  orders_with_product,\n  sales_lines,\n  rank_by_units,\n  rank_by_orders,\n\
+        \  (\n    SELECT\n      MIN(quantity)\n    FROM contoso_served.v_contoso5_sales_line\n  ) AS min_line_quantity,\n\
+        \  (\n    SELECT\n      MAX(quantity)\n    FROM contoso_served.v_contoso5_sales_line\n  ) AS max_line_quantity\n\
+        FROM ranked\nWHERE\n  rank_by_units <= 5 OR rank_by_orders <= 5\nORDER BY\n  rank_by_units"
+      came_back: '6 row(s): [{"product_key": 431, "product_name": "Adventure Works Desktop PC1.80 ED180
+        Brown", "units_sold": 1542, "orders_with_product": 457, "sales_lines": 459, "rank_by_units": 1,
+        "rank_by_orders": 3, "min_line_quantity": 1, "max_line_quantity": 10}, {"product_key": 423, "product_name":
+        "Adventure Works Desktop PC2.30 MD230 Black", "units_sold": 1482, "orders_with_product": 429,
+        "sales_lines": 430, "rank_by_units": 2, "rank_by_orders": 21, "min_line_quantity": 1, "max_line_quantity":
+        10}, {"product_key": 426, "product_name": "Adventure Works Desktop PC1.80 ED182 Black", "units_sold":
+        1474, "orders_with_product": 466, "sales_lines": 468, "rank_by_units": 3, "rank_by_orders": 1,
+        "min_line_quantity": 1, "max_line_quantity": 10}, {"product_key": 1611, "product_name": "SV DVD
+        9-Inch Player Portable M300 White", "units_sold": 1462, "orders_with_product": 448, "sales_lines":
+        449, "rank_by_units": 4, "rank_by_orders": 4, "min_line_quantity": 1, "max_line_quantity": 10},
+        {"product_key": 1656, "product_name": "Contoso DVD 9-Inch Player Portable M300 White", "units_sold":
+        1459, "orders_with_product": 447, "sales_lines": 448, "rank_by_units": 5, "rank_by_orders": 5,
+        "min_line_quantity": 1, "'
+    settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+      \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+      \ BY\n  p.product_key,\n  p.product_name"
+    means: 'How many individual items of each product went out of the door over the whole ten years of
+      sales on record — one row per product, 2,517 of them, the figure being every unit on every sale
+      line that named that product, added up. It counts pieces, not orders: a single order that took three
+      of something contributes three. Nothing is netted off, because the data holds nothing to net — no
+      return, refund or cancellation column exists and the smallest quantity on any line is 1, so there
+      is no negative anywhere to subtract. Both sales channels are in, shop and web, and no date limit
+      is applied.'
+    readings_taken:
+    - word: quantity sold
+      took: total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading three products
+      could_also_mean: 'the number of separate orders the product appeared in, which gives a DIFFERENT
+        three: ED182 Black 466 orders, ED180 Black 458, ED180 Brown 457. Under that reading PC2.30 MD230
+        Black (2nd by units) falls to 21st, and ED180 Black (2nd by orders) is only 15th by units'
+      declaration: 'Settled by declaration, so I apply units and do not ask: the UnitsSold measure is
+        declared as ''how many items went out: the quantity on a sale, summed'', `quantity` is declared
+        ''how many units of the product the line sold'' with surfaces including ''units sold'', ''how
+        many'' and ''volume'', and it is declared a FLOW on which SUM over any grouping is correct. The
+        orders reading is a different declared measure — Order, counted by distinct order_key — and the
+        question names neither orders nor transactions.'
+    - word: sold
+      took: gross — every unit on every line
+      could_also_mean: net of returns, refunds and cancellations
+      declaration: 'Both readings give the SAME figure here, so there is nothing to choose: the sales
+        relation declares no return, refund, cancellation or line-status column, and measured just now
+        the quantity on every line lies between 1 and 10, so no line can be a reversal of another.'
+    - word: quantity sold
+      took: all time — no date predicate
+      could_also_mean: a recent window such as this year or last quarter
+      declaration: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling
+        of 2026-09-30: a measure asked for with no period named covers the full extent of order_date and
+        the answer must state the first and last date it included. I will state the measured window on
+        the answer step.'
+    blocked_by: []
+  - step: '4'
+    step_asks: top 3 products by quantity sold
+    turns: []
+    settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+      \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+      \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+    means: The three products of which the most individual items went out over all ten years of sales
+      on record, strongest first — each row a product and the total number of units of it sold, counting
+      every unit on every sale line that named it. Pieces, not orders. The three are picked out of all
+      2,517 products, with no date, channel or category restriction, and nothing netted off for returns
+      because the data holds no such thing.
+    readings_taken:
+    - word: top 3
+      took: exactly three rows, ranked on total units descending
+      could_also_mean: more than three rows if the third place were tied
+      declaration: 'Not a live fork, measured: third place has 1,474 units and fourth 1,462, so no tie-break
+        is needed and no fourth product has a claim.'
+    - word: by quantity sold
+      took: ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482, then 426 ED182
+        Black 1,474
+      could_also_mean: 'ranked by number of orders the product appeared in, which puts a different three
+        on the list: 426 ED182 Black 466 orders, 425 ED180 Black 458, 431 ED180 Brown 457 — a different
+        winner and one different member'
+      declaration: Settled at step 3 by the UnitsSold declaration ('the quantity on a sale, summed') and
+        by `quantity`'s own surfaces, which include 'units sold'; the orders reading is the separate Order
+        measure, which the question does not name.
+    blocked_by: []
+  - step: '5'
+    step_asks: top 3 products by quantity sold
+    turns:
+    - why: Read the actual answer rows before claiming anything, and measure the date window the answer
+        covers so I can state it as order.default.an_unscoped_question_covers_all_time requires.
+      did: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold,\n  (\n    SELECT\n      MIN(order_date)\n\
+        \    FROM contoso_served.v_contoso5_sales_line\n  ) AS first_order_date,\n  (\n    SELECT\n  \
+        \    MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  ) AS last_order_date\n\
+        FROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key\
+        \ = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\n\
+        LIMIT 3"
+      came_back: '3 row(s): [{"product_name": "Adventure Works Desktop PC1.80 ED180 Brown", "units_sold":
+        1542, "first_order_date": "2016-05-18", "last_order_date": "2025-12-31"}, {"product_name": "Adventure
+        Works Desktop PC2.30 MD230 Black", "units_sold": 1482, "first_order_date": "2016-05-18", "last_order_date":
+        "2025-12-31"}, {"product_name": "Adventure Works Desktop PC1.80 ED182 Black", "units_sold": 1474,
+        "first_order_date": "2016-05-18", "last_order_date": "2025-12-31"}]'
+    - why: 'Answer claimed from the three rows just read: the top three products by units sold over the
+        full ten-year record, 1,542 / 1,482 / 1,474 units, covering orders from 2016-05-18 to 2025-12-31.'
+      did: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+        \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+        \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
+        so state the answer now from these rows: 3 row(s): [{"product_name": "Adventure Works Desktop
+        PC1.80 ED180 Brown", "units_sold": 1542}, {"product_name": "Adventure Works Desktop PC2.30 MD230
+        Black", "units_sold": 1482}, {"product_name": "Adventure Works Desktop PC1.80 ED182 Black", "units_sold":
+        1474}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from
+        the closed list. If these rows settle the question, do not decline.'
+    settled_on: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+      \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+      \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+    means: 'The three products of which Contoso shifted the most individual items, best first, with how
+      many items: Adventure Works Desktop PC1.80 ED180 Brown 1,542 units, Adventure Works Desktop PC2.30
+      MD230 Black 1,482 units, Adventure Works Desktop PC1.80 ED182 Black 1,474 units. The figure counts
+      PIECES — the quantity on every sale line that named the product, added up — so one order taking
+      three of something contributes three; it is not a count of orders, lines or customers. It covers
+      every order on record, 2016-05-18 to 2025-12-31, and both channels, the web shop and the walk-in
+      shops together. WHAT IS NOT IN IT: nothing is netted off for returns, refunds or cancellations,
+      because this bundle records none — no such column exists and no line carries a negative quantity,
+      so gross and net are the same number here. No category, brand, country, store or trading-state restriction
+      was applied. And these are SKUs: ED180 Brown and ED180 Black count as two different products, which
+      is the level this warehouse calls a product. The third place is not close-run — fourth has 1,462
+      units, so no tie-break was needed.'
+    readings_taken:
+    - word: quantity sold
+      took: 'total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+      could_also_mean: 'the number of separate ORDERS a product appeared in, which gives a different answer:
+        Adventure Works Desktop PC1.80 ED182 Black 466 orders, Adventure Works Desktop PC1.80 ED180 Black
+        458, Adventure Works Desktop PC1.80 ED180 Brown 457. If you meant orders, two things change —
+        the winner becomes ED182 Black rather than ED180 Brown, and PC2.30 MD230 Black leaves the list
+        altogether (21st by orders, though 2nd by units) in favour of ED180 Black (2nd by orders, but
+        only 15th by units). What it does NOT change: ED180 Brown and ED182 Black are in the top three
+        either way, and all four products in play are Adventure Works desktop PCs'
+      declaration: 'I did not ask, because a declaration fixes it: UnitsSold is declared ''how many items
+        went out: the quantity on a sale, summed'', and `quantity` is declared ''how many units of the
+        product the line sold'', surfacing as ''units sold'', ''how many'' and ''volume''. The orders
+        reading is a separate declared measure — Order, counted by distinct order_key — which this question
+        does not name.'
+    - word: products
+      took: one row per SKU, 2,517 of them; measured one name and one code per key, so each name identifies
+        exactly one product
+      could_also_mean: one row per catalogue model with colour variants combined, which would merge ED180
+        Brown and ED180 Black into a single 'Adventure Works Desktop PC1.80 ED180' and would likely reorder
+        the list
+      declaration: 'Settled by declaration: Product is ''a thing Contoso sells, at the level the shelf
+        knows it: a SKU'', and Color declares colour ''the one attribute that on its own makes a new SKU
+        — E400 Green and E400 Orange are two products''. The model-level reading is not available here
+        in any case: no model column exists, and it could only be built by stripping a colour word off
+        the product name, which no declaration authorises.'
+    - word: sold
+      took: gross — every unit on every sale line
+      could_also_mean: net of returns, refunds and cancelled orders
+      declaration: 'The readings give the SAME figures, so there was nothing to choose and nothing to
+        ask: the sales relation declares no return, refund, cancellation or line-status column, and measured
+        over all 223,974 lines the quantity runs from 1 to 10, so no line can be a reversal of another.'
+    - word: top 3 products by quantity sold
+      took: all time — the whole record, 2016-05-18 to 2025-12-31
+      could_also_mean: a recent window such as this year, last quarter or last month
+      declaration: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling
+        of 2026-09-30: a measure asked for with no period named covers the full extent of order_date,
+        and the answer must state the first and last date it included — stated above. Note the record
+        ends 2025-12-31, ten months before today, so any ''recent'' reading would anchor to the data''s
+        vintage rather than the calendar.'
+    - word: products
+      took: the name, `product_name`, as the thing shown
+      could_also_mean: the product code / SKU number, or the internal product key
+      declaration: '`product_name` is declared `naming: common`, first of five in the preference order
+        common > legal > long > short > code, and the declaration says the column nearest `common` is
+        what an answer should show. The keys are available if wanted: 431, 423 and 426 in that order.'
+    blocked_by: []
+stages:
+- stage: prompt
+  status: ok
+  ms: 0
+  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  detail:
+    chars: 84131
+    lines: 1027
+    sections:
+    - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 2 — system prompt for walking one step
+    - STAGE 2 — the declarations, sent once
+    file: acceptance/prompts/465e28b73001.txt
+    sha: 465e28b73001
+    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
+      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
+      as it is now.'
+- stage: understood_as
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    prose: You want the three products that sold the most units, ranked by the total quantity sold across
+      all sales on record (no date range given, so all time), with one row per product showing the product
+      and its total quantity sold. Nothing is excluded — returns, cancellations and discounts are not
+      filtered out because the question doesn't mention them.
+    population: 'All 2,517 products ranked over all 223,974 sale lines, then the top three taken — the
+      only narrowing is the "top 3" the question itself asks for. No channel predicate, because the subject
+      is a measure and store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default
+      `applies: subject`, so the web shop counts alongside the physical shops. No date predicate: the
+      window is the full measured extent of order_date, 2016-05-18 to 2025-12-31. No trading-state, country,
+      brand or category predicate. No product lost to the join — measured, all 2,517 catalogue products
+      appear on at least one sale line and no sale line names a product outside the catalogue. One row
+      is one product_key, the SKU grain.'
+- stage: steps
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    steps_readable: "  1         FROM       products                “products”\n  2  ← 1    GROUP_BY \
+      \  by product              “products”\n  3  ← 2    AGGREGATE  sum of quantity sold    “quantity\
+      \ sold”\n  4  ← 3+3  ORDER_BY   step 3 desc limit 3     “top 3 products by quantity sold”\n  5 \
+      \ ← 4    SELECT     product, quantity sold  “top 3 products by quantity sold”\n  answer: step 5\
+      \   confidence: 0.86"
+- stage: ambiguities
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    ambiguities:
+    - words: quantity sold
+      asks: Do you mean the total number of units sold, or the number of separate orders/transactions
+        the product appeared in?
+      readings:
+      - total units sold (adding up the quantity on each sale line)
+      - number of orders or transactions that included the product
+      took: total units sold
+    - words: top 3 products by quantity sold
+      asks: Over what time period — all time, or a specific window like this year or last month?
+      readings:
+      - all sales on record, with no date limit
+      - a specific recent period, e.g. this year, last quarter or last month
+      took: all sales on record, no date limit
+    - words: products
+      asks: Should each row be a product as you'd list it in a catalogue, or each individual variant/SKU
+        (size, colour, pack) counted separately?
+      readings:
+      - one row per catalogue product, combining all its variants
+      - one row per individual variant or SKU
+      took: one row per catalogue product
+    - words: sold
+      asks: Should returned, refunded or cancelled sales be left out of the quantity?
+      readings:
+      - count everything sold, gross, including items later returned or cancelled
+      - count net quantity, subtracting returns and excluding cancelled orders
+      took: count everything sold, gross
+- stage: cannot_express
+  status: skipped
+  ms: 0
+  summary: ''
+  detail:
+    cannot_express: []
+- stage: output_shape
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    output_shape: *id003
+- stage: confidence
+  status: ok
+  ms: 0
+  summary: 0.86 — stage 1's own confidence in this decomposition
+  detail: {}
+- stage: canonical_json
+  status: ok
+  ms: 0
+  summary: the whole canonical question, once — every block above reads from this
+  detail:
+    canonical_question: *id002
+- stage: resolve
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    readings:
+    - word: products
+      took: one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct keys,
+        so the row IS the product
+      could_also_mean: one row per catalogue model, combining colour variants — 'A. Datum Advanced Digital
+        Camera M300' as one product rather than seven coloured ones
+      declaration: 'Settled by declaration, so I did not ask: the Product concept is ''a thing Contoso
+        sells, at the level the shelf knows it: a SKU'', and Color declares colour as ''the one attribute
+        that on its own makes a new SKU — E400 Green and E400 Orange are two products''. The bundle also
+        holds no model-level column: a catalogue-model grouping would have to be invented by stripping
+        a colour word off product_name, which no declaration authorises.'
+    - word: product
+      took: shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name per product,
+        so grouping on it cannot merge two products
+      could_also_mean: shown by `product_code` (the SKU/article number, also 2,517 distinct) or by the
+        bare `product_key`
+      declaration: '`product_name` is declared `naming: common`, #1 of 5 in the preference order common
+        > legal > long > short > code, and the declaration says the column nearest `common` is what an
+        answer should show; `product_code` is `naming: code`, #5, available if the reader asks for it
+        by name.'
+    - word: products
+      took: one group per `product_key`, i.e. per SKU, carrying `product_name` for display
+      could_also_mean: one group per catalogue model with colour variants combined
+      declaration: 'Settled at step 1 by the Product concept (''at the level the shelf knows it: a SKU'')
+        and by Color (''the one attribute that on its own makes a new SKU''); no model-level column exists
+        to group on.'
+    - word: products
+      took: 'products that have sold — but this restricts nothing, measured: all 2,517 have'
+      could_also_mean: the full catalogue including never-sold products, which would show as rows with
+        zero quantity
+      declaration: 'The readings AGREE here, so I take one and disclose both: 2,517 either way. Had any
+        product never sold, a zero-quantity row could not reach a top 3 regardless.'
+    - word: sold
+      took: both channels — web-shop and walk-in lines alike
+      could_also_mean: physical shops only
+      declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default
+        `applies: subject`, and the subject here is a measure rather than a Store; the rule says in terms
+        that a measure question never reaches that default, and the operator''s ruling of 2026-10-18 is
+        that an unqualified question spans both channels.'
+    - word: quantity sold
+      took: total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading three products
+      could_also_mean: 'the number of separate orders the product appeared in, which gives a DIFFERENT
+        three: ED182 Black 466 orders, ED180 Black 458, ED180 Brown 457. Under that reading PC2.30 MD230
+        Black (2nd by units) falls to 21st, and ED180 Black (2nd by orders) is only 15th by units'
+      declaration: 'Settled by declaration, so I apply units and do not ask: the UnitsSold measure is
+        declared as ''how many items went out: the quantity on a sale, summed'', `quantity` is declared
+        ''how many units of the product the line sold'' with surfaces including ''units sold'', ''how
+        many'' and ''volume'', and it is declared a FLOW on which SUM over any grouping is correct. The
+        orders reading is a different declared measure — Order, counted by distinct order_key — and the
+        question names neither orders nor transactions.'
+    - word: sold
+      took: gross — every unit on every line
+      could_also_mean: net of returns, refunds and cancellations
+      declaration: 'Both readings give the SAME figure here, so there is nothing to choose: the sales
+        relation declares no return, refund, cancellation or line-status column, and measured just now
+        the quantity on every line lies between 1 and 10, so no line can be a reversal of another.'
+    - word: quantity sold
+      took: all time — no date predicate
+      could_also_mean: a recent window such as this year or last quarter
+      declaration: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling
+        of 2026-09-30: a measure asked for with no period named covers the full extent of order_date and
+        the answer must state the first and last date it included. I will state the measured window on
+        the answer step.'
+    - word: top 3
+      took: exactly three rows, ranked on total units descending
+      could_also_mean: more than three rows if the third place were tied
+      declaration: 'Not a live fork, measured: third place has 1,474 units and fourth 1,462, so no tie-break
+        is needed and no fourth product has a claim.'
+    - word: by quantity sold
+      took: ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482, then 426 ED182
+        Black 1,474
+      could_also_mean: 'ranked by number of orders the product appeared in, which puts a different three
+        on the list: 426 ED182 Black 466 orders, 425 ED180 Black 458, 431 ED180 Brown 457 — a different
+        winner and one different member'
+      declaration: Settled at step 3 by the UnitsSold declaration ('the quantity on a sale, summed') and
+        by `quantity`'s own surfaces, which include 'units sold'; the orders reading is the separate Order
+        measure, which the question does not name.
+    - word: quantity sold
+      took: 'total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+      could_also_mean: 'the number of separate ORDERS a product appeared in, which gives a different answer:
+        Adventure Works Desktop PC1.80 ED182 Black 466 orders, Adventure Works Desktop PC1.80 ED180 Black
+        458, Adventure Works Desktop PC1.80 ED180 Brown 457. If you meant orders, two things change —
+        the winner becomes ED182 Black rather than ED180 Brown, and PC2.30 MD230 Black leaves the list
+        altogether (21st by orders, though 2nd by units) in favour of ED180 Black (2nd by orders, but
+        only 15th by units). What it does NOT change: ED180 Brown and ED182 Black are in the top three
+        either way, and all four products in play are Adventure Works desktop PCs'
+      declaration: 'I did not ask, because a declaration fixes it: UnitsSold is declared ''how many items
+        went out: the quantity on a sale, summed'', and `quantity` is declared ''how many units of the
+        product the line sold'', surfacing as ''units sold'', ''how many'' and ''volume''. The orders
+        reading is a separate declared measure — Order, counted by distinct order_key — which this question
+        does not name.'
+    - word: products
+      took: one row per SKU, 2,517 of them; measured one name and one code per key, so each name identifies
+        exactly one product
+      could_also_mean: one row per catalogue model with colour variants combined, which would merge ED180
+        Brown and ED180 Black into a single 'Adventure Works Desktop PC1.80 ED180' and would likely reorder
+        the list
+      declaration: 'Settled by declaration: Product is ''a thing Contoso sells, at the level the shelf
+        knows it: a SKU'', and Color declares colour ''the one attribute that on its own makes a new SKU
+        — E400 Green and E400 Orange are two products''. The model-level reading is not available here
+        in any case: no model column exists, and it could only be built by stripping a colour word off
+        the product name, which no declaration authorises.'
+    - word: sold
+      took: gross — every unit on every sale line
+      could_also_mean: net of returns, refunds and cancelled orders
+      declaration: 'The readings give the SAME figures, so there was nothing to choose and nothing to
+        ask: the sales relation declares no return, refund, cancellation or line-status column, and measured
+        over all 223,974 lines the quantity runs from 1 to 10, so no line can be a reversal of another.'
+    - word: top 3 products by quantity sold
+      took: all time — the whole record, 2016-05-18 to 2025-12-31
+      could_also_mean: a recent window such as this year, last quarter or last month
+      declaration: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling
+        of 2026-09-30: a measure asked for with no period named covers the full extent of order_date,
+        and the answer must state the first and last date it included — stated above. Note the record
+        ends 2025-12-31, ten months before today, so any ''recent'' reading would anchor to the data''s
+        vintage rather than the calendar.'
+    - word: products
+      took: the name, `product_name`, as the thing shown
+      could_also_mean: the product code / SKU number, or the internal product key
+      declaration: '`product_name` is declared `naming: common`, first of five in the preference order
+        common > legal > long > short > code, and the declaration says the column nearest `common` is
+        what an answer should show. The keys are available if wanted: 431, 423 and 426 in that order.'
+- stage: plan
+  status: ok
+  ms: 0
+  summary: 5 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4 -> 5
+  detail:
+    plan:
+      sql: "-- step 1\nSELECT\n  product_key,\n  product_name\nFROM contoso_served.dim_product\n\n-- step\
+        \ 2\nSELECT\n  p.product_key,\n  p.product_name\nFROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line\
+        \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name\n\n--\
+        \ step 3\nSELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+        \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+        \ BY\n  p.product_key,\n  p.product_name\n\n-- step 4\nSELECT\n  p.product_key,\n  p.product_name,\n\
+        \  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line\
+        \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name\nORDER\
+        \ BY\n  units_sold DESC\nLIMIT 3\n\n-- step 5\nSELECT\n  p.product_name,\n  SUM(s.quantity) AS\
+        \ units_sold\nFROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line\
+        \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name\nORDER\
+        \ BY\n  units_sold DESC\nLIMIT 3"
+      params: {}
+- stage: execute
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    rows: *id004
+    stopped_at: null
+    the_data_does_not_hold: []
+- stage: calculated
+  status: ok
+  ms: 0
+  summary: ''
+  detail:
+    what_it_calculated: 'The three products of which Contoso shifted the most individual items, best first,
+      with how many items: Adventure Works Desktop PC1.80 ED180 Brown 1,542 units, Adventure Works Desktop
+      PC2.30 MD230 Black 1,482 units, Adventure Works Desktop PC1.80 ED182 Black 1,474 units. The figure
+      counts PIECES — the quantity on every sale line that named the product, added up — so one order
+      taking three of something contributes three; it is not a count of orders, lines or customers. It
+      covers every order on record, 2016-05-18 to 2025-12-31, and both channels, the web shop and the
+      walk-in shops together. WHAT IS NOT IN IT: nothing is netted off for returns, refunds or cancellations,
+      because this bundle records none — no such column exists and no line carries a negative quantity,
+      so gross and net are the same number here. No category, brand, country, store or trading-state restriction
+      was applied. And these are SKUs: ED180 Brown and ED180 Black count as two different products, which
+      is the level this warehouse calls a product. The third place is not close-run — fourth has 1,462
+      units, so no tie-break was needed.'
+- stage: evaluate
+  status: ok
+  ms: 0
+  summary: claimed as 'a list of names and figures' · graded EXACT
+  detail:
+    claimed_answer: '[{"product": "Adventure Works Desktop PC1.80 ED180 Brown", "quantity sold": 1542},
+      {"product": "Adventure Works Desktop PC2.30 MD230 Black", "quantity sold": 1482}, {"product": "Adventure
+      Works Desktop PC1.80 ED182 Black", "quantity sold": 1474}]'
+    walk_bucket: EXACT
+    walk_why: 3 row(s) match, in the reference's order
+sections:
+- id: question
+  title: The question, as asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: What are the top 3 products by quantity sold?
+- id: prompt
+  title: What the model was given
+  subtitle: the whole document, once, by digest — not pasted here
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - size
+      - 84,131 chars · 1027 lines
+    - - sections
+      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
+        STAGE 2 — the declarations, sent once
+    - - digest
+      - 465e28b73001
+- id: understood_as
+  title: What the model says it was asked
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: You want the three products that sold the most units, ranked by the total quantity sold across
+      all sales on record (no date range given, so all time), with one row per product showing the product
+      and its total quantity sold. Nothing is excluded — returns, cancellations and discounts are not
+      filtered out because the question doesn't mention them.
+- id: canonical_readable
+  title: The question as steps
+  subtitle: ''
+  status: ok
+  body:
+    kind: list
+    value:
+    - '  1         FROM       products                “products”'
+    - '  2  ← 1    GROUP_BY   by product              “products”'
+    - '  3  ← 2    AGGREGATE  sum of quantity sold    “quantity sold”'
+    - '  4  ← 3+3  ORDER_BY   step 3 desc limit 3     “top 3 products by quantity sold”'
+    - '  5  ← 4    SELECT     product, quantity sold  “top 3 products by quantity sold”'
+    - '  answer: step 5   confidence: 0.86'
+    - '  UNDERSTOOD AS: You want the three products that sold the most units, ranked by the total quantity
+      sold across all sales on record (no date range given, so all time), with one row per product showing
+      the product and its total quantity sold. Nothing is excluded — returns, cancellations and discounts
+      are not filtered out because the question doesn''t mention them.'
+    - '  AMBIGUOUS ''quantity sold'' — ASKS: Do you mean the total number of units sold, or the number
+      of separate orders/transactions the product appeared in?'
+    - '      could mean: total units sold (adding up the quantity on each sale line)'
+    - '      could mean: number of orders or transactions that included the product'
+    - '      took: total units sold'
+    - '  AMBIGUOUS ''top 3 products by quantity sold'' — ASKS: Over what time period — all time, or a
+      specific window like this year or last month?'
+    - '      could mean: all sales on record, with no date limit'
+    - '      could mean: a specific recent period, e.g. this year, last quarter or last month'
+    - '      took: all sales on record, no date limit'
+    - '  AMBIGUOUS ''products'' — ASKS: Should each row be a product as you''d list it in a catalogue,
+      or each individual variant/SKU (size, colour, pack) counted separately?'
+    - '      could mean: one row per catalogue product, combining all its variants'
+    - '      could mean: one row per individual variant or SKU'
+    - '      took: one row per catalogue product'
+    - '  AMBIGUOUS ''sold'' — ASKS: Should returned, refunded or cancelled sales be left out of the quantity?'
+    - '      could mean: count everything sold, gross, including items later returned or cancelled'
+    - '      could mean: count net quantity, subtracting returns and excluding cancelled orders'
+    - '      took: count everything sold, gross'
+    - '  OUTPUT SHAPE: a list of names and figures · many row(s) · named by product · carrying quantity
+      sold'
+- id: output_shape
+  title: The shape the answer must have, decided before anything ran
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - shape
+      - a list of names and figures
+    - - rows
+      - many
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
+    - - said
+      - top 3 products by quantity sold
+- id: ambiguities
+  title: What it saw more than one reading of
+  subtitle: each with the reading it took and the declaration that settled it
+  status: ok
+  body:
+    kind: table
+    value:
+    - words: quantity sold
+      asks: Do you mean the total number of units sold, or the number of separate orders/transactions
+        the product appeared in?
+      readings:
+      - total units sold (adding up the quantity on each sale line)
+      - number of orders or transactions that included the product
+      took: total units sold
+    - words: top 3 products by quantity sold
+      asks: Over what time period — all time, or a specific window like this year or last month?
+      readings:
+      - all sales on record, with no date limit
+      - a specific recent period, e.g. this year, last quarter or last month
+      took: all sales on record, no date limit
+    - words: products
+      asks: Should each row be a product as you'd list it in a catalogue, or each individual variant/SKU
+        (size, colour, pack) counted separately?
+      readings:
+      - one row per catalogue product, combining all its variants
+      - one row per individual variant or SKU
+      took: one row per catalogue product
+    - words: sold
+      asks: Should returned, refunded or cancelled sales be left out of the quantity?
+      readings:
+      - count everything sold, gross, including items later returned or cancelled
+      - count net quantity, subtracting returns and excluding cancelled orders
+      took: count everything sold, gross
+- id: sql_by_step
+  title: The statements that ran, in walk order
+  subtitle: ''
+  status: ok
+  body:
+    kind: sql
+    value:
+    - step: '1'
+      sql: "SELECT\n  product_key,\n  product_name\nFROM contoso_served.dim_product"
+      params: {}
+    - step: '2'
+      sql: "SELECT\n  p.product_key,\n  p.product_name\nFROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line\
+        \ AS s\n  ON s.product_key = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+        \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+        \ BY\n  p.product_key,\n  p.product_name"
+      params: {}
+    - step: '4'
+      sql: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+        \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+        \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+      params: {}
+    - step: '5'
+      sql: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+        \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+        \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+      params: {}
+- id: what_it_calculated
+  title: What it says its rows are
+  subtitle: ''
+  status: ok
+  body:
+    kind: prose
+    value: 'The three products of which Contoso shifted the most individual items, best first, with how
+      many items: Adventure Works Desktop PC1.80 ED180 Brown 1,542 units, Adventure Works Desktop PC2.30
+      MD230 Black 1,482 units, Adventure Works Desktop PC1.80 ED182 Black 1,474 units. The figure counts
+      PIECES — the quantity on every sale line that named the product, added up — so one order taking
+      three of something contributes three; it is not a count of orders, lines or customers. It covers
+      every order on record, 2016-05-18 to 2025-12-31, and both channels, the web shop and the walk-in
+      shops together. WHAT IS NOT IN IT: nothing is netted off for returns, refunds or cancellations,
+      because this bundle records none — no such column exists and no line carries a negative quantity,
+      so gross and net are the same number here. No category, brand, country, store or trading-state restriction
+      was applied. And these are SKUs: ED180 Brown and ED180 Black count as two different products, which
+      is the level this warehouse calls a product. The third place is not close-run — fourth has 1,462
+      units, so no tie-break was needed.'
+- id: rows
+  title: What the warehouse returned at the answer step
+  subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
+  status: ok
+  body:
+    kind: rows
+    value:
+      columns: *id007
+      rows: *id004
+      row_count: 3
+      capped: false
+- id: answer
+  title: The answer it claimed
+  subtitle: ''
+  status: ok
+  body:
+    kind: pairs
+    value:
+    - - claimed
+      - '[{"product": "Adventure Works Desktop PC1.80 ED180 Brown", "quantity sold": 1542}, {"product":
+        "Adventure Works Desktop PC2.30 MD230 Black", "quantity sold": 1482}, {"product": "Adventure Works
+        Desktop PC1.80 ED182 Black", "quantity sold": 1474}]'
+    - - shape
+      - a list of names and figures
+    - - population it answered over
+      - 'All 2,517 products ranked over all 223,974 sale lines, then the top three taken — the only narrowing
+        is the "top 3" the question itself asks for. No channel predicate, because the subject is a measure
+        and store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default `applies:
+        subject`, so the web shop counts alongside the physical shops. No date predicate: the window is
+        the full measured extent of order_date, 2016-05-18 to 2025-12-31. No trading-state, country, brand
+        or category predicate. No product lost to the join — measured, all 2,517 catalogue products appear
+        on at least one sale line and no sale line names a product outside the catalogue. One row is one
+        product_key, the SKU grain.'
+- id: thinking
+  title: Every turn it took, and what came back
+  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  status: ok
+  body:
+    kind: table
+    value:
+    - step: '1'
+      step_asks: products
+      turns:
+      - why: 'Establish the base relation for "products" and measure the SKU-vs-catalogue-name grain fork
+          at the same time: does product_name repeat across product_key?'
+        did: 'probe ''dim_product.product_name'' AND ALSO: SELECT COUNT(*) AS row_count, COUNT(DISTINCT
+          product_key) AS distinct_keys, COUNT(DISTINCT product_name) AS distinct_names, COUNT(DISTINCT
+          product_code) AS distinct_codes FROM contoso_served.dim_product'
+        came_back: 'dim_product.product_name (varchar) holds 60+ distinct value(s), first 60: ''A. Datum
+          Advanced Digital Camera M300 Azure'', ''A. Datum Advanced Digital Camera M300 Black'', ''A.
+          Datum Advanced Digital Camera M300 Green'', ''A. Datum Advanced Digital Camera M300 Grey'',
+          ''A. Datum Advanced Digital Camera M300 Orange'', ''A. Datum Advanced Digital Camera M300 Pink'',
+          ''A. Datum Advanced Digital Camera M300 Silver'', ''A. Datum All in One Digital Camera M200
+          Azure'', ''A. Datum All in One Digital Camera M200 Black'', ''A. Datum All in One Digital Camera
+          M200 Green'', ''A. Datum All in One Digital Camera M200 Grey'', ''A. Datum All in One Digital
+          Camera M200 Orange'', ''A. Datum All in One Digital Camera M200 Pink'', ''A. Datum All in One
+          Digital Camera M200 Silver'', ''A. Datum Bridge Digital Camera M300 Azure'', ''A. Datum Bridge
+          Digital Camera M300 Black'', ''A. Datum Bridge Digital Camera M300 Green'', ''A. Datum Bridge
+          Digital Camera M300 Grey'', ''A. Datum Bridge Digital Camera M300 Orange'', ''A. Datum Bridge
+          Digital Camera M300 Pink'', ''A. Datum Bridge Digital Camera M300 Silver'', ''A. Datum Compact
+          Digital Camera M200 Azure'', ''A. Datum Compact Digital Camera M200 Black'', ''A. Datum Compact
+          Digital Camera M200 Green'', '''
+      - why: The probe listed values but not the counts I need; run them now to establish the base relation's
+          grain — is one row one product_key, and does product_name identify it uniquely (the names carry
+          the colour, e.g. 'M300 Azure' / 'M300 Black', which is exactly the SKU-vs-catalogue fork the
+          question raises).
+        did: "SELECT\n  COUNT(*) AS row_count,\n  COUNT(DISTINCT product_key) AS distinct_keys,\n  COUNT(DISTINCT\
+          \ product_name) AS distinct_names,\n  COUNT(DISTINCT product_code) AS distinct_codes,\n  COUNT(*)\
+          \ - COUNT(product_name) AS null_names\nFROM contoso_served.dim_product"
+        came_back: '1 row(s): [{"row_count": 2517, "distinct_keys": 2517, "distinct_names": 2517, "distinct_codes":
+          2517, "null_names": 0}]'
+      settled_on: "SELECT\n  product_key,\n  product_name\nFROM contoso_served.dim_product"
+      means: 'Every product Contoso sells, at the level the shelf knows it — one row per SKU, 2,517 of
+        them, each with its key and the name a reader would recognise (the name carries the colour, so
+        ''M300 Azure'' and ''M300 Black'' are two rows). This is the whole CATALOGUE with nothing excluded:
+        it is not the list of products that have sold, and roughly a portion of these will have no sale
+        at all, which only shows up once the sales lines are joined in at the aggregate step. No date,
+        no channel and no category restriction is applied here, and none is implied.'
+      readings_taken:
+      - word: products
+        took: one row per SKU — `dim_product.product_key`, measured 2,517 rows over 2,517 distinct keys,
+          so the row IS the product
+        could_also_mean: one row per catalogue model, combining colour variants — 'A. Datum Advanced Digital
+          Camera M300' as one product rather than seven coloured ones
+        declaration: 'Settled by declaration, so I did not ask: the Product concept is ''a thing Contoso
+          sells, at the level the shelf knows it: a SKU'', and Color declares colour as ''the one attribute
+          that on its own makes a new SKU — E400 Green and E400 Orange are two products''. The bundle
+          also holds no model-level column: a catalogue-model grouping would have to be invented by stripping
+          a colour word off product_name, which no declaration authorises.'
+      - word: product
+        took: shown by `product_name`, which measured 2,517 distinct over 2,517 keys — one name per product,
+          so grouping on it cannot merge two products
+        could_also_mean: shown by `product_code` (the SKU/article number, also 2,517 distinct) or by the
+          bare `product_key`
+        declaration: '`product_name` is declared `naming: common`, #1 of 5 in the preference order common
+          > legal > long > short > code, and the declaration says the column nearest `common` is what
+          an answer should show; `product_code` is `naming: code`, #5, available if the reader asks for
+          it by name.'
+      blocked_by: []
+    - step: '2'
+      step_asks: products
+      turns:
+      - why: 'Fix what the group-by axis ranges over before anything is summed on it: how many of the
+          2,517 catalogue products actually appear on a sale line, and whether any line points at a product
+          the catalogue does not hold.'
+        did: "SELECT\n  COUNT(*) AS sales_lines,\n  COUNT(DISTINCT s.product_key) AS products_on_a_sale,\n\
+          \  COUNT(DISTINCT CASE WHEN p.product_key IS NULL THEN s.product_key END) AS line_keys_not_in_catalogue\n\
+          FROM contoso_served.v_contoso5_sales_line AS s\nLEFT JOIN contoso_served.dim_product AS p\n\
+          \  ON s.product_key = p.product_key"
+        came_back: '1 row(s): [{"sales_lines": 223974, "products_on_a_sale": 2517, "line_keys_not_in_catalogue":
+          0}]'
+      settled_on: "SELECT\n  p.product_key,\n  p.product_name\nFROM contoso_served.dim_product AS p\n\
+        JOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP BY\n\
+        \  p.product_key,\n  p.product_name"
+      means: 'The 2,517 products Contoso sells, each one now standing for the bundle of sale lines that
+        sold it — one group per SKU, gathering all 223,974 sale lines on record between them. Nothing
+        is measured yet: this is the axis the quantity will be summed along. Every product has at least
+        one line, so no group is empty and no product is dropped by the join. The groups span the full
+        ten years of sales and both channels, shop and web, with no date, category or channel restriction.'
+      readings_taken:
+      - word: products
+        took: one group per `product_key`, i.e. per SKU, carrying `product_name` for display
+        could_also_mean: one group per catalogue model with colour variants combined
+        declaration: 'Settled at step 1 by the Product concept (''at the level the shelf knows it: a SKU'')
+          and by Color (''the one attribute that on its own makes a new SKU''); no model-level column
+          exists to group on.'
+      - word: products
+        took: 'products that have sold — but this restricts nothing, measured: all 2,517 have'
+        could_also_mean: the full catalogue including never-sold products, which would show as rows with
+          zero quantity
+        declaration: 'The readings AGREE here, so I take one and disclose both: 2,517 either way. Had
+          any product never sold, a zero-quantity row could not reach a top 3 regardless.'
+      - word: sold
+        took: both channels — web-shop and walk-in lines alike
+        could_also_mean: physical shops only
+        declaration: 'store.resolution.the_channel_is_the_location_sentinel scopes its `physical` default
+          `applies: subject`, and the subject here is a measure rather than a Store; the rule says in
+          terms that a measure question never reaches that default, and the operator''s ruling of 2026-10-18
+          is that an unqualified question spans both channels.'
+      blocked_by: []
+    - step: '3'
+      step_asks: quantity sold
+      turns:
+      - why: Price the declared fork in "quantity sold" in one shot — units summed versus orders the product
+          appeared in — by computing both per product and returning everything ranked top-5 on either
+          reading, so I can see whether the two readings pick the same three products and whether anything
+          is tied at the cut.
+        did: "WITH agg AS (\n  SELECT\n    p.product_key,\n    p.product_name,\n    SUM(s.quantity) AS\
+          \ units_sold,\n    COUNT(DISTINCT s.order_key) AS orders_with_product,\n    COUNT(*) AS sales_lines\n\
+          \  FROM contoso_served.dim_product AS p\n  JOIN contoso_served.v_contoso5_sales_line AS s\n\
+          \    ON s.product_key = p.product_key\n  GROUP BY\n    p.product_key,\n    p.product_name\n\
+          ), ranked AS (\n  SELECT\n    agg.*,\n    RANK() OVER (ORDER BY units_sold DESC) AS rank_by_units,\n\
+          \    RANK() OVER (ORDER BY orders_with_product DESC) AS rank_by_orders\n  FROM agg\n)\nSELECT\n\
+          \  product_key,\n  product_name,\n  units_sold,\n  orders_with_product,\n  sales_lines,\n  rank_by_units,\n\
+          \  rank_by_orders,\n  (\n    SELECT\n      MIN(quantity)\n    FROM contoso_served.v_contoso5_sales_line\n\
+          \  ) AS min_line_quantity,\n  (\n    SELECT\n      MAX(quantity)\n    FROM contoso_served.v_contoso5_sales_line\n\
+          \  ) AS max_line_quantity\nFROM ranked\nWHERE\n  rank_by_units <= 5 OR rank_by_orders <= 5\n\
+          ORDER BY\n  rank_by_units"
+        came_back: '6 row(s): [{"product_key": 431, "product_name": "Adventure Works Desktop PC1.80 ED180
+          Brown", "units_sold": 1542, "orders_with_product": 457, "sales_lines": 459, "rank_by_units":
+          1, "rank_by_orders": 3, "min_line_quantity": 1, "max_line_quantity": 10}, {"product_key": 423,
+          "product_name": "Adventure Works Desktop PC2.30 MD230 Black", "units_sold": 1482, "orders_with_product":
+          429, "sales_lines": 430, "rank_by_units": 2, "rank_by_orders": 21, "min_line_quantity": 1, "max_line_quantity":
+          10}, {"product_key": 426, "product_name": "Adventure Works Desktop PC1.80 ED182 Black", "units_sold":
+          1474, "orders_with_product": 466, "sales_lines": 468, "rank_by_units": 3, "rank_by_orders":
+          1, "min_line_quantity": 1, "max_line_quantity": 10}, {"product_key": 1611, "product_name": "SV
+          DVD 9-Inch Player Portable M300 White", "units_sold": 1462, "orders_with_product": 448, "sales_lines":
+          449, "rank_by_units": 4, "rank_by_orders": 4, "min_line_quantity": 1, "max_line_quantity": 10},
+          {"product_key": 1656, "product_name": "Contoso DVD 9-Inch Player Portable M300 White", "units_sold":
+          1459, "orders_with_product": 447, "sales_lines": 448, "rank_by_units": 5, "rank_by_orders":
+          5, "min_line_quantity": 1, "'
+      settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM\
+        \ contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key\
+        \ = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name"
+      means: 'How many individual items of each product went out of the door over the whole ten years
+        of sales on record — one row per product, 2,517 of them, the figure being every unit on every
+        sale line that named that product, added up. It counts pieces, not orders: a single order that
+        took three of something contributes three. Nothing is netted off, because the data holds nothing
+        to net — no return, refund or cancellation column exists and the smallest quantity on any line
+        is 1, so there is no negative anywhere to subtract. Both sales channels are in, shop and web,
+        and no date limit is applied.'
+      readings_taken:
+      - word: quantity sold
+        took: total units — SUM(quantity) — giving 1,542 / 1,482 / 1,474 for the leading three products
+        could_also_mean: 'the number of separate orders the product appeared in, which gives a DIFFERENT
+          three: ED182 Black 466 orders, ED180 Black 458, ED180 Brown 457. Under that reading PC2.30 MD230
+          Black (2nd by units) falls to 21st, and ED180 Black (2nd by orders) is only 15th by units'
+        declaration: 'Settled by declaration, so I apply units and do not ask: the UnitsSold measure is
+          declared as ''how many items went out: the quantity on a sale, summed'', `quantity` is declared
+          ''how many units of the product the line sold'' with surfaces including ''units sold'', ''how
+          many'' and ''volume'', and it is declared a FLOW on which SUM over any grouping is correct.
+          The orders reading is a different declared measure — Order, counted by distinct order_key —
+          and the question names neither orders nor transactions.'
+      - word: sold
+        took: gross — every unit on every line
+        could_also_mean: net of returns, refunds and cancellations
+        declaration: 'Both readings give the SAME figure here, so there is nothing to choose: the sales
+          relation declares no return, refund, cancellation or line-status column, and measured just now
+          the quantity on every line lies between 1 and 10, so no line can be a reversal of another.'
+      - word: quantity sold
+        took: all time — no date predicate
+        could_also_mean: a recent window such as this year or last quarter
+        declaration: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling
+          of 2026-09-30: a measure asked for with no period named covers the full extent of order_date
+          and the answer must state the first and last date it included. I will state the measured window
+          on the answer step.'
+      blocked_by: []
+    - step: '4'
+      step_asks: top 3 products by quantity sold
+      turns: []
+      settled_on: "SELECT\n  p.product_key,\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM\
+        \ contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key\
+        \ = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\n\
+        LIMIT 3"
+      means: The three products of which the most individual items went out over all ten years of sales
+        on record, strongest first — each row a product and the total number of units of it sold, counting
+        every unit on every sale line that named it. Pieces, not orders. The three are picked out of all
+        2,517 products, with no date, channel or category restriction, and nothing netted off for returns
+        because the data holds no such thing.
+      readings_taken:
+      - word: top 3
+        took: exactly three rows, ranked on total units descending
+        could_also_mean: more than three rows if the third place were tied
+        declaration: 'Not a live fork, measured: third place has 1,474 units and fourth 1,462, so no tie-break
+          is needed and no fourth product has a claim.'
+      - word: by quantity sold
+        took: ranked by total units — 431 ED180 Brown 1,542, then 423 MD230 Black 1,482, then 426 ED182
+          Black 1,474
+        could_also_mean: 'ranked by number of orders the product appeared in, which puts a different three
+          on the list: 426 ED182 Black 466 orders, 425 ED180 Black 458, 431 ED180 Brown 457 — a different
+          winner and one different member'
+        declaration: Settled at step 3 by the UnitsSold declaration ('the quantity on a sale, summed')
+          and by `quantity`'s own surfaces, which include 'units sold'; the orders reading is the separate
+          Order measure, which the question does not name.
+      blocked_by: []
+    - step: '5'
+      step_asks: top 3 products by quantity sold
+      turns:
+      - why: Read the actual answer rows before claiming anything, and measure the date window the answer
+          covers so I can state it as order.default.an_unscoped_question_covers_all_time requires.
+        did: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold,\n  (\n    SELECT\n      MIN(order_date)\n\
+          \    FROM contoso_served.v_contoso5_sales_line\n  ) AS first_order_date,\n  (\n    SELECT\n\
+          \      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  ) AS last_order_date\n\
+          FROM contoso_served.dim_product AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key\
+          \ = p.product_key\nGROUP BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\n\
+          LIMIT 3"
+        came_back: '3 row(s): [{"product_name": "Adventure Works Desktop PC1.80 ED180 Brown", "units_sold":
+          1542, "first_order_date": "2016-05-18", "last_order_date": "2025-12-31"}, {"product_name": "Adventure
+          Works Desktop PC2.30 MD230 Black", "units_sold": 1482, "first_order_date": "2016-05-18", "last_order_date":
+          "2025-12-31"}, {"product_name": "Adventure Works Desktop PC1.80 ED182 Black", "units_sold":
+          1474, "first_order_date": "2016-05-18", "last_order_date": "2025-12-31"}]'
+      - why: 'Answer claimed from the three rows just read: the top three products by units sold over
+          the full ten-year record, 1,542 / 1,482 / 1,474 units, covering orders from 2016-05-18 to 2025-12-31.'
+        did: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+          \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\n\
+          GROUP BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
+          claim, so state the answer now from these rows: 3 row(s): [{"product_name": "Adventure Works
+          Desktop PC1.80 ED180 Brown", "units_sold": 1542}, {"product_name": "Adventure Works Desktop
+          PC2.30 MD230 Black", "units_sold": 1482}, {"product_name": "Adventure Works Desktop PC1.80 ED182
+          Black", "units_sold": 1474}]  Give `claimed_answer` as the value a person would be handed, and
+          `claimed_answer_is` from the closed list. If these rows settle the question, do not decline.'
+      settled_on: "SELECT\n  p.product_name,\n  SUM(s.quantity) AS units_sold\nFROM contoso_served.dim_product\
+        \ AS p\nJOIN contoso_served.v_contoso5_sales_line AS s\n  ON s.product_key = p.product_key\nGROUP\
+        \ BY\n  p.product_key,\n  p.product_name\nORDER BY\n  units_sold DESC\nLIMIT 3"
+      means: 'The three products of which Contoso shifted the most individual items, best first, with
+        how many items: Adventure Works Desktop PC1.80 ED180 Brown 1,542 units, Adventure Works Desktop
+        PC2.30 MD230 Black 1,482 units, Adventure Works Desktop PC1.80 ED182 Black 1,474 units. The figure
+        counts PIECES — the quantity on every sale line that named the product, added up — so one order
+        taking three of something contributes three; it is not a count of orders, lines or customers.
+        It covers every order on record, 2016-05-18 to 2025-12-31, and both channels, the web shop and
+        the walk-in shops together. WHAT IS NOT IN IT: nothing is netted off for returns, refunds or cancellations,
+        because this bundle records none — no such column exists and no line carries a negative quantity,
+        so gross and net are the same number here. No category, brand, country, store or trading-state
+        restriction was applied. And these are SKUs: ED180 Brown and ED180 Black count as two different
+        products, which is the level this warehouse calls a product. The third place is not close-run
+        — fourth has 1,462 units, so no tie-break was needed.'
+      readings_taken:
+      - word: quantity sold
+        took: 'total units — the quantity on each sale line, summed: 1,542 / 1,482 / 1,474'
+        could_also_mean: 'the number of separate ORDERS a product appeared in, which gives a different
+          answer: Adventure Works Desktop PC1.80 ED182 Black 466 orders, Adventure Works Desktop PC1.80
+          ED180 Black 458, Adventure Works Desktop PC1.80 ED180 Brown 457. If you meant orders, two things
+          change — the winner becomes ED182 Black rather than ED180 Brown, and PC2.30 MD230 Black leaves
+          the list altogether (21st by orders, though 2nd by units) in favour of ED180 Black (2nd by orders,
+          but only 15th by units). What it does NOT change: ED180 Brown and ED182 Black are in the top
+          three either way, and all four products in play are Adventure Works desktop PCs'
+        declaration: 'I did not ask, because a declaration fixes it: UnitsSold is declared ''how many
+          items went out: the quantity on a sale, summed'', and `quantity` is declared ''how many units
+          of the product the line sold'', surfacing as ''units sold'', ''how many'' and ''volume''. The
+          orders reading is a separate declared measure — Order, counted by distinct order_key — which
+          this question does not name.'
+      - word: products
+        took: one row per SKU, 2,517 of them; measured one name and one code per key, so each name identifies
+          exactly one product
+        could_also_mean: one row per catalogue model with colour variants combined, which would merge
+          ED180 Brown and ED180 Black into a single 'Adventure Works Desktop PC1.80 ED180' and would likely
+          reorder the list
+        declaration: 'Settled by declaration: Product is ''a thing Contoso sells, at the level the shelf
+          knows it: a SKU'', and Color declares colour ''the one attribute that on its own makes a new
+          SKU — E400 Green and E400 Orange are two products''. The model-level reading is not available
+          here in any case: no model column exists, and it could only be built by stripping a colour word
+          off the product name, which no declaration authorises.'
+      - word: sold
+        took: gross — every unit on every sale line
+        could_also_mean: net of returns, refunds and cancelled orders
+        declaration: 'The readings give the SAME figures, so there was nothing to choose and nothing to
+          ask: the sales relation declares no return, refund, cancellation or line-status column, and
+          measured over all 223,974 lines the quantity runs from 1 to 10, so no line can be a reversal
+          of another.'
+      - word: top 3 products by quantity sold
+        took: all time — the whole record, 2016-05-18 to 2025-12-31
+        could_also_mean: a recent window such as this year, last quarter or last month
+        declaration: 'order.default.an_unscoped_question_covers_all_time, confidence C, operator ruling
+          of 2026-09-30: a measure asked for with no period named covers the full extent of order_date,
+          and the answer must state the first and last date it included — stated above. Note the record
+          ends 2025-12-31, ten months before today, so any ''recent'' reading would anchor to the data''s
+          vintage rather than the calendar.'
+      - word: products
+        took: the name, `product_name`, as the thing shown
+        could_also_mean: the product code / SKU number, or the internal product key
+        declaration: '`product_name` is declared `naming: common`, first of five in the preference order
+          common > legal > long > short > code, and the declaration says the column nearest `common` is
+          what an answer should show. The keys are available if wanted: 431, 423 and 426 in that order.'
+      blocked_by: []
+- id: canonical_json
+  title: The canonical document, in full, once
+  subtitle: ''
+  status: ok
+  body:
+    kind: json
+    value: *id002
+v3_walk_order:
+- '1'
+- '2'
+- '3'
+- '4'
+- '5'
+v3_answer_step: '5'
+v3_gaps: []
+v3_bucket: EXACT
+v3_why: 3 row(s) match, in the reference's order
+v3_seconds: 275.3
