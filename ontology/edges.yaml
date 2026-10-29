@@ -62,35 +62,17 @@ edges:
       v_contoso5_fx_rate.from_currency = 'USD'
     resolved_by: "ontology/rules/Order.rate_on_order_date.yaml#rule"
     notes: >-
-      THE PREDICATE IS DECLARED, AND THE `1` IS MEASURED — operator-approved 2026-10-08. It was
-      prose until today, held out of `join_rule` so it would not "stand as an unmeasured claim";
-      the cost of that was larger than the claim. `planner/sql.py` reads an edge with no
-      `join_rule` as a SAME-TABLE edge ("no physical JOIN needed"), marks both relations joined and
-      emits NO ON clause — so the predicate was not merely unverified, it was unreachable, and the
-      `composite_key_guard` bound on the rule can only fire on SQL that mentions `to_currency`,
-      which such a plan never does. An enforcement half with no realization half.
-
-      MEASURED 2026-10-08 against contoso5.duckdb, all 223 974 served lines: the triple returns
-      EXACTLY ONE rate per line — rows_out 223 974, min 1, max 1, 0 violations, 0 unmatched on
-      every one of the five currencies (USD 113 614, EUR 49 203, CAD 24 250, GBP 22 829,
-      AUD 14 078). That 1:1 is what `cardinality: '1'` now asserts, and it replaces the rule's
-      former `never: join on currency alone` with a number: on currency alone the join returns up
-      to 20 090 rates per line (every day that currency was quoted), on date alone 25 (the 25
-      ordered pairs quoted that day). The rule's old prose cited "100 450 rows of it", which is the
-      relation's SIZE and not any fan-out.
-
-      `from_currency = 'USD'` IS NOT A CHOSEN LITERAL. It is the amounts' declared unit —
-      net_revenue.yaml#grounding.source.columns.net_amount.offers.aggregate.unit — so the pin is
-      checkable against a declaration rather than being magic. Confirmed independently 2026-10-08
-      (acceptance/verification/manual_value_check_2026-10-08.md): net_amount is USD on every line
-      regardless of `currency_code`, which is the currency TRANSACTED IN and not the unit of the
-      figure. This edge therefore converts USD amounts OUT to a local currency on request; it is
-      never the way to "get USD", and nothing should multiply net_amount by this rate to obtain one.
-
-      STILL OWED: `tools/mac_measure_edges.py` matches `a.x = b.y` only (its own refusal text), so
-      this edge stays in the generator's `unmeasurable` list with a new reason and carries no
-      `verified_by` yet — a ref to a record that does not exist would be the dangling-reference
-      defect. The measurement above is reproducible from the SQL in the commit message.
+      THE PREDICATE IS DECLARED, AND THE `1` IS MEASURED — operator-approved 2026-10-08. A rate is
+      picked by the order's day, the sale's currency as the target, and USD as the source: that
+      triple returns exactly one rate per sales line, which is what `cardinality: '1'` asserts; on
+      the currency alone the join fans out to one rate per quoted day. The measurement is reproduced
+      by the SQL in the commit that declared it and is owed a `verified_by` record
+      (tools/mac_measure_edges.py matches `a.x = b.y` only). `from_currency = 'USD'` IS NOT A CHOSEN
+      LITERAL: it is the amounts' declared unit (`net_amount.offers.aggregate.unit`), confirmed in
+      acceptance/verification/manual_value_check_2026-10-08.md — the sale's `currency_code` is the
+      currency transacted in, not the unit of the figure. This edge converts USD amounts OUT to a
+      local currency on request; it is never the way to "get USD". The business rule is
+      Order.rate_on_order_date.
 
   - edge_id: product__sold_under__brand
     level: business
@@ -148,9 +130,9 @@ edges:
         cardinality: '1'
     join_rule: dim_customer.country_code = dim_country.country_code
     notes: >-
-      104,990 customers over 8 of the 9 codes, no nulls; the ninth is `--`, the online sentinel,
-      which no customer carries. PARENT OPTIONAL, hence `0..N` and not `1..N`: a country with no
-      customer exists, and check_edge_claims_proved refused the stronger claim (2026-09-30).
+      Every customer carries a real country code and none carries the placeholder `--`, which marks
+      the online channel. PARENT OPTIONAL, hence `0..N` and not `1..N`: a country with no customer
+      exists, and check_edge_claims_proved refused the stronger claim (2026-09-30).
 
   - edge_id: store__trades_in__country
     level: physical
@@ -165,8 +147,8 @@ edges:
         cardinality: '1'
     join_rule: dim_store.country_code = dim_country.country_code
     notes: >-
-      74 store rows over all 9 codes, no nulls, mandatory both ways — the store table is where the
-      country set comes from, the online row's `--` included.
+      Every store row carries a country code and every code has a store, mandatory both ways — the
+      store table is where the country set comes from, the online row's `--` included.
 
   - edge_id: location__in__country
     level: physical
@@ -181,8 +163,9 @@ edges:
         cardinality: '1'
     join_rule: dim_location.country_code = dim_country.country_code
     notes: >-
-      67 locations over all 9 codes, mandatory both ways. Location keeps its own `country_name`
-      column, which is the SAME fact one hop closer; the name's home is Country.
+      Every location carries a country code and every code has a location, mandatory both ways.
+      Location keeps its own `country_name` column, which is the SAME fact one hop closer; the
+      name's home is Country.
 
   # ── THE COUNTRY OF THE SALE: ONE edge, ONE ruling ───────────────────────────────────────────────
   # Operator ruling 2026-10-25 ("ok go B1 now"), recorded in
@@ -230,7 +213,8 @@ edges:
         cardinality: '1'
     join_rule: dim_store.store_code = dim_location.location_code
     notes: >-
-      67 locations behind 74 store rows, mandatory both ways.
+      Every location has at least one store row and every store row stands at a location, mandatory
+      both ways.
 
   - edge_id: exchange_rate__quotes_from__currency
     level: physical
