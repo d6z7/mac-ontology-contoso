@@ -18,11 +18,20 @@ A store is a shop you can walk into. The online channel is recorded as a store, 
 - **Supersedes** — `Store.revenue_is_shop_only`
 - **Formerly** — `store.resolution.the_channel_is_the_location_sentinel`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/concepts/store.yaml#readings.channel`
-- `ontology/relations/dim_store.yaml#columns.store_code.rules`
-- `ontology/relations/v_contoso5_sales_line.yaml#columns.channel.rules`
+```
+  declared at   ontology/concepts/store.yaml#readings.channel
+                ontology/relations/dim_store.yaml#columns.store_code.rules
+                ontology/relations/v_contoso5_sales_line.yaml#columns.channel.rules
+  realized by   mac.canon.population_select  (kind resolution)   default: physical
+                physical: store_code != -1
+                online: store_code = -1
+  executed by   planner/populations.py — WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own 
+  tested by     RC05  'How many stores do we have?'  board: pass (stale)
+  tested by     MQ-07  'What is the revenue from the online store?'  board: pass (stale)
+  tested by     OPQ-01  'what is the sales ratio from the internet business compared with physical stores?'  board: not_established (stale)
+```
 
 ## What was said
 
@@ -35,5 +44,4 @@ A store is a shop you can walk into. The online channel is recorded as a store, 
 
 | Question | Reading |
 |---|---|
-| how many stores do we have | physical shops only |
 | what is our revenue | both channels |

@@ -15,7 +15,7 @@ A person on Contoso's customer register, each with a name, a birth date and a pl
 - **Version** — 1.1
 - **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
-- **Last reviewed** — 2026-09-29
+- **Last reviewed** — 2026-10-29
 
 ## How to answer
 

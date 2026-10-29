@@ -1,14 +1,14 @@
 id: RC05
-captured_at: '2026-10-29T00:06:31+00:00'
-ontology_fingerprint: 9455837fe192e4d8
-acceptance_fingerprint: 324b16c41efe7a45
+captured_at: '2026-10-29T14:28:04+00:00'
+ontology_fingerprint: 0e8d1f16b682fd13
+acceptance_fingerprint: af7d72067fb69b16
 engine:
   interpret: live
   provider: v3-walk
   model: claude-opus-5
   mode: llm-execute
   athena: false
-  run_file: 20261028T235941Z_merged.json
+  run_file: 20261029T142237Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
 connection:
@@ -21,31 +21,29 @@ intent:
   subject: stores
   operation: aggregate
   qdmr_simplified: "  1       FROM       stores                    “stores”\n  2  ← 1  AGGREGATE  count\
-    \ distinct of stores  “how many stores”\n  answer: step 2   confidence: 0.62\n  UNDERSTOOD AS: How\
-    \ many stores there are in total — a single count of every store on record, with no filter on whether\
-    \ it is currently open or trading, and no restriction to any date or region. The answer is one number.\n\
-    \  AMBIGUOUS 'do we have' — ASKS: Should this count only the stores that are open and trading right\
-    \ now, or every store on record including closed or not-yet-opened ones?\n      could mean: only stores\
-    \ that are currently open / active\n      could mean: every store ever on record, including closed\
-    \ ones\n      could mean: stores that are open plus ones already signed but not yet trading\n    \
-    \  took: every store on record, with no open/closed filter\n  AMBIGUOUS 'stores' — ASKS: By 'stores'\
-    \ do you mean physical locations only, or should online/web shops and concessions inside other retailers\
-    \ count too?\n      could mean: physical store locations only\n      could mean: all selling points\
-    \ including online and concessions\n      took: all things counted as stores, with no restriction\
-    \ on type\n  AMBIGUOUS 'stores' — ASKS: Should franchised or partner-operated stores be counted alongside\
-    \ the ones we own and operate ourselves?\n      could mean: only our own operated stores\n      could\
-    \ mean: our own stores plus franchised/partner stores\n      took: all stores regardless of who operates\
-    \ them\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many stores"
-  understood_as_in_human_words: How many stores there are in total — a single count of every store on
-    record, with no filter on whether it is currently open or trading, and no restriction to any date
-    or region. The answer is one number.
-  population_actually_answered: 'The 57 store rows with `close_date IS NULL` AND `store_code <> -1` —
-    trading premises, physical only. Both restrictions come from declared subject defaults rather than
-    from the question: `active` from store.resolution.active_is_the_absent_close_date (C), `physical`
-    from store.resolution.the_channel_is_the_location_sentinel (P). This is NOT "every store on record",
-    which is 74 premises over 67 sites. Counted by store_key (premises); counting by site over this same
-    population also gives 57. No country, state, date or operator restriction — the bundle carries no
-    owned-vs-franchised column to restrict on.'
+    \ distinct of stores  “how many stores do we have”\n  answer: step 2   confidence: 0.9\n  UNDERSTOOD\
+    \ AS: You want a single number: how many stores there are in total right now. Each store counts once,\
+    \ with no filtering by region, type, or status, and no time period applied — I am counting every store\
+    \ on record, not only currently-open ones.\n  AMBIGUOUS 'do we have' — ASKS: Should I count every\
+    \ store on record, or only the stores that are currently open and trading?\n      could mean: every\
+    \ store on record, including ones that have closed\n      could mean: only stores that are open and\
+    \ trading today\n      took: every store on record, with no status filter\n  AMBIGUOUS 'stores' —\
+    \ ASKS: By \"stores\", do you mean physical store locations only, or should online/digital sales channels\
+    \ be counted as stores too?\n      could mean: physical store locations only\n      could mean: all\
+    \ sales channels, including online or digital stores\n      took: whatever the business records as\
+    \ a store, with no channel filter\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many stores"
+  understood_as_in_human_words: 'You want a single number: how many stores there are in total right now.
+    Each store counts once, with no filtering by region, type, or status, and no time period applied —
+    I am counting every store on record, not only currently-open ones.'
+  population_actually_answered: 'The 57 rows of contoso_served.dim_store with store_code <> -1 AND close_date
+    IS NULL, counted as distinct store_key. Two restrictions, neither of them in the question''s words:
+    `physical` (store_code <> -1), from Store.channel''s declared default, which drops the one online
+    outlet; and `active` (close_date IS NULL), from Store.trading''s declared default, which drops 16
+    closed physical premises. Both defaults apply rather than lapse because Store.record_questions rules
+    that "How many stores do we have" is a question ABOUT stores and keeps them. The grain is premises
+    (store_key), not places (store_code), per dim_store.store_key `finer_than: store_code`. This is NARROWER
+    than the population the question document assumed — it assumed all 74 rows on record, which would
+    have given 74.'
   how_the_result_must_be_presented:
     shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
@@ -53,12 +51,12 @@ intent:
     - count distinct of stores
     answer_step: '2'
     verb: aggregate
-    said: how many stores
-    stage1_confidence: 0.62
+    said: how many stores do we have
+    stage1_confidence: 0.9
   canonical_question: &id001
-    understood_as: How many stores there are in total — a single count of every store on record, with
-      no filter on whether it is currently open or trading, and no restriction to any date or region.
-      The answer is one number.
+    understood_as: 'You want a single number: how many stores there are in total right now. Each store
+      counts once, with no filtering by region, type, or status, and no time period applied — I am counting
+      every store on record, not only currently-open ones.'
     steps:
     - id: '1'
       do: from
@@ -67,7 +65,7 @@ intent:
     - id: '2'
       do: aggregate
       of: '1'
-      said: how many stores
+      said: how many stores do we have
       figures: &id002
       - how: count distinct
         of: stores
@@ -82,34 +80,26 @@ intent:
       - how many stores
     ambiguities:
     - words: do we have
-      question: Should this count only the stores that are open and trading right now, or every store
-        on record including closed or not-yet-opened ones?
+      question: Should I count every store on record, or only the stores that are currently open and trading?
       readings:
-      - only stores that are currently open / active
-      - every store ever on record, including closed ones
-      - stores that are open plus ones already signed but not yet trading
-      assumed: every store on record, with no open/closed filter
+      - every store on record, including ones that have closed
+      - only stores that are open and trading today
+      assumed: every store on record, with no status filter
     - words: stores
-      question: By 'stores' do you mean physical locations only, or should online/web shops and concessions
-        inside other retailers count too?
+      question: By "stores", do you mean physical store locations only, or should online/digital sales
+        channels be counted as stores too?
       readings:
       - physical store locations only
-      - all selling points including online and concessions
-      assumed: all things counted as stores, with no restriction on type
-    - words: stores
-      question: Should franchised or partner-operated stores be counted alongside the ones we own and
-        operate ourselves?
-      readings:
-      - only our own operated stores
-      - our own stores plus franchised/partner stores
-      assumed: all stores regardless of who operates them
-    confidence: 0.62
+      - all sales channels, including online or digital stores
+      assumed: whatever the business records as a store, with no channel filter
+    cannot_express: []
+    confidence: 0.9
   steps: 2
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
   table:
     columns:
-    - name: how_many_stores
+    - name: how many stores
       type: number
     rows:
     - - 57
@@ -120,110 +110,102 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "do we have → the trading shops: close_date IS NULL, which gives 57 premises\n        could\
-      \ also mean: every premises ever on record, open or closed, which gives 74 rows over 67 sites —\
-      \ 16 of them closed (9 annotated 'Closed', 7 'Restructured')"
-    ref: 'store.resolution.active_is_the_absent_close_date, confidence C, declares 4 populations on this
-      axis with `default: active` and `applies: subject`, and requires the answer to disclose that it
-      defaulted — so the declaration settles this and I did not ask. Note this OVERRIDES the document''s
-      own `understood_as`, which assumed no open/closed filter.'
+    text: "do we have → active — the 57 physical premises with no close_date, which is what the trading\
+      \ default selects\n        could also mean: every store on record including the 16 closed physical\
+      \ premises, which would give 73 physical rows (74 with the web shop)"
+    ref: 'Store.trading: default `active`, `active` is everything `closed` is not, where closed is close_date
+      IS NOT NULL; and Store.record_questions, which rules that "How many stores do we have" is NOT a
+      record question and keeps the physical and active defaults'
   - kind: ''
-    text: "stores → physical premises only: store_code <> -1, which excludes the single 'Online store'\
-      \ row\n        could also mean: all selling points including the web shop, which would add 1 and\
-      \ give 58 trading outlets"
-    ref: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`, `applies:
-      subject`. The one online row is also active, so this fork moves the figure by exactly 1 and by nothing
-      else.'
+    text: "stores → physical only — store_code <> -1, excluding the single online outlet\n        could\
+      \ also mean: all sales channels, counting the web shop as a store, which adds exactly 1 row (58\
+      \ active, 74 overall)"
+    ref: 'Store.channel: default `physical`, `physical` is store_code <> -1; the default holds because
+      this question is ABOUT stores rather than merely routed through them'
   - kind: ''
-    text: "how many stores → counted by premises (store_key); within this population it equals counting\
-      \ by site (store_code) — both are 57\n        could also mean: counted by site, which differs only\
-      \ among CLOSED premises: the 16 closed rows sit on 14 sites, because a re-let site holds a succession\
-      \ of premises"
-    ref: 'The Store grounding declares `counts store_key` while dim_store.store_code is described as ''what
-      a store is counted by'' — one word naming two grains. The grounding''s `snapshot_rule` settles it
-      for this population: ''once the active population has selected the trading rows there is one row
-      per store already — 57 rows over 57 location codes''. Measured and confirmed: 57 premises over 57
-      sites, so the two grains AGREE here and the fork is immaterial unless closed stores are included.'
+    text: "stores → premises — one row per store_key, the grain every sale is recorded against\n     \
+      \   could also mean: places, one row per site; the table holds 74 premises over only 67 distinct\
+      \ site codes, so the two grains genuinely differ — though within the active physical set the declared\
+      \ snapshot_rule says 57 premises sit on 57 sites, so here they coincide"
+    ref: 'dim_store.store_key `finer_than: store_code`, and Store.premises_not_place: a count over stores
+      is a different question from the same count over places, and the answer must say which level it
+      used'
   - kind: ''
-    text: "do we have → trading shops only — close_date IS NULL — giving 57\n        could also mean:\
-      \ every premises ever on record, open or closed: 74 rows over 67 sites, of which 16 are closed (9\
-      \ annotated 'Closed', 7 'Restructured')"
-    ref: 'store.resolution.active_is_the_absent_close_date, confidence C, `default: active`, `applies:
-      subject`, and it requires the answer to DISCLOSE that it defaulted — which this does. It overrides
-      the decomposition''s own `understood_as`, which had assumed no open/closed filter and would have
-      reported 74.'
+    text: "do we have → active — trading premises, close_date IS NULL → 57\n        could also mean: every\
+      \ store ever on record → 73 physical rows, or 74 counting the web shop"
+    ref: 'Store.trading: default `active`; and Store.record_questions, which rules this exact phrasing
+      is not a record question and keeps the active default'
   - kind: ''
-    text: "stores → physical premises only — store_code <> -1 — excluding the single 'Online store'\n\
-      \        could also mean: all selling points including the web shop, which gives 58"
-    ref: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`, `applies:
-      subject`. This fork moves the figure by exactly 1.'
+    text: "stores → physical shops only, store_code <> -1 → 57\n        could also mean: all channels,\
+      \ counting the web shop → 58 active, or 74 over all rows"
+    ref: 'Store.channel: default `physical`, held because the question is ABOUT stores rather than merely
+      routed through them'
   - kind: ''
-    text: "how many stores → count distinct store_key — premises — the grain the Store grounding declares\
-      \ (`counts store_key`)\n        could also mean: count distinct store_code — sites — which returns\
-      \ the SAME 57 here, so the fork costs nothing; it would only matter if closed stores were included\
-      \ (16 premises on 14 sites)"
-    ref: 'The grounding''s snapshot_rule: ''once the active population has selected the trading rows there
-      is one row per store already — 57 rows over 57 location codes, because a location has at most one
-      store with no close date.'' Measured and confirmed.'
+    text: "stores → premises, one per store_key → 57\n        could also mean: places, one per site code;\
+      \ over the whole table these differ (74 premises on 67 sites), but within this trading physical\
+      \ population the declared snapshot_rule says 57 premises stand on 57 sites, so both grains give\
+      \ 57 here"
+    ref: 'dim_store.store_key `finer_than: store_code`; Store.premises_not_place; dim_store snapshot_rule'
+  - kind: ''
+    text: "active → the absent closing date — a state of the record, with no reference date evaluated\n\
+      \        could also mean: trading as at a stated Stichtag, comparing open_date and close_date to\
+      \ a date; Store.trading declares no such date parameter, unlike Customer.active_on_the_reference_date,\
+      \ so no anchor was bound and none is disclosed"
+    ref: 'dim_store.close_date: "THE TRADING-STATE COLUMN: `active` is this being null" (store.resolution.active_is_the_absent_close_date)'
   concepts: []
   rules:
-  - id: 'store.resolution.active_is_the_absent_close_date, confidence C, declares 4 populations on this
-      axis with `default: active` and `applies: subject`, and requires the answer to disclose that it
-      defaulted — so the declaration settles this and I did not ask. Note this OVERRIDES the document''s
-      own `understood_as`, which assumed no open/closed filter.'
-    why: '''do we have'' = the trading shops: close_date IS NULL, which gives 57 premises'
-  - id: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`, `applies:
-      subject`. The one online row is also active, so this fork moves the figure by exactly 1 and by nothing
-      else.'
-    why: '''stores'' = physical premises only: store_code <> -1, which excludes the single ''Online store''
-      row'
-  - id: 'The Store grounding declares `counts store_key` while dim_store.store_code is described as ''what
-      a store is counted by'' — one word naming two grains. The grounding''s `snapshot_rule` settles it
-      for this population: ''once the active population has selected the trading rows there is one row
-      per store already — 57 rows over 57 location codes''. Measured and confirmed: 57 premises over 57
-      sites, so the two grains AGREE here and the fork is immaterial unless closed stores are included.'
-    why: '''how many stores'' = counted by premises (store_key); within this population it equals counting
-      by site (store_code) — both are 57'
-  - id: 'store.resolution.active_is_the_absent_close_date, confidence C, `default: active`, `applies:
-      subject`, and it requires the answer to DISCLOSE that it defaulted — which this does. It overrides
-      the decomposition''s own `understood_as`, which had assumed no open/closed filter and would have
-      reported 74.'
-    why: '''do we have'' = trading shops only — close_date IS NULL — giving 57'
-  - id: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`, `applies:
-      subject`. This fork moves the figure by exactly 1.'
-    why: '''stores'' = physical premises only — store_code <> -1 — excluding the single ''Online store'''
-  - id: 'The grounding''s snapshot_rule: ''once the active population has selected the trading rows there
-      is one row per store already — 57 rows over 57 location codes, because a location has at most one
-      store with no close date.'' Measured and confirmed.'
-    why: '''how many stores'' = count distinct store_key — premises — the grain the Store grounding declares
-      (`counts store_key`)'
+  - id: 'Store.trading: default `active`, `active` is everything `closed` is not, where closed is close_date
+      IS NOT NULL; and Store.record_questions, which rules that "How many stores do we have" is NOT a
+      record question and keeps the physical and active defaults'
+    why: '''do we have'' = active — the 57 physical premises with no close_date, which is what the trading
+      default selects'
+  - id: 'Store.channel: default `physical`, `physical` is store_code <> -1; the default holds because
+      this question is ABOUT stores rather than merely routed through them'
+    why: '''stores'' = physical only — store_code <> -1, excluding the single online outlet'
+  - id: 'dim_store.store_key `finer_than: store_code`, and Store.premises_not_place: a count over stores
+      is a different question from the same count over places, and the answer must say which level it
+      used'
+    why: '''stores'' = premises — one row per store_key, the grain every sale is recorded against'
+  - id: 'Store.trading: default `active`; and Store.record_questions, which rules this exact phrasing
+      is not a record question and keeps the active default'
+    why: '''do we have'' = active — trading premises, close_date IS NULL → 57'
+  - id: 'Store.channel: default `physical`, held because the question is ABOUT stores rather than merely
+      routed through them'
+    why: '''stores'' = physical shops only, store_code <> -1 → 57'
+  - id: 'dim_store.store_key `finer_than: store_code`; Store.premises_not_place; dim_store snapshot_rule'
+    why: '''stores'' = premises, one per store_key → 57'
+  - id: 'dim_store.close_date: "THE TRADING-STATE COLUMN: `active` is this being null" (store.resolution.active_is_the_absent_close_date)'
+    why: '''active'' = the absent closing date — a state of the record, with no reference date evaluated'
   edges: []
 sql:
-- "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-  \ <> -1 AND close_date IS NULL"
-- "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
-  \  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code <> -1 AND\
-  \ close_date IS NULL"
-answer_sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\nWHERE\n\
+- "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\nWHERE\n\
   \  store_code <> -1 AND close_date IS NULL"
+- "SELECT\n  COUNT(*) AS all_rows,\n  COUNT(DISTINCT store_key) AS distinct_premises,\n  COUNT(DISTINCT\
+  \ store_code) AS distinct_site_codes,\n  SUM(CASE WHEN store_code <> -1 THEN 1 ELSE 0 END) AS physical_rows,\n\
+  \  SUM(CASE WHEN store_code = -1 THEN 1 ELSE 0 END) AS online_rows,\n  SUM(CASE WHEN close_date IS NULL\
+  \ THEN 1 ELSE 0 END) AS active_rows_all_channels,\n  SUM(CASE WHEN store_code <> -1 AND close_date IS\
+  \ NULL THEN 1 ELSE 0 END) AS physical_active,\n  SUM(CASE WHEN store_code <> -1 AND NOT close_date IS\
+  \ NULL THEN 1 ELSE 0 END) AS physical_closed\nFROM contoso_served.dim_store"
+answer_sql: "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\n\
+  WHERE\n  store_code <> -1 AND close_date IS NULL"
 sql_valid: true
 result:
   status: ok
   rows: 1
   cols: &id007
-  - how_many_stores
+  - how many stores
   sample_rows:
   - - 57
   capped: false
 prompt:
-  chars: 73996
-  lines: 842
+  chars: 88125
+  lines: 964
   sections:
   - STAGE 1 — question to canonical question (QDMR)
   - STAGE 2 — system prompt for walking one step
   - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/44362d9332a0.txt
-  sha: 44362d9332a0
+  file: acceptance/prompts/ede4cd400aa1.txt
+  sha: ede4cd400aa1
   reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
     the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
     it is now.'
@@ -231,190 +213,184 @@ error: null
 v3_report:
   canonical_question_json: *id001
   canonical_question_simplified: "  1       FROM       stores                    “stores”\n  2  ← 1  AGGREGATE\
-    \  count distinct of stores  “how many stores”\n  answer: step 2   confidence: 0.62\n  UNDERSTOOD\
-    \ AS: How many stores there are in total — a single count of every store on record, with no filter\
-    \ on whether it is currently open or trading, and no restriction to any date or region. The answer\
-    \ is one number.\n  AMBIGUOUS 'do we have' — ASKS: Should this count only the stores that are open\
-    \ and trading right now, or every store on record including closed or not-yet-opened ones?\n     \
-    \ could mean: only stores that are currently open / active\n      could mean: every store ever on\
-    \ record, including closed ones\n      could mean: stores that are open plus ones already signed but\
-    \ not yet trading\n      took: every store on record, with no open/closed filter\n  AMBIGUOUS 'stores'\
-    \ — ASKS: By 'stores' do you mean physical locations only, or should online/web shops and concessions\
-    \ inside other retailers count too?\n      could mean: physical store locations only\n      could\
-    \ mean: all selling points including online and concessions\n      took: all things counted as stores,\
-    \ with no restriction on type\n  AMBIGUOUS 'stores' — ASKS: Should franchised or partner-operated\
-    \ stores be counted alongside the ones we own and operate ourselves?\n      could mean: only our own\
-    \ operated stores\n      could mean: our own stores plus franchised/partner stores\n      took: all\
-    \ stores regardless of who operates them\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many\
-    \ stores"
-  understood_as: How many stores there are in total — a single count of every store on record, with no
-    filter on whether it is currently open or trading, and no restriction to any date or region. The answer
-    is one number.
+    \  count distinct of stores  “how many stores do we have”\n  answer: step 2   confidence: 0.9\n  UNDERSTOOD\
+    \ AS: You want a single number: how many stores there are in total right now. Each store counts once,\
+    \ with no filtering by region, type, or status, and no time period applied — I am counting every store\
+    \ on record, not only currently-open ones.\n  AMBIGUOUS 'do we have' — ASKS: Should I count every\
+    \ store on record, or only the stores that are currently open and trading?\n      could mean: every\
+    \ store on record, including ones that have closed\n      could mean: only stores that are open and\
+    \ trading today\n      took: every store on record, with no status filter\n  AMBIGUOUS 'stores' —\
+    \ ASKS: By \"stores\", do you mean physical store locations only, or should online/digital sales channels\
+    \ be counted as stores too?\n      could mean: physical store locations only\n      could mean: all\
+    \ sales channels, including online or digital stores\n      took: whatever the business records as\
+    \ a store, with no channel filter\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many stores"
+  understood_as: 'You want a single number: how many stores there are in total right now. Each store counts
+    once, with no filtering by region, type, or status, and no time period applied — I am counting every
+    store on record, not only currently-open ones.'
   ambiguities_it_saw:
   - words: do we have
-    asks: Should this count only the stores that are open and trading right now, or every store on record
-      including closed or not-yet-opened ones?
+    asks: Should I count every store on record, or only the stores that are currently open and trading?
     readings:
-    - only stores that are currently open / active
-    - every store ever on record, including closed ones
-    - stores that are open plus ones already signed but not yet trading
-    took: every store on record, with no open/closed filter
+    - every store on record, including ones that have closed
+    - only stores that are open and trading today
+    took: every store on record, with no status filter
   - words: stores
-    asks: By 'stores' do you mean physical locations only, or should online/web shops and concessions
-      inside other retailers count too?
+    asks: By "stores", do you mean physical store locations only, or should online/digital sales channels
+      be counted as stores too?
     readings:
     - physical store locations only
-    - all selling points including online and concessions
-    took: all things counted as stores, with no restriction on type
-  - words: stores
-    asks: Should franchised or partner-operated stores be counted alongside the ones we own and operate
-      ourselves?
-    readings:
-    - only our own operated stores
-    - our own stores plus franchised/partner stores
-    took: all stores regardless of who operates them
+    - all sales channels, including online or digital stores
+    took: whatever the business records as a store, with no channel filter
   presentation:
     claimed_answer_is: one figure
     answer_step: '2'
     answer_step_asks:
       do: aggregate
       of: '1'
-      said: how many stores
+      said: how many stores do we have
       figures: *id002
-    confidence_stage1: 0.62
+    confidence_stage1: 0.9
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-      \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-      \ <> -1 AND close_date IS NULL"
+    sql: "SELECT\n  COUNT(*) AS all_rows,\n  COUNT(DISTINCT store_key) AS distinct_premises,\n  COUNT(DISTINCT\
+      \ store_code) AS distinct_site_codes,\n  SUM(CASE WHEN store_code <> -1 THEN 1 ELSE 0 END) AS physical_rows,\n\
+      \  SUM(CASE WHEN store_code = -1 THEN 1 ELSE 0 END) AS online_rows,\n  SUM(CASE WHEN close_date\
+      \ IS NULL THEN 1 ELSE 0 END) AS active_rows_all_channels,\n  SUM(CASE WHEN store_code <> -1 AND\
+      \ close_date IS NULL THEN 1 ELSE 0 END) AS physical_active,\n  SUM(CASE WHEN store_code <> -1 AND\
+      \ NOT close_date IS NULL THEN 1 ELSE 0 END) AS physical_closed\nFROM contoso_served.dim_store"
     params: {}
   - step: '2'
-    sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\nWHERE\n\
-      \  store_code <> -1 AND close_date IS NULL"
+    sql: "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\n\
+      WHERE\n  store_code <> -1 AND close_date IS NULL"
     params: {}
-  what_it_calculated: 'One row, one figure: 57 is how many shops Contoso is trading from that a customer
-    can walk into — distinct premises, each on its own distinct site. It does NOT include the web shop
-    (1 more) and does NOT include premises that have stopped trading (16 more, on 14 sites, because a
-    re-let site holds a succession of premises). No period limits it: this is the store register as the
-    bundle carries it, not a count derived from any window of sales.'
+  what_it_calculated: 'One row, one figure: 57 is how many shops Contoso can sell from today — physical
+    premises still trading because they carry no closing date, each counted once at the premises grain.
+    It does NOT include the single online outlet, and does NOT include the 16 physical premises that have
+    closed. It is not a count of places: it counts premises, which in this population happen to sit one
+    per site. No period is involved — this is a standing count of the store register as it reads now,
+    not a figure over any window of sales.'
   rows_returned: &id004
-  - how_many_stores: 57
+  - how many stores: 57
   synthesis:
     claimed: '57'
     shape: one figure
-    answered_population: 'The 57 store rows with `close_date IS NULL` AND `store_code <> -1` — trading
-      premises, physical only. Both restrictions come from declared subject defaults rather than from
-      the question: `active` from store.resolution.active_is_the_absent_close_date (C), `physical` from
-      store.resolution.the_channel_is_the_location_sentinel (P). This is NOT "every store on record",
-      which is 74 premises over 67 sites. Counted by store_key (premises); counting by site over this
-      same population also gives 57. No country, state, date or operator restriction — the bundle carries
-      no owned-vs-franchised column to restrict on.'
+    answered_population: 'The 57 rows of contoso_served.dim_store with store_code <> -1 AND close_date
+      IS NULL, counted as distinct store_key. Two restrictions, neither of them in the question''s words:
+      `physical` (store_code <> -1), from Store.channel''s declared default, which drops the one online
+      outlet; and `active` (close_date IS NULL), from Store.trading''s declared default, which drops 16
+      closed physical premises. Both defaults apply rather than lapse because Store.record_questions rules
+      that "How many stores do we have" is a question ABOUT stores and keeps them. The grain is premises
+      (store_key), not places (store_code), per dim_store.store_key `finer_than: store_code`. This is
+      NARROWER than the population the question document assumed — it assumed all 74 rows on record, which
+      would have given 74.'
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
     step_asks: stores
     turns:
-    - why: Measure the two declared Store populations (channel and trading-state) at once, so I know what
-        each reading of "stores" would give before fixing the base set for this step.
-      did: 'probe ''dim_store.store_code'' AND ALSO: SELECT CASE WHEN store_code = -1 THEN ''online''
-        ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''active'' ELSE ''closed''
-        END AS trading, COUNT(*) AS row_n, COUNT(DISTINCT store_key) AS premises, COUNT(DISTINCT store_code)
-        AS sites FROM contoso_served.dim_store GROUP BY 1, 2 ORDER BY 1, 2'
-      came_back: 'dim_store.store_code is a NUMBER (integer): it runs from -1 to 67 over 67 distinct value(s)
-        in 74 row(s)   AND ALSO: 3 row(s): [{"channel": "online", "trading": "active", "row_n": 1, "premises":
-        1, "sites": 1}, {"channel": "physical", "trading": "active", "row_n": 57, "premises": 57, "sites":
-        57}, {"channel": "physical", "trading": "closed", "row_n": 16, "premises": 16, "sites": 14}]'
-    settled_on: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-      \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-      \ <> -1 AND close_date IS NULL"
-    means: 'The base set for the question: one row per shop Contoso is currently trading from and that
-      a customer can physically walk into — 57 premises, each standing on its own distinct site, no web
-      shop and no shop that has stopped trading. Each row is a premises (store_key), carrying its name,
-      country, state, opening date and floor area. Nothing is counted yet; this is the population step
-      2 will count.'
+    - why: Measure the store rows under each declared population (channel × trading state) so I can see
+        what "stores" costs under each reading before fixing this step's base set.
+      did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT COUNT(*) AS all_rows, COUNT(DISTINCT
+        store_key) AS distinct_premises, COUNT(DISTINCT store_code) AS distinct_site_codes, SUM(CASE WHEN
+        store_code <> -1 THEN 1 ELSE 0 END) AS physical_rows, SUM(CASE WHEN store_code = -1 THEN 1 ELSE
+        0 END) AS online_rows, SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS active_rows_all_channels,
+        SUM(CASE WHEN store_code <> -1 AND close_date IS NULL THEN 1 ELSE 0 END) AS physical_active, SUM(CASE
+        WHEN store_code <> -1 AND close_date IS NOT NULL THEN 1 ELSE 0 END) AS physical_closed FROM contoso_served.dim_store'
+      came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'', ''Restructured''   AND
+        ALSO: 1 row(s): [{"all_rows": 74, "distinct_premises": 74, "distinct_site_codes": 67, "physical_rows":
+        73, "online_rows": 1, "active_rows_all_channels": 58, "physical_active": 57, "physical_closed":
+        16}]'
+    settled_on: "SELECT\n  COUNT(*) AS all_rows,\n  COUNT(DISTINCT store_key) AS distinct_premises,\n\
+      \  COUNT(DISTINCT store_code) AS distinct_site_codes,\n  SUM(CASE WHEN store_code <> -1 THEN 1 ELSE\
+      \ 0 END) AS physical_rows,\n  SUM(CASE WHEN store_code = -1 THEN 1 ELSE 0 END) AS online_rows,\n\
+      \  SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS active_rows_all_channels,\n  SUM(CASE\
+      \ WHEN store_code <> -1 AND close_date IS NULL THEN 1 ELSE 0 END) AS physical_active,\n  SUM(CASE\
+      \ WHEN store_code <> -1 AND NOT close_date IS NULL THEN 1 ELSE 0 END) AS physical_closed\nFROM contoso_served.dim_store"
+    means: 'One row per shop premises Contoso can sell from today: a physical shop you can walk into,
+      still trading because it carries no closing date. 57 rows, each a distinct store_key — the premises
+      grain, not the place grain. The web shop is excluded, and so are the 16 physical premises that have
+      closed.'
     readings_taken:
     - word: do we have
-      took: 'the trading shops: close_date IS NULL, which gives 57 premises'
-      could_also_mean: every premises ever on record, open or closed, which gives 74 rows over 67 sites
-        — 16 of them closed (9 annotated 'Closed', 7 'Restructured')
-      declaration: 'store.resolution.active_is_the_absent_close_date, confidence C, declares 4 populations
-        on this axis with `default: active` and `applies: subject`, and requires the answer to disclose
-        that it defaulted — so the declaration settles this and I did not ask. Note this OVERRIDES the
-        document''s own `understood_as`, which assumed no open/closed filter.'
+      took: active — the 57 physical premises with no close_date, which is what the trading default selects
+      could_also_mean: every store on record including the 16 closed physical premises, which would give
+        73 physical rows (74 with the web shop)
+      declaration: 'Store.trading: default `active`, `active` is everything `closed` is not, where closed
+        is close_date IS NOT NULL; and Store.record_questions, which rules that "How many stores do we
+        have" is NOT a record question and keeps the physical and active defaults'
     - word: stores
-      took: 'physical premises only: store_code <> -1, which excludes the single ''Online store'' row'
-      could_also_mean: all selling points including the web shop, which would add 1 and give 58 trading
-        outlets
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`,
-        `applies: subject`. The one online row is also active, so this fork moves the figure by exactly
-        1 and by nothing else.'
-    - word: how many stores
-      took: counted by premises (store_key); within this population it equals counting by site (store_code)
-        — both are 57
-      could_also_mean: 'counted by site, which differs only among CLOSED premises: the 16 closed rows
-        sit on 14 sites, because a re-let site holds a succession of premises'
-      declaration: 'The Store grounding declares `counts store_key` while dim_store.store_code is described
-        as ''what a store is counted by'' — one word naming two grains. The grounding''s `snapshot_rule`
-        settles it for this population: ''once the active population has selected the trading rows there
-        is one row per store already — 57 rows over 57 location codes''. Measured and confirmed: 57 premises
-        over 57 sites, so the two grains AGREE here and the fork is immaterial unless closed stores are
-        included.'
+      took: physical only — store_code <> -1, excluding the single online outlet
+      could_also_mean: all sales channels, counting the web shop as a store, which adds exactly 1 row
+        (58 active, 74 overall)
+      declaration: 'Store.channel: default `physical`, `physical` is store_code <> -1; the default holds
+        because this question is ABOUT stores rather than merely routed through them'
+    - word: stores
+      took: premises — one row per store_key, the grain every sale is recorded against
+      could_also_mean: places, one row per site; the table holds 74 premises over only 67 distinct site
+        codes, so the two grains genuinely differ — though within the active physical set the declared
+        snapshot_rule says 57 premises sit on 57 sites, so here they coincide
+      declaration: 'dim_store.store_key `finer_than: store_code`, and Store.premises_not_place: a count
+        over stores is a different question from the same count over places, and the answer must say which
+        level it used'
     blocked_by: []
   - step: '2'
-    step_asks: how many stores
+    step_asks: how many stores do we have
     turns:
-    - why: Count the base set from step 1 — one figure, distinct premises — which the step-1 measurement
-        already pins at 57.
-      did: "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1 AND close_date IS NULL"
+    - why: Count the distinct premises in the step-1 population to produce the single figure asked for.
+      did: "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\n\
+        WHERE\n  store_code <> -1 AND close_date IS NULL"
       came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 1 row(s): [{"how_many_stores": 57}]  Give `claimed_answer`
+        so state the answer now from these rows: 1 row(s): [{"how many stores": 57}]  Give `claimed_answer`
         as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
         rows settle the question, do not decline.'
-    settled_on: "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\n\
+    settled_on: "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\n\
       WHERE\n  store_code <> -1 AND close_date IS NULL"
-    means: 'One row, one figure: 57 is how many shops Contoso is trading from that a customer can walk
-      into — distinct premises, each on its own distinct site. It does NOT include the web shop (1 more)
-      and does NOT include premises that have stopped trading (16 more, on 14 sites, because a re-let
-      site holds a succession of premises). No period limits it: this is the store register as the bundle
-      carries it, not a count derived from any window of sales.'
+    means: 'One row, one figure: 57 is how many shops Contoso can sell from today — physical premises
+      still trading because they carry no closing date, each counted once at the premises grain. It does
+      NOT include the single online outlet, and does NOT include the 16 physical premises that have closed.
+      It is not a count of places: it counts premises, which in this population happen to sit one per
+      site. No period is involved — this is a standing count of the store register as it reads now, not
+      a figure over any window of sales.'
     readings_taken:
     - word: do we have
-      took: trading shops only — close_date IS NULL — giving 57
-      could_also_mean: 'every premises ever on record, open or closed: 74 rows over 67 sites, of which
-        16 are closed (9 annotated ''Closed'', 7 ''Restructured'')'
-      declaration: 'store.resolution.active_is_the_absent_close_date, confidence C, `default: active`,
-        `applies: subject`, and it requires the answer to DISCLOSE that it defaulted — which this does.
-        It overrides the decomposition''s own `understood_as`, which had assumed no open/closed filter
-        and would have reported 74.'
+      took: active — trading premises, close_date IS NULL → 57
+      could_also_mean: every store ever on record → 73 physical rows, or 74 counting the web shop
+      declaration: 'Store.trading: default `active`; and Store.record_questions, which rules this exact
+        phrasing is not a record question and keeps the active default'
     - word: stores
-      took: physical premises only — store_code <> -1 — excluding the single 'Online store'
-      could_also_mean: all selling points including the web shop, which gives 58
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`,
-        `applies: subject`. This fork moves the figure by exactly 1.'
-    - word: how many stores
-      took: count distinct store_key — premises — the grain the Store grounding declares (`counts store_key`)
-      could_also_mean: count distinct store_code — sites — which returns the SAME 57 here, so the fork
-        costs nothing; it would only matter if closed stores were included (16 premises on 14 sites)
-      declaration: 'The grounding''s snapshot_rule: ''once the active population has selected the trading
-        rows there is one row per store already — 57 rows over 57 location codes, because a location has
-        at most one store with no close date.'' Measured and confirmed.'
+      took: physical shops only, store_code <> -1 → 57
+      could_also_mean: all channels, counting the web shop → 58 active, or 74 over all rows
+      declaration: 'Store.channel: default `physical`, held because the question is ABOUT stores rather
+        than merely routed through them'
+    - word: stores
+      took: premises, one per store_key → 57
+      could_also_mean: places, one per site code; over the whole table these differ (74 premises on 67
+        sites), but within this trading physical population the declared snapshot_rule says 57 premises
+        stand on 57 sites, so both grains give 57 here
+      declaration: 'dim_store.store_key `finer_than: store_code`; Store.premises_not_place; dim_store
+        snapshot_rule'
+    - word: active
+      took: the absent closing date — a state of the record, with no reference date evaluated
+      could_also_mean: trading as at a stated Stichtag, comparing open_date and close_date to a date;
+        Store.trading declares no such date parameter, unlike Customer.active_on_the_reference_date, so
+        no anchor was bound and none is disclosed
+      declaration: 'dim_store.close_date: "THE TRADING-STATE COLUMN: `active` is this being null" (store.resolution.active_is_the_absent_close_date)'
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 73,996 chars · 842 lines  [44362d9332a0]
+  summary: 88,125 chars · 964 lines  [ede4cd400aa1]
   detail:
-    chars: 73996
-    lines: 842
+    chars: 88125
+    lines: 964
     sections:
     - STAGE 1 — question to canonical question (QDMR)
     - STAGE 2 — system prompt for walking one step
     - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/44362d9332a0.txt
-    sha: 44362d9332a0
+    file: acceptance/prompts/ede4cd400aa1.txt
+    sha: ede4cd400aa1
     reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
       the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
       as it is now.'
@@ -423,15 +399,18 @@ stages:
   ms: 0
   summary: ''
   detail:
-    prose: How many stores there are in total — a single count of every store on record, with no filter
-      on whether it is currently open or trading, and no restriction to any date or region. The answer
-      is one number.
-    population: 'The 57 store rows with `close_date IS NULL` AND `store_code <> -1` — trading premises,
-      physical only. Both restrictions come from declared subject defaults rather than from the question:
-      `active` from store.resolution.active_is_the_absent_close_date (C), `physical` from store.resolution.the_channel_is_the_location_sentinel
-      (P). This is NOT "every store on record", which is 74 premises over 67 sites. Counted by store_key
-      (premises); counting by site over this same population also gives 57. No country, state, date or
-      operator restriction — the bundle carries no owned-vs-franchised column to restrict on.'
+    prose: 'You want a single number: how many stores there are in total right now. Each store counts
+      once, with no filtering by region, type, or status, and no time period applied — I am counting every
+      store on record, not only currently-open ones.'
+    population: 'The 57 rows of contoso_served.dim_store with store_code <> -1 AND close_date IS NULL,
+      counted as distinct store_key. Two restrictions, neither of them in the question''s words: `physical`
+      (store_code <> -1), from Store.channel''s declared default, which drops the one online outlet; and
+      `active` (close_date IS NULL), from Store.trading''s declared default, which drops 16 closed physical
+      premises. Both defaults apply rather than lapse because Store.record_questions rules that "How many
+      stores do we have" is a question ABOUT stores and keeps them. The grain is premises (store_key),
+      not places (store_code), per dim_store.store_key `finer_than: store_code`. This is NARROWER than
+      the population the question document assumed — it assumed all 74 rows on record, which would have
+      given 74.'
 - stage: steps
   status: ok
   ms: 0
@@ -439,8 +418,8 @@ stages:
   detail:
     steps_readable:
     - '  1       FROM       stores                    “stores”'
-    - '  2  ← 1  AGGREGATE  count distinct of stores  “how many stores”'
-    - '  answer: step 2   confidence: 0.62'
+    - '  2  ← 1  AGGREGATE  count distinct of stores  “how many stores do we have”'
+    - '  answer: step 2   confidence: 0.9'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -448,27 +427,18 @@ stages:
   detail:
     ambiguities:
     - words: do we have
-      asks: Should this count only the stores that are open and trading right now, or every store on record
-        including closed or not-yet-opened ones?
+      asks: Should I count every store on record, or only the stores that are currently open and trading?
       readings:
-      - only stores that are currently open / active
-      - every store ever on record, including closed ones
-      - stores that are open plus ones already signed but not yet trading
-      took: every store on record, with no open/closed filter
+      - every store on record, including ones that have closed
+      - only stores that are open and trading today
+      took: every store on record, with no status filter
     - words: stores
-      asks: By 'stores' do you mean physical locations only, or should online/web shops and concessions
-        inside other retailers count too?
+      asks: By "stores", do you mean physical store locations only, or should online/digital sales channels
+        be counted as stores too?
       readings:
       - physical store locations only
-      - all selling points including online and concessions
-      took: all things counted as stores, with no restriction on type
-    - words: stores
-      asks: Should franchised or partner-operated stores be counted alongside the ones we own and operate
-        ourselves?
-      readings:
-      - only our own operated stores
-      - our own stores plus franchised/partner stores
-      took: all stores regardless of who operates them
+      - all sales channels, including online or digital stores
+      took: whatever the business records as a store, with no channel filter
 - stage: cannot_express
   status: skipped
   ms: 0
@@ -484,7 +454,7 @@ stages:
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.62 — stage 1's own confidence in this decomposition
+  summary: 0.9 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -499,62 +469,63 @@ stages:
   detail:
     readings:
     - word: do we have
-      took: 'the trading shops: close_date IS NULL, which gives 57 premises'
-      could_also_mean: every premises ever on record, open or closed, which gives 74 rows over 67 sites
-        — 16 of them closed (9 annotated 'Closed', 7 'Restructured')
-      declaration: 'store.resolution.active_is_the_absent_close_date, confidence C, declares 4 populations
-        on this axis with `default: active` and `applies: subject`, and requires the answer to disclose
-        that it defaulted — so the declaration settles this and I did not ask. Note this OVERRIDES the
-        document''s own `understood_as`, which assumed no open/closed filter.'
+      took: active — the 57 physical premises with no close_date, which is what the trading default selects
+      could_also_mean: every store on record including the 16 closed physical premises, which would give
+        73 physical rows (74 with the web shop)
+      declaration: 'Store.trading: default `active`, `active` is everything `closed` is not, where closed
+        is close_date IS NOT NULL; and Store.record_questions, which rules that "How many stores do we
+        have" is NOT a record question and keeps the physical and active defaults'
     - word: stores
-      took: 'physical premises only: store_code <> -1, which excludes the single ''Online store'' row'
-      could_also_mean: all selling points including the web shop, which would add 1 and give 58 trading
-        outlets
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`,
-        `applies: subject`. The one online row is also active, so this fork moves the figure by exactly
-        1 and by nothing else.'
-    - word: how many stores
-      took: counted by premises (store_key); within this population it equals counting by site (store_code)
-        — both are 57
-      could_also_mean: 'counted by site, which differs only among CLOSED premises: the 16 closed rows
-        sit on 14 sites, because a re-let site holds a succession of premises'
-      declaration: 'The Store grounding declares `counts store_key` while dim_store.store_code is described
-        as ''what a store is counted by'' — one word naming two grains. The grounding''s `snapshot_rule`
-        settles it for this population: ''once the active population has selected the trading rows there
-        is one row per store already — 57 rows over 57 location codes''. Measured and confirmed: 57 premises
-        over 57 sites, so the two grains AGREE here and the fork is immaterial unless closed stores are
-        included.'
+      took: physical only — store_code <> -1, excluding the single online outlet
+      could_also_mean: all sales channels, counting the web shop as a store, which adds exactly 1 row
+        (58 active, 74 overall)
+      declaration: 'Store.channel: default `physical`, `physical` is store_code <> -1; the default holds
+        because this question is ABOUT stores rather than merely routed through them'
+    - word: stores
+      took: premises — one row per store_key, the grain every sale is recorded against
+      could_also_mean: places, one row per site; the table holds 74 premises over only 67 distinct site
+        codes, so the two grains genuinely differ — though within the active physical set the declared
+        snapshot_rule says 57 premises sit on 57 sites, so here they coincide
+      declaration: 'dim_store.store_key `finer_than: store_code`, and Store.premises_not_place: a count
+        over stores is a different question from the same count over places, and the answer must say which
+        level it used'
     - word: do we have
-      took: trading shops only — close_date IS NULL — giving 57
-      could_also_mean: 'every premises ever on record, open or closed: 74 rows over 67 sites, of which
-        16 are closed (9 annotated ''Closed'', 7 ''Restructured'')'
-      declaration: 'store.resolution.active_is_the_absent_close_date, confidence C, `default: active`,
-        `applies: subject`, and it requires the answer to DISCLOSE that it defaulted — which this does.
-        It overrides the decomposition''s own `understood_as`, which had assumed no open/closed filter
-        and would have reported 74.'
+      took: active — trading premises, close_date IS NULL → 57
+      could_also_mean: every store ever on record → 73 physical rows, or 74 counting the web shop
+      declaration: 'Store.trading: default `active`; and Store.record_questions, which rules this exact
+        phrasing is not a record question and keeps the active default'
     - word: stores
-      took: physical premises only — store_code <> -1 — excluding the single 'Online store'
-      could_also_mean: all selling points including the web shop, which gives 58
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`,
-        `applies: subject`. This fork moves the figure by exactly 1.'
-    - word: how many stores
-      took: count distinct store_key — premises — the grain the Store grounding declares (`counts store_key`)
-      could_also_mean: count distinct store_code — sites — which returns the SAME 57 here, so the fork
-        costs nothing; it would only matter if closed stores were included (16 premises on 14 sites)
-      declaration: 'The grounding''s snapshot_rule: ''once the active population has selected the trading
-        rows there is one row per store already — 57 rows over 57 location codes, because a location has
-        at most one store with no close date.'' Measured and confirmed.'
+      took: physical shops only, store_code <> -1 → 57
+      could_also_mean: all channels, counting the web shop → 58 active, or 74 over all rows
+      declaration: 'Store.channel: default `physical`, held because the question is ABOUT stores rather
+        than merely routed through them'
+    - word: stores
+      took: premises, one per store_key → 57
+      could_also_mean: places, one per site code; over the whole table these differ (74 premises on 67
+        sites), but within this trading physical population the declared snapshot_rule says 57 premises
+        stand on 57 sites, so both grains give 57 here
+      declaration: 'dim_store.store_key `finer_than: store_code`; Store.premises_not_place; dim_store
+        snapshot_rule'
+    - word: active
+      took: the absent closing date — a state of the record, with no reference date evaluated
+      could_also_mean: trading as at a stated Stichtag, comparing open_date and close_date to a date;
+        Store.trading declares no such date parameter, unlike Customer.active_on_the_reference_date, so
+        no anchor was bound and none is disclosed
+      declaration: 'dim_store.close_date: "THE TRADING-STATE COLUMN: `active` is this being null" (store.resolution.active_is_the_absent_close_date)'
 - stage: plan
   status: ok
   ms: 0
   summary: 2 statement(s), one per settled step · walk order 1 -> 2
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n\
-        \  open_date,\n  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\n\
-        WHERE\n  store_code <> -1 AND close_date IS NULL\n\n-- step 2\nSELECT\n  COUNT(DISTINCT store_key)\
-        \ AS how_many_stores\nFROM contoso_served.dim_store\nWHERE\n  store_code <> -1 AND close_date\
-        \ IS NULL"
+      sql: "-- step 1\nSELECT\n  COUNT(*) AS all_rows,\n  COUNT(DISTINCT store_key) AS distinct_premises,\n\
+        \  COUNT(DISTINCT store_code) AS distinct_site_codes,\n  SUM(CASE WHEN store_code <> -1 THEN 1\
+        \ ELSE 0 END) AS physical_rows,\n  SUM(CASE WHEN store_code = -1 THEN 1 ELSE 0 END) AS online_rows,\n\
+        \  SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS active_rows_all_channels,\n  SUM(CASE\
+        \ WHEN store_code <> -1 AND close_date IS NULL THEN 1 ELSE 0 END) AS physical_active,\n  SUM(CASE\
+        \ WHEN store_code <> -1 AND NOT close_date IS NULL THEN 1 ELSE 0 END) AS physical_closed\nFROM\
+        \ contoso_served.dim_store\n\n-- step 2\nSELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\
+        \nFROM contoso_served.dim_store\nWHERE\n  store_code <> -1 AND close_date IS NULL"
       params: {}
 - stage: execute
   status: ok
@@ -569,11 +540,12 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'One row, one figure: 57 is how many shops Contoso is trading from that a customer
-      can walk into — distinct premises, each on its own distinct site. It does NOT include the web shop
-      (1 more) and does NOT include premises that have stopped trading (16 more, on 14 sites, because
-      a re-let site holds a succession of premises). No period limits it: this is the store register as
-      the bundle carries it, not a count derived from any window of sales.'
+    what_it_calculated: 'One row, one figure: 57 is how many shops Contoso can sell from today — physical
+      premises still trading because they carry no closing date, each counted once at the premises grain.
+      It does NOT include the single online outlet, and does NOT include the 16 physical premises that
+      have closed. It is not a count of places: it counts premises, which in this population happen to
+      sit one per site. No period is involved — this is a standing count of the store register as it reads
+      now, not a figure over any window of sales.'
 - stage: evaluate
   status: ok
   ms: 0
@@ -598,21 +570,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 73,996 chars · 842 lines
+      - 88,125 chars · 964 lines
     - - sections
       - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
         STAGE 2 — the declarations, sent once
     - - digest
-      - 44362d9332a0
+      - ede4cd400aa1
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: How many stores there are in total — a single count of every store on record, with no filter
-      on whether it is currently open or trading, and no restriction to any date or region. The answer
-      is one number.
+    value: 'You want a single number: how many stores there are in total right now. Each store counts
+      once, with no filtering by region, type, or status, and no time period applied — I am counting every
+      store on record, not only currently-open ones.'
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -621,8 +593,8 @@ sections:
     kind: list
     value:
     - '  1       FROM       stores                    “stores”'
-    - '  2  ← 1  AGGREGATE  count distinct of stores  “how many stores”'
-    - '  answer: step 2   confidence: 0.62'
+    - '  2  ← 1  AGGREGATE  count distinct of stores  “how many stores do we have”'
+    - '  answer: step 2   confidence: 0.9'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -650,34 +622,22 @@ sections:
     - - - the words
         - do we have
       - - what it would ask
-        - Should this count only the stores that are open and trading right now, or every store on record
-          including closed or not-yet-opened ones?
+        - Should I count every store on record, or only the stores that are currently open and trading?
       - - could mean
-        - - only stores that are currently open / active
-          - every store ever on record, including closed ones
-          - stores that are open plus ones already signed but not yet trading
+        - - every store on record, including ones that have closed
+          - only stores that are open and trading today
       - - took
-        - every store on record, with no open/closed filter
+        - every store on record, with no status filter
     - - - the words
         - stores
       - - what it would ask
-        - By 'stores' do you mean physical locations only, or should online/web shops and concessions
-          inside other retailers count too?
+        - By "stores", do you mean physical store locations only, or should online/digital sales channels
+          be counted as stores too?
       - - could mean
         - - physical store locations only
-          - all selling points including online and concessions
+          - all sales channels, including online or digital stores
       - - took
-        - all things counted as stores, with no restriction on type
-    - - - the words
-        - stores
-      - - what it would ask
-        - Should franchised or partner-operated stores be counted alongside the ones we own and operate
-          ourselves?
-      - - could mean
-        - - only our own operated stores
-          - our own stores plus franchised/partner stores
-      - - took
-        - all stores regardless of who operates them
+        - whatever the business records as a store, with no channel filter
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -686,13 +646,16 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-        \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1 AND close_date IS NULL"
+      sql: "SELECT\n  COUNT(*) AS all_rows,\n  COUNT(DISTINCT store_key) AS distinct_premises,\n  COUNT(DISTINCT\
+        \ store_code) AS distinct_site_codes,\n  SUM(CASE WHEN store_code <> -1 THEN 1 ELSE 0 END) AS\
+        \ physical_rows,\n  SUM(CASE WHEN store_code = -1 THEN 1 ELSE 0 END) AS online_rows,\n  SUM(CASE\
+        \ WHEN close_date IS NULL THEN 1 ELSE 0 END) AS active_rows_all_channels,\n  SUM(CASE WHEN store_code\
+        \ <> -1 AND close_date IS NULL THEN 1 ELSE 0 END) AS physical_active,\n  SUM(CASE WHEN store_code\
+        \ <> -1 AND NOT close_date IS NULL THEN 1 ELSE 0 END) AS physical_closed\nFROM contoso_served.dim_store"
       params: {}
     - step: '2'
-      sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1 AND close_date IS NULL"
+      sql: "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\n\
+        WHERE\n  store_code <> -1 AND close_date IS NULL"
       params: {}
 - id: what_it_calculated
   title: What it says its rows are
@@ -700,11 +663,12 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'One row, one figure: 57 is how many shops Contoso is trading from that a customer can walk
-      into — distinct premises, each on its own distinct site. It does NOT include the web shop (1 more)
-      and does NOT include premises that have stopped trading (16 more, on 14 sites, because a re-let
-      site holds a succession of premises). No period limits it: this is the store register as the bundle
-      carries it, not a count derived from any window of sales.'
+    value: 'One row, one figure: 57 is how many shops Contoso can sell from today — physical premises
+      still trading because they carry no closing date, each counted once at the premises grain. It does
+      NOT include the single online outlet, and does NOT include the 16 physical premises that have closed.
+      It is not a count of places: it counts premises, which in this population happen to sit one per
+      site. No period is involved — this is a standing count of the store register as it reads now, not
+      a figure over any window of sales.'
 - id: declarations
   title: Which declarations it read, and what each settled
   subtitle: the path the decision took through the ontology — read off the walk's own citations, never
@@ -714,48 +678,41 @@ sections:
     kind: records
     value:
     - - - declaration
-        - 'store.resolution.active_is_the_absent_close_date, confidence C, declares 4 populations on this
-          axis with `default: active` and `applies: subject`, and requires the answer to disclose that
-          it defaulted — so the declaration settles this and I did not ask. Note this OVERRIDES the document''s
-          own `understood_as`, which assumed no open/closed filter.'
+        - 'Store.trading: default `active`, `active` is everything `closed` is not, where closed is close_date
+          IS NOT NULL; and Store.record_questions, which rules that "How many stores do we have" is NOT
+          a record question and keeps the physical and active defaults'
       - - what it settled
-        - '''do we have'' = the trading shops: close_date IS NULL, which gives 57 premises'
+        - '''do we have'' = active — the 57 physical premises with no close_date, which is what the trading
+          default selects'
     - - - declaration
-        - 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`, `applies:
-          subject`. The one online row is also active, so this fork moves the figure by exactly 1 and
-          by nothing else.'
+        - 'Store.channel: default `physical`, `physical` is store_code <> -1; the default holds because
+          this question is ABOUT stores rather than merely routed through them'
       - - what it settled
-        - '''stores'' = physical premises only: store_code <> -1, which excludes the single ''Online store''
-          row'
+        - '''stores'' = physical only — store_code <> -1, excluding the single online outlet'
     - - - declaration
-        - 'The Store grounding declares `counts store_key` while dim_store.store_code is described as
-          ''what a store is counted by'' — one word naming two grains. The grounding''s `snapshot_rule`
-          settles it for this population: ''once the active population has selected the trading rows there
-          is one row per store already — 57 rows over 57 location codes''. Measured and confirmed: 57
-          premises over 57 sites, so the two grains AGREE here and the fork is immaterial unless closed
-          stores are included.'
+        - 'dim_store.store_key `finer_than: store_code`, and Store.premises_not_place: a count over stores
+          is a different question from the same count over places, and the answer must say which level
+          it used'
       - - what it settled
-        - '''how many stores'' = counted by premises (store_key); within this population it equals counting
-          by site (store_code) — both are 57'
+        - '''stores'' = premises — one row per store_key, the grain every sale is recorded against'
     - - - declaration
-        - 'store.resolution.active_is_the_absent_close_date, confidence C, `default: active`, `applies:
-          subject`, and it requires the answer to DISCLOSE that it defaulted — which this does. It overrides
-          the decomposition''s own `understood_as`, which had assumed no open/closed filter and would
-          have reported 74.'
+        - 'Store.trading: default `active`; and Store.record_questions, which rules this exact phrasing
+          is not a record question and keeps the active default'
       - - what it settled
-        - '''do we have'' = trading shops only — close_date IS NULL — giving 57'
+        - '''do we have'' = active — trading premises, close_date IS NULL → 57'
     - - - declaration
-        - 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`, `applies:
-          subject`. This fork moves the figure by exactly 1.'
+        - 'Store.channel: default `physical`, held because the question is ABOUT stores rather than merely
+          routed through them'
       - - what it settled
-        - '''stores'' = physical premises only — store_code <> -1 — excluding the single ''Online store'''
+        - '''stores'' = physical shops only, store_code <> -1 → 57'
     - - - declaration
-        - 'The grounding''s snapshot_rule: ''once the active population has selected the trading rows
-          there is one row per store already — 57 rows over 57 location codes, because a location has
-          at most one store with no close date.'' Measured and confirmed.'
+        - 'dim_store.store_key `finer_than: store_code`; Store.premises_not_place; dim_store snapshot_rule'
       - - what it settled
-        - '''how many stores'' = count distinct store_key — premises — the grain the Store grounding declares
-          (`counts store_key`)'
+        - '''stores'' = premises, one per store_key → 57'
+    - - - declaration
+        - 'dim_store.close_date: "THE TRADING-STATE COLUMN: `active` is this being null" (store.resolution.active_is_the_absent_close_date)'
+      - - what it settled
+        - '''active'' = the absent closing date — a state of the record, with no reference date evaluated'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -779,12 +736,15 @@ sections:
     - - shape
       - one figure
     - - population it answered over
-      - 'The 57 store rows with `close_date IS NULL` AND `store_code <> -1` — trading premises, physical
-        only. Both restrictions come from declared subject defaults rather than from the question: `active`
-        from store.resolution.active_is_the_absent_close_date (C), `physical` from store.resolution.the_channel_is_the_location_sentinel
-        (P). This is NOT "every store on record", which is 74 premises over 67 sites. Counted by store_key
-        (premises); counting by site over this same population also gives 57. No country, state, date
-        or operator restriction — the bundle carries no owned-vs-franchised column to restrict on.'
+      - 'The 57 rows of contoso_served.dim_store with store_code <> -1 AND close_date IS NULL, counted
+        as distinct store_key. Two restrictions, neither of them in the question''s words: `physical`
+        (store_code <> -1), from Store.channel''s declared default, which drops the one online outlet;
+        and `active` (close_date IS NULL), from Store.trading''s declared default, which drops 16 closed
+        physical premises. Both defaults apply rather than lapse because Store.record_questions rules
+        that "How many stores do we have" is a question ABOUT stores and keeps them. The grain is premises
+        (store_key), not places (store_code), per dim_store.store_key `finer_than: store_code`. This is
+        NARROWER than the population the question document assumed — it assumed all 74 rows on record,
+        which would have given 74.'
 - id: thinking
   title: How it got there, step by step
   subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
@@ -795,91 +755,94 @@ sections:
     value:
     - step: '1'
       asks: stores
-      sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-        \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1 AND close_date IS NULL"
-      means: 'The base set for the question: one row per shop Contoso is currently trading from and that
-        a customer can physically walk into — 57 premises, each standing on its own distinct site, no
-        web shop and no shop that has stopped trading. Each row is a premises (store_key), carrying its
-        name, country, state, opening date and floor area. Nothing is counted yet; this is the population
-        step 2 will count.'
+      sql: "SELECT\n  COUNT(*) AS all_rows,\n  COUNT(DISTINCT store_key) AS distinct_premises,\n  COUNT(DISTINCT\
+        \ store_code) AS distinct_site_codes,\n  SUM(CASE WHEN store_code <> -1 THEN 1 ELSE 0 END) AS\
+        \ physical_rows,\n  SUM(CASE WHEN store_code = -1 THEN 1 ELSE 0 END) AS online_rows,\n  SUM(CASE\
+        \ WHEN close_date IS NULL THEN 1 ELSE 0 END) AS active_rows_all_channels,\n  SUM(CASE WHEN store_code\
+        \ <> -1 AND close_date IS NULL THEN 1 ELSE 0 END) AS physical_active,\n  SUM(CASE WHEN store_code\
+        \ <> -1 AND NOT close_date IS NULL THEN 1 ELSE 0 END) AS physical_closed\nFROM contoso_served.dim_store"
+      means: 'One row per shop premises Contoso can sell from today: a physical shop you can walk into,
+        still trading because it carries no closing date. 57 rows, each a distinct store_key — the premises
+        grain, not the place grain. The web shop is excluded, and so are the 16 physical premises that
+        have closed.'
       readings:
       - word: do we have
-        took: 'the trading shops: close_date IS NULL, which gives 57 premises'
-        could_also_mean: every premises ever on record, open or closed, which gives 74 rows over 67 sites
-          — 16 of them closed (9 annotated 'Closed', 7 'Restructured')
-        declaration: 'store.resolution.active_is_the_absent_close_date, confidence C, declares 4 populations
-          on this axis with `default: active` and `applies: subject`, and requires the answer to disclose
-          that it defaulted — so the declaration settles this and I did not ask. Note this OVERRIDES the
-          document''s own `understood_as`, which assumed no open/closed filter.'
+        took: active — the 57 physical premises with no close_date, which is what the trading default
+          selects
+        could_also_mean: every store on record including the 16 closed physical premises, which would
+          give 73 physical rows (74 with the web shop)
+        declaration: 'Store.trading: default `active`, `active` is everything `closed` is not, where closed
+          is close_date IS NOT NULL; and Store.record_questions, which rules that "How many stores do
+          we have" is NOT a record question and keeps the physical and active defaults'
       - word: stores
-        took: 'physical premises only: store_code <> -1, which excludes the single ''Online store'' row'
-        could_also_mean: all selling points including the web shop, which would add 1 and give 58 trading
-          outlets
-        declaration: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`,
-          `applies: subject`. The one online row is also active, so this fork moves the figure by exactly
-          1 and by nothing else.'
-      - word: how many stores
-        took: counted by premises (store_key); within this population it equals counting by site (store_code)
-          — both are 57
-        could_also_mean: 'counted by site, which differs only among CLOSED premises: the 16 closed rows
-          sit on 14 sites, because a re-let site holds a succession of premises'
-        declaration: 'The Store grounding declares `counts store_key` while dim_store.store_code is described
-          as ''what a store is counted by'' — one word naming two grains. The grounding''s `snapshot_rule`
-          settles it for this population: ''once the active population has selected the trading rows there
-          is one row per store already — 57 rows over 57 location codes''. Measured and confirmed: 57
-          premises over 57 sites, so the two grains AGREE here and the fork is immaterial unless closed
-          stores are included.'
+        took: physical only — store_code <> -1, excluding the single online outlet
+        could_also_mean: all sales channels, counting the web shop as a store, which adds exactly 1 row
+          (58 active, 74 overall)
+        declaration: 'Store.channel: default `physical`, `physical` is store_code <> -1; the default holds
+          because this question is ABOUT stores rather than merely routed through them'
+      - word: stores
+        took: premises — one row per store_key, the grain every sale is recorded against
+        could_also_mean: places, one row per site; the table holds 74 premises over only 67 distinct site
+          codes, so the two grains genuinely differ — though within the active physical set the declared
+          snapshot_rule says 57 premises sit on 57 sites, so here they coincide
+        declaration: 'dim_store.store_key `finer_than: store_code`, and Store.premises_not_place: a count
+          over stores is a different question from the same count over places, and the answer must say
+          which level it used'
       turns:
-      - why: Measure the two declared Store populations (channel and trading-state) at once, so I know
-          what each reading of "stores" would give before fixing the base set for this step.
-        did: 'probe ''dim_store.store_code'' AND ALSO: SELECT CASE WHEN store_code = -1 THEN ''online''
-          ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''active'' ELSE ''closed''
-          END AS trading, COUNT(*) AS row_n, COUNT(DISTINCT store_key) AS premises, COUNT(DISTINCT store_code)
-          AS sites FROM contoso_served.dim_store GROUP BY 1, 2 ORDER BY 1, 2'
-        came_back: 'dim_store.store_code is a NUMBER (integer): it runs from -1 to 67 over 67 distinct
-          value(s) in 74 row(s)   AND ALSO: 3 row(s): [{"channel": "online", "trading": "active", "row_n":
-          1, "premises": 1, "sites": 1}, {"channel": "physical", "trading": "active", "row_n": 57, "premises":
-          57, "sites": 57}, {"channel": "physical", "trading": "closed", "row_n": 16, "premises": 16,
-          "sites": 14}]'
+      - why: Measure the store rows under each declared population (channel × trading state) so I can
+          see what "stores" costs under each reading before fixing this step's base set.
+        did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT COUNT(*) AS all_rows, COUNT(DISTINCT
+          store_key) AS distinct_premises, COUNT(DISTINCT store_code) AS distinct_site_codes, SUM(CASE
+          WHEN store_code <> -1 THEN 1 ELSE 0 END) AS physical_rows, SUM(CASE WHEN store_code = -1 THEN
+          1 ELSE 0 END) AS online_rows, SUM(CASE WHEN close_date IS NULL THEN 1 ELSE 0 END) AS active_rows_all_channels,
+          SUM(CASE WHEN store_code <> -1 AND close_date IS NULL THEN 1 ELSE 0 END) AS physical_active,
+          SUM(CASE WHEN store_code <> -1 AND close_date IS NOT NULL THEN 1 ELSE 0 END) AS physical_closed
+          FROM contoso_served.dim_store'
+        came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'',
+          ''Restructured''   AND ALSO: 1 row(s): [{"all_rows": 74, "distinct_premises": 74, "distinct_site_codes":
+          67, "physical_rows": 73, "online_rows": 1, "active_rows_all_channels": 58, "physical_active":
+          57, "physical_closed": 16}]'
       blocked: []
     - step: '2'
-      asks: how many stores
-      sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1 AND close_date IS NULL"
-      means: 'One row, one figure: 57 is how many shops Contoso is trading from that a customer can walk
-        into — distinct premises, each on its own distinct site. It does NOT include the web shop (1 more)
-        and does NOT include premises that have stopped trading (16 more, on 14 sites, because a re-let
-        site holds a succession of premises). No period limits it: this is the store register as the bundle
-        carries it, not a count derived from any window of sales.'
+      asks: how many stores do we have
+      sql: "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\n\
+        WHERE\n  store_code <> -1 AND close_date IS NULL"
+      means: 'One row, one figure: 57 is how many shops Contoso can sell from today — physical premises
+        still trading because they carry no closing date, each counted once at the premises grain. It
+        does NOT include the single online outlet, and does NOT include the 16 physical premises that
+        have closed. It is not a count of places: it counts premises, which in this population happen
+        to sit one per site. No period is involved — this is a standing count of the store register as
+        it reads now, not a figure over any window of sales.'
       readings:
       - word: do we have
-        took: trading shops only — close_date IS NULL — giving 57
-        could_also_mean: 'every premises ever on record, open or closed: 74 rows over 67 sites, of which
-          16 are closed (9 annotated ''Closed'', 7 ''Restructured'')'
-        declaration: 'store.resolution.active_is_the_absent_close_date, confidence C, `default: active`,
-          `applies: subject`, and it requires the answer to DISCLOSE that it defaulted — which this does.
-          It overrides the decomposition''s own `understood_as`, which had assumed no open/closed filter
-          and would have reported 74.'
+        took: active — trading premises, close_date IS NULL → 57
+        could_also_mean: every store ever on record → 73 physical rows, or 74 counting the web shop
+        declaration: 'Store.trading: default `active`; and Store.record_questions, which rules this exact
+          phrasing is not a record question and keeps the active default'
       - word: stores
-        took: physical premises only — store_code <> -1 — excluding the single 'Online store'
-        could_also_mean: all selling points including the web shop, which gives 58
-        declaration: 'store.resolution.the_channel_is_the_location_sentinel, confidence P, `default: physical`,
-          `applies: subject`. This fork moves the figure by exactly 1.'
-      - word: how many stores
-        took: count distinct store_key — premises — the grain the Store grounding declares (`counts store_key`)
-        could_also_mean: count distinct store_code — sites — which returns the SAME 57 here, so the fork
-          costs nothing; it would only matter if closed stores were included (16 premises on 14 sites)
-        declaration: 'The grounding''s snapshot_rule: ''once the active population has selected the trading
-          rows there is one row per store already — 57 rows over 57 location codes, because a location
-          has at most one store with no close date.'' Measured and confirmed.'
+        took: physical shops only, store_code <> -1 → 57
+        could_also_mean: all channels, counting the web shop → 58 active, or 74 over all rows
+        declaration: 'Store.channel: default `physical`, held because the question is ABOUT stores rather
+          than merely routed through them'
+      - word: stores
+        took: premises, one per store_key → 57
+        could_also_mean: places, one per site code; over the whole table these differ (74 premises on
+          67 sites), but within this trading physical population the declared snapshot_rule says 57 premises
+          stand on 57 sites, so both grains give 57 here
+        declaration: 'dim_store.store_key `finer_than: store_code`; Store.premises_not_place; dim_store
+          snapshot_rule'
+      - word: active
+        took: the absent closing date — a state of the record, with no reference date evaluated
+        could_also_mean: trading as at a stated Stichtag, comparing open_date and close_date to a date;
+          Store.trading declares no such date parameter, unlike Customer.active_on_the_reference_date,
+          so no anchor was bound and none is disclosed
+        declaration: 'dim_store.close_date: "THE TRADING-STATE COLUMN: `active` is this being null" (store.resolution.active_is_the_absent_close_date)'
       turns:
-      - why: Count the base set from step 1 — one figure, distinct premises — which the step-1 measurement
-          already pins at 57.
-        did: "SELECT\n  COUNT(DISTINCT store_key) AS how_many_stores\nFROM contoso_served.dim_store\n\
+      - why: Count the distinct premises in the step-1 population to produce the single figure asked for.
+        did: "SELECT\n  COUNT(DISTINCT store_key) AS \"how many stores\"\nFROM contoso_served.dim_store\n\
           WHERE\n  store_code <> -1 AND close_date IS NULL"
         came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 1 row(s): [{"how_many_stores": 57}]  Give `claimed_answer`
+          claim, so state the answer now from these rows: 1 row(s): [{"how many stores": 57}]  Give `claimed_answer`
           as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
           rows settle the question, do not decline.'
       blocked: []
@@ -897,4 +860,4 @@ v3_answer_step: '2'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: '''57'''
-v3_seconds: 102.6
+v3_seconds: 91.6

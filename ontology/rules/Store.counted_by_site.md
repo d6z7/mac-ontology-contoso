@@ -15,3 +15,10 @@ One store is its site, not its row: a shop rebuilt or re-let at the same place i
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — store, site, count stores, store code, restructured
 - **Superseded by** — `Store.premises_not_place`
+
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```

@@ -1,15 +1,11 @@
 id: ANCHOR_03
-question: How many customers do we have? (RC04)
+question: How many customers do we have as of 31.12.2025? (RC04)
 family: counting
 derivation:
-  sql: 'select count(distinct CustomerKey) from contoso_served.dim_contoso_customer
-
-    '
-  raw_value: 104990
-  cross_check_sql: 'select count(distinct CustomerKey) from main.customer
-
-    '
-  cross_check_value: 104990
+  sql: "select count(distinct customer_key) from contoso_served.dim_customer where valid_from <= date '2025-12-31' and valid_to >= date '2025-12-31'"
+  raw_value: 75282
+  cross_check_sql: "select count(distinct CustomerKey) from main.customer where cast(StartDT as date) <= date '2025-12-31' and cast(EndDT as date) >= date '2025-12-31'"
+  cross_check_value: 75282
   agree: true
   routes: Route 1 is the SERVED plane the ontology binds to. Route 2 is main.sales — the FLAT delivery
     this bundle deliberately does not read (register NS-ORDERS-01, "one figure, one home"). It repeats
@@ -17,12 +13,13 @@ derivation:
     of the first.
 expected:
   shape: scalar
-  value: 104990
+  value: 75282
   tolerance: 0
   pinned:
     key: CustomerKey (the concept's declared canonical_key)
-assumptions: The dimension is NOT versioned — 104 990 rows, 104 990 distinct keys — so the count needs
-  no collapse. Store is the opposite case; see ANCHOR_04.
+assumptions: ACTIVE customers on 2025-12-31 (rule Customer.active_on_the_reference_date), validity window
+  inclusive at both ends. One row per customer, so the count needs no collapse. Re-decided 2026-10-29 by
+  the operator; the earlier 104990 was the registered reading. Store is the opposite case; see ANCHOR_04.
 authority: derived
 authority_note: 'DERIVED FROM THE DATA BY TWO ROUTES, neither of them the engine. Route 1 reads the served
   plane; route 2 reads main.sales or the raw landing — a delivery the ontology never touches. Both were
@@ -38,10 +35,9 @@ cloned_from:
   commit: e7465b1
   cloned_at: '2026-09-29'
 verified_on_this_bundle:
-  measured_route: derivation.cross_check_sql (the landing, main.*, identical in both bundles)
-  value: 104990
+  measured_route: derivation.sql and derivation.cross_check_sql, both run on contoso5.duckdb
+  value: 75282
   status: agree
-  measured_at: '2026-09-29'
+  measured_at: '2026-10-29'
   note: >-
-    derivation.sql names the first bundle's served views and does not run here; the landing
-    route is the one measured on contoso5.duckdb. The served-plane derivation is owed.
+    Both routes measured on this bundle: the served plane and the raw landing agree.

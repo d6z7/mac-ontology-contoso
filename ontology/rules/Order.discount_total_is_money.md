@@ -17,9 +17,12 @@ A total discount is money: the sum of what was given away below the regular pric
 - **Decided in** — `meaning-as-code#decisions/RULED-2026-10-13_what-a-total-discount-means.md`
 - **Formerly** — `Order.discount_amount.total`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/relations/v_contoso5_sales_line.yaml#columns.discount_amount.rules`
+```
+  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.discount_amount.rules
+  tested by     (nothing names a question)
+```
 
 ## What was said
 

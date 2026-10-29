@@ -1,17 +1,17 @@
 ---
 type: Doc
 title: SME questions — ontology
-description: 6 questions and 58 sign-off requests the model and its tests put to an SME
+description: 6 questions and 59 sign-off requests the model and its tests put to an SME
 tags:
 - CONTOSO5
 - sme-questions
 ---
 
-What the model and its tests ask a subject-matter expert: **6 question(s)** and **58 sign-off request(s)**, 64 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
+What the model and its tests ask a subject-matter expert: **6 question(s)** and **59 sign-off request(s)**, 65 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
 
 Conversation status is not part of this projection; it lives in the bundle's SME question ledger.
 
-Rows by origin: register 64
+Rows by origin: register 65
 
 ## Questions — 6
 
@@ -57,7 +57,7 @@ Rows by origin: register 64
 
 > Is “Product Category” a closed set of values? If it is, what are all of its valid values?
 
-## Sign-offs — 58
+## Sign-offs — 59
 
 ### `concept:brand#confidence`
 
@@ -191,6 +191,13 @@ Rows by origin: register 64
 - source: `ontology/rules/Currency.code_is_not_the_unit.yaml` → `rule`
 
 > Is this how you would state the rule “Currency.code_is_not_the_unit”? The wording was sharpened for a reader and awaits your acceptance: Every amount on a sale is in US dollars. A sale's currency is the currency the customer transacted in, not the unit of its amounts: filtering by that currency does not turn the amounts into it. Sales asked for in a named currency are converted through the exchange rate.
+
+### `rule:Customer.active_on_the_reference_date#wording`
+
+- origin: register · owner role: not declared · concept: [customer](concepts/customer.md)
+- source: `ontology/rules/Customer.active_on_the_reference_date.yaml` → `rule`
+
+> Is this how you would state the rule “Customer.active_on_the_reference_date”? The wording was sharpened for a reader and awaits your acceptance: A customer is active on a reference date when that date falls inside the customer's validity window — on or after the day the record became valid and on or before the day it stopped being valid. The reference date is the date the question states, else the data's own "now", and the answer says which. "Customers" with no other word means the active customers; "registered" customers are every customer on the register, whether valid on that date or not. Active customers are not the same set as customers who have bought something — each can hold people the other does not.
 
 ### `rule:Customer.age#state`
 

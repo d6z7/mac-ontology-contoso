@@ -18,9 +18,20 @@ When a question asks for figures by country without saying whose country, a sale
 - **Supersedes** — `Country.whose_is_asked`
 - **Formerly** — `country.default.whose_country_is_asked_never_assumed`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/concepts/country.yaml#readings.whose`
+```
+  declared at   ontology/concepts/country.yaml#readings.whose
+  realized by   mac.canon.path_select  (kind default)   default: territory
+                territory: via: order__attributed_to__country
+                store: via: store__trades_in__country
+                customer: via: customer__based_in__country
+                location: via: location__in__country
+  executed by   canons/path_select.py + planner/paths.py, hooked at planner/joins.resolve_join — WHICH RELATION an answer is reached through. The fourth member of the family po
+  tested by     AGG-05  'What is the net revenue in Germany?'  board: pass (stale)
+  tested by     AGG-16  'What percentage of total net revenue comes from customers resident in Germany?'  board: pass (stale)
+  tested by     AGG-17  'What percentage of total net revenue was rung up by shops sited in Germany?'  board: pass (stale)
+```
 
 ## What was said
 

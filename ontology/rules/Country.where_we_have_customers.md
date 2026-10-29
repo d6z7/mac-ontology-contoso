@@ -15,13 +15,13 @@ A question asking for the countries where we have customers asks for countries: 
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — countries, where we have customers, customer country, list countries, existence
 
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     RC02  'List all countries where we have customers.'  board: pass (stale)
+```
+
 ## What was said
 
 > *"this question must be answerable: where we have customers. it can be usnerstood by you and can be understood by 2nd generation of LLM. i dont accept bullshit that it cannot be answered. what i might accept is that it needs to be reformulated in a way to contain werbs aubject and predicated and make it stylistic more correct."* — operator, 2026-10-19 (`meaning-as-code#decisions/FINDINGS-2026-10-19_slots-versus-object-sets-operator-rulings.md`)
-
-
-## Examples
-
-| Question | Reading |
-|---|---|
-| List all countries where we have customers | the countries referenced by at least one customer, one row each, by name |

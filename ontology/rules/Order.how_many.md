@@ -15,6 +15,13 @@ How many is three questions. Purchases are counted as orders; items sold are the
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — how many, units sold, items, orders, lines, volume, quantity
 
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```
+
 ## Examples
 
 | Question | Reading |

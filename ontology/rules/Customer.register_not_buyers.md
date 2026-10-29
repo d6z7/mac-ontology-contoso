@@ -15,12 +15,15 @@ The customer register is wider than the buyers: a customer is a person on the re
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — customer, buyer, register, count customers, never bought, population
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/relations/dim_customer.yaml#columns.customer_key.rules`
+```
+  declared at   ontology/relations/dim_customer.yaml#columns.customer_key.rules
+  tested by     (nothing names a question)
+```
 
 ## Examples
 
 | Question | Reading |
 |---|---|
-| how many customers do we have | states whether it counted the register or the customers who bought, and which |
+| how many customers have bought something | customers with at least one order, said to be buyers and not the register |

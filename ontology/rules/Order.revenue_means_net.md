@@ -16,6 +16,10 @@ state: ruled
 - **Keywords** — revenue, sales, net, gross, turnover, net revenue, gross revenue
 - **Formerly** — `Order.net_amount.surfaces`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/relations/v_contoso5_sales_line.yaml#columns.net_amount.rules`
+```
+  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.net_amount.rules
+  tested by     ADV-22  'Total Revenue'  board: pass (stale)
+  tested by     MQ-12  'Total sales in dollars'  board: pass (stale)
+```

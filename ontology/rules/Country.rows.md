@@ -16,10 +16,17 @@ The placeholder country code `--` is not a country. It marks rows that carry no 
 - **Keywords** — country, countries, placeholder, sentinel, no country, unknown country, online
 - **Formerly** — `country.exclusion.sentinel_is_not_a_country`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/concepts/country.yaml#readings.rows`
-- `ontology/relations/dim_country.yaml#columns.country_code.rules`
+```
+  declared at   ontology/concepts/country.yaml#readings.rows
+                ontology/relations/dim_country.yaml#columns.country_code.rules
+  realized by   mac.canon.population_select  (kind resolution)   default: real
+                real: country_code != '--'
+                sentinel: country_code = '--'
+  executed by   planner/populations.py — WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own 
+  tested by     RC02  'List all countries where we have customers.'  board: pass (stale)
+```
 
 ## Examples
 

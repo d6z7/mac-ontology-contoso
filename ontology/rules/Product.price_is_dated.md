@@ -16,8 +16,9 @@ A product carries no standing price and no standing cost. A price changes over t
 - **Keywords** — product price, current price, list price, catalogue price, high-value products, cost
 - **Decided in** — `meaning-as-code#decisions/HANDOVER-2026-10-26_retire-product-prices.md`
 
-## Examples
+## How and where it is implemented
 
-| Question | Reading |
-|---|---|
-| Revenue from high-value products (Price > 1000) | products whose latest-sale unit price is above the threshold, revenue over all their sales |
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     ADV-12  'Revenue from high-value products (Price > 1000)'  board: pass (stale)
+```

@@ -14,3 +14,10 @@ The customer register keeps history: a row is a version of a person, valid over 
 - **Concepts** — Customer, Order
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — customer, history, valid from, valid to, as of, moved, version
+
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```

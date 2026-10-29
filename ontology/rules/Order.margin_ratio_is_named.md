@@ -16,9 +16,16 @@ A margin ratio can be stated two ways over the same profit, and the question mus
 - **Keywords** — margin, markup, margin percent, profit, margin on cost, net margin
 - **Formerly** — `Order.margin_amount.ratio`, `margin.aggregation.two_named_ratios`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/relations/v_contoso5_sales_line.yaml#columns.margin_amount.readings.ratio`
+```
+  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.margin_amount.readings.ratio
+  realized by   mac.canon.ratio_select  (kind aggregation)   no default: asked
+                margin_percent: denominator: net_amount
+                markup_percent: denominator: cost_amount
+  executed by   canons/ratio_select.py — WHICH DENOMINATOR a named ratio divides by. The twin of population_select: that one maps a word a reader says to the ROWS a concept has
+  tested by     (nothing names a question)
+```
 
 ## Examples
 

@@ -15,6 +15,13 @@ Four facts on a sale carry every price and cost. The unit price is the regular, 
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — unit price, list price, net price, selling price, unit cost, gross, net, margin, discount
 
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```
+
 ## What was said
 
 > *"UnitPrice = regular/list price per unit"* — operator, 2026-10-26 (`meaning-as-code#decisions/HANDOVER-2026-10-26_retire-product-prices.md`)

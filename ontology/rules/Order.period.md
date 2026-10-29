@@ -16,6 +16,13 @@ A question that names no period covers all time. There is no implied "this year"
 - **Keywords** — period, all time, no period, time window, unscoped, this year
 - **Formerly** — `order.default.an_unscoped_question_covers_all_time`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/concepts/order.yaml#readings.period`
+```
+  declared at   ontology/concepts/order.yaml#readings.period
+  realized by   mac.canon.period_default  (kind default)   default: all_time
+                all_time: unbounded: True
+  executed by   canons/period_default.py + planner/period.py, consulted at planner/plan._period_window (step 4e, beside the population decision) — WHAT SILENCE ABOUT TIME MEANS
+  tested by     AGG-01  'What is the total net revenue?'  board: pass (stale)
+  tested by     ADV-22  'Total Revenue'  board: pass (stale)
+```

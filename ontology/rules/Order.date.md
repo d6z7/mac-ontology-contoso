@@ -16,6 +16,13 @@ An order's date is the day it was placed, not the day it was delivered. A questi
 - **Keywords** — order date, delivery date, when, placed, delivered, shipped, period
 - **Formerly** — `order.default.period_is_order_date`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/concepts/order.yaml#readings.date`
+```
+  declared at   ontology/concepts/order.yaml#readings.date
+  realized by   mac.canon.column_select  (kind default)   default: ordered
+                ordered: column: order_date
+                delivered: column: delivery_date
+  executed by   canons/column_select.py + planner/columns.py — WHICH COLUMN OR JOIN PATH a named reading resolves to. The third member of the family population_select and ratio
+  tested by     RC10  'How many orders were placed in 2024?'  board: pass (stale)
+```

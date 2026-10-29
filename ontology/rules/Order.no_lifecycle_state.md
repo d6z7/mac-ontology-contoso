@@ -15,6 +15,13 @@ An order has no state beyond its two dates: it was placed on one day and deliver
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — order status, cancelled, returned, cancellation, return, lifecycle
 
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```
+
 ## Examples
 
 | Question | Reading |

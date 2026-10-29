@@ -15,6 +15,13 @@ A colour is one member however the source spells its case: colour names are capi
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — colour, color, blue, spelling, case, fold
 
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```
+
 ## What was said
 
 > *"the word is fold"* — operator, 2026-09-30 (`data/transforms/dim_product.sql`)

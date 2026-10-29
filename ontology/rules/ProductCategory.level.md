@@ -16,6 +16,13 @@ A product category is the top level of the product hierarchy. A question saying 
 - **Keywords** — category, sub-category, product category, hierarchy, level
 - **Formerly** — `product_category.ambiguity.which_level`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/concepts/product_category.yaml#readings.level`
+```
+  declared at   ontology/concepts/product_category.yaml#readings.level
+  realized by   mac.canon.column_select  (kind default)   default: category
+                category: column: category_name
+                sub_category: column: sub_category_name
+  executed by   canons/column_select.py + planner/columns.py — WHICH COLUMN OR JOIN PATH a named reading resolves to. The third member of the family population_select and ratio
+  tested by     ADV-14  'Revenue from products in the Electronics category sold in German stores'  board: not_established (stale)
+```

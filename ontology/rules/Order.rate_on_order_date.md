@@ -16,6 +16,11 @@ An amount is converted at the exchange rate of the order's own day. A rate is id
 - **Keywords** — exchange rate, conversion, currency, order date, fx
 - **Formerly** — `order.resolution.rate_on_order_date`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/edges.yaml#order__converts_at__exchange_rate.resolved_by`
+```
+  declared at   ontology/edges.yaml#order__converts_at__exchange_rate.resolved_by
+  realized by   mac.canon.composite_key_guard  (kind resolution)   no default: asked
+  executed by   canons/composite_key_guard.py — a parent-scoped code constrained or grouped without its scope column(s) is refused (serves context_dependent_meaning). Fired by 
+  tested by     (nothing names a question)
+```

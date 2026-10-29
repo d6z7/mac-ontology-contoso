@@ -16,6 +16,12 @@ An unqualified price means what the customer paid per article: the net amount di
 - **Keywords** — price, average price, unit price, per article, per unit, net price
 - **Formerly** — `Order.net_amount.price`, `net_revenue.default.a_price_is_revenue_per_article`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/relations/v_contoso5_sales_line.yaml#columns.net_amount.readings.price`
+```
+  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.net_amount.readings.price
+  realized by   mac.canon.ratio_select  (kind aggregation)   default: price_per_article
+                price_per_article: denominator: quantity
+  executed by   canons/ratio_select.py — WHICH DENOMINATOR a named ratio divides by. The twin of population_select: that one maps a word a reader says to the ROWS a concept has
+  tested by     ADV-25  'Average price'  board: pass (stale)
+```

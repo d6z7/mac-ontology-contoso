@@ -16,10 +16,22 @@ A store is active while it has no closing date. A store with a closing date is c
 - **Keywords** — store, active, open, closed, trading, shut, restructured, close date
 - **Formerly** — `store.resolution.active_is_the_absent_close_date`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/concepts/store.yaml#readings.trading`
-- `ontology/relations/dim_store.yaml#columns.status_annotation.rules`
+```
+  declared at   ontology/concepts/store.yaml#readings.trading
+                ontology/relations/dim_store.yaml#columns.status_annotation.rules
+  realized by   mac.canon.population_select  (kind resolution)   default: active
+                closed: close_date is not null None
+                active: everything `closed` is not
+                shut: status_annotation = 'Closed'
+                restructured: status_annotation = 'Restructured'
+  executed by   planner/populations.py — WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own 
+  tested by     RC05  'How many stores do we have?'  board: pass (stale)
+  tested by     RC08  'How many stores are closed?'  board: pass (stale)
+  tested by     STORE-01  'How many stores are still open?'  board: pass (stale)
+  tested by     STORE-12  'List all closed stores'  board: pass (stale)
+```
 
 ## What was said
 

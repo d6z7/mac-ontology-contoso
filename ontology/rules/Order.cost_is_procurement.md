@@ -15,6 +15,13 @@ Cost means only what the goods cost Contoso to buy — the procurement cost. Eve
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — cost, procurement cost, cost of goods, cogs, income, what it cost us
 
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```
+
 ## What was said
 
 > *"from the shop perspective cost is procurement cost. The rest is revenue or income."* — operator, 2026-10-28 (`ontology/MODELLING-LOG.md`)

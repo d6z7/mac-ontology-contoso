@@ -7,7 +7,7 @@ title: Rules
 
 > PROJECTED by tools/mac_rules.py from `ontology/rules/*.yaml` — the business rules of this ontology. Search: `python3 tools/mac_rules.py search <bundle> <words>`.
 
-37 rule(s); 17 live prose rule(s) awaiting a symbolic form.
+38 rule(s); 17 live prose rule(s) awaiting a symbolic form.
 
 | Rule | State | Formal | Statement |
 |---|---|---|---|
@@ -19,6 +19,7 @@ title: Rules
 | [Country.whose_is_asked](Country.whose_is_asked.md) | superseded | prose | A question asking by country without saying whose country is asked back: no reading is assumed. |
 | [Country.whose_is_the_store](Country.whose_is_the_store.md) | superseded | prose | A question asking by country without saying whose country is answered on the country the store stands in. |
 | [Currency.code_is_not_the_unit](Currency.code_is_not_the_unit.md) | proposed | prose | Every amount on a sale is in US dollars. A sale's currency is the currency the customer transacted in, not the unit of its amounts: filterin |
+| [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md) | ruled | symbolic | A customer is active on a reference date when that date falls inside the customer's validity window — on or after the day the record became  |
 | [Customer.age](Customer.age.md) | proposed | prose | An age is computed, never stored: a customer's age from the birth date and a store's age from its opening date, both measured at the samplin |
 | [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md) | proposed | prose | The customer register keeps history: a row is a version of a person, valid over a window. The customer as they are now and the customer a pa |
 | [Customer.register_not_buyers](Customer.register_not_buyers.md) | proposed | prose | The customer register is wider than the buyers: a customer is a person on the register, and many registered customers have never bought anyt |
@@ -51,14 +52,14 @@ title: Rules
 
 ## Keyword index
 
-- **active** — [Store.trading](Store.trading.md)
+- **active** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md), [Store.trading](Store.trading.md)
 - **additivity** — [ExchangeRate.convert_per_day](ExchangeRate.convert_per_day.md)
 - **age** — [Customer.age](Customer.age.md)
 - **all stores** — [Store.record_questions](Store.record_questions.md)
 - **all time** — [Order.period](Order.period.md)
 - **amounts** — [Currency.code_is_not_the_unit](Currency.code_is_not_the_unit.md)
 - **anchor** — [Order.now_is_the_newest_order](Order.now_is_the_newest_order.md)
-- **as of** — [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md)
+- **as of** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md), [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md)
 - **ask** — [Country.whose_is_asked](Country.whose_is_asked.md)
 - **attribution** — [Country.whose](Country.whose.md)
 - **average age** — [Customer.age](Customer.age.md)
@@ -92,7 +93,7 @@ title: Rules
 - **country** — [Country.rows](Country.rows.md), [Country.whose](Country.whose.md), [Country.whose_is_asked](Country.whose_is_asked.md), [Country.whose_is_the_store](Country.whose_is_the_store.md)
 - **currency** — [Currency.code_is_not_the_unit](Currency.code_is_not_the_unit.md), [ExchangeRate.direction_is_part_of_the_key](ExchangeRate.direction_is_part_of_the_key.md), [Order.rate_on_order_date](Order.rate_on_order_date.md)
 - **current price** — [Product.price_is_dated](Product.price_is_dated.md)
-- **customer** — [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md), [Customer.register_not_buyers](Customer.register_not_buyers.md)
+- **customer** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md), [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md), [Customer.register_not_buyers](Customer.register_not_buyers.md)
 - **customer age** — [Customer.age](Customer.age.md)
 - **customer country** — [Country.where_we_have_customers](Country.where_we_have_customers.md), [Country.whose](Country.whose.md)
 - **daily rate** — [ExchangeRate.convert_per_day](ExchangeRate.convert_per_day.md)
@@ -119,6 +120,7 @@ title: Rules
 - **high-value products** — [Product.price_is_dated](Product.price_is_dated.md)
 - **history** — [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md)
 - **how many** — [Order.how_many](Order.how_many.md)
+- **how many customers** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md)
 - **how many orders** — [Order.is_the_purchase](Order.is_the_purchase.md)
 - **income** — [Order.cost_is_procurement](Order.cost_is_procurement.md)
 - **internet** — [Store.channel](Store.channel.md)
@@ -179,8 +181,10 @@ title: Rules
 - **quantity** — [Order.how_many](Order.how_many.md)
 - **rebate** — [Order.discount_total_is_money](Order.discount_total_is_money.md)
 - **records** — [Store.record_questions](Store.record_questions.md)
+- **reference date** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md)
 - **region** — [Location.site](Location.site.md)
 - **register** — [Customer.register_not_buyers](Customer.register_not_buyers.md)
+- **registered** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md)
 - **relative period** — [Order.now_is_the_newest_order](Order.now_is_the_newest_order.md)
 - **restructured** — [Store.counted_by_site](Store.counted_by_site.md), [Store.trading](Store.trading.md)
 - **return** — [Order.no_lifecycle_state](Order.no_lifecycle_state.md)
@@ -198,6 +202,7 @@ title: Rules
 - **site** — [Location.channel](Location.channel.md), [Location.site](Location.site.md), [Store.counted_by_site](Store.counted_by_site.md), [Store.premises_not_place](Store.premises_not_place.md)
 - **spelling** — [Color.one_spelling](Color.one_spelling.md)
 - **state** — [Location.site](Location.site.md)
+- **stichtag** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md)
 - **store** — [Store.channel](Store.channel.md), [Store.counted_by_site](Store.counted_by_site.md), [Store.premises_not_place](Store.premises_not_place.md), [Store.record_questions](Store.record_questions.md), [Store.trading](Store.trading.md)
 - **store age** — [Customer.age](Customer.age.md)
 - **store code** — [Store.counted_by_site](Store.counted_by_site.md)
@@ -220,6 +225,7 @@ title: Rules
 - **unknown country** — [Country.rows](Country.rows.md)
 - **unscoped** — [Order.period](Order.period.md)
 - **usd** — [Currency.code_is_not_the_unit](Currency.code_is_not_the_unit.md)
+- **valid** — [Customer.active_on_the_reference_date](Customer.active_on_the_reference_date.md)
 - **valid from** — [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md)
 - **valid to** — [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md)
 - **version** — [Customer.as_of_now_or_sale](Customer.as_of_now_or_sale.md)

@@ -17,9 +17,12 @@ state: ruled
 - **Decided in** — `meaning-as-code#decisions/RULED-2026-10-23_the-sampling-date-is-the-newest-order.md`
 - **Formerly** — `Order.order_date.anchor`, `order.resolution.the_anchor_is_the_newest_order`
 
-## Implemented at
+## How and where it is implemented
 
-- `ontology/relations/v_contoso5_sales_line.yaml#columns.order_date.rules`
+```
+  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.order_date.rules
+  tested by     MQ-21  'Did we sell anything in this quarter'  board: pass (stale)
+```
 
 ## What was said
 

@@ -14,3 +14,10 @@ A brand is the name a customer buys a product under; a manufacturer is who made 
 - **Concepts** — Brand, Product
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — brand, manufacturer, maker, made by, label, who makes
+
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```

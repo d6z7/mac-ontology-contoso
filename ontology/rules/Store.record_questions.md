@@ -15,3 +15,10 @@ A question about what the store table records — how many store versions or row
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — store, versions, records, rows, all stores, store history
 - **Decided in** — `meaning-as-code#decisions/PROPOSED-2026-10-25_four-rules-need-a-canon.md`
+
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```

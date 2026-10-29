@@ -15,3 +15,10 @@ A question asking by country without saying whose country is answered on the cou
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — country, store country, default
 - **Superseded by** — `Country.whose_is_asked`
+
+## How and where it is implemented
+
+```
+  declared at   (nowhere — prose, stated in words only)
+  tested by     (nothing names a question)
+```
