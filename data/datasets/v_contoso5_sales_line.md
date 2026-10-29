@@ -21,7 +21,7 @@ tags:
 | `store_key` | integer | FK | → `dim_store.store_key` |
 | `product_key` | integer | FK | → `dim_product.product_key` |
 | `channel` | string | value |  |
-| `sale_country_code` | string | FK | → `dim_country.country_code` · register: `contoso5_sale_country_code` |
+| `sale_country_code` | string | FK | → `dim_country.country_code` |
 | `currency_code` | string | FK | → `dim_currency.currency_code` |
 | `quantity` | integer | value |  |
 | `net_price` | decimal | value |  |
@@ -40,7 +40,3 @@ tags:
 - `product_key` → `dim_product.product_key` (many:one, mandatory:mandatory)
 - `sale_country_code` → `dim_country.country_code` (many:one, mandatory:optional)
 - `currency_code` → `dim_currency.currency_code` (many:one, mandatory:mandatory)
-
-## Registers
-
-- `sale_country_code` → `data/lookups/contoso5_sale_country_code.lookup.csv`

@@ -19,10 +19,14 @@ tags:
 | `manufacturer` | string | value |  |
 | `brand` | string | value |  |
 | `color` | string | value |  |
-| `category_name` | string | value |  |
+| `category_name` | string | value · FK | → `contoso5_category_name.code` |
 | `sub_category_name` | string | value |  |
 | `weight` | decimal | value |  |
 | `weight_unit` | string | value |  |
+
+## Foreign keys
+
+- `category_name` → `contoso5_category_name.code`
 
 ## Referenced by
 

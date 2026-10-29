@@ -25,7 +25,7 @@ a rate, share or percentage over this measure is asked for
 
 ### Then — do (then)
 
-1 named ratio(s): `price_per_article` (also called price; average price; unit price; price per unit; per unit; price per article; per article). `price_per_article` divides by quantity. a question naming none of them takes `price_per_article`, and the answer DISCLOSES that it did
+1 named ratio(s): `price_per_article` (also called price; average price; price per unit; per unit; price per article; per article). `price_per_article` divides by quantity. a question naming none of them takes `price_per_article`, and the answer DISCLOSES that it did
 
 ### Never — don't (never)
 

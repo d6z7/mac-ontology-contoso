@@ -1,15 +1,15 @@
 ---
 type: Doc
 title: SME questions — data & data quality
-description: 63 sign-offs + 0 proposed changes awaiting SME
+description: 61 sign-offs + 0 proposed changes awaiting SME
 tags:
 - CONTOSO5
 - sme-questions
 ---
 
-The open **SME sign-offs** the data + data-quality work surfaces — 63 from the quality register plus proposed transform changes awaiting ratification. Prioritised by severity; each links to the finding it unblocks. This list is projected from the register + transforms, so it stays in sync.
+The open **SME sign-offs** the data + data-quality work surfaces — 61 from the quality register plus proposed transform changes awaiting ratification. Prioritised by severity; each links to the finding it unblocks. This list is projected from the register + transforms, so it stays in sync.
 
-## High priority — 28 question(s)
+## High priority — 27 question(s)
 
 | ask | answer one of | owner | on (finding) | status | table |
 |---|---|---|---|---|---|
@@ -40,9 +40,8 @@ The open **SME sign-offs** the data + data-quality work surfaces — 63 from the
 | a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_store_name-KEY did not pass](DQ-CASE-G-contoso5_store_name-KEY.md) | unreconciled | — |
 | a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_sub_category_name-COLUMNS di](DQ-CASE-G-contoso5_sub_category_name-COLUMNS.md) | unreconciled | — |
 | a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_sub_category_name-KEY did no](DQ-CASE-G-contoso5_sub_category_name-KEY.md) | unreconciled | — |
-| a key, or a ruling that this relation has none by design. Without one it is not a parent endpoint, so no reference points at it and the ER model does not draw it. | — | domain-owner | [`meta_open_question` carries no measured key](DQ-NOKEY-META_OPEN_QUESTION.md) | unreconciled | — |
 
-## Medium priority — 35 question(s)
+## Medium priority — 34 question(s)
 
 | ask | answer one of | owner | on (finding) | status | table |
 |---|---|---|---|---|---|
@@ -80,4 +79,3 @@ The open **SME sign-offs** the data + data-quality work surfaces — 63 from the
 | `contoso5_status` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_status` is claimed by no conce](DQ-UNCLAIMED-CONTOSO5_STATUS.md) | unreconciled | store |
 | `contoso5_store_name` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_store_name` is claimed by no c](DQ-UNCLAIMED-CONTOSO5_STORE_NAME.md) | unreconciled | — |
 | `contoso5_sub_category_name` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_sub_category_name` is claimed ](DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME.md) | unreconciled | — |
-| `meta_open_question` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `meta_open_question` is claimed by no co](DQ-UNCLAIMED-META_OPEN_QUESTION.md) | unreconciled | — |

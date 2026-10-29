@@ -13,7 +13,7 @@ Whose name a product is sold under: eleven names, carried as a column on the pro
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-29
 

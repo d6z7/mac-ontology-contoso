@@ -13,7 +13,11 @@ tags:
 
 | column | type | role | reference |
 |---|---|---|---|
-| `currency_code` | string | PK |  |
+| `currency_code` | string | PK · FK | → `contoso5_currency.code` |
+
+## Foreign keys
+
+- `currency_code` → `contoso5_currency.code`
 
 ## Referenced by
 

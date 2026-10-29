@@ -7,7 +7,7 @@ It is the worked example the MAC framework is developed and tested against: the 
 reader (a person, a planner or a language model) needs to turn a business question about this data
 into correct SQL, and the evidence that those declarations hold against the rows.
 
-Project id: `example/contoso5` · MAC stamp `0.3.0-develop` · ontology version 1.1
+Project id: `example/contoso5` · MAC stamp `0.3.1-develop` · ontology version 1.1
 
 ## What is in it
 

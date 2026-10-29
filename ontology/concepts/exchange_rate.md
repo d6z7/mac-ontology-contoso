@@ -16,7 +16,7 @@ What one currency was worth in another on one day: 100,450 quoted rates over a d
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-29
 

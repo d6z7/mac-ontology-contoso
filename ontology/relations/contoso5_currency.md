@@ -12,7 +12,7 @@ What a question may DO with each column of `contoso5_currency` — the SEMANTIC 
 
 ## Details
 
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Confidence** — C
 - **Provenance** — authored
 - **Source** — CONTOSO5

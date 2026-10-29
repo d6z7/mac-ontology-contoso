@@ -3,7 +3,7 @@ type: Index
 title: CONTOSO5 data plane
 ---
 
-8 sources · 63 quality issues · 8 transforms · 22 clean datasets
+8 sources · 61 quality issues · 8 transforms · 21 clean datasets
 
 **Resolution scoreboard** — how the recorded impurities are dissolved by the gold transforms: **0 ✓ resolved · 0 ◐ partial · 0 ⚠ open gap**.
 
@@ -49,7 +49,6 @@ title: CONTOSO5 data plane
 - **high** [data-sanity case G-contoso5_store_name-KEY did not pass](data/quality/DQ-CASE-G-contoso5_store_name-KEY.md)
 - **high** [data-sanity case G-contoso5_sub_category_name-COLUMNS did not pass](data/quality/DQ-CASE-G-contoso5_sub_category_name-COLUMNS.md)
 - **high** [data-sanity case G-contoso5_sub_category_name-KEY did not pass](data/quality/DQ-CASE-G-contoso5_sub_category_name-KEY.md)
-- **high** [`meta_open_question` carries no measured key](data/quality/DQ-NOKEY-META_OPEN_QUESTION.md)
 - **medium** [data-sanity case G-contoso5_brand-NULLS did not pass](data/quality/DQ-CASE-G-contoso5_brand-NULLS.md)
 - **medium** [data-sanity case G-contoso5_category_name-NULLS did not pass](data/quality/DQ-CASE-G-contoso5_category_name-NULLS.md)
 - **medium** [data-sanity case G-contoso5_channel-NULLS did not pass](data/quality/DQ-CASE-G-contoso5_channel-NULLS.md)
@@ -84,7 +83,6 @@ title: CONTOSO5 data plane
 - **medium** [served relation `contoso5_status` is claimed by no concept](data/quality/DQ-UNCLAIMED-CONTOSO5_STATUS.md)
 - **medium** [served relation `contoso5_store_name` is claimed by no concept](data/quality/DQ-UNCLAIMED-CONTOSO5_STORE_NAME.md)
 - **medium** [served relation `contoso5_sub_category_name` is claimed by no concept](data/quality/DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME.md)
-- **medium** [served relation `meta_open_question` is claimed by no concept](data/quality/DQ-UNCLAIMED-META_OPEN_QUESTION.md)
 
 ## Clean datasets
 - [contoso5_brand](data/datasets/contoso5_brand.md)
@@ -106,6 +104,5 @@ title: CONTOSO5 data plane
 - [dim_location](data/datasets/dim_location.md)
 - [dim_product](data/datasets/dim_product.md)
 - [dim_store](data/datasets/dim_store.md)
-- [meta_open_question](data/datasets/meta_open_question.md)
 - [v_contoso5_fx_rate](data/datasets/v_contoso5_fx_rate.md)
 - [v_contoso5_sales_line](data/datasets/v_contoso5_sales_line.md)

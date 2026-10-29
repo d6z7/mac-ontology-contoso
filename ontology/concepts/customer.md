@@ -13,7 +13,7 @@ A person on Contoso's customer register: 104,990 of them, each with a name, a bi
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-29
 

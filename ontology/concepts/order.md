@@ -21,7 +21,7 @@ One customer's purchase on one date, counted by distinct `order_key` over the li
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-30
 
@@ -62,7 +62,7 @@ One customer's purchase on one date, counted by distinct `order_key` over the li
 | `product_key` | integer | key | -> Product | — | — | — | — | [Product](product.md) |
 | `currency_code` | string | dimension | — | — | — | — | — | [Currency](currency.md) |
 | `quantity` | integer | measure | — | flow · units | — | — | — | — |
-| `net_amount` | decimal | measure | — | flow · USD | — | — | — | — |
+| `net_amount` | decimal | measure | — | flow · USD · **default** | — | — | — | — |
 | `gross_amount` | decimal | measure | — | flow · USD | — | — | — | — |
 | `cost_amount` | decimal | measure | — | flow · USD | — | — | — | — |
 | `discount_amount` | decimal | measure | — | flow · USD | — | — | — | — |
@@ -75,16 +75,16 @@ _Declared per column, over 17 columns: type 17 of 17 · role 17 of 17 · identit
 
 ## Axes
 
-Several measure types are declared and none of their columns is marked `aggregate.default: true`, so there is no one type to resolve the fold against: `quantity` is `flow`, `net_amount` is `flow`, `gross_amount` is `flow`, `cost_amount` is `flow`, `discount_amount` is `flow`, `margin_amount` is `flow`, `unit_price` is `intensive`, `net_price` is `intensive`, `unit_cost` is `intensive`. Mark the column the concept's number is `default` and the fold resolves.
+Measure type: `flow`.
 
 | axis | axis kind | fold |
 |---|---|---|
-| `currency_code` | categorical | — |
-| `customer_key` | categorical | — |
-| `delivery_date` | time | — |
-| `order_date` | time | — |
-| `product_key` | categorical | — |
-| `store_key` | categorical | — |
+| `currency_code` | categorical | additive |
+| `customer_key` | categorical | additive |
+| `delivery_date` | time | additive |
+| `order_date` | time | additive |
+| `product_key` | categorical | additive |
+| `store_key` | categorical | additive |
 
 _The fold is read from the framework registry (`measure_type.<type>.additivity.<axis kind>`), not declared on this concept. An em dash means the crossing is not declared there._
 

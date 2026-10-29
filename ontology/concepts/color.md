@@ -13,7 +13,7 @@ The colour a product comes in: sixteen values on the served row, and the one att
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-30
 

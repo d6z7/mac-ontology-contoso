@@ -15,7 +15,7 @@ How Contoso groups what it sells: eight categories, each over several of thirty-
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-29
 

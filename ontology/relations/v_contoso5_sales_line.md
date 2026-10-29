@@ -12,7 +12,7 @@ What a question may DO with each column of `v_contoso5_sales_line` — the SEMAN
 
 ## Details
 
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Confidence** — C
 - **Provenance** — authored
 - **Source** — CONTOSO5
@@ -36,7 +36,7 @@ What a question may DO with each column of `v_contoso5_sales_line` — the SEMAN
 | `product_key` | — | axis `categorical` | `Product` | — |
 | `currency_code` | — | axis `categorical` | — | — |
 | `gross_amount` | — | aggregate flow / USD · extremum `min`, `max` | — | — |
-| `net_amount` | — | aggregate flow / USD · extremum `min`, `max` | — | — |
+| `net_amount` | — | aggregate flow / USD / **default** · extremum `min`, `max` | — | — |
 | `cost_amount` | — | aggregate flow / USD · extremum `min`, `max` | — | — |
 | `margin_amount` | — | aggregate flow / USD · extremum `min`, `max` | — | — |
 | `discount_amount` | — | aggregate flow / USD · extremum `min`, `max` | — | — |

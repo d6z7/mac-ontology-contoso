@@ -15,10 +15,10 @@ The structural health of this source's data plane — the same numbers the gates
 |---|---|
 | raw sources | 8 |
 | transformations | 8 |
-| served datasets | 22 |
+| served datasets | 21 |
 | ontology concepts | 11 |
 
-⚠️ **14** dataset(s) with no transformation: `contoso5_brand`, `contoso5_category_name`, `contoso5_channel`, `contoso5_color`, `contoso5_continent`, `contoso5_country_code`, `contoso5_currency`, `contoso5_gender`, `contoso5_manufacturer`, `contoso5_state`, `contoso5_status`, `contoso5_store_name`, `contoso5_sub_category_name`, `meta_open_question`
+⚠️ **13** dataset(s) with no transformation: `contoso5_brand`, `contoso5_category_name`, `contoso5_channel`, `contoso5_color`, `contoso5_continent`, `contoso5_country_code`, `contoso5_currency`, `contoso5_gender`, `contoso5_manufacturer`, `contoso5_state`, `contoso5_status`, `contoso5_store_name`, `contoso5_sub_category_name`
 
 ## Lineage coverage
 
@@ -43,7 +43,7 @@ How many of each served view's columns descend from an upstream column. Computed
 |---|---|
 | objects harvested (self-documenting) | 0 |
 | objects authored / tuned (need a protocol entry) | 0 |
-| objects with no provenance stamp | 38 |
+| objects with no provenance stamp | 37 |
 | protocolled interventions | 0 |
 
 ⚠️ no `interventions/ledger.yaml` yet — manual changes are unrecorded.

@@ -6,7 +6,7 @@ tags: [reference, guardrail]
 
 # Known issues
 
-63 recorded impurities (see also the Data Quality dashboard). Coverage is the resolving-transform status; *not yet reconciled* = a newer finding not yet mapped.
+61 recorded impurities (see also the Data Quality dashboard). Coverage is the resolving-transform status; *not yet reconciled* = a newer finding not yet mapped.
 
 | finding | severity | coverage |
 |---|---|---|
@@ -55,7 +55,6 @@ tags: [reference, guardrail]
 | [DQ-DUP-ORDERROWS-SALES](DQ-DUP-ORDERROWS-SALES.md) | medium | not yet reconciled |
 | [DQ-IDENTIFYING-DIM_CUSTOMER-CITY](DQ-IDENTIFYING-DIM_CUSTOMER-CITY.md) | medium | not yet reconciled |
 | [DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME](DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME.md) | medium | not yet reconciled |
-| [DQ-NOKEY-META_OPEN_QUESTION](DQ-NOKEY-META_OPEN_QUESTION.md) | high | not yet reconciled |
 | [DQ-ORPHAN-DATE](DQ-ORPHAN-DATE.md) | medium | not yet reconciled |
 | [DQ-ORPHAN-ORDERROWS](DQ-ORPHAN-ORDERROWS.md) | medium | not yet reconciled |
 | [DQ-ORPHAN-ORDERS](DQ-ORPHAN-ORDERS.md) | medium | not yet reconciled |
@@ -72,4 +71,3 @@ tags: [reference, guardrail]
 | [DQ-UNCLAIMED-CONTOSO5_STATUS](DQ-UNCLAIMED-CONTOSO5_STATUS.md) | medium | not yet reconciled |
 | [DQ-UNCLAIMED-CONTOSO5_STORE_NAME](DQ-UNCLAIMED-CONTOSO5_STORE_NAME.md) | medium | not yet reconciled |
 | [DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME](DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME.md) | medium | not yet reconciled |
-| [DQ-UNCLAIMED-META_OPEN_QUESTION](DQ-UNCLAIMED-META_OPEN_QUESTION.md) | medium | not yet reconciled |

@@ -14,11 +14,11 @@ tags:
 | column | type | role | reference |
 |---|---|---|---|
 | `code` | string | PK |  |
-| `label` | string | value | register: `contoso5_country_code_label` |
+| `label` | string | value |  |
 
-## Registers
+## Referenced by
 
-- `label` → `data/lookups/contoso5_country_code_label.lookup.csv`
+- `dim_country.country_code` → `contoso5_country_code.code`
 
 ## Rows
 

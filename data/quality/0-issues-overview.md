@@ -1,16 +1,16 @@
 ---
 type: Doc
 title: Issues & inconsistencies
-description: 63 findings — the full overview
+description: 61 findings — the full overview
 tags:
 - CONTOSO5
 - overview
 ---
 
-Everything the harvest + reconciliation found for this source: **63 findings** across 8 tables.
+Everything the harvest + reconciliation found for this source: **61 findings** across 8 tables.
 
-- **Severity** — 28 high · 35 medium · 0 low
-- **Resolution** — 0 ✓ resolved · 0 ◐ partial · 0 ⚠ open gap · 63 not yet reconciled (newly harvested)
+- **Severity** — 27 high · 34 medium · 0 low
+- **Resolution** — 0 ✓ resolved · 0 ◐ partial · 0 ⚠ open gap · 61 not yet reconciled (newly harvested)
 
 ## All findings
 
@@ -43,7 +43,6 @@ Everything the harvest + reconciliation found for this source: **63 findings** a
 | high | [data-sanity case G-contoso5_store_name-KEY did not pass](DQ-CASE-G-contoso5_store_name-KEY.md) | — |  | not yet reconciled  | open — nobody has ruled |
 | high | [data-sanity case G-contoso5_sub_category_name-COLUMNS did not pa](DQ-CASE-G-contoso5_sub_category_name-COLUMNS.md) | — |  | not yet reconciled  | open — nobody has ruled |
 | high | [data-sanity case G-contoso5_sub_category_name-KEY did not pass](DQ-CASE-G-contoso5_sub_category_name-KEY.md) | — |  | not yet reconciled  | open — nobody has ruled |
-| high | [`meta_open_question` carries no measured key](DQ-NOKEY-META_OPEN_QUESTION.md) | — |  | not yet reconciled  | open — nobody has ruled |
 | medium | [data-sanity case G-contoso5_brand-NULLS did not pass](DQ-CASE-G-contoso5_brand-NULLS.md) | product |  | not yet reconciled  | open — nobody has ruled |
 | medium | [data-sanity case G-contoso5_category_name-NULLS did not pass](DQ-CASE-G-contoso5_category_name-NULLS.md) | — |  | not yet reconciled  | open — nobody has ruled |
 | medium | [data-sanity case G-contoso5_channel-NULLS did not pass](DQ-CASE-G-contoso5_channel-NULLS.md) | — |  | not yet reconciled  | open — nobody has ruled |
@@ -78,4 +77,3 @@ Everything the harvest + reconciliation found for this source: **63 findings** a
 | medium | [served relation `contoso5_status` is claimed by no concept](DQ-UNCLAIMED-CONTOSO5_STATUS.md) | store |  | not yet reconciled  | accepted · ruled by ontology-developer |
 | medium | [served relation `contoso5_store_name` is claimed by no concept](DQ-UNCLAIMED-CONTOSO5_STORE_NAME.md) | — |  | not yet reconciled  | accepted · ruled by ontology-developer |
 | medium | [served relation `contoso5_sub_category_name` is claimed by no co](DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME.md) | — |  | not yet reconciled  | accepted · ruled by ontology-developer |
-| medium | [served relation `meta_open_question` is claimed by no concept](DQ-UNCLAIMED-META_OPEN_QUESTION.md) | — |  | not yet reconciled  | open — nobody has ruled |

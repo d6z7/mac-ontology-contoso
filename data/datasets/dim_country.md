@@ -13,12 +13,12 @@ tags:
 
 | column | type | role | reference |
 |---|---|---|---|
-| `country_code` | string | PK |  |
-| `country_name` | string | value | register: `contoso5_country_code_label` |
+| `country_code` | string | PK · FK | → `contoso5_country_code.code` |
+| `country_name` | string | value |  |
 
-## Registers
+## Foreign keys
 
-- `country_name` → `data/lookups/contoso5_country_code_label.lookup.csv`
+- `country_code` → `contoso5_country_code.code`
 
 ## Referenced by
 

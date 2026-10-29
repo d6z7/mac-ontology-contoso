@@ -97,7 +97,6 @@ Recorded data-quality findings that change how you must query. Full detail in `r
 - [DQ-DUP-ORDERROWS-SALES](known_issues/DQ-DUP-ORDERROWS-SALES.md) — _medium_ · `sales` re-delivers every line of `orderrows` — one fact, twice · **not yet reconciled**
 - [DQ-IDENTIFYING-DIM_CUSTOMER-CITY](known_issues/DQ-IDENTIFYING-DIM_CUSTOMER-CITY.md) — _medium_ · `dim_customer.city` names individuals — 21,317 of 34,581 values are held by exactly one row · **not yet reconciled**
 - [DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME](known_issues/DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME.md) — _medium_ · `dim_customer.customer_name` names individuals — 94,488 of 99,200 values are held by exactly one row · **not yet reconciled**
-- [DQ-NOKEY-META_OPEN_QUESTION](known_issues/DQ-NOKEY-META_OPEN_QUESTION.md) — _high_ · `meta_open_question` carries no measured key · **not yet reconciled**
 - [DQ-ORPHAN-DATE](known_issues/DQ-ORPHAN-DATE.md) — _medium_ · raw landing `date` is consumed by no transformation · **not yet reconciled**
 - [DQ-ORPHAN-ORDERROWS](known_issues/DQ-ORPHAN-ORDERROWS.md) — _medium_ · raw landing `orderrows` is consumed by no transformation · **not yet reconciled**
 - [DQ-ORPHAN-ORDERS](known_issues/DQ-ORPHAN-ORDERS.md) — _medium_ · raw landing `orders` is consumed by no transformation · **not yet reconciled**
@@ -114,4 +113,3 @@ Recorded data-quality findings that change how you must query. Full detail in `r
 - [DQ-UNCLAIMED-CONTOSO5_STATUS](known_issues/DQ-UNCLAIMED-CONTOSO5_STATUS.md) — _medium_ · served relation `contoso5_status` is claimed by no concept · **not yet reconciled**
 - [DQ-UNCLAIMED-CONTOSO5_STORE_NAME](known_issues/DQ-UNCLAIMED-CONTOSO5_STORE_NAME.md) — _medium_ · served relation `contoso5_store_name` is claimed by no concept · **not yet reconciled**
 - [DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME](known_issues/DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME.md) — _medium_ · served relation `contoso5_sub_category_name` is claimed by no concept · **not yet reconciled**
-- [DQ-UNCLAIMED-META_OPEN_QUESTION](known_issues/DQ-UNCLAIMED-META_OPEN_QUESTION.md) — _medium_ · served relation `meta_open_question` is claimed by no concept · **not yet reconciled**

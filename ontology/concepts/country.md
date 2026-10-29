@@ -16,7 +16,7 @@ A country Contoso sells in — 8 of them, plus one `--` sentinel that is not a p
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.0-develop
+- **Schema version** — 0.3.1-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-30
 

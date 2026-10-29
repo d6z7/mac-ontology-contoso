@@ -15,6 +15,10 @@ tags:
 |---|---|---|---|
 | `code` | string | PK |  |
 
+## Referenced by
+
+- `dim_product.category_name` → `contoso5_category_name.code`
+
 ## Rows
 
 - The rows of this relation live in a FILE: format `csv` · `data/lookups/contoso5_category_name.lookup.csv` · 8 row(s) measured.

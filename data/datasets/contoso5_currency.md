@@ -15,6 +15,10 @@ tags:
 |---|---|---|---|
 | `code` | string | PK |  |
 
+## Referenced by
+
+- `dim_currency.currency_code` → `contoso5_currency.code`
+
 ## Rows
 
 - The rows of this relation live in a FILE: format `csv` · `data/lookups/contoso5_currency.lookup.csv` · 5 row(s) measured.
