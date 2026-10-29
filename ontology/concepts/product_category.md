@@ -6,8 +6,6 @@ tags:
 - CONTOSO5
 - enumeration
 - confidence:I
-rule_pages:
-- rules/product_category.ambiguity.which_level.md
 ---
 
 How Contoso groups what it sells: eight categories, each over several of thirty-two sub-categories, both carried as names on the product row. The account is knowledge/product_category.md.
@@ -21,11 +19,7 @@ How Contoso groups what it sells: eight categories, each over several of thirty-
 
 ## How to answer
 
-*What an agent needs ONLY, to answer with this concept — no data probing.*
-
-**1 binding rule(s)** — each one's clauses are on its own page; these are not optional and not defaults an answer may silently ignore.
-
-- [product_category.ambiguity.which_level](rules/product_category.ambiguity.which_level.md) — `ambiguity` · binds `category_name`, `sub_category_name` · confidence P
+_No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 

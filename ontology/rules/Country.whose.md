@@ -1,0 +1,30 @@
+---
+type: Rule
+title: Country.whose
+state: ruled
+---
+
+# Country.whose
+
+> PROJECTED from `ontology/rules/Country.whose.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+
+When a question asks for figures by country without saying whose country, a sale is attributed to the country it was made in: a shop sale to the country the shop stands in, an online sale to the country the customer lives in. Every sale reaches exactly one country, so the parts add up to the whole. A question may instead ask by store country, customer country or site country and gets that reading. The answer says which country it used.
+
+- **State** — ruled · wording proposed, awaiting acceptance
+- **Concepts** — Country, Order, Store, Customer
+- **Formal** — **Symbolic** — declared at `ontology/concepts/country.yaml#readings.whose`
+- **Keywords** — country, whose country, attribution, territory, market, store country, customer country, by country
+- **Decided in** — `meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md`
+- **Supersedes** — `Country.whose_is_asked`
+- **Formerly** — `country.default.whose_country_is_asked_never_assumed`
+
+## What was said
+
+> *"ok go B1 now"* — operator, 2026-10-25 (`meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md`)
+
+
+## Examples
+
+| Question | Reading |
+|---|---|
+| revenue by country | country of the sale: shop country for shop sales, customer country for online sales; disclosed |

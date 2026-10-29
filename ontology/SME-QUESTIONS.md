@@ -1,17 +1,17 @@
 ---
 type: Doc
 title: SME questions — ontology
-description: 6 questions and 18 sign-off requests the model and its tests put to an SME
+description: 6 questions and 10 sign-off requests the model and its tests put to an SME
 tags:
 - CONTOSO5
 - sme-questions
 ---
 
-What the model and its tests ask a subject-matter expert: **6 question(s)** and **18 sign-off request(s)**, 24 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
+What the model and its tests ask a subject-matter expert: **6 question(s)** and **10 sign-off request(s)**, 16 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
 
 Conversation status is not part of this projection; it lives in the bundle's SME question ledger.
 
-Rows by origin: register 24
+Rows by origin: register 16
 
 ## Questions — 6
 
@@ -57,7 +57,7 @@ Rows by origin: register 24
 
 > Is “Product Category” a closed set of values? If it is, what are all of its valid values?
 
-## Sign-offs — 18
+## Sign-offs — 10
 
 ### `concept:brand#confidence`
 
@@ -128,62 +128,6 @@ Rows by origin: register 24
 - source: `ontology/concepts/store.yaml` → `metadata.confidence`
 
 > Is the concept “Store” (entity) defined correctly? It is recorded at confidence I (inferred), not confirmed.
-
-### `rule:country.exclusion.sentinel_is_not_a_country#confidence`
-
-- origin: register · owner role: not declared · concept: [country](concepts/country.md)
-- source: `ontology/concepts/country.yaml` → `contract.rules[id=country.exclusion.sentinel_is_not_a_country]`
-
-> Is the rule “country.exclusion.sentinel_is_not_a_country” on “Country” correct? It is recorded as proposed, not confirmed.
-
-### `rule:exchange_rate.aggregation.convert_per_day_never_average#confidence`
-
-- origin: register · owner role: not declared · concept: [exchange_rate](concepts/exchange_rate.md)
-- source: `ontology/concepts/exchange_rate.yaml` → `contract.rules[id=exchange_rate.aggregation.convert_per_day_never_average]`
-
-> Is the rule “exchange_rate.aggregation.convert_per_day_never_average” on “Exchange Rate” correct? It is recorded as proposed, not confirmed.
-
-### `rule:exchange_rate.exclusion.direction_is_part_of_the_key#confidence`
-
-- origin: register · owner role: not declared · concept: [exchange_rate](concepts/exchange_rate.md)
-- source: `ontology/concepts/exchange_rate.yaml` → `contract.rules[id=exchange_rate.exclusion.direction_is_part_of_the_key]`
-
-> Is the rule “exchange_rate.exclusion.direction_is_part_of_the_key” on “Exchange Rate” correct? It is recorded as proposed, not confirmed.
-
-### `rule:location.exclusion.the_online_row_is_not_a_place#confidence`
-
-- origin: register · owner role: not declared · concept: [location](concepts/location.md)
-- source: `ontology/concepts/location.yaml` → `contract.rules[id=location.exclusion.the_online_row_is_not_a_place]`
-
-> Is the rule “location.exclusion.the_online_row_is_not_a_place” on “Location” correct? It is recorded as proposed, not confirmed.
-
-### `rule:order.default.period_is_order_date#confidence`
-
-- origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/concepts/order.yaml` → `contract.rules[id=order.default.period_is_order_date]`
-
-> Is the rule “order.default.period_is_order_date” on “Order” correct? It is recorded as proposed, not confirmed.
-
-### `rule:order.resolution.rate_on_order_date#confidence`
-
-- origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/concepts/order.yaml` → `contract.rules[id=order.resolution.rate_on_order_date]`
-
-> Is the rule “order.resolution.rate_on_order_date” on “Order” correct? It is recorded as proposed, not confirmed.
-
-### `rule:product_category.ambiguity.which_level#confidence`
-
-- origin: register · owner role: not declared · concept: [product_category](concepts/product_category.md)
-- source: `ontology/concepts/product_category.yaml` → `contract.rules[id=product_category.ambiguity.which_level]`
-
-> Is the rule “product_category.ambiguity.which_level” on “Product Category” correct? It is recorded as proposed, not confirmed.
-
-### `rule:store.resolution.the_channel_is_the_location_sentinel#confidence`
-
-- origin: register · owner role: not declared · concept: [store](concepts/store.md)
-- source: `ontology/concepts/store.yaml` → `contract.rules[id=store.resolution.the_channel_is_the_location_sentinel]`
-
-> Is the rule “store.resolution.the_channel_is_the_location_sentinel” on “Store” correct? It is recorded as proposed, not confirmed.
 
 ## Findings — 0 (not questions)
 

@@ -6,8 +6,6 @@ tags:
 - CONTOSO5
 - entity
 - confidence:I
-rule_pages:
-- rules/location.exclusion.the_online_row_is_not_a_place.md
 ---
 
 THE PLACE a store stands on — a country and a state, and nothing that belongs to the shop itself. Floor area, opening and closing dates are properties of PREMISES and live on Store; what a place owns is where it is.
@@ -24,11 +22,7 @@ No counts here, by the ruling of 2026-10-24 — they belong in data/profiles/dim
 
 ## How to answer
 
-*What an agent needs ONLY, to answer with this concept — no data probing.*
-
-**1 binding rule(s)** — each one's clauses are on its own page; these are not optional and not defaults an answer may silently ignore.
-
-- [location.exclusion.the_online_row_is_not_a_place](rules/location.exclusion.the_online_row_is_not_a_place.md) — `exclusion` · binds `location_code` · confidence P
+_No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 

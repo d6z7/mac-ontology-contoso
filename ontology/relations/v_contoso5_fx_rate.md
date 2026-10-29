@@ -27,10 +27,10 @@ What a question may DO with each column of `v_contoso5_fx_rate` — the SEMANTIC
 |---|---|---|---|---|
 | `date_day` | **key** | axis `time` | — | — |
 | `from_currency` | **key** | axis `categorical` | — | — |
-| `to_currency` | **key** | axis `categorical` | — | — |
+| `to_currency` | **key** | axis `categorical` | — | scoped_by `from_currency` |
 | `rate` | — | aggregate intensive / to-currency per from-currency · extremum `min`, `max` | — | — |
 
-_Declared per column, over 4 columns: offers 4 of 4 · references 0 of 4 · rulings 0 of 4. An em dash is a column for which nothing is declared._
+_Declared per column, over 4 columns: offers 4 of 4 · references 0 of 4 · rulings 1 of 4. An em dash is a column for which nothing is declared._
 
 ## Bound by
 

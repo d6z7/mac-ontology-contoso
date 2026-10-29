@@ -42,180 +42,25 @@ contract:
     "this year" and no implied latest month. The extent is `{order_date}` from 2016-05-18 to 2025-12-31;
     deliveries run six days further, to 2026-01-06. State the window the answer actually covered, because
     an unscoped total and a year-to-date total are indistinguishable from the figure alone.
-  rules:
-  - id: order.resolution.rate_on_order_date
-    kind: mac.concept.rule.resolution
+# 0.3.1 (RULED-2026-10-29): this concept's ruled choices, one reading set each. The words, the
+# rulings and the history are in ontology/rules/<Concept>.<set>.yaml — the same id.
+readings:
+  date:
+    selects: column
     confidence: P
-    scope: CONTOSO5
-    binds:
-    - order_date
-    - currency_code
-    realized_by:
-    - udf: mac.canon.composite_key_guard
-      params:
-        code_column: to_currency
-        scope_columns:
-        - date_day
-        - from_currency
-  - id: order.default.period_is_order_date
-    kind: mac.concept.rule.default
-    confidence: P
-    scope: CONTOSO5
-    binds:
-    - order_date
-    - delivery_date
-    realized_by:
-    - udf: mac.canon.column_select
-      params:
-        default: ordered
-        columns:
-          ordered:
-            column: order_date
-            surfaces:
-            - ordered
-            - order date
-            - placed
-            - when it was ordered
-          delivered:
-            column: delivery_date
-            surfaces:
-            - delivered
-            - delivery date
-            - shipped
-            - when it arrived
-  - id: order.default.an_unscoped_question_covers_all_time
-    kind: mac.concept.rule.default
+    default: ordered
+    ordered:
+      column: order_date
+      surfaces: [ordered, order date, placed, when it was ordered]
+    delivered:
+      column: delivery_date
+      surfaces: [delivered, delivery date, shipped, when it arrived]
+  period:
+    selects: window
     confidence: C
-    scope: CONTOSO5
-    binds:
-    - order_date
-    realized_by:
-    - udf: mac.canon.period_default
-      params:
-        default: all_time
-        windows:
-          all_time:
-            unbounded: true
-  # ADDED 2026-10-23, OPERATOR RULING: "but as the time move on ... we need to specify the
-  # sampling date lets say on 31.12.2025". THIS RULE IS WHY THAT DATE IS NOT TYPED ANYWHERE:
-  # `max(order_date)` over this relation IS 2025-12-31, so the pin is MEASURED FROM THE DATA and
-  # re-measures itself when the warehouse grows. A literal would have to be re-typed and would be
-  # wrong the day it was not.
-  #
-  # WHAT IT CLOSES. `mac.canon.scoped_latest` has existed, correct and declared
-  # (`mac_vocabulary.yaml#canon.terms.scoped_latest`, serving `tracking_vintage`) and NOTHING IN
-  # THIS BUNDLE FIRED IT -- so every relative period resolved against the CLOCK while the canon
-  # that computes it FROM THE DATA sat unreachable. That is this estate's named defect: a
-  # declaration with no reader. tools/mac_vintage.py refused with NO-ANCHOR until this block.
-  #
-  # THE PLACEMENT IS THE PREPARED DECISION OF 2026-10-11
-  # (meaning-as-code/decisions/PREPARED-2026-10-11_contoso-anchor-binding.md), adapted to this
-  # bundle's names: the anchor is a property of the FACT, so the binding goes where the relation
-  # is. A binding whose params point at another concept's relation is indirection that rots.
-  #
-  # NO `scope`, DELIBERATELY. The canon's page permits an unscoped anchor "only when there is no
-  # axis to pin", and this relation carries no scenario, plan or budget axis -- there are no
-  # forward-dated rows to exclude. Measured, both halves: max(order_date) 2025-12-31 and
-  # max(delivery_date) 2026-01-06, six days further, which is why the anchor names order_date and
-  # not "the newest date in the relation".
-  - id: order.resolution.the_anchor_is_the_newest_order
-    kind: mac.concept.rule.resolution
-    confidence: C
-    scope: CONTOSO5
-    binds:
-    - order_date
-    realized_by:
-    - udf: mac.canon.scoped_latest
-      params:
-        table: contoso_served.v_contoso5_sales_line
-        date_column: order_date
-  # ── THE RATIOS OVER THE SALE'S MEASURES, moved here 2026-10-26 from the retired measure concepts
-  # NetRevenue, Discount and Margin, with their ids UNCHANGED: frozen acceptance captures record the
-  # id each run read, and a rule's id is a name, not an address. The denominators were concept names
-  # (UnitsSold, GrossRevenue, NetRevenue, SalesCost); they are now the COLUMNS those concepts
-  # measured (`quantity`, `gross_amount`, `net_amount`, `cost_amount`), which is the same figure
-  # with one home fewer. The price reading's figure and ruling date are on `net_amount`'s
-  # description, where a reader of the relation finds them.
-  - id: net_revenue.default.a_price_is_revenue_per_article
-    kind: mac.concept.rule.default
-    confidence: C
-    scope: CONTOSO5
-    binds:
-    - net_amount
-    realized_by:
-    - udf: mac.canon.ratio_select
-      params:
-        default: price_per_article
-        ratios:
-          price_per_article:
-            denominator: quantity
-            surfaces:
-            - price
-            - average price
-            - price per unit
-            - per unit
-            - price per article
-            - per article
-  # RETIRED 2026-10-25 on NetRevenue, carried here with its rule: a restatement.
-  #
-  # IT SAID: a question saying "revenue" or "sales" without saying net or gross is answered on the
-  # net amount and told so. THE WORD ALREADY BINDS, at the column, on the one relation both
-  # concepts ground on:
-  #   v_contoso5_sales_line.net_amount    surfaces: revenue · sales · net · net revenue ·
-  #                                       net sales · turnover · takings · what we charged
-  #   v_contoso5_sales_line.gross_amount  surfaces: gross · gross revenue · gross sales ·
-  #                                       list value · before discount
-  # So `revenue` reaches the net column by name and `gross revenue` reaches the gross one. The
-  # default IS the surface list.
-  #
-  # THIS IS THE RULE I BOUND WRONGLY EARLIER THE SAME DAY, to `column_select` with a `gross_amount`
-  # this concept does not serve. The binding was wrong and so was the diagnosis: the right reading
-  # is that the routing was already declared one layer down, and a rule naming it again is a second
-  # home. `column_select` remains the canon for two readings of one measure where the surfaces do
-  # NOT settle it; here they do.
-  - id: discount.aggregation.percent_is_over_gross
-    kind: mac.concept.rule.aggregation
-    confidence: C
-    scope: CONTOSO5
-    binds:
-    - discount_amount
-    realized_by:
-    - udf: mac.canon.ratio_select
-      params:
-        default: percent
-        ratios:
-          percent:
-            denominator: gross_amount
-            surfaces:
-            - discount percentage
-            - discount rate
-            - discount %
-            - discount as a percentage
-  - id: margin.aggregation.two_named_ratios
-    kind: mac.concept.rule.aggregation
-    confidence: C
-    scope: CONTOSO5
-    binds:
-    - margin_amount
-    realized_by:
-    - udf: mac.canon.ratio_select
-      params:
-        ratios:
-          margin_percent:
-            denominator: net_amount
-            surfaces:
-            - margin %
-            - margin percentage
-            - margin rate
-            - net margin
-            - margin on net
-          markup_percent:
-            denominator: cost_amount
-            surfaces:
-            - markup
-            - markup %
-            - markup percentage
-            - margin on cost
+    default: all_time
+    all_time:
+      unbounded: true
 governance:
   owner: operator
   last_reviewed: '2026-09-30'

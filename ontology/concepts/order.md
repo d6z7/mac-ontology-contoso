@@ -6,14 +6,6 @@ tags:
 - CONTOSO5
 - event
 - confidence:C
-rule_pages:
-- rules/order.resolution.rate_on_order_date.md
-- rules/order.default.period_is_order_date.md
-- rules/order.default.an_unscoped_question_covers_all_time.md
-- rules/order.resolution.the_anchor_is_the_newest_order.md
-- rules/net_revenue.default.a_price_is_revenue_per_article.md
-- rules/discount.aggregation.percent_is_over_gross.md
-- rules/margin.aggregation.two_named_ratios.md
 ---
 
 One customer's purchase on one date, counted by distinct `order_key` over the line relation. It is also THE FACT NODE of the sales line, one row per order line - every money and quantity measure (net, gross, cost, discount, margin, units, and the per-unit prices) is a column it serves, and every edge from the sale to a dimension starts here. The account is knowledge/order.md.
@@ -30,16 +22,6 @@ One customer's purchase on one date, counted by distinct `order_key` over the li
 *What an agent needs ONLY, to answer with this concept — no data probing.*
 
 **Default reading** — A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME — operator ruling, 2026-09-30. No implied "this year" and no implied latest month. The extent is `{order_date}` from 2016-05-18 to 2025-12-31; deliveries run six days further, to 2026-01-06. State the window the answer actually covered, because an unscoped total and a year-to-date total are indistinguishable from the figure alone.
-
-**7 binding rule(s)** — each one's clauses are on its own page; these are not optional and not defaults an answer may silently ignore.
-
-- [order.resolution.rate_on_order_date](rules/order.resolution.rate_on_order_date.md) — `resolution` · binds `order_date`, `currency_code` · confidence P
-- [order.default.period_is_order_date](rules/order.default.period_is_order_date.md) — `default` · binds `order_date`, `delivery_date` · confidence P
-- [order.default.an_unscoped_question_covers_all_time](rules/order.default.an_unscoped_question_covers_all_time.md) — `default` · binds `order_date` · confidence C
-- [order.resolution.the_anchor_is_the_newest_order](rules/order.resolution.the_anchor_is_the_newest_order.md) — `resolution` · binds `order_date` · confidence C
-- [net_revenue.default.a_price_is_revenue_per_article](rules/net_revenue.default.a_price_is_revenue_per_article.md) — `default` · binds `net_amount` · confidence C
-- [discount.aggregation.percent_is_over_gross](rules/discount.aggregation.percent_is_over_gross.md) — `aggregation` · binds `discount_amount` · confidence C
-- [margin.aggregation.two_named_ratios](rules/margin.aggregation.two_named_ratios.md) — `aggregation` · binds `margin_amount` · confidence C
 
 ## Grounded in
 

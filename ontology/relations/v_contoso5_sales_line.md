@@ -27,7 +27,7 @@ What a question may DO with each column of `v_contoso5_sales_line` — the SEMAN
 |---|---|---|---|---|
 | `order_key` | **key** | — | — | — |
 | `line_number` | **key** | — | — | — |
-| `order_date` | — | axis `time` · extremum `min`, `max` · **binds the period** | — | — |
+| `order_date` | — | axis `time` · extremum `min`, `max` · **binds the period** · anchor: `latest` | — | — |
 | `delivery_date` | — | axis `time` · extremum `min`, `max` | — | — |
 | `store_key` | — | axis `categorical` | `Store` | — |
 | `customer_key` | — | axis `categorical` | `Customer` | — |

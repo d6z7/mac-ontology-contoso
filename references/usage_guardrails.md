@@ -17,36 +17,21 @@ state is a GAP to flag, not a value to guess.
 |---|---|---|---|
 | [Brand](../ontology/concepts/brand.md) | enumeration | `dim_product` | nothing declared |
 | [Colour](../ontology/concepts/color.md) | enumeration | `dim_product` | nothing declared |
-| [Country](../ontology/concepts/country.md) | enumeration | `dim_country` | 2 binding rule(s) — see below |
+| [Country](../ontology/concepts/country.md) | enumeration | `dim_country` | nothing declared |
 | [Currency](../ontology/concepts/currency.md) | enumeration | `dim_currency` | nothing declared |
 | [Customer](../ontology/concepts/customer.md) | entity | `dim_customer` | nothing declared |
-| [Exchange Rate](../ontology/concepts/exchange_rate.md) | measure | `v_contoso5_fx_rate` | 2 binding rule(s) — see below |
-| [Location](../ontology/concepts/location.md) | entity | `dim_location` | 1 binding rule(s) — see below |
+| [Exchange Rate](../ontology/concepts/exchange_rate.md) | measure | `v_contoso5_fx_rate` | nothing declared |
+| [Location](../ontology/concepts/location.md) | entity | `dim_location` | nothing declared |
 | [Order](../ontology/concepts/order.md) | event | `v_contoso5_sales_line` | A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME — operator ruling, 2026-09-30. No implied  |
 | [Product](../ontology/concepts/product.md) | entity | `dim_product` | nothing declared |
-| [Product Category](../ontology/concepts/product_category.md) | enumeration | `dim_product` | 1 binding rule(s) — see below |
-| [Store](../ontology/concepts/store.md) | entity | `dim_store` | 2 binding rule(s) — see below |
+| [Product Category](../ontology/concepts/product_category.md) | enumeration | `dim_product` | nothing declared |
+| [Store](../ontology/concepts/store.md) | entity | `dim_store` | nothing declared |
 
 ## How to answer — per-concept playbooks (`contract`: `default_reading`, `resolution`, `rules`)
-
-### Country — `dim_country`
-
-
-### Exchange Rate — `v_contoso5_fx_rate`
-
-
-### Location — `dim_location`
-
 
 ### Order — `v_contoso5_sales_line`
 
 - **Default reading** — A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME — operator ruling, 2026-09-30. No implied "this year" and no implied latest month. The extent is `{order_date}` from 2016-05-18 to 2025-12-31; deliveries run six days further, to 2026-01-06. State the window the answer actually covered, because an unscoped total and a year-to-date total are indistinguishable from the figure alone.
-
-### Product Category — `dim_product`
-
-
-### Store — `dim_store`
-
 
 ## Filter traps & known issues
 

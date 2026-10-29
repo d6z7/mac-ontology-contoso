@@ -6,9 +6,6 @@ tags:
 - CONTOSO5
 - entity
 - confidence:I
-rule_pages:
-- rules/store.resolution.the_channel_is_the_location_sentinel.md
-- rules/store.resolution.active_is_the_absent_close_date.md
 ---
 
 THE PREMISES Contoso sells from — a shop that stood on one place for one trading period, with its own name, floor area, opening date and closing date. It is what every sale is recorded against.
@@ -24,12 +21,7 @@ THIS DEFINITION CARRIES NO COUNTS, by the operator's ruling of 2026-10-24: "you 
 
 ## How to answer
 
-*What an agent needs ONLY, to answer with this concept — no data probing.*
-
-**2 binding rule(s)** — each one's clauses are on its own page; these are not optional and not defaults an answer may silently ignore.
-
-- [store.resolution.the_channel_is_the_location_sentinel](rules/store.resolution.the_channel_is_the_location_sentinel.md) — `resolution` · binds `store_code` · confidence P
-- [store.resolution.active_is_the_absent_close_date](rules/store.resolution.active_is_the_absent_close_date.md) — `resolution` · binds `close_date`, `status_annotation` · confidence C
+_No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 

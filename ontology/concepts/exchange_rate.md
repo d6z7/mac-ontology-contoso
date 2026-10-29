@@ -6,9 +6,6 @@ tags:
 - CONTOSO5
 - measure
 - confidence:I
-rule_pages:
-- rules/exchange_rate.aggregation.convert_per_day_never_average.md
-- rules/exchange_rate.exclusion.direction_is_part_of_the_key.md
 ---
 
 What one currency was worth in another on one day: 100,450 quoted rates over a date and an ordered pair of currencies. The account is knowledge/exchange_rate.md.
@@ -22,12 +19,7 @@ What one currency was worth in another on one day: 100,450 quoted rates over a d
 
 ## How to answer
 
-*What an agent needs ONLY, to answer with this concept — no data probing.*
-
-**2 binding rule(s)** — each one's clauses are on its own page; these are not optional and not defaults an answer may silently ignore.
-
-- [exchange_rate.aggregation.convert_per_day_never_average](rules/exchange_rate.aggregation.convert_per_day_never_average.md) — `aggregation` · binds `rate` · confidence P
-- [exchange_rate.exclusion.direction_is_part_of_the_key](rules/exchange_rate.exclusion.direction_is_part_of_the_key.md) — `exclusion` · binds `from_currency`, `to_currency` · confidence P
+_No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
@@ -43,10 +35,10 @@ What one currency was worth in another on one day: 100,450 quoted rates over a d
 |---|---|---|---|---|---|---|---|---|
 | `date_day` | date | key | — | — | — | — | — | — |
 | `from_currency` | string | key | — | — | — | — | — | [Currency](currency.md) |
-| `to_currency` | string | key | — | — | — | — | — | [Currency](currency.md) |
+| `to_currency` | string | key | — | — | scoped_by `from_currency` | — | — | [Currency](currency.md) |
 | `rate` | decimal | measure | — | intensive · to-currency per from-currency | — | — | — | — |
 
-_Declared per column, over 4 columns: type 4 of 4 · role 4 of 4 · identity 0 of 4 · measure 1 of 4 · rulings 0 of 4 · register 0 of 4 · description 0 of 4 · joins → 2 of 4. An em dash is a column for which nothing is declared._
+_Declared per column, over 4 columns: type 4 of 4 · role 4 of 4 · identity 0 of 4 · measure 1 of 4 · rulings 1 of 4 · register 0 of 4 · description 0 of 4 · joins → 2 of 4. An em dash is a column for which nothing is declared._
 
 ## Axes
 

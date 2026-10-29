@@ -6,9 +6,6 @@ tags:
 - CONTOSO5
 - enumeration
 - confidence:I
-rule_pages:
-- rules/country.exclusion.sentinel_is_not_a_country.md
-- rules/country.default.whose_country_is_asked_never_assumed.md
 ---
 
 A country Contoso sells in — 8 of them, plus one `--` sentinel that is not a place. The account is knowledge/country.md.
@@ -22,12 +19,7 @@ A country Contoso sells in — 8 of them, plus one `--` sentinel that is not a p
 
 ## How to answer
 
-*What an agent needs ONLY, to answer with this concept — no data probing.*
-
-**2 binding rule(s)** — each one's clauses are on its own page; these are not optional and not defaults an answer may silently ignore.
-
-- [country.exclusion.sentinel_is_not_a_country](rules/country.exclusion.sentinel_is_not_a_country.md) — `exclusion` · binds `country_code` · confidence P
-- [country.default.whose_country_is_asked_never_assumed](rules/country.default.whose_country_is_asked_never_assumed.md) — `default` · binds `country_code` · confidence C
+_No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
