@@ -21,7 +21,7 @@ One customer's purchase on one date, counted by distinct `order_key` over the li
 
 *What an agent needs ONLY, to answer with this concept — no data probing.*
 
-**Default reading** — A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME — operator ruling, 2026-09-30. No implied "this year" and no implied latest month. The extent is `{order_date}` from 2016-05-18 to 2025-12-31; deliveries run six days further, to 2026-01-06. State the window the answer actually covered, because an unscoped total and a year-to-date total are indistinguishable from the figure alone.
+**Default reading** — A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME — operator ruling, 2026-09-30 (rule Order.period). No implied "this year" and no implied latest month. State the window the answer actually covered — its first and last `order_date` — because an unscoped total and a year-to- date total are indistinguishable from the figure alone.
 
 ## Grounded in
 

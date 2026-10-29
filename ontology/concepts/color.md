@@ -1,14 +1,14 @@
 ---
 type: Enum
 title: Colour
-description: 'The colour a product comes in: sixteen values on the served row, and the one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two products.'
+description: 'The colour a product comes in — the one attribute that on its own makes a new SKU: "E400 Green" and "E400 Orange" are different products.'
 tags:
 - CONTOSO5
 - enumeration
 - confidence:I
 ---
 
-The colour a product comes in: sixteen values on the served row, and the one attribute that on its own makes a new SKU — "E400 Green" and "E400 Orange" are two products. The account is knowledge/color.md.
+The colour a product comes in — the one attribute that on its own makes a new SKU: "E400 Green" and "E400 Orange" are different products. The account is knowledge/color.md.
 
 ## Details
 

@@ -16,6 +16,10 @@ A store is the premises Contoso sells from: a shop standing on one place for one
 - **Keywords** — store, premises, shop, location, place, site, count stores, tenancy
 - **Supersedes** — `Store.counted_by_site`
 
+## Implemented at
+
+- `ontology/relations/dim_location.yaml#columns.units_ever_here.rules`
+
 ## What was said
 
 > *"a Store is a PLACE on one location you can shop at ... store is part of location"* — operator, 2026-10-24 (`ontology/concepts/store.yaml`)

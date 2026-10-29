@@ -12,6 +12,10 @@ An order's date is the day it was placed, not the day it was delivered. A questi
 
 - **State** — proposed · wording proposed, awaiting acceptance
 - **Concepts** — Order
-- **Formal** — **Symbolic** — declared at `ontology/concepts/order.yaml#readings.date`
+- **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — order date, delivery date, when, placed, delivered, shipped, period
 - **Formerly** — `order.default.period_is_order_date`
+
+## Implemented at
+
+- `ontology/concepts/order.yaml#readings.date`

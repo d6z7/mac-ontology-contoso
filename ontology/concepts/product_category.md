@@ -1,14 +1,14 @@
 ---
 type: Enum
 title: Product Category
-description: 'How Contoso groups what it sells: eight categories, each over several of thirty-two sub-categories, both carried as names on the product row.'
+description: 'How Contoso groups what it sells: categories, each over several sub-categories, both carried as names on the product row (rule ProductCategory.level).'
 tags:
 - CONTOSO5
 - enumeration
 - confidence:I
 ---
 
-How Contoso groups what it sells: eight categories, each over several of thirty-two sub-categories, both carried as names on the product row. The account is knowledge/product_category.md.
+How Contoso groups what it sells: categories, each over several sub-categories, both carried as names on the product row (rule ProductCategory.level). The account is knowledge/product_category.md.
 
 ## Details
 

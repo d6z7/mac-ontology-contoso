@@ -1,14 +1,14 @@
 ---
 type: Enum
 title: Country
-description: A country Contoso sells in — 8 of them, plus one `--` sentinel that is not a place.
+description: A country Contoso sells in.
 tags:
 - CONTOSO5
 - enumeration
 - confidence:I
 ---
 
-A country Contoso sells in — 8 of them, plus one `--` sentinel that is not a place. The account is knowledge/country.md.
+A country Contoso sells in. The placeholder code `--` is not a country: it marks rows with no real country, such as the online store (rule Country.rows). The account is knowledge/country.md.
 
 ## Details
 

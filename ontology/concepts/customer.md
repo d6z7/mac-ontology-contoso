@@ -1,14 +1,14 @@
 ---
 type: Entity
 title: Customer
-description: 'A person on Contoso''s customer register: 104,990 of them, each with a name, a birth date and a place — continent, country, state, city.'
+description: A person on Contoso's customer register, each with a name, a birth date and a place — continent, country, state, city.
 tags:
 - CONTOSO5
 - entity
 - confidence:I
 ---
 
-A person on Contoso's customer register: 104,990 of them, each with a name, a birth date and a place — continent, country, state, city. HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer list. The account is knowledge/customer.md.
+A person on Contoso's customer register, each with a name, a birth date and a place — continent, country, state, city. The register is not the buyer list: many registered customers have never ordered (rule Customer.register_not_buyers). The account is knowledge/customer.md.
 
 ## Details
 

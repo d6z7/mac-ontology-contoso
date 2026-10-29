@@ -1,14 +1,14 @@
 ---
 type: Metric
 title: Exchange Rate
-description: 'What one currency was worth in another on one day: 100,450 quoted rates over a date and an ordered pair of currencies.'
+description: 'What one currency was worth in another on one day: a quoted rate over a date and an ordered pair of currencies.'
 tags:
 - CONTOSO5
 - measure
 - confidence:I
 ---
 
-What one currency was worth in another on one day: 100,450 quoted rates over a date and an ordered pair of currencies. The account is knowledge/exchange_rate.md.
+What one currency was worth in another on one day: a quoted rate over a date and an ordered pair of currencies. The account is knowledge/exchange_rate.md.
 
 ## Details
 

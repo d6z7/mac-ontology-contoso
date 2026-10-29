@@ -15,6 +15,10 @@ Site and location name the same notion: the place a store stands on, described b
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — site, location, place, city, state, region, geography
 
+## Implemented at
+
+- `ontology/relations/dim_location.yaml#columns.location_code.rules`
+
 ## What was said
 
 > *"dont call it site code ... just site, location, city"* — operator, 2026-10-24 (`ontology/relations/dim_location.yaml`)

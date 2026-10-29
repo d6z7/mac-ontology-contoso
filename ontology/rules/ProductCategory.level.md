@@ -12,6 +12,10 @@ A product category is the top level of the product hierarchy. A question saying 
 
 - **State** — proposed · wording proposed, awaiting acceptance
 - **Concepts** — ProductCategory
-- **Formal** — **Symbolic** — declared at `ontology/concepts/product_category.yaml#readings.level`
+- **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — category, sub-category, product category, hierarchy, level
 - **Formerly** — `product_category.ambiguity.which_level`
+
+## Implemented at
+
+- `ontology/concepts/product_category.yaml#readings.level`

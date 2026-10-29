@@ -12,9 +12,14 @@ A store is active while it has no closing date. A store with a closing date is c
 
 - **State** — ruled · wording proposed, awaiting acceptance
 - **Concepts** — Store
-- **Formal** — **Symbolic** — declared at `ontology/concepts/store.yaml#readings.trading`
+- **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — store, active, open, closed, trading, shut, restructured, close date
 - **Formerly** — `store.resolution.active_is_the_absent_close_date`
+
+## Implemented at
+
+- `ontology/concepts/store.yaml#readings.trading`
+- `ontology/relations/dim_store.yaml#columns.status_annotation.rules`
 
 ## What was said
 

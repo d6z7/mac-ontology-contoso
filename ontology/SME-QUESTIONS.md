@@ -248,19 +248,19 @@ Rows by origin: register 64
 
 > Is this how you would state the rule “ExchangeRate.convert_per_day”? The wording was sharpened for a reader and awaits your acceptance: An amount is converted at its own day's rate, never at a rate averaged over a period. A rate is not a quantity to add up: over time it can at most be averaged, and across currency pairs it is not combined at all.
 
-### `rule:ExchangeRate.to_currency.scoped_by#state`
+### `rule:ExchangeRate.direction_is_part_of_the_key#state`
 
 - origin: register · owner role: not declared · concept: [exchange_rate](concepts/exchange_rate.md), [currency](concepts/currency.md)
-- source: `ontology/rules/ExchangeRate.to_currency.scoped_by.yaml` → `rule`
+- source: `ontology/rules/ExchangeRate.direction_is_part_of_the_key.yaml` → `rule`
 
-> Is the rule “ExchangeRate.to_currency.scoped_by” right? It is recorded as proposed, not ruled: An exchange rate's target currency means something only together with its source currency: the direction is part of the rate's identity, so a rate is never picked or grouped by its target currency alone.
+> Is the rule “ExchangeRate.direction_is_part_of_the_key” right? It is recorded as proposed, not ruled: An exchange rate's target currency means something only together with its source currency: the direction is part of the rate's identity, so a rate is never picked or grouped by its target currency alone.
 
-### `rule:ExchangeRate.to_currency.scoped_by#wording`
+### `rule:ExchangeRate.direction_is_part_of_the_key#wording`
 
 - origin: register · owner role: not declared · concept: [exchange_rate](concepts/exchange_rate.md), [currency](concepts/currency.md)
-- source: `ontology/rules/ExchangeRate.to_currency.scoped_by.yaml` → `rule`
+- source: `ontology/rules/ExchangeRate.direction_is_part_of_the_key.yaml` → `rule`
 
-> Is this how you would state the rule “ExchangeRate.to_currency.scoped_by”? The wording was sharpened for a reader and awaits your acceptance: An exchange rate's target currency means something only together with its source currency: the direction is part of the rate's identity, so a rate is never picked or grouped by its target currency alone.
+> Is this how you would state the rule “ExchangeRate.direction_is_part_of_the_key”? The wording was sharpened for a reader and awaits your acceptance: An exchange rate's target currency means something only together with its source currency: the direction is part of the rate's identity, so a rate is never picked or grouped by its target currency alone.
 
 ### `rule:Location.channel#state`
 
@@ -304,19 +304,19 @@ Rows by origin: register 64
 
 > Is this how you would state the rule “Order.date”? The wording was sharpened for a reader and awaits your acceptance: An order's date is the day it was placed, not the day it was delivered. A question that says when, or names a period, without saying delivery is answered on the order date; a question that says delivered or shipped is answered on the delivery date.
 
-### `rule:Order.discount_amount.percent#wording`
+### `rule:Order.discount_percent_is_over_gross#wording`
 
 - origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/rules/Order.discount_amount.percent.yaml` → `rule`
+- source: `ontology/rules/Order.discount_percent_is_over_gross.yaml` → `rule`
 
-> Is this how you would state the rule “Order.discount_amount.percent”? The wording was sharpened for a reader and awaits your acceptance: A discount percentage is the money given away divided by the gross amount before discount — not by the net amount.
+> Is this how you would state the rule “Order.discount_percent_is_over_gross”? The wording was sharpened for a reader and awaits your acceptance: A discount percentage is the money given away divided by the gross amount before discount — not by the net amount.
 
-### `rule:Order.discount_amount.total#wording`
+### `rule:Order.discount_total_is_money#wording`
 
 - origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/rules/Order.discount_amount.total.yaml` → `rule`
+- source: `ontology/rules/Order.discount_total_is_money.yaml` → `rule`
 
-> Is this how you would state the rule “Order.discount_amount.total”? The wording was sharpened for a reader and awaits your acceptance: A total discount is money: the sum of what was given away below the regular price on every discounted sale in scope. It is never a sum or an average of discount rates. The rate is meant only when the question names it — discount percentage, discount rate, average discount.
+> Is this how you would state the rule “Order.discount_total_is_money”? The wording was sharpened for a reader and awaits your acceptance: A total discount is money: the sum of what was given away below the regular price on every discounted sale in scope. It is never a sum or an average of discount rates. The rate is meant only when the question names it — discount percentage, discount rate, average discount.
 
 ### `rule:Order.how_many#state`
 
@@ -339,26 +339,12 @@ Rows by origin: register 64
 
 > Is this how you would state the rule “Order.is_the_purchase”? The wording was sharpened for a reader and awaits your acceptance: An order is the purchase: one customer buying at one store on one day in one currency. Its lines are not orders and not events of their own — a line borrows the when, the who and the where from its order and adds only which product and how many. Counting orders counts purchases, never lines.
 
-### `rule:Order.margin_amount.ratio#wording`
+### `rule:Order.margin_ratio_is_named#wording`
 
 - origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/rules/Order.margin_amount.ratio.yaml` → `rule`
+- source: `ontology/rules/Order.margin_ratio_is_named.yaml` → `rule`
 
-> Is this how you would state the rule “Order.margin_amount.ratio”? The wording was sharpened for a reader and awaits your acceptance: A margin ratio can be stated two ways over the same profit, and the question must say which: margin percent is profit over net revenue, markup is profit over cost. A question naming neither is asked.
-
-### `rule:Order.net_amount.price#wording`
-
-- origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/rules/Order.net_amount.price.yaml` → `rule`
-
-> Is this how you would state the rule “Order.net_amount.price”? The wording was sharpened for a reader and awaits your acceptance: An unqualified price means what the customer paid per article: the net amount divided by the number of units, both summed over the lines asked about — never an average of line prices.
-
-### `rule:Order.net_amount.surfaces#wording`
-
-- origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/rules/Order.net_amount.surfaces.yaml` → `rule`
-
-> Is this how you would state the rule “Order.net_amount.surfaces”? The wording was sharpened for a reader and awaits your acceptance: "Revenue" or "sales" without "net" or "gross" means the net amount — what the customer was charged after discount — and the answer says so. "Gross revenue" means the amount before discount.
+> Is this how you would state the rule “Order.margin_ratio_is_named”? The wording was sharpened for a reader and awaits your acceptance: A margin ratio can be stated two ways over the same profit, and the question must say which: margin percent is profit over net revenue, markup is profit over cost. A question naming neither is asked.
 
 ### `rule:Order.no_lifecycle_state#state`
 
@@ -374,12 +360,12 @@ Rows by origin: register 64
 
 > Is this how you would state the rule “Order.no_lifecycle_state”? The wording was sharpened for a reader and awaits your acceptance: An order has no state beyond its two dates: it was placed on one day and delivered on another. Nothing records a cancellation or a return, so a question about either has no answer in this business's data and says so; an absent state is never read as zero.
 
-### `rule:Order.order_date.anchor#wording`
+### `rule:Order.now_is_the_newest_order#wording`
 
 - origin: register · owner role: not declared · concept: [order](concepts/order.md)
-- source: `ontology/rules/Order.order_date.anchor.yaml` → `rule`
+- source: `ontology/rules/Order.now_is_the_newest_order.yaml` → `rule`
 
-> Is this how you would state the rule “Order.order_date.anchor”? The wording was sharpened for a reader and awaits your acceptance: "Now", for this data, is the date of the newest order — measured from the data, not taken from the clock. Relative periods such as "last month" are read against it, and it moves forward by itself when new orders arrive.
+> Is this how you would state the rule “Order.now_is_the_newest_order”? The wording was sharpened for a reader and awaits your acceptance: "Now", for this data, is the date of the newest order — measured from the data, not taken from the clock. Relative periods such as "last month" are read against it, and it moves forward by itself when new orders arrive.
 
 ### `rule:Order.period#wording`
 
@@ -387,6 +373,13 @@ Rows by origin: register 64
 - source: `ontology/rules/Order.period.yaml` → `rule`
 
 > Is this how you would state the rule “Order.period”? The wording was sharpened for a reader and awaits your acceptance: A question that names no period covers all time. There is no implied "this year" and no implied latest month, and the answer states the window it covered.
+
+### `rule:Order.price_is_per_article#wording`
+
+- origin: register · owner role: not declared · concept: [order](concepts/order.md)
+- source: `ontology/rules/Order.price_is_per_article.yaml` → `rule`
+
+> Is this how you would state the rule “Order.price_is_per_article”? The wording was sharpened for a reader and awaits your acceptance: An unqualified price means what the customer paid per article: the net amount divided by the number of units, both summed over the lines asked about — never an average of line prices.
 
 ### `rule:Order.price_terms#wording`
 
@@ -408,6 +401,13 @@ Rows by origin: register 64
 - source: `ontology/rules/Order.rate_on_order_date.yaml` → `rule`
 
 > Is this how you would state the rule “Order.rate_on_order_date”? The wording was sharpened for a reader and awaits your acceptance: An amount is converted at the exchange rate of the order's own day. A rate is identified by its day and both of its currencies together; a target currency alone does not pick a rate.
+
+### `rule:Order.revenue_means_net#wording`
+
+- origin: register · owner role: not declared · concept: [order](concepts/order.md)
+- source: `ontology/rules/Order.revenue_means_net.yaml` → `rule`
+
+> Is this how you would state the rule “Order.revenue_means_net”? The wording was sharpened for a reader and awaits your acceptance: "Revenue" or "sales" without "net" or "gross" means the net amount — what the customer was charged after discount — and the answer says so. "Gross revenue" means the amount before discount.
 
 ### `rule:Product.price_is_dated#wording`
 

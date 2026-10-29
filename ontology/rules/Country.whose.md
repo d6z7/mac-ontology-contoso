@@ -12,11 +12,15 @@ When a question asks for figures by country without saying whose country, a sale
 
 - **State** — ruled · wording proposed, awaiting acceptance
 - **Concepts** — Country, Order, Store, Customer
-- **Formal** — **Symbolic** — declared at `ontology/concepts/country.yaml#readings.whose`
+- **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — country, whose country, attribution, territory, market, store country, customer country, by country
 - **Decided in** — `meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md`
 - **Supersedes** — `Country.whose_is_asked`
 - **Formerly** — `country.default.whose_country_is_asked_never_assumed`
+
+## Implemented at
+
+- `ontology/concepts/country.yaml#readings.whose`
 
 ## What was said
 

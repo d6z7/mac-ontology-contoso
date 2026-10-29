@@ -12,9 +12,14 @@ The placeholder country code `--` is not a country. It marks rows that carry no 
 
 - **State** — proposed · wording proposed, awaiting acceptance
 - **Concepts** — Country
-- **Formal** — **Symbolic** — declared at `ontology/concepts/country.yaml#readings.rows`
+- **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — country, countries, placeholder, sentinel, no country, unknown country, online
 - **Formerly** — `country.exclusion.sentinel_is_not_a_country`
+
+## Implemented at
+
+- `ontology/concepts/country.yaml#readings.rows`
+- `ontology/relations/dim_country.yaml#columns.country_code.rules`
 
 ## Examples
 

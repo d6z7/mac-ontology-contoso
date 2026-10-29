@@ -15,3 +15,7 @@ An amount is converted at the exchange rate of the order's own day. A rate is id
 - **Formal** — **Escape hatch** — `mac.canon.composite_key_guard` with `confidence: P`, `code_column: to_currency`, `scope_columns: ['date_day', 'from_currency']`
 - **Keywords** — exchange rate, conversion, currency, order date, fx
 - **Formerly** — `order.resolution.rate_on_order_date`
+
+## Implemented at
+
+- `ontology/edges.yaml#order__converts_at__exchange_rate.resolved_by`

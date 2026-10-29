@@ -41,6 +41,7 @@ columns:
 
   # ---- the two dates ------------------------------------------------------------------------
   order_date:
+    rules: [Order.now_is_the_newest_order]
     description: >-
       the day the order was placed. THE PERIOD COLUMN: an unqualified question about when is
       answered on this and not on `delivery_date` (order.default.period_is_order_date).
@@ -48,7 +49,6 @@ columns:
     offers:
       axis: time
       period_binding: true
-      # 0.3.1: the data's own 'now'; see ontology/rules/Order.order_date.anchor.yaml
       anchor: latest
       extremum: [min, max]
   delivery_date:
@@ -84,6 +84,7 @@ columns:
       axis: categorical
     references: Customer
   channel:
+    rules: [Store.channel]
     description: >-
       WHICH CHANNEL THE SALE WAS IN — `physical` for a shop you can walk into, `online` for the web
       shop. Derived on the fact from the store key (`store_key = 999999` is the web shop), so it
@@ -152,18 +153,19 @@ columns:
       aggregate: { type: flow, unit: USD }
       extremum: [min, max]
   net_amount:
+    rules: [Order.revenue_means_net]
     description: >-
       what the customer was actually charged for the line, in USD, after discount: exactly `quantity
       * net_price`. THE DEFAULT MONEY COLUMN: a question saying revenue or sales without saying net
-      or gross is answered here (rule Order.net_amount.surfaces). AN UNQUALIFIED PRICE means what
+      or gross is answered here (rule Order.revenue_means_net). AN UNQUALIFIED PRICE means what
       the customer paid per article: this column summed and divided by `quantity` summed (operator
-      ruling, 2026-09-30; rule Order.net_amount.price). When a question says store, shop, product,
+      ruling, 2026-09-30; rule Order.price_is_per_article). When a question says store, shop, product,
       or placed without naming a competing figure, those words are read on this same sales-line
       figure.
     surfaces: ['revenue', 'income', 'sales', 'net', 'net revenue', 'net sales', 'turnover', 'takings', 'what we charged']
-    # 0.3.1: ratio readings hang on the numerator; words and ruling in ontology/rules/Order.net_amount.price.yaml
     readings:
       price:
+        rule: Order.price_is_per_article
         selects: ratio
         confidence: C
         default: price_per_article
@@ -189,9 +191,9 @@ columns:
       margin on the DISCOUNTED price and not on list.
     surfaces: ['margin', 'profit', 'gross margin', 'contribution']
     # 0.3.1: two named ratios and NO default — a question naming neither is asked.
-    # See ontology/rules/Order.margin_amount.ratio.yaml
     readings:
       ratio:
+        rule: Order.margin_ratio_is_named
         selects: ratio
         confidence: C
         margin_percent:
@@ -204,13 +206,14 @@ columns:
       aggregate: { type: flow, unit: USD }
       extremum: [min, max]
   discount_amount:
+    rules: [Order.discount_total_is_money]
     description: >-
       the money given away on the line, in USD. Measured: exactly `gross_amount - net_amount`.
       Upstream the discount is an integer percent from a closed set of 15 steps, 0 to 14.
     surfaces: ['discount', 'rebate', 'money off', 'reduction']
-    # 0.3.1: see ontology/rules/Order.discount_amount.percent.yaml
     readings:
       percent:
+        rule: Order.discount_percent_is_over_gross
         selects: ratio
         confidence: C
         default: percent

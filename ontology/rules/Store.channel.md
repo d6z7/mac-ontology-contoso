@@ -12,11 +12,17 @@ A store is a shop you can walk into. The online channel is recorded as a store, 
 
 - **State** — ruled · wording proposed, awaiting acceptance
 - **Concepts** — Store, Order
-- **Formal** — **Symbolic** — declared at `ontology/concepts/store.yaml#readings.channel`
+- **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — store, shop, online, physical, channel, web, internet, revenue, both channels
 - **Decided in** — `meaning-as-code#decisions/RULED-2026-10-18_both-channels-make-revenue.md`
 - **Supersedes** — `Store.revenue_is_shop_only`
 - **Formerly** — `store.resolution.the_channel_is_the_location_sentinel`
+
+## Implemented at
+
+- `ontology/concepts/store.yaml#readings.channel`
+- `ontology/relations/dim_store.yaml#columns.store_code.rules`
+- `ontology/relations/v_contoso5_sales_line.yaml#columns.channel.rules`
 
 ## What was said
 
