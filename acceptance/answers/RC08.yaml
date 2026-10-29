@@ -1,5 +1,5 @@
 id: RC08
-captured_at: '2026-10-28T23:48:30+00:00'
+captured_at: '2026-10-29T00:06:31+00:00'
 ontology_fingerprint: 9455837fe192e4d8
 acceptance_fingerprint: 324b16c41efe7a45
 engine:
@@ -8,7 +8,7 @@ engine:
   model: claude-opus-5
   mode: llm-execute
   athena: false
-  run_file: 20261028T232903Z_merged.json
+  run_file: 20261028T235941Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
 connection:
@@ -22,36 +22,40 @@ intent:
   operation: aggregate
   qdmr_simplified: "  1       FROM       stores             “stores”\n  2  ← 1  WHERE      closed = 'closed'\
     \  “are closed”\n  3  ← 2  AGGREGATE  count of stores    “How many”\n  answer: step 3   confidence:\
-    \ 0.72\n  UNDERSTOOD AS: A single count of how many stores are in a closed state — one number, covering\
-    \ all stores regardless of region or type, with no time period restricted. I read \"closed\" as the\
-    \ store's own status (shut down / no longer trading), not as \"not currently open at this hour of\
-    \ the day.\"\n  AMBIGUOUS 'closed' — ASKS: Do you mean stores that have shut down for good, or stores\
-    \ that just aren't open for business right now (e.g. outside opening hours or temporarily shut)?\n\
-    \      could mean: Stores whose status is closed — they have shut down and no longer trade\n     \
-    \ could mean: Stores that are not open at this moment, based on their opening hours\n      could mean:\
-    \ Stores that are temporarily closed, e.g. for refurbishment, but expected to reopen\n      took:\
-    \ Stores whose status is closed — shut down and no longer trading\n  AMBIGUOUS 'closed' — ASKS: If\
-    \ a store is temporarily closed rather than permanently shut, should it be counted in the total?\n\
-    \      could mean: Count only permanently closed stores\n      could mean: Count permanently and temporarily\
-    \ closed stores together\n      took: Any store marked closed is counted, without distinguishing permanent\
-    \ from temporary\n  AMBIGUOUS 'How many stores' — ASKS: Do you want just the single total, or the\
-    \ total broken out by something like country or region?\n      could mean: One single number for all\
-    \ closed stores\n      could mean: One number per country or region\n      took: One single number\
-    \ for all closed stores\n  cannot_express: When each store closed, or how the closed count has changed\
-    \ over time — the question names no period, so this is a snapshot of the current state only\n  OUTPUT\
-    \ SHAPE: one figure · one row(s) · carrying how many"
-  understood_as_in_human_words: A single count of how many stores are in a closed state — one number,
-    covering all stores regardless of region or type, with no time period restricted. I read "closed"
-    as the store's own status (shut down / no longer trading), not as "not currently open at this hour
-    of the day."
-  population_actually_answered: 'The 16 rows of contoso_served.dim_store where store_code <> -1 AND close_date
-    IS NOT NULL, counted as distinct store_key. Two restrictions, both from declarations, neither named
-    by the question: `physical` only, per store.resolution.the_channel_is_the_location_sentinel''s declared
-    subject default, excluding the single online outlet — measured as costing this figure nothing, since
-    that row has no close date and is `active` either way; and `closed` as close_date IS NOT NULL, per
-    store.resolution.active_is_the_absent_close_date, taking the population the question named by name
-    rather than either of its narrower subsets. No period, country, state or other restriction, and no
-    grouping — one figure over the whole register.'
+    \ 0.72\n  UNDERSTOOD AS: A count of stores whose status is \\\"closed\\\" — one number, covering all\
+    \ stores regardless of region or type, as things stand today. I am reading \\\"closed\\\" as the store's\
+    \ standing status (shut down / no longer trading), not as \\\"shut at this moment of the day because\
+    \ it is outside opening hours\\\".\n  AMBIGUOUS 'closed' — ASKS: By \"closed\" do you mean stores\
+    \ that have shut down for good, stores that are temporarily shut, or stores that simply aren't open\
+    \ right now at this hour?\n      could mean: Stores that have permanently shut down and are no longer\
+    \ trading\n      could mean: Stores that are temporarily closed (e.g. for refurbishment) but expected\
+    \ to reopen\n      could mean: Stores that are not open at this moment of the day, based on their\
+    \ opening hours\n      took: Stores whose standing status is closed — permanently shut down and no\
+    \ longer trading\n  AMBIGUOUS 'are closed' — ASKS: Do you want the count as it stands today, or the\
+    \ number of stores that closed during some particular period such as this year?\n      could mean:\
+    \ The number of stores that are in a closed state right now\n      could mean: The number of stores\
+    \ that closed within a given period, e.g. this year or last quarter\n      took: The number currently\
+    \ in a closed state, with no date window applied\n  AMBIGUOUS 'stores' — ASKS: Should this count every\
+    \ store on the books, or only a subset such as stores you own and operate (excluding franchises, concessions,\
+    \ or online-only locations)?\n      could mean: Every store record there is\n      could mean: Only\
+    \ company-owned and operated physical stores, excluding franchises and concessions\n      took: Every\
+    \ store, with no filter on ownership or type\n  cannot_express: When each store closed, or a reason/category\
+    \ for the closure — the question asks only for a count\n  OUTPUT SHAPE: one figure · one row(s) ·\
+    \ carrying how many"
+  understood_as_in_human_words: A count of stores whose status is \"closed\" — one number, covering all
+    stores regardless of region or type, as things stand today. I am reading \"closed\" as the store's
+    standing status (shut down / no longer trading), not as \"shut at this moment of the day because it
+    is outside opening hours\".
+  population_actually_answered: 'The 16 rows of contoso_served.dim_store that carry a close date, counted
+    as distinct store_key. Three restrictions, all mine, all declared: (1) PHYSICAL ONLY — the single
+    online outlet (store_code = -1) is excluded, because store.resolution.the_channel_is_the_location_sentinel
+    makes `physical` the default when a question names no channel. This changes nothing: that row has
+    no close date, so 16 is equally the figure over all 74 register rows. (2) `closed` = close_date IS
+    NOT NULL, the population store.resolution.active_is_the_absent_close_date names with the question''s
+    own word; its declared subsets are smaller — 9 shut for good, 7 closed and reopened. (3) PREMISES,
+    not places — counted by store_key as the Store grounding''s `counts store_key` declares; the same
+    16 shops stand on 14 distinct sites, so a question about places would be answered 14. No period filter
+    of any kind: this is the register as it stands today, covering closures from 2013 to 2019.'
   how_the_result_must_be_presented:
     shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
@@ -62,9 +66,10 @@ intent:
     said: How many
     stage1_confidence: 0.72
   canonical_question: &id001
-    understood_as: A single count of how many stores are in a closed state — one number, covering all
-      stores regardless of region or type, with no time period restricted. I read "closed" as the store's
-      own status (shut down / no longer trading), not as "not currently open at this hour of the day."
+    understood_as: A count of stores whose status is \"closed\" — one number, covering all stores regardless
+      of region or type, as things stand today. I am reading \"closed\" as the store's standing status
+      (shut down / no longer trading), not as \"shut at this moment of the day because it is outside opening
+      hours\".
     steps:
     - id: '1'
       do: from
@@ -95,40 +100,57 @@ intent:
       - how many
     ambiguities:
     - words: closed
-      question: Do you mean stores that have shut down for good, or stores that just aren't open for business
-        right now (e.g. outside opening hours or temporarily shut)?
+      question: By "closed" do you mean stores that have shut down for good, stores that are temporarily
+        shut, or stores that simply aren't open right now at this hour?
       readings:
-      - Stores whose status is closed — they have shut down and no longer trade
-      - Stores that are not open at this moment, based on their opening hours
-      - Stores that are temporarily closed, e.g. for refurbishment, but expected to reopen
-      assumed: Stores whose status is closed — shut down and no longer trading
-    - words: closed
-      question: If a store is temporarily closed rather than permanently shut, should it be counted in
-        the total?
+      - Stores that have permanently shut down and are no longer trading
+      - Stores that are temporarily closed (e.g. for refurbishment) but expected to reopen
+      - Stores that are not open at this moment of the day, based on their opening hours
+      assumed: Stores whose standing status is closed — permanently shut down and no longer trading
+    - words: are closed
+      question: Do you want the count as it stands today, or the number of stores that closed during some
+        particular period such as this year?
       readings:
-      - Count only permanently closed stores
-      - Count permanently and temporarily closed stores together
-      assumed: Any store marked closed is counted, without distinguishing permanent from temporary
-    - words: How many stores
-      question: Do you want just the single total, or the total broken out by something like country or
-        region?
+      - The number of stores that are in a closed state right now
+      - The number of stores that closed within a given period, e.g. this year or last quarter
+      assumed: The number currently in a closed state, with no date window applied
+    - words: stores
+      question: Should this count every store on the books, or only a subset such as stores you own and
+        operate (excluding franchises, concessions, or online-only locations)?
       readings:
-      - One single number for all closed stores
-      - One number per country or region
-      assumed: One single number for all closed stores
+      - Every store record there is
+      - Only company-owned and operated physical stores, excluding franchises and concessions
+      assumed: Every store, with no filter on ownership or type
     cannot_express: &id003
-    - When each store closed, or how the closed count has changed over time — the question names no period,
-      so this is a snapshot of the current state only
+    - When each store closed, or a reason/category for the closure — the question asks only for a count
     confidence: 0.72
   steps: 3
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
   table:
     columns:
-    - name: how_many
+    - name: closed_stores
       type: number
+    - name: closed_sites
+      type: number
+    - name: closed_rows
+      type: number
+    - name: shut_for_good
+      type: number
+    - name: closed_and_reopened
+      type: number
+    - name: earliest_closure
+      type: string
+    - name: latest_closure
+      type: string
     rows:
     - - 16
+      - 14
+      - 16
+      - 9
+      - 7
+      - '2013-12-05'
+      - '2019-11-03'
   value: 16
   raw: '16'
   reading: one figure
@@ -136,139 +158,144 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "stores → the physical shops only — 73 premises, the online outlet left out\n        could also\
-      \ mean: all 74 outlets including the online shop, or the online shop alone (1 row)"
-    ref: 'store.resolution.the_channel_is_the_location_sentinel — `physical` is the declared default for
-      a question about Store naming no channel, and the answer must disclose it. MEASURED: this choice
-      does not move the closed figure at all, because the online row carries no close date and so is `active`
-      either way — closed is 16 premises whether the channel default is applied or not.'
+    text: "stores → the physical premises in dim_store — the 73 rows with store_code <> -1, counted by\
+      \ distinct store_key\n        could also mean: all 74 rows including the single online outlet, or\
+      \ the 67 distinct sites rather than the premises that stood on them"
+    ref: store.resolution.the_channel_is_the_location_sentinel declares `physical` the default for a question
+      naming no channel, and must disclose it; the Store grounding declares `counts store_key`, so premises
+      and not sites is the counting grain
   - kind: ''
-    text: "stores → premises — one store per store_key, 73 of them, which is the grain the closed count\
-      \ will use\n        could also mean: sites — one store per store_code, 66 of them, since a re-let\
-      \ site holds a succession of premises"
-    ref: 'The Store concept declares `key store_key counts store_key`, so premises is the declared counting
-      grain; `dim_store.store_key#finer_than: store_code` makes the site a legitimate coarser axis but
-      requires the answer to disclose which level it used. THIS FORK DOES MOVE THE DOWNSTREAM FIGURE:
-      the closed population is 16 premises but only 14 sites, because two closed premises share a site
-      with another closed premises. The Store definition and dim_location.units_ever_here prose pull opposite
-      ways on this in words (''a store is NOT its place'' vs ''a store is its location and not its row'');
-      the explicit `counts:` key is what I followed, and I will restate both numbers on the answer step.'
+    text: "closed → nothing yet on this step — the base is left unfiltered on trading state, but all three\
+      \ readings are measured here so the next step chooses from figures rather than guesses\n       \
+      \ could also mean: the declared population `closed` (has a close date), or its subset `shut` (status_annotation\
+      \ = 'Closed', closed for good and not replaced), or its subset `restructured` (closed and reopened)"
+    ref: store.resolution.active_is_the_absent_close_date names all four populations; the question's own
+      word `closed` is the NAME of one of them, so the reading is fixed by declaration and not open to
+      assumption
   - kind: ''
-    text: "closed → the full declared `closed` population — any premises with a closing date, 16 of them,\
-      \ permanent and rebuilt alike\n        could also mean: only `shut`, the 9 annotated 'Closed' —\
-      \ shut for good and not replaced; or only `restructured`, the 7 annotated 'Restructured' — closed\
-      \ and reopened"
-    ref: 'store.resolution.active_is_the_absent_close_date names four populations on this axis and the
-      question used the name of one of them: `closed`, defined as close_date IS NOT NULL, with surfaces
-      ''ceased'', ''no longer trading'', ''not active'', ''inactive''. The two narrower readings are declared
-      SUBSETS of it and have their own separate surfaces — ''shut for good'', ''closed permanently'',
-      ''closed and not replaced'' for `shut`; ''rebuilt'', ''replaced'', ''closed and reopened'' for `restructured`
-      — none of which the question said. So the declaration fixes this reading and I did not ask. The
-      subset figures, for the reader who meant one of them: shut 9, restructured 7.'
+    text: "closed → the declared population `closed` — close_date IS NOT NULL — which gives 16 premises\n\
+      \        could also mean: its declared subset `shut` (status_annotation = 'Closed', shut for good\
+      \ and not replaced), which gives 9; or the other subset `restructured` (closed and reopened), which\
+      \ gives 7"
+    ref: store.resolution.active_is_the_absent_close_date names four populations on this axis, and `closed`
+      is the name of one of them — the question uses that word bare, while 'closed permanently' and 'closed
+      and not replaced' are the surfaces that would select `shut`, so the declaration fixes the reading
+      rather than leaving it to me
   - kind: ''
-    text: "closed → the store's own trading state — it has a closing date on the register and no longer\
-      \ trades\n        could also mean: not open at this hour of the day, by opening hours"
-    ref: 'This bundle holds no opening-hours data at all: dim_store carries open_date and close_date,
-      which are the day a shop opened for trade and the day it closed for good, declared as the trading-state
-      columns. The hour-of-day reading cannot be expressed here, so there is no fork to price.'
+    text: "stores → premises — distinct store_key, as carried forward from step 1\n        could also\
+      \ mean: sites (store_code): the 7 restructured rows sit on only 6 distinct sites, so a site-grain\
+      \ reading of the same population would return fewer than 16"
+    ref: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares `finer_than:
+      store_code`, so premises is the counting grain and sites would be a different question'
   - kind: ''
-    text: "How many stores → a count of premises — distinct store_key — giving 16\n        could also\
-      \ mean: a count of sites — distinct store_code — giving 14, because two of the closed shops stand\
-      \ on a site that also holds another closed shop"
-    ref: 'The Store concept declares `grounded in dim_store key store_key counts store_key`, so premises
-      is the declared counting grain; `store_key#finer_than: store_code` makes the site a legitimate coarser
-      axis whose use must be disclosed. The prose pulls both ways — dim_store.store_code calls sites ''what
-      a store is counted by'' while the Store definition insists ''a store is NOT its place'' — and the
-      Store definition itself records this collision as ''how one word came to name two grains''. I followed
-      the explicit `counts:` key; both figures are stated so a reader who meant places can take 14.'
+    text: "closed → the declared population `closed` — any shop with a close date — which is 16\n    \
+      \    could also mean: shut for good and not replaced (`shut`), which is 9; or closed and reopened\
+      \ (`restructured`), which is 7. If what was wanted is shops gone for good, the figure is 9 — the\
+      \ gap is exactly the 7 that were rebuilt or replaced"
+    ref: store.resolution.active_is_the_absent_close_date names four populations on this axis and `closed`
+      is the name of one of them, with 'closed permanently' and 'closed and not replaced' reserved as
+      surfaces of `shut` — so the bare word is settled by declaration, not chosen by me
   - kind: ''
-    text: "closed → every premises with a closing date — 16, permanently closed and restructured together\n\
-      \        could also mean: only the 9 shut for good, or only the 7 restructured"
-    ref: store.resolution.active_is_the_absent_close_date — the question used the declared NAME of the
-      `closed` population, whose two subsets carry their own separate surfaces ('shut for good', 'closed
-      and reopened') that the question did not say. The declaration fixes the reading, so this was not
-      asked.
+    text: "stores → premises — one count per shop per trading period (distinct store_key): 16\n      \
+      \  could also mean: places (store_code): 14, measured — two sites each held two shops that have\
+      \ closed"
+    ref: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares `finer_than:
+      store_code`, so premises roll up into places and counting places answers a different question'
   - kind: ''
-    text: "closed → the store's own trading state — it has a closing date and no longer trades\n     \
-      \   could also mean: not open at this hour of the day, by opening hours"
-    ref: 'This bundle holds no opening-hours data: dim_store carries only open_date and close_date, declared
-      as the trading-state columns. The hour-of-day reading cannot be expressed here, so there was no
-      fork to price.'
+    text: "stores → physical shops only, 73 of the 74 register rows\n        could also mean: all 74 rows\
+      \ including the online outlet — which gives the same 16, since that row carries no close date"
+    ref: store.resolution.the_channel_is_the_location_sentinel, default `physical`, disclosure required
   - kind: ''
-    text: "stores → the physical shops — the online outlet excluded\n        could also mean: all 74 outlets\
-      \ including the online shop"
-    ref: 'store.resolution.the_channel_is_the_location_sentinel, `physical` default on a subject question.
-      MEASURED AS IMMATERIAL HERE: the closed count is 16 either way, because the online row carries no
-      close date.'
+    text: "are closed → as things stand now, no period predicate — every closure on the books, 2013-12-05\
+      \ to 2019-11-03\n        could also mean: shops that closed within a named window such as this year\
+      \ or last quarter — which would return 0, as the most recent closure on record is 2019-11-03"
+    ref: no declaration binds a period to the store register (order.default.an_unscoped_question_covers_all_time
+      governs the sales line, not dim_store), so the absence of a window is mine to state
   concepts: []
   rules:
-  - id: 'store.resolution.the_channel_is_the_location_sentinel — `physical` is the declared default for
-      a question about Store naming no channel, and the answer must disclose it. MEASURED: this choice
-      does not move the closed figure at all, because the online row carries no close date and so is `active`
-      either way — closed is 16 premises whether the channel default is applied or not.'
-    why: '''stores'' = the physical shops only — 73 premises, the online outlet left out'
-  - id: 'The Store concept declares `key store_key counts store_key`, so premises is the declared counting
-      grain; `dim_store.store_key#finer_than: store_code` makes the site a legitimate coarser axis but
-      requires the answer to disclose which level it used. THIS FORK DOES MOVE THE DOWNSTREAM FIGURE:
-      the closed population is 16 premises but only 14 sites, because two closed premises share a site
-      with another closed premises. The Store definition and dim_location.units_ever_here prose pull opposite
-      ways on this in words (''a store is NOT its place'' vs ''a store is its location and not its row'');
-      the explicit `counts:` key is what I followed, and I will restate both numbers on the answer step.'
-    why: '''stores'' = premises — one store per store_key, 73 of them, which is the grain the closed count
-      will use'
-  - id: 'store.resolution.active_is_the_absent_close_date names four populations on this axis and the
-      question used the name of one of them: `closed`, defined as close_date IS NOT NULL, with surfaces
-      ''ceased'', ''no longer trading'', ''not active'', ''inactive''. The two narrower readings are declared
-      SUBSETS of it and have their own separate surfaces — ''shut for good'', ''closed permanently'',
-      ''closed and not replaced'' for `shut`; ''rebuilt'', ''replaced'', ''closed and reopened'' for `restructured`
-      — none of which the question said. So the declaration fixes this reading and I did not ask. The
-      subset figures, for the reader who meant one of them: shut 9, restructured 7.'
-    why: '''closed'' = the full declared `closed` population — any premises with a closing date, 16 of
-      them, permanent and rebuilt alike'
-  - id: 'This bundle holds no opening-hours data at all: dim_store carries open_date and close_date, which
-      are the day a shop opened for trade and the day it closed for good, declared as the trading-state
-      columns. The hour-of-day reading cannot be expressed here, so there is no fork to price.'
-    why: '''closed'' = the store''s own trading state — it has a closing date on the register and no longer
-      trades'
-  - id: 'The Store concept declares `grounded in dim_store key store_key counts store_key`, so premises
-      is the declared counting grain; `store_key#finer_than: store_code` makes the site a legitimate coarser
-      axis whose use must be disclosed. The prose pulls both ways — dim_store.store_code calls sites ''what
-      a store is counted by'' while the Store definition insists ''a store is NOT its place'' — and the
-      Store definition itself records this collision as ''how one word came to name two grains''. I followed
-      the explicit `counts:` key; both figures are stated so a reader who meant places can take 14.'
-    why: '''How many stores'' = a count of premises — distinct store_key — giving 16'
-  - id: store.resolution.active_is_the_absent_close_date — the question used the declared NAME of the
-      `closed` population, whose two subsets carry their own separate surfaces ('shut for good', 'closed
-      and reopened') that the question did not say. The declaration fixes the reading, so this was not
-      asked.
-    why: '''closed'' = every premises with a closing date — 16, permanently closed and restructured together'
-  - id: 'This bundle holds no opening-hours data: dim_store carries only open_date and close_date, declared
-      as the trading-state columns. The hour-of-day reading cannot be expressed here, so there was no
-      fork to price.'
-    why: '''closed'' = the store''s own trading state — it has a closing date and no longer trades'
-  - id: 'store.resolution.the_channel_is_the_location_sentinel, `physical` default on a subject question.
-      MEASURED AS IMMATERIAL HERE: the closed count is 16 either way, because the online row carries no
-      close date.'
-    why: '''stores'' = the physical shops — the online outlet excluded'
+  - id: store.resolution.the_channel_is_the_location_sentinel declares `physical` the default for a question
+      naming no channel, and must disclose it; the Store grounding declares `counts store_key`, so premises
+      and not sites is the counting grain
+    why: '''stores'' = the physical premises in dim_store — the 73 rows with store_code <> -1, counted
+      by distinct store_key'
+  - id: store.resolution.active_is_the_absent_close_date names all four populations; the question's own
+      word `closed` is the NAME of one of them, so the reading is fixed by declaration and not open to
+      assumption
+    why: '''closed'' = nothing yet on this step — the base is left unfiltered on trading state, but all
+      three readings are measured here so the next step chooses from figures rather than guesses'
+  - id: store.resolution.active_is_the_absent_close_date names four populations on this axis, and `closed`
+      is the name of one of them — the question uses that word bare, while 'closed permanently' and 'closed
+      and not replaced' are the surfaces that would select `shut`, so the declaration fixes the reading
+      rather than leaving it to me
+    why: '''closed'' = the declared population `closed` — close_date IS NOT NULL — which gives 16 premises'
+  - id: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares `finer_than:
+      store_code`, so premises is the counting grain and sites would be a different question'
+    why: '''stores'' = premises — distinct store_key, as carried forward from step 1'
+  - id: store.resolution.active_is_the_absent_close_date names four populations on this axis and `closed`
+      is the name of one of them, with 'closed permanently' and 'closed and not replaced' reserved as
+      surfaces of `shut` — so the bare word is settled by declaration, not chosen by me
+    why: '''closed'' = the declared population `closed` — any shop with a close date — which is 16'
+  - id: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares `finer_than:
+      store_code`, so premises roll up into places and counting places answers a different question'
+    why: '''stores'' = premises — one count per shop per trading period (distinct store_key): 16'
+  - id: store.resolution.the_channel_is_the_location_sentinel, default `physical`, disclosure required
+    why: '''stores'' = physical shops only, 73 of the 74 register rows'
+  - id: no declaration binds a period to the store register (order.default.an_unscoped_question_covers_all_time
+      governs the sales line, not dim_store), so the absence of a window is mine to state
+    why: '''are closed'' = as things stand now, no period predicate — every closure on the books, 2013-12-05
+      to 2019-11-03'
   edges: []
 sql:
-- "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-  \ <> -1 AND NOT close_date IS NULL"
+- "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS closed_sites,\n\
+  \  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1 ELSE 0 END) AS shut_for_good,\n\
+  \  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE 0 END) AS closed_and_reopened,\n  MIN(close_date)\
+  \ AS earliest_closure,\n  MAX(close_date) AS latest_closure\nFROM contoso_served.dim_store\nWHERE\n\
+  \  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL"
+- "SELECT\n  'every row in dim_store' AS population,\n  COUNT(*) AS store_rows,\n  COUNT(DISTINCT store_key)\
+  \ AS premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM contoso_served.dim_store\nUNION ALL\nSELECT\n\
+  \  'physical (declared default: store_code <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT\
+  \ store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1'\nUNION ALL\n\
+  SELECT\n  'online (store_code = -1)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
+  FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) = '-1'\nUNION ALL\nSELECT\n  'physical\
+  \ + active (close_date IS NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
+  FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND close_date IS NULL\nUNION\
+  \ ALL\nSELECT\n  'physical + closed (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n\
+  \  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1'\
+  \ AND NOT close_date IS NULL\nUNION ALL\nSELECT\n  'physical + shut (subset: status_annotation = Closed)',\n\
+  \  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\n\
+  WHERE\n  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Closed'\n\
+  UNION ALL\nSELECT\n  'physical + restructured (subset: status_annotation = Restructured)',\n  COUNT(*),\n\
+  \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+  \  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Restructured'\n\
+  ORDER BY\n  1"
 - "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
-  \  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code <> -1"
-- "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n  close_date,\n\
-  \  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code <> -1 AND\
-  \ NOT close_date IS NULL"
-answer_sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n \
-  \ store_code <> -1 AND NOT close_date IS NULL"
+  \  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT\
+  \ close_date IS NULL\nORDER BY\n  close_date,\n  store_key"
+answer_sql: "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS closed_sites,\n\
+  \  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1 ELSE 0 END) AS shut_for_good,\n\
+  \  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE 0 END) AS closed_and_reopened,\n  MIN(close_date)\
+  \ AS earliest_closure,\n  MAX(close_date) AS latest_closure\nFROM contoso_served.dim_store\nWHERE\n\
+  \  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL"
 sql_valid: true
 result:
   status: ok
   rows: 1
   cols: &id008
-  - how_many
+  - closed_stores
+  - closed_sites
+  - closed_rows
+  - shut_for_good
+  - closed_and_reopened
+  - earliest_closure
+  - latest_closure
   sample_rows:
   - - 16
+    - 14
+    - 16
+    - 9
+    - 7
+    - '2013-12-05'
+    - '2019-11-03'
   capped: false
 prompt:
   chars: 73996
@@ -287,48 +314,52 @@ v3_report:
   canonical_question_json: *id001
   canonical_question_simplified: "  1       FROM       stores             “stores”\n  2  ← 1  WHERE  \
     \    closed = 'closed'  “are closed”\n  3  ← 2  AGGREGATE  count of stores    “How many”\n  answer:\
-    \ step 3   confidence: 0.72\n  UNDERSTOOD AS: A single count of how many stores are in a closed state\
-    \ — one number, covering all stores regardless of region or type, with no time period restricted.\
-    \ I read \"closed\" as the store's own status (shut down / no longer trading), not as \"not currently\
-    \ open at this hour of the day.\"\n  AMBIGUOUS 'closed' — ASKS: Do you mean stores that have shut\
-    \ down for good, or stores that just aren't open for business right now (e.g. outside opening hours\
-    \ or temporarily shut)?\n      could mean: Stores whose status is closed — they have shut down and\
-    \ no longer trade\n      could mean: Stores that are not open at this moment, based on their opening\
-    \ hours\n      could mean: Stores that are temporarily closed, e.g. for refurbishment, but expected\
-    \ to reopen\n      took: Stores whose status is closed — shut down and no longer trading\n  AMBIGUOUS\
-    \ 'closed' — ASKS: If a store is temporarily closed rather than permanently shut, should it be counted\
-    \ in the total?\n      could mean: Count only permanently closed stores\n      could mean: Count permanently\
-    \ and temporarily closed stores together\n      took: Any store marked closed is counted, without\
-    \ distinguishing permanent from temporary\n  AMBIGUOUS 'How many stores' — ASKS: Do you want just\
-    \ the single total, or the total broken out by something like country or region?\n      could mean:\
-    \ One single number for all closed stores\n      could mean: One number per country or region\n  \
-    \    took: One single number for all closed stores\n  cannot_express: When each store closed, or how\
-    \ the closed count has changed over time — the question names no period, so this is a snapshot of\
-    \ the current state only\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many"
-  understood_as: A single count of how many stores are in a closed state — one number, covering all stores
-    regardless of region or type, with no time period restricted. I read "closed" as the store's own status
-    (shut down / no longer trading), not as "not currently open at this hour of the day."
+    \ step 3   confidence: 0.72\n  UNDERSTOOD AS: A count of stores whose status is \\\"closed\\\" — one\
+    \ number, covering all stores regardless of region or type, as things stand today. I am reading \\\
+    \"closed\\\" as the store's standing status (shut down / no longer trading), not as \\\"shut at this\
+    \ moment of the day because it is outside opening hours\\\".\n  AMBIGUOUS 'closed' — ASKS: By \"closed\"\
+    \ do you mean stores that have shut down for good, stores that are temporarily shut, or stores that\
+    \ simply aren't open right now at this hour?\n      could mean: Stores that have permanently shut\
+    \ down and are no longer trading\n      could mean: Stores that are temporarily closed (e.g. for refurbishment)\
+    \ but expected to reopen\n      could mean: Stores that are not open at this moment of the day, based\
+    \ on their opening hours\n      took: Stores whose standing status is closed — permanently shut down\
+    \ and no longer trading\n  AMBIGUOUS 'are closed' — ASKS: Do you want the count as it stands today,\
+    \ or the number of stores that closed during some particular period such as this year?\n      could\
+    \ mean: The number of stores that are in a closed state right now\n      could mean: The number of\
+    \ stores that closed within a given period, e.g. this year or last quarter\n      took: The number\
+    \ currently in a closed state, with no date window applied\n  AMBIGUOUS 'stores' — ASKS: Should this\
+    \ count every store on the books, or only a subset such as stores you own and operate (excluding franchises,\
+    \ concessions, or online-only locations)?\n      could mean: Every store record there is\n      could\
+    \ mean: Only company-owned and operated physical stores, excluding franchises and concessions\n  \
+    \    took: Every store, with no filter on ownership or type\n  cannot_express: When each store closed,\
+    \ or a reason/category for the closure — the question asks only for a count\n  OUTPUT SHAPE: one figure\
+    \ · one row(s) · carrying how many"
+  understood_as: A count of stores whose status is \"closed\" — one number, covering all stores regardless
+    of region or type, as things stand today. I am reading \"closed\" as the store's standing status (shut
+    down / no longer trading), not as \"shut at this moment of the day because it is outside opening hours\".
   ambiguities_it_saw:
   - words: closed
-    asks: Do you mean stores that have shut down for good, or stores that just aren't open for business
-      right now (e.g. outside opening hours or temporarily shut)?
+    asks: By "closed" do you mean stores that have shut down for good, stores that are temporarily shut,
+      or stores that simply aren't open right now at this hour?
     readings:
-    - Stores whose status is closed — they have shut down and no longer trade
-    - Stores that are not open at this moment, based on their opening hours
-    - Stores that are temporarily closed, e.g. for refurbishment, but expected to reopen
-    took: Stores whose status is closed — shut down and no longer trading
-  - words: closed
-    asks: If a store is temporarily closed rather than permanently shut, should it be counted in the total?
+    - Stores that have permanently shut down and are no longer trading
+    - Stores that are temporarily closed (e.g. for refurbishment) but expected to reopen
+    - Stores that are not open at this moment of the day, based on their opening hours
+    took: Stores whose standing status is closed — permanently shut down and no longer trading
+  - words: are closed
+    asks: Do you want the count as it stands today, or the number of stores that closed during some particular
+      period such as this year?
     readings:
-    - Count only permanently closed stores
-    - Count permanently and temporarily closed stores together
-    took: Any store marked closed is counted, without distinguishing permanent from temporary
-  - words: How many stores
-    asks: Do you want just the single total, or the total broken out by something like country or region?
+    - The number of stores that are in a closed state right now
+    - The number of stores that closed within a given period, e.g. this year or last quarter
+    took: The number currently in a closed state, with no date window applied
+  - words: stores
+    asks: Should this count every store on the books, or only a subset such as stores you own and operate
+      (excluding franchises, concessions, or online-only locations)?
     readings:
-    - One single number for all closed stores
-    - One number per country or region
-    took: One single number for all closed stores
+    - Every store record there is
+    - Only company-owned and operated physical stores, excluding franchises and concessions
+    took: Every store, with no filter on ownership or type
   presentation:
     claimed_answer_is: one figure
     answer_step: '3'
@@ -340,210 +371,216 @@ v3_report:
     confidence_stage1: 0.72
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-      \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-      \ <> -1"
+    sql: "SELECT\n  'every row in dim_store' AS population,\n  COUNT(*) AS store_rows,\n  COUNT(DISTINCT\
+      \ store_key) AS premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM contoso_served.dim_store\n\
+      UNION ALL\nSELECT\n  'physical (declared default: store_code <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+      \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+      \ AS TEXT) <> '-1'\nUNION ALL\nSELECT\n  'online (store_code = -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+      \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+      \ AS TEXT) = '-1'\nUNION ALL\nSELECT\n  'physical + active (close_date IS NULL)',\n  COUNT(*),\n\
+      \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+      \  CAST(store_code AS TEXT) <> '-1' AND close_date IS NULL\nUNION ALL\nSELECT\n  'physical + closed\
+      \ (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
+      FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL\n\
+      UNION ALL\nSELECT\n  'physical + shut (subset: status_annotation = Closed)',\n  COUNT(*),\n  COUNT(DISTINCT\
+      \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+      \ AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Closed'\nUNION ALL\n\
+      SELECT\n  'physical + restructured (subset: status_annotation = Restructured)',\n  COUNT(*),\n \
+      \ COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+      \  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Restructured'\n\
+      ORDER BY\n  1"
     params: {}
   - step: '2'
     sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-      \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-      \ <> -1 AND NOT close_date IS NULL"
+      \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS\
+      \ TEXT) <> '-1' AND NOT close_date IS NULL\nORDER BY\n  close_date,\n  store_key"
     params: {}
   - step: '3'
-    sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-      \ <> -1 AND NOT close_date IS NULL"
+    sql: "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS closed_sites,\n\
+      \  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1 ELSE 0 END) AS\
+      \ shut_for_good,\n  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE 0 END) AS closed_and_reopened,\n\
+      \  MIN(close_date) AS earliest_closure,\n  MAX(close_date) AS latest_closure\nFROM contoso_served.dim_store\n\
+      WHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL"
     params: {}
-  what_it_calculated: 'One row, one figure: 16 physical shop premises on Contoso''s store register have
-    stopped trading — every row carrying a closing date, over the whole register with no time limit, as
-    a snapshot of the state the register is in rather than a count of closures in any period. Nine of
-    the 16 the source annotated as closed for good, seven as restructured — rebuilt or replaced — and
-    both count, because the question asked for closed and restructured shops are declared a kind of closed.
-    NOT INCLUDED: the 57 premises still trading; the online outlet, which carries no closing date and
-    is therefore not closed under any reading and would not change this figure if it were let in; and
-    any sense of WHEN these shops closed, which the question did not ask for and which this figure cannot
-    carry. The one sensitivity worth knowing: this counts PREMISES, not places — the 16 closed shops stand
-    on 14 distinct sites, so a reader who means "how many locations are now dark" wants 14, not 16.'
+  what_it_calculated: '16 is the number of physical shops in Contoso''s store register that have stopped
+    trading — one count per shop per trading period, each carrying a day it closed. Those 16 shops stood
+    on 14 distinct places, so two places each held two shops that have since closed. All 16 closures are
+    already in the past, between 2013-12-05 and 2019-11-03; none is a future closing date that would make
+    a shop merely scheduled to shut. What the figure does NOT say: it is not how many closed in any given
+    year (no date window is applied — it is the whole history of the register), it is not how many places
+    no longer have a shop (7 of the 16 were closed and reopened, so their site trades on under a later
+    shop row), and it excludes the online outlet, which has never closed.'
   rows_returned: &id005
-  - how_many: 16
+  - closed_stores: 16
+    closed_sites: 14
+    closed_rows: 16
+    shut_for_good: 9
+    closed_and_reopened: 7
+    earliest_closure: '2013-12-05'
+    latest_closure: '2019-11-03'
   synthesis:
     claimed: '16'
     shape: one figure
-    answered_population: 'The 16 rows of contoso_served.dim_store where store_code <> -1 AND close_date
-      IS NOT NULL, counted as distinct store_key. Two restrictions, both from declarations, neither named
-      by the question: `physical` only, per store.resolution.the_channel_is_the_location_sentinel''s declared
-      subject default, excluding the single online outlet — measured as costing this figure nothing, since
-      that row has no close date and is `active` either way; and `closed` as close_date IS NOT NULL, per
-      store.resolution.active_is_the_absent_close_date, taking the population the question named by name
-      rather than either of its narrower subsets. No period, country, state or other restriction, and
-      no grouping — one figure over the whole register.'
+    answered_population: 'The 16 rows of contoso_served.dim_store that carry a close date, counted as
+      distinct store_key. Three restrictions, all mine, all declared: (1) PHYSICAL ONLY — the single online
+      outlet (store_code = -1) is excluded, because store.resolution.the_channel_is_the_location_sentinel
+      makes `physical` the default when a question names no channel. This changes nothing: that row has
+      no close date, so 16 is equally the figure over all 74 register rows. (2) `closed` = close_date
+      IS NOT NULL, the population store.resolution.active_is_the_absent_close_date names with the question''s
+      own word; its declared subsets are smaller — 9 shut for good, 7 closed and reopened. (3) PREMISES,
+      not places — counted by store_key as the Store grounding''s `counts store_key` declares; the same
+      16 shops stand on 14 distinct sites, so a question about places would be answered 14. No period
+      filter of any kind: this is the register as it stands today, covering closures from 2013 to 2019.'
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
     step_asks: stores
     turns:
-    - why: Establish the `stores` base relation (dim_store) and see at once how its rows split by the
-        channel sentinel and the trading-state columns, so the later `closed` step is built on measured
-        values rather than assumption.
-      did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN store_code = -1 THEN ''online''
-        ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''no close date'' ELSE ''has
-        close date'' END AS close_state, COALESCE(status_annotation, ''<NULL>'') AS status_annotation,
-        COUNT(*) AS store_rows, COUNT(DISTINCT store_key) AS premises, COUNT(DISTINCT store_code) AS sites
-        FROM contoso_served.dim_store GROUP BY 1,2,3 ORDER BY 1,2,3'
+    - why: Establish the `stores` base relation and measure how its rows split on the two declared subject
+        axes (channel sentinel on store_code, trading state on close_date/status_annotation) before any
+        filter is chosen.
+      did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN CAST(store_code AS VARCHAR)
+        = ''-1'' THEN ''online'' ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''no
+        close date (active)'' ELSE ''has close date (closed)'' END AS trading_state, COALESCE(status_annotation,
+        ''<NULL>'') AS status_annotation, COUNT(*) AS store_rows, COUNT(DISTINCT store_key) AS premises,
+        COUNT(DISTINCT store_code) AS sites FROM contoso_served.dim_store GROUP BY 1, 2, 3 ORDER BY 1,
+        2, 3'
       came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'', ''Restructured''   AND
-        ALSO: 4 row(s): [{"channel": "online", "close_state": "no close date", "status_annotation": "<NULL>",
-        "store_rows": 1, "premises": 1, "sites": 1}, {"channel": "physical", "close_state": "has close
-        date", "status_annotation": "Closed", "store_rows": 9, "premises": 9, "sites": 9}, {"channel":
-        "physical", "close_state": "has close date", "status_annotation": "Restructured", "store_rows":
-        7, "premises": 7, "sites": 6}, {"channel": "physical", "close_state": "no close date", "status_annotation":
-        "", "store_rows": 57, "premises": 57, "sites": 57}]'
-    - why: Pin the `stores` base at both declared grains over the whole population at once — the concept
-        declares `counts store_key` (premises) while `dim_store.store_code` prose says sites are "what
-        a store is counted by", and the per-group counts above (7 Restructured rows over only 6 sites)
-        suggest the two readings give different numbers.
-      did: "WITH s AS (\n  SELECT\n    *\n  FROM contoso_served.dim_store\n)\nSELECT\n  'every row, no\
-        \ population applied' AS population,\n  COUNT(*) AS store_rows,\n  COUNT(DISTINCT store_key) AS\
-        \ premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM s\nUNION ALL\nSELECT\n  'physical (store_code\
-        \ <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM s\n\
-        WHERE\n  store_code <> -1\nUNION ALL\nSELECT\n  'online (store_code = -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
-        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  store_code = -1\nUNION ALL\nSELECT\n\
-        \  'physical + closed (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n\
-        \  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  store_code <> -1 AND NOT close_date IS NULL\n\
-        UNION ALL\nSELECT\n  'physical + active (close_date IS NULL)',\n  COUNT(*),\n  COUNT(DISTINCT\
-        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  store_code <> -1 AND close_date\
-        \ IS NULL\nUNION ALL\nSELECT\n  'all channels + closed (close_date IS NOT NULL)',\n  COUNT(*),\n\
-        \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  NOT close_date IS\
-        \ NULL\nORDER BY\n  1"
-      came_back: '6 row(s): [{"population": "all channels + closed (close_date IS NOT NULL)", "store_rows":
-        16, "premises": 16, "sites": 14}, {"population": "every row, no population applied", "store_rows":
-        74, "premises": 74, "sites": 67}, {"population": "online (store_code = -1)", "store_rows": 1,
-        "premises": 1, "sites": 1}, {"population": "physical (store_code <> -1)", "store_rows": 73, "premises":
-        73, "sites": 66}, {"population": "physical + active (close_date IS NULL)", "store_rows": 57, "premises":
-        57, "sites": 57}, {"population": "physical + closed (close_date IS NOT NULL)", "store_rows": 16,
-        "premises": 16, "sites": 14}]'
-    settled_on: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-      \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-      \ <> -1"
-    means: 'One row per physical shop premises on Contoso''s store register — 73 of them, standing on
-      66 distinct sites, with no time restriction of any kind. Each row is a shop that stood on one place
-      for one trading period, carrying its own name, country, state, floor area, opening date and closing
-      date; a site re-let to a later shop appears once per tenancy, which is why 73 premises sit on only
-      66 sites. This is the whole register, still-trading and closed rows together: 57 rows carry no close
-      date and 16 do. Nothing is counted or filtered yet — this is the set the `closed` restriction and
-      the count will run over. The one row NOT here is the online outlet (store_code -1), excluded by
-      the declared channel default.'
+        ALSO: 4 row(s): [{"channel": "online", "trading_state": "no close date (active)", "status_annotation":
+        "<NULL>", "store_rows": 1, "premises": 1, "sites": 1}, {"channel": "physical", "trading_state":
+        "has close date (closed)", "status_annotation": "Closed", "store_rows": 9, "premises": 9, "sites":
+        9}, {"channel": "physical", "trading_state": "has close date (closed)", "status_annotation": "Restructured",
+        "store_rows": 7, "premises": 7, "sites": 6}, {"channel": "physical", "trading_state": "no close
+        date (active)", "status_annotation": "", "store_rows": 57, "premises": 57, "sites": 57}]'
+    settled_on: "SELECT\n  'every row in dim_store' AS population,\n  COUNT(*) AS store_rows,\n  COUNT(DISTINCT\
+      \ store_key) AS premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM contoso_served.dim_store\n\
+      UNION ALL\nSELECT\n  'physical (declared default: store_code <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+      \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+      \ AS TEXT) <> '-1'\nUNION ALL\nSELECT\n  'online (store_code = -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+      \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+      \ AS TEXT) = '-1'\nUNION ALL\nSELECT\n  'physical + active (close_date IS NULL)',\n  COUNT(*),\n\
+      \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+      \  CAST(store_code AS TEXT) <> '-1' AND close_date IS NULL\nUNION ALL\nSELECT\n  'physical + closed\
+      \ (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
+      FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL\n\
+      UNION ALL\nSELECT\n  'physical + shut (subset: status_annotation = Closed)',\n  COUNT(*),\n  COUNT(DISTINCT\
+      \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+      \ AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Closed'\nUNION ALL\n\
+      SELECT\n  'physical + restructured (subset: status_annotation = Restructured)',\n  COUNT(*),\n \
+      \ COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+      \  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Restructured'\n\
+      ORDER BY\n  1"
+    means: 'The size of the `stores` population I will answer over, counted three ways side by side: raw
+      rows of dim_store, distinct premises (store_key, the grain the Store concept declares it is counted
+      by), and distinct sites (store_code, the place the premises stood on). One row per candidate population
+      — all rows, the physical default, the online sentinel on its own, and then the physical rows split
+      by trading state into active, closed, and closed''s two declared subsets (shut and restructured).
+      No period filter and no region filter: this is the register as it stands, not a count of closures
+      in any window.'
     readings_taken:
     - word: stores
-      took: the physical shops only — 73 premises, the online outlet left out
-      could_also_mean: all 74 outlets including the online shop, or the online shop alone (1 row)
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel — `physical` is the declared
-        default for a question about Store naming no channel, and the answer must disclose it. MEASURED:
-        this choice does not move the closed figure at all, because the online row carries no close date
-        and so is `active` either way — closed is 16 premises whether the channel default is applied or
-        not.'
-    - word: stores
-      took: premises — one store per store_key, 73 of them, which is the grain the closed count will use
-      could_also_mean: sites — one store per store_code, 66 of them, since a re-let site holds a succession
-        of premises
-      declaration: 'The Store concept declares `key store_key counts store_key`, so premises is the declared
-        counting grain; `dim_store.store_key#finer_than: store_code` makes the site a legitimate coarser
-        axis but requires the answer to disclose which level it used. THIS FORK DOES MOVE THE DOWNSTREAM
-        FIGURE: the closed population is 16 premises but only 14 sites, because two closed premises share
-        a site with another closed premises. The Store definition and dim_location.units_ever_here prose
-        pull opposite ways on this in words (''a store is NOT its place'' vs ''a store is its location
-        and not its row''); the explicit `counts:` key is what I followed, and I will restate both numbers
-        on the answer step.'
+      took: the physical premises in dim_store — the 73 rows with store_code <> -1, counted by distinct
+        store_key
+      could_also_mean: all 74 rows including the single online outlet, or the 67 distinct sites rather
+        than the premises that stood on them
+      declaration: store.resolution.the_channel_is_the_location_sentinel declares `physical` the default
+        for a question naming no channel, and must disclose it; the Store grounding declares `counts store_key`,
+        so premises and not sites is the counting grain
+    - word: closed
+      took: nothing yet on this step — the base is left unfiltered on trading state, but all three readings
+        are measured here so the next step chooses from figures rather than guesses
+      could_also_mean: the declared population `closed` (has a close date), or its subset `shut` (status_annotation
+        = 'Closed', closed for good and not replaced), or its subset `restructured` (closed and reopened)
+      declaration: store.resolution.active_is_the_absent_close_date names all four populations; the question's
+        own word `closed` is the NAME of one of them, so the reading is fixed by declaration and not open
+        to assumption
     blocked_by: []
   - step: '2'
     step_asks: are closed
     turns: []
     settled_on: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-      \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-      \ <> -1 AND NOT close_date IS NULL"
-    means: 'The 16 physical shop premises that have stopped trading — every row on the store register
-      that carries a closing date, with no period, country or state restriction. One row per premises,
-      each a shop that stood on one site for one trading period and then ceased; they stand on 14 distinct
-      sites, because two of these closed shops shared a site with another closed shop. Of the 16, nine
-      are annotated by the source as `Closed` and seven as `Restructured` — rebuilt or replaced rather
-      than abandoned — and both are in, because both are stores that have a closing date. Not here: the
-      57 premises still trading, and the online outlet, which carries no close date and is therefore not
-      closed under any reading.'
+      \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS\
+      \ TEXT) <> '-1' AND NOT close_date IS NULL\nORDER BY\n  close_date,\n  store_key"
+    means: 'One row per physical shop that has stopped trading — every premises in the store register
+      that carries a close date, with the place it stood on, when it opened, the day it closed, and the
+      source''s note on why. 16 rows. This is the population "are closed" names, not a count of closures
+      in any period: no date window is applied, so a shop that closed in 2017 and one that closed last
+      year both appear. The online outlet is excluded by the declared channel default and carries no close
+      date in any case.'
     readings_taken:
     - word: closed
-      took: the full declared `closed` population — any premises with a closing date, 16 of them, permanent
-        and rebuilt alike
-      could_also_mean: only `shut`, the 9 annotated 'Closed' — shut for good and not replaced; or only
-        `restructured`, the 7 annotated 'Restructured' — closed and reopened
-      declaration: 'store.resolution.active_is_the_absent_close_date names four populations on this axis
-        and the question used the name of one of them: `closed`, defined as close_date IS NOT NULL, with
-        surfaces ''ceased'', ''no longer trading'', ''not active'', ''inactive''. The two narrower readings
-        are declared SUBSETS of it and have their own separate surfaces — ''shut for good'', ''closed
-        permanently'', ''closed and not replaced'' for `shut`; ''rebuilt'', ''replaced'', ''closed and
-        reopened'' for `restructured` — none of which the question said. So the declaration fixes this
-        reading and I did not ask. The subset figures, for the reader who meant one of them: shut 9, restructured
-        7.'
-    - word: closed
-      took: the store's own trading state — it has a closing date on the register and no longer trades
-      could_also_mean: not open at this hour of the day, by opening hours
-      declaration: 'This bundle holds no opening-hours data at all: dim_store carries open_date and close_date,
-        which are the day a shop opened for trade and the day it closed for good, declared as the trading-state
-        columns. The hour-of-day reading cannot be expressed here, so there is no fork to price.'
+      took: the declared population `closed` — close_date IS NOT NULL — which gives 16 premises
+      could_also_mean: its declared subset `shut` (status_annotation = 'Closed', shut for good and not
+        replaced), which gives 9; or the other subset `restructured` (closed and reopened), which gives
+        7
+      declaration: store.resolution.active_is_the_absent_close_date names four populations on this axis,
+        and `closed` is the name of one of them — the question uses that word bare, while 'closed permanently'
+        and 'closed and not replaced' are the surfaces that would select `shut`, so the declaration fixes
+        the reading rather than leaving it to me
+    - word: stores
+      took: premises — distinct store_key, as carried forward from step 1
+      could_also_mean: 'sites (store_code): the 7 restructured rows sit on only 6 distinct sites, so a
+        site-grain reading of the same population would return fewer than 16'
+      declaration: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares
+        `finer_than: store_code`, so premises is the counting grain and sites would be a different question'
     blocked_by: []
   - step: '3'
     step_asks: How many
     turns:
-    - why: Count the step-2 rows at the grain the Store concept declares it counts by — distinct store_key
-        — giving 16, and state the site reading of 14 alongside it rather than asking, because the `counts:`
-        key settles which grain a count of stores uses.
-      did: "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-        \ <> -1 AND NOT close_date IS NULL"
+    - why: Count the closed population at the grain the Store grounding declares (distinct store_key),
+        and measure the site-grain alternative beside it so the one disclosure a reader needs is a number
+        and not a guess.
+      did: "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS closed_sites,\n\
+        \  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1 ELSE 0 END) AS\
+        \ shut_for_good,\n  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE 0 END) AS closed_and_reopened,\n\
+        \  MIN(close_date) AS earliest_closure,\n  MAX(close_date) AS latest_closure\nFROM contoso_served.dim_store\n\
+        WHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL"
       came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 1 row(s): [{"how_many": 16}]  Give `claimed_answer` as
-        the value a person would be handed, and `claimed_answer_is` from the closed list. If these rows
-        settle the question, do not decline.'
-    settled_on: "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n\
-      \  store_code <> -1 AND NOT close_date IS NULL"
-    means: 'One row, one figure: 16 physical shop premises on Contoso''s store register have stopped trading
-      — every row carrying a closing date, over the whole register with no time limit, as a snapshot of
-      the state the register is in rather than a count of closures in any period. Nine of the 16 the source
-      annotated as closed for good, seven as restructured — rebuilt or replaced — and both count, because
-      the question asked for closed and restructured shops are declared a kind of closed. NOT INCLUDED:
-      the 57 premises still trading; the online outlet, which carries no closing date and is therefore
-      not closed under any reading and would not change this figure if it were let in; and any sense of
-      WHEN these shops closed, which the question did not ask for and which this figure cannot carry.
-      The one sensitivity worth knowing: this counts PREMISES, not places — the 16 closed shops stand
-      on 14 distinct sites, so a reader who means "how many locations are now dark" wants 14, not 16.'
+        so state the answer now from these rows: 1 row(s): [{"closed_stores": 16, "closed_sites": 14,
+        "closed_rows": 16, "shut_for_good": 9, "closed_and_reopened": 7, "earliest_closure": "2013-12-05",
+        "latest_closure": "2019-11-03"}]  Give `claimed_answer` as the value a person would be handed,
+        and `claimed_answer_is` from the closed list. If these rows settle the question, do not decline.'
+    settled_on: "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS\
+      \ closed_sites,\n  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1\
+      \ ELSE 0 END) AS shut_for_good,\n  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE\
+      \ 0 END) AS closed_and_reopened,\n  MIN(close_date) AS earliest_closure,\n  MAX(close_date) AS latest_closure\n\
+      FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL"
+    means: '16 is the number of physical shops in Contoso''s store register that have stopped trading
+      — one count per shop per trading period, each carrying a day it closed. Those 16 shops stood on
+      14 distinct places, so two places each held two shops that have since closed. All 16 closures are
+      already in the past, between 2013-12-05 and 2019-11-03; none is a future closing date that would
+      make a shop merely scheduled to shut. What the figure does NOT say: it is not how many closed in
+      any given year (no date window is applied — it is the whole history of the register), it is not
+      how many places no longer have a shop (7 of the 16 were closed and reopened, so their site trades
+      on under a later shop row), and it excludes the online outlet, which has never closed.'
     readings_taken:
-    - word: How many stores
-      took: a count of premises — distinct store_key — giving 16
-      could_also_mean: a count of sites — distinct store_code — giving 14, because two of the closed shops
-        stand on a site that also holds another closed shop
-      declaration: 'The Store concept declares `grounded in dim_store key store_key counts store_key`,
-        so premises is the declared counting grain; `store_key#finer_than: store_code` makes the site
-        a legitimate coarser axis whose use must be disclosed. The prose pulls both ways — dim_store.store_code
-        calls sites ''what a store is counted by'' while the Store definition insists ''a store is NOT
-        its place'' — and the Store definition itself records this collision as ''how one word came to
-        name two grains''. I followed the explicit `counts:` key; both figures are stated so a reader
-        who meant places can take 14.'
     - word: closed
-      took: every premises with a closing date — 16, permanently closed and restructured together
-      could_also_mean: only the 9 shut for good, or only the 7 restructured
-      declaration: store.resolution.active_is_the_absent_close_date — the question used the declared NAME
-        of the `closed` population, whose two subsets carry their own separate surfaces ('shut for good',
-        'closed and reopened') that the question did not say. The declaration fixes the reading, so this
-        was not asked.
-    - word: closed
-      took: the store's own trading state — it has a closing date and no longer trades
-      could_also_mean: not open at this hour of the day, by opening hours
-      declaration: 'This bundle holds no opening-hours data: dim_store carries only open_date and close_date,
-        declared as the trading-state columns. The hour-of-day reading cannot be expressed here, so there
-        was no fork to price.'
+      took: the declared population `closed` — any shop with a close date — which is 16
+      could_also_mean: shut for good and not replaced (`shut`), which is 9; or closed and reopened (`restructured`),
+        which is 7. If what was wanted is shops gone for good, the figure is 9 — the gap is exactly the
+        7 that were rebuilt or replaced
+      declaration: store.resolution.active_is_the_absent_close_date names four populations on this axis
+        and `closed` is the name of one of them, with 'closed permanently' and 'closed and not replaced'
+        reserved as surfaces of `shut` — so the bare word is settled by declaration, not chosen by me
     - word: stores
-      took: the physical shops — the online outlet excluded
-      could_also_mean: all 74 outlets including the online shop
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel, `physical` default on a subject
-        question. MEASURED AS IMMATERIAL HERE: the closed count is 16 either way, because the online row
-        carries no close date.'
+      took: 'premises — one count per shop per trading period (distinct store_key): 16'
+      could_also_mean: 'places (store_code): 14, measured — two sites each held two shops that have closed'
+      declaration: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares
+        `finer_than: store_code`, so premises roll up into places and counting places answers a different
+        question'
+    - word: stores
+      took: physical shops only, 73 of the 74 register rows
+      could_also_mean: all 74 rows including the online outlet — which gives the same 16, since that row
+        carries no close date
+      declaration: store.resolution.the_channel_is_the_location_sentinel, default `physical`, disclosure
+        required
+    - word: are closed
+      took: as things stand now, no period predicate — every closure on the books, 2013-12-05 to 2019-11-03
+      could_also_mean: shops that closed within a named window such as this year or last quarter — which
+        would return 0, as the most recent closure on record is 2019-11-03
+      declaration: no declaration binds a period to the store register (order.default.an_unscoped_question_covers_all_time
+        governs the sales line, not dim_store), so the absence of a window is mine to state
     blocked_by: []
 stages:
 - stage: prompt
@@ -567,17 +604,20 @@ stages:
   ms: 0
   summary: ''
   detail:
-    prose: A single count of how many stores are in a closed state — one number, covering all stores regardless
-      of region or type, with no time period restricted. I read "closed" as the store's own status (shut
-      down / no longer trading), not as "not currently open at this hour of the day."
-    population: 'The 16 rows of contoso_served.dim_store where store_code <> -1 AND close_date IS NOT
-      NULL, counted as distinct store_key. Two restrictions, both from declarations, neither named by
-      the question: `physical` only, per store.resolution.the_channel_is_the_location_sentinel''s declared
-      subject default, excluding the single online outlet — measured as costing this figure nothing, since
-      that row has no close date and is `active` either way; and `closed` as close_date IS NOT NULL, per
-      store.resolution.active_is_the_absent_close_date, taking the population the question named by name
-      rather than either of its narrower subsets. No period, country, state or other restriction, and
-      no grouping — one figure over the whole register.'
+    prose: A count of stores whose status is \"closed\" — one number, covering all stores regardless of
+      region or type, as things stand today. I am reading \"closed\" as the store's standing status (shut
+      down / no longer trading), not as \"shut at this moment of the day because it is outside opening
+      hours\".
+    population: 'The 16 rows of contoso_served.dim_store that carry a close date, counted as distinct
+      store_key. Three restrictions, all mine, all declared: (1) PHYSICAL ONLY — the single online outlet
+      (store_code = -1) is excluded, because store.resolution.the_channel_is_the_location_sentinel makes
+      `physical` the default when a question names no channel. This changes nothing: that row has no close
+      date, so 16 is equally the figure over all 74 register rows. (2) `closed` = close_date IS NOT NULL,
+      the population store.resolution.active_is_the_absent_close_date names with the question''s own word;
+      its declared subsets are smaller — 9 shut for good, 7 closed and reopened. (3) PREMISES, not places
+      — counted by store_key as the Store grounding''s `counts store_key` declares; the same 16 shops
+      stand on 14 distinct sites, so a question about places would be answered 14. No period filter of
+      any kind: this is the register as it stands today, covering closures from 2013 to 2019.'
 - stage: steps
   status: ok
   ms: 0
@@ -595,26 +635,27 @@ stages:
   detail:
     ambiguities:
     - words: closed
-      asks: Do you mean stores that have shut down for good, or stores that just aren't open for business
-        right now (e.g. outside opening hours or temporarily shut)?
+      asks: By "closed" do you mean stores that have shut down for good, stores that are temporarily shut,
+        or stores that simply aren't open right now at this hour?
       readings:
-      - Stores whose status is closed — they have shut down and no longer trade
-      - Stores that are not open at this moment, based on their opening hours
-      - Stores that are temporarily closed, e.g. for refurbishment, but expected to reopen
-      took: Stores whose status is closed — shut down and no longer trading
-    - words: closed
-      asks: If a store is temporarily closed rather than permanently shut, should it be counted in the
-        total?
+      - Stores that have permanently shut down and are no longer trading
+      - Stores that are temporarily closed (e.g. for refurbishment) but expected to reopen
+      - Stores that are not open at this moment of the day, based on their opening hours
+      took: Stores whose standing status is closed — permanently shut down and no longer trading
+    - words: are closed
+      asks: Do you want the count as it stands today, or the number of stores that closed during some
+        particular period such as this year?
       readings:
-      - Count only permanently closed stores
-      - Count permanently and temporarily closed stores together
-      took: Any store marked closed is counted, without distinguishing permanent from temporary
-    - words: How many stores
-      asks: Do you want just the single total, or the total broken out by something like country or region?
+      - The number of stores that are in a closed state right now
+      - The number of stores that closed within a given period, e.g. this year or last quarter
+      took: The number currently in a closed state, with no date window applied
+    - words: stores
+      asks: Should this count every store on the books, or only a subset such as stores you own and operate
+        (excluding franchises, concessions, or online-only locations)?
       readings:
-      - One single number for all closed stores
-      - One number per country or region
-      took: One single number for all closed stores
+      - Every store record there is
+      - Only company-owned and operated physical stores, excluding franchises and concessions
+      took: Every store, with no filter on ownership or type
 - stage: cannot_express
   status: ok
   ms: 0
@@ -645,87 +686,94 @@ stages:
   detail:
     readings:
     - word: stores
-      took: the physical shops only — 73 premises, the online outlet left out
-      could_also_mean: all 74 outlets including the online shop, or the online shop alone (1 row)
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel — `physical` is the declared
-        default for a question about Store naming no channel, and the answer must disclose it. MEASURED:
-        this choice does not move the closed figure at all, because the online row carries no close date
-        and so is `active` either way — closed is 16 premises whether the channel default is applied or
-        not.'
+      took: the physical premises in dim_store — the 73 rows with store_code <> -1, counted by distinct
+        store_key
+      could_also_mean: all 74 rows including the single online outlet, or the 67 distinct sites rather
+        than the premises that stood on them
+      declaration: store.resolution.the_channel_is_the_location_sentinel declares `physical` the default
+        for a question naming no channel, and must disclose it; the Store grounding declares `counts store_key`,
+        so premises and not sites is the counting grain
+    - word: closed
+      took: nothing yet on this step — the base is left unfiltered on trading state, but all three readings
+        are measured here so the next step chooses from figures rather than guesses
+      could_also_mean: the declared population `closed` (has a close date), or its subset `shut` (status_annotation
+        = 'Closed', closed for good and not replaced), or its subset `restructured` (closed and reopened)
+      declaration: store.resolution.active_is_the_absent_close_date names all four populations; the question's
+        own word `closed` is the NAME of one of them, so the reading is fixed by declaration and not open
+        to assumption
+    - word: closed
+      took: the declared population `closed` — close_date IS NOT NULL — which gives 16 premises
+      could_also_mean: its declared subset `shut` (status_annotation = 'Closed', shut for good and not
+        replaced), which gives 9; or the other subset `restructured` (closed and reopened), which gives
+        7
+      declaration: store.resolution.active_is_the_absent_close_date names four populations on this axis,
+        and `closed` is the name of one of them — the question uses that word bare, while 'closed permanently'
+        and 'closed and not replaced' are the surfaces that would select `shut`, so the declaration fixes
+        the reading rather than leaving it to me
     - word: stores
-      took: premises — one store per store_key, 73 of them, which is the grain the closed count will use
-      could_also_mean: sites — one store per store_code, 66 of them, since a re-let site holds a succession
-        of premises
-      declaration: 'The Store concept declares `key store_key counts store_key`, so premises is the declared
-        counting grain; `dim_store.store_key#finer_than: store_code` makes the site a legitimate coarser
-        axis but requires the answer to disclose which level it used. THIS FORK DOES MOVE THE DOWNSTREAM
-        FIGURE: the closed population is 16 premises but only 14 sites, because two closed premises share
-        a site with another closed premises. The Store definition and dim_location.units_ever_here prose
-        pull opposite ways on this in words (''a store is NOT its place'' vs ''a store is its location
-        and not its row''); the explicit `counts:` key is what I followed, and I will restate both numbers
-        on the answer step.'
+      took: premises — distinct store_key, as carried forward from step 1
+      could_also_mean: 'sites (store_code): the 7 restructured rows sit on only 6 distinct sites, so a
+        site-grain reading of the same population would return fewer than 16'
+      declaration: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares
+        `finer_than: store_code`, so premises is the counting grain and sites would be a different question'
     - word: closed
-      took: the full declared `closed` population — any premises with a closing date, 16 of them, permanent
-        and rebuilt alike
-      could_also_mean: only `shut`, the 9 annotated 'Closed' — shut for good and not replaced; or only
-        `restructured`, the 7 annotated 'Restructured' — closed and reopened
-      declaration: 'store.resolution.active_is_the_absent_close_date names four populations on this axis
-        and the question used the name of one of them: `closed`, defined as close_date IS NOT NULL, with
-        surfaces ''ceased'', ''no longer trading'', ''not active'', ''inactive''. The two narrower readings
-        are declared SUBSETS of it and have their own separate surfaces — ''shut for good'', ''closed
-        permanently'', ''closed and not replaced'' for `shut`; ''rebuilt'', ''replaced'', ''closed and
-        reopened'' for `restructured` — none of which the question said. So the declaration fixes this
-        reading and I did not ask. The subset figures, for the reader who meant one of them: shut 9, restructured
-        7.'
-    - word: closed
-      took: the store's own trading state — it has a closing date on the register and no longer trades
-      could_also_mean: not open at this hour of the day, by opening hours
-      declaration: 'This bundle holds no opening-hours data at all: dim_store carries open_date and close_date,
-        which are the day a shop opened for trade and the day it closed for good, declared as the trading-state
-        columns. The hour-of-day reading cannot be expressed here, so there is no fork to price.'
-    - word: How many stores
-      took: a count of premises — distinct store_key — giving 16
-      could_also_mean: a count of sites — distinct store_code — giving 14, because two of the closed shops
-        stand on a site that also holds another closed shop
-      declaration: 'The Store concept declares `grounded in dim_store key store_key counts store_key`,
-        so premises is the declared counting grain; `store_key#finer_than: store_code` makes the site
-        a legitimate coarser axis whose use must be disclosed. The prose pulls both ways — dim_store.store_code
-        calls sites ''what a store is counted by'' while the Store definition insists ''a store is NOT
-        its place'' — and the Store definition itself records this collision as ''how one word came to
-        name two grains''. I followed the explicit `counts:` key; both figures are stated so a reader
-        who meant places can take 14.'
-    - word: closed
-      took: every premises with a closing date — 16, permanently closed and restructured together
-      could_also_mean: only the 9 shut for good, or only the 7 restructured
-      declaration: store.resolution.active_is_the_absent_close_date — the question used the declared NAME
-        of the `closed` population, whose two subsets carry their own separate surfaces ('shut for good',
-        'closed and reopened') that the question did not say. The declaration fixes the reading, so this
-        was not asked.
-    - word: closed
-      took: the store's own trading state — it has a closing date and no longer trades
-      could_also_mean: not open at this hour of the day, by opening hours
-      declaration: 'This bundle holds no opening-hours data: dim_store carries only open_date and close_date,
-        declared as the trading-state columns. The hour-of-day reading cannot be expressed here, so there
-        was no fork to price.'
+      took: the declared population `closed` — any shop with a close date — which is 16
+      could_also_mean: shut for good and not replaced (`shut`), which is 9; or closed and reopened (`restructured`),
+        which is 7. If what was wanted is shops gone for good, the figure is 9 — the gap is exactly the
+        7 that were rebuilt or replaced
+      declaration: store.resolution.active_is_the_absent_close_date names four populations on this axis
+        and `closed` is the name of one of them, with 'closed permanently' and 'closed and not replaced'
+        reserved as surfaces of `shut` — so the bare word is settled by declaration, not chosen by me
     - word: stores
-      took: the physical shops — the online outlet excluded
-      could_also_mean: all 74 outlets including the online shop
-      declaration: 'store.resolution.the_channel_is_the_location_sentinel, `physical` default on a subject
-        question. MEASURED AS IMMATERIAL HERE: the closed count is 16 either way, because the online row
-        carries no close date.'
+      took: 'premises — one count per shop per trading period (distinct store_key): 16'
+      could_also_mean: 'places (store_code): 14, measured — two sites each held two shops that have closed'
+      declaration: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares
+        `finer_than: store_code`, so premises roll up into places and counting places answers a different
+        question'
+    - word: stores
+      took: physical shops only, 73 of the 74 register rows
+      could_also_mean: all 74 rows including the online outlet — which gives the same 16, since that row
+        carries no close date
+      declaration: store.resolution.the_channel_is_the_location_sentinel, default `physical`, disclosure
+        required
+    - word: are closed
+      took: as things stand now, no period predicate — every closure on the books, 2013-12-05 to 2019-11-03
+      could_also_mean: shops that closed within a named window such as this year or last quarter — which
+        would return 0, as the most recent closure on record is 2019-11-03
+      declaration: no declaration binds a period to the store register (order.default.an_unscoped_question_covers_all_time
+        governs the sales line, not dim_store), so the absence of a window is mine to state
 - stage: plan
   status: ok
   ms: 0
   summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n\
-        \  open_date,\n  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\n\
-        WHERE\n  store_code <> -1\n\n-- step 2\nSELECT\n  store_key,\n  store_code,\n  store_name,\n \
-        \ country_code,\n  state,\n  open_date,\n  close_date,\n  status_annotation,\n  square_metres\n\
-        FROM contoso_served.dim_store\nWHERE\n  store_code <> -1 AND NOT close_date IS NULL\n\n-- step\
-        \ 3\nSELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n \
-        \ store_code <> -1 AND NOT close_date IS NULL"
+      sql: "-- step 1\nSELECT\n  'every row in dim_store' AS population,\n  COUNT(*) AS store_rows,\n\
+        \  COUNT(DISTINCT store_key) AS premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM contoso_served.dim_store\n\
+        UNION ALL\nSELECT\n  'physical (declared default: store_code <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+        \ AS TEXT) <> '-1'\nUNION ALL\nSELECT\n  'online (store_code = -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+        \ AS TEXT) = '-1'\nUNION ALL\nSELECT\n  'physical + active (close_date IS NULL)',\n  COUNT(*),\n\
+        \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+        \  CAST(store_code AS TEXT) <> '-1' AND close_date IS NULL\nUNION ALL\nSELECT\n  'physical + closed\
+        \ (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
+        FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS\
+        \ NULL\nUNION ALL\nSELECT\n  'physical + shut (subset: status_annotation = Closed)',\n  COUNT(*),\n\
+        \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+        \  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Closed'\n\
+        UNION ALL\nSELECT\n  'physical + restructured (subset: status_annotation = Restructured)',\n \
+        \ COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\n\
+        WHERE\n  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation\
+        \ = 'Restructured'\nORDER BY\n  1\n\n-- step 2\nSELECT\n  store_key,\n  store_code,\n  store_name,\n\
+        \  country_code,\n  state,\n  open_date,\n  close_date,\n  status_annotation\nFROM contoso_served.dim_store\n\
+        WHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL\nORDER BY\n  close_date,\n\
+        \  store_key\n\n-- step 3\nSELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT\
+        \ store_code) AS closed_sites,\n  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation\
+        \ = 'Closed' THEN 1 ELSE 0 END) AS shut_for_good,\n  SUM(CASE WHEN status_annotation = 'Restructured'\
+        \ THEN 1 ELSE 0 END) AS closed_and_reopened,\n  MIN(close_date) AS earliest_closure,\n  MAX(close_date)\
+        \ AS latest_closure\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1'\
+        \ AND NOT close_date IS NULL"
       params: {}
 - stage: execute
   status: ok
@@ -740,17 +788,14 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'One row, one figure: 16 physical shop premises on Contoso''s store register have
-      stopped trading — every row carrying a closing date, over the whole register with no time limit,
-      as a snapshot of the state the register is in rather than a count of closures in any period. Nine
-      of the 16 the source annotated as closed for good, seven as restructured — rebuilt or replaced —
-      and both count, because the question asked for closed and restructured shops are declared a kind
-      of closed. NOT INCLUDED: the 57 premises still trading; the online outlet, which carries no closing
-      date and is therefore not closed under any reading and would not change this figure if it were let
-      in; and any sense of WHEN these shops closed, which the question did not ask for and which this
-      figure cannot carry. The one sensitivity worth knowing: this counts PREMISES, not places — the 16
-      closed shops stand on 14 distinct sites, so a reader who means "how many locations are now dark"
-      wants 14, not 16.'
+    what_it_calculated: '16 is the number of physical shops in Contoso''s store register that have stopped
+      trading — one count per shop per trading period, each carrying a day it closed. Those 16 shops stood
+      on 14 distinct places, so two places each held two shops that have since closed. All 16 closures
+      are already in the past, between 2013-12-05 and 2019-11-03; none is a future closing date that would
+      make a shop merely scheduled to shut. What the figure does NOT say: it is not how many closed in
+      any given year (no date window is applied — it is the whole history of the register), it is not
+      how many places no longer have a shop (7 of the 16 were closed and reopened, so their site trades
+      on under a later shop row), and it excludes the online outlet, which has never closed.'
 - stage: evaluate
   status: ok
   ms: 0
@@ -787,9 +832,10 @@ sections:
   status: ok
   body:
     kind: prose
-    value: A single count of how many stores are in a closed state — one number, covering all stores regardless
-      of region or type, with no time period restricted. I read "closed" as the store's own status (shut
-      down / no longer trading), not as "not currently open at this hour of the day."
+    value: A count of stores whose status is \"closed\" — one number, covering all stores regardless of
+      region or type, as things stand today. I am reading \"closed\" as the store's standing status (shut
+      down / no longer trading), not as \"shut at this moment of the day because it is outside opening
+      hours\".
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -828,32 +874,34 @@ sections:
     - - - the words
         - closed
       - - what it would ask
-        - Do you mean stores that have shut down for good, or stores that just aren't open for business
-          right now (e.g. outside opening hours or temporarily shut)?
+        - By "closed" do you mean stores that have shut down for good, stores that are temporarily shut,
+          or stores that simply aren't open right now at this hour?
       - - could mean
-        - - Stores whose status is closed — they have shut down and no longer trade
-          - Stores that are not open at this moment, based on their opening hours
-          - Stores that are temporarily closed, e.g. for refurbishment, but expected to reopen
+        - - Stores that have permanently shut down and are no longer trading
+          - Stores that are temporarily closed (e.g. for refurbishment) but expected to reopen
+          - Stores that are not open at this moment of the day, based on their opening hours
       - - took
-        - Stores whose status is closed — shut down and no longer trading
+        - Stores whose standing status is closed — permanently shut down and no longer trading
     - - - the words
-        - closed
+        - are closed
       - - what it would ask
-        - If a store is temporarily closed rather than permanently shut, should it be counted in the total?
+        - Do you want the count as it stands today, or the number of stores that closed during some particular
+          period such as this year?
       - - could mean
-        - - Count only permanently closed stores
-          - Count permanently and temporarily closed stores together
+        - - The number of stores that are in a closed state right now
+          - The number of stores that closed within a given period, e.g. this year or last quarter
       - - took
-        - Any store marked closed is counted, without distinguishing permanent from temporary
+        - The number currently in a closed state, with no date window applied
     - - - the words
-        - How many stores
+        - stores
       - - what it would ask
-        - Do you want just the single total, or the total broken out by something like country or region?
+        - Should this count every store on the books, or only a subset such as stores you own and operate
+          (excluding franchises, concessions, or online-only locations)?
       - - could mean
-        - - One single number for all closed stores
-          - One number per country or region
+        - - Every store record there is
+          - Only company-owned and operated physical stores, excluding franchises and concessions
       - - took
-        - One single number for all closed stores
+        - Every store, with no filter on ownership or type
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -862,18 +910,36 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-        \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1"
+      sql: "SELECT\n  'every row in dim_store' AS population,\n  COUNT(*) AS store_rows,\n  COUNT(DISTINCT\
+        \ store_key) AS premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM contoso_served.dim_store\n\
+        UNION ALL\nSELECT\n  'physical (declared default: store_code <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+        \ AS TEXT) <> '-1'\nUNION ALL\nSELECT\n  'online (store_code = -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+        \ AS TEXT) = '-1'\nUNION ALL\nSELECT\n  'physical + active (close_date IS NULL)',\n  COUNT(*),\n\
+        \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+        \  CAST(store_code AS TEXT) <> '-1' AND close_date IS NULL\nUNION ALL\nSELECT\n  'physical + closed\
+        \ (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
+        FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS\
+        \ NULL\nUNION ALL\nSELECT\n  'physical + shut (subset: status_annotation = Closed)',\n  COUNT(*),\n\
+        \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+        \  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Closed'\n\
+        UNION ALL\nSELECT\n  'physical + restructured (subset: status_annotation = Restructured)',\n \
+        \ COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\n\
+        WHERE\n  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation\
+        \ = 'Restructured'\nORDER BY\n  1"
       params: {}
     - step: '2'
       sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-        \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1 AND NOT close_date IS NULL"
+        \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS\
+        \ TEXT) <> '-1' AND NOT close_date IS NULL\nORDER BY\n  close_date,\n  store_key"
       params: {}
     - step: '3'
-      sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-        \ <> -1 AND NOT close_date IS NULL"
+      sql: "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS closed_sites,\n\
+        \  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1 ELSE 0 END) AS\
+        \ shut_for_good,\n  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE 0 END) AS closed_and_reopened,\n\
+        \  MIN(close_date) AS earliest_closure,\n  MAX(close_date) AS latest_closure\nFROM contoso_served.dim_store\n\
+        WHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL"
       params: {}
 - id: what_it_calculated
   title: What it says its rows are
@@ -881,16 +947,14 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'One row, one figure: 16 physical shop premises on Contoso''s store register have stopped trading
-      — every row carrying a closing date, over the whole register with no time limit, as a snapshot of
-      the state the register is in rather than a count of closures in any period. Nine of the 16 the source
-      annotated as closed for good, seven as restructured — rebuilt or replaced — and both count, because
-      the question asked for closed and restructured shops are declared a kind of closed. NOT INCLUDED:
-      the 57 premises still trading; the online outlet, which carries no closing date and is therefore
-      not closed under any reading and would not change this figure if it were let in; and any sense of
-      WHEN these shops closed, which the question did not ask for and which this figure cannot carry.
-      The one sensitivity worth knowing: this counts PREMISES, not places — the 16 closed shops stand
-      on 14 distinct sites, so a reader who means "how many locations are now dark" wants 14, not 16.'
+    value: '16 is the number of physical shops in Contoso''s store register that have stopped trading
+      — one count per shop per trading period, each carrying a day it closed. Those 16 shops stood on
+      14 distinct places, so two places each held two shops that have since closed. All 16 closures are
+      already in the past, between 2013-12-05 and 2019-11-03; none is a future closing date that would
+      make a shop merely scheduled to shut. What the figure does NOT say: it is not how many closed in
+      any given year (no date window is applied — it is the whole history of the register), it is not
+      how many places no longer have a shop (7 of the 16 were closed and reopened, so their site trades
+      on under a later shop row), and it excludes the online outlet, which has never closed.'
 - id: declarations
   title: Which declarations it read, and what each settled
   subtitle: the path the decision took through the ontology — read off the walk's own citations, never
@@ -900,73 +964,52 @@ sections:
     kind: records
     value:
     - - - declaration
-        - 'store.resolution.the_channel_is_the_location_sentinel — `physical` is the declared default
-          for a question about Store naming no channel, and the answer must disclose it. MEASURED: this
-          choice does not move the closed figure at all, because the online row carries no close date
-          and so is `active` either way — closed is 16 premises whether the channel default is applied
-          or not.'
+        - store.resolution.the_channel_is_the_location_sentinel declares `physical` the default for a
+          question naming no channel, and must disclose it; the Store grounding declares `counts store_key`,
+          so premises and not sites is the counting grain
       - - what it settled
-        - '''stores'' = the physical shops only — 73 premises, the online outlet left out'
+        - '''stores'' = the physical premises in dim_store — the 73 rows with store_code <> -1, counted
+          by distinct store_key'
     - - - declaration
-        - 'The Store concept declares `key store_key counts store_key`, so premises is the declared counting
-          grain; `dim_store.store_key#finer_than: store_code` makes the site a legitimate coarser axis
-          but requires the answer to disclose which level it used. THIS FORK DOES MOVE THE DOWNSTREAM
-          FIGURE: the closed population is 16 premises but only 14 sites, because two closed premises
-          share a site with another closed premises. The Store definition and dim_location.units_ever_here
-          prose pull opposite ways on this in words (''a store is NOT its place'' vs ''a store is its
-          location and not its row''); the explicit `counts:` key is what I followed, and I will restate
-          both numbers on the answer step.'
+        - store.resolution.active_is_the_absent_close_date names all four populations; the question's
+          own word `closed` is the NAME of one of them, so the reading is fixed by declaration and not
+          open to assumption
       - - what it settled
-        - '''stores'' = premises — one store per store_key, 73 of them, which is the grain the closed
-          count will use'
+        - '''closed'' = nothing yet on this step — the base is left unfiltered on trading state, but all
+          three readings are measured here so the next step chooses from figures rather than guesses'
     - - - declaration
-        - 'store.resolution.active_is_the_absent_close_date names four populations on this axis and the
-          question used the name of one of them: `closed`, defined as close_date IS NOT NULL, with surfaces
-          ''ceased'', ''no longer trading'', ''not active'', ''inactive''. The two narrower readings are
-          declared SUBSETS of it and have their own separate surfaces — ''shut for good'', ''closed permanently'',
-          ''closed and not replaced'' for `shut`; ''rebuilt'', ''replaced'', ''closed and reopened'' for
-          `restructured` — none of which the question said. So the declaration fixes this reading and
-          I did not ask. The subset figures, for the reader who meant one of them: shut 9, restructured
-          7.'
+        - store.resolution.active_is_the_absent_close_date names four populations on this axis, and `closed`
+          is the name of one of them — the question uses that word bare, while 'closed permanently' and
+          'closed and not replaced' are the surfaces that would select `shut`, so the declaration fixes
+          the reading rather than leaving it to me
       - - what it settled
-        - '''closed'' = the full declared `closed` population — any premises with a closing date, 16 of
-          them, permanent and rebuilt alike'
+        - '''closed'' = the declared population `closed` — close_date IS NOT NULL — which gives 16 premises'
     - - - declaration
-        - 'This bundle holds no opening-hours data at all: dim_store carries open_date and close_date,
-          which are the day a shop opened for trade and the day it closed for good, declared as the trading-state
-          columns. The hour-of-day reading cannot be expressed here, so there is no fork to price.'
+        - 'the Store grounding declares `counts store_key`, and dim_store.store_key declares `finer_than:
+          store_code`, so premises is the counting grain and sites would be a different question'
       - - what it settled
-        - '''closed'' = the store''s own trading state — it has a closing date on the register and no
-          longer trades'
+        - '''stores'' = premises — distinct store_key, as carried forward from step 1'
     - - - declaration
-        - 'The Store concept declares `grounded in dim_store key store_key counts store_key`, so premises
-          is the declared counting grain; `store_key#finer_than: store_code` makes the site a legitimate
-          coarser axis whose use must be disclosed. The prose pulls both ways — dim_store.store_code calls
-          sites ''what a store is counted by'' while the Store definition insists ''a store is NOT its
-          place'' — and the Store definition itself records this collision as ''how one word came to name
-          two grains''. I followed the explicit `counts:` key; both figures are stated so a reader who
-          meant places can take 14.'
+        - store.resolution.active_is_the_absent_close_date names four populations on this axis and `closed`
+          is the name of one of them, with 'closed permanently' and 'closed and not replaced' reserved
+          as surfaces of `shut` — so the bare word is settled by declaration, not chosen by me
       - - what it settled
-        - '''How many stores'' = a count of premises — distinct store_key — giving 16'
+        - '''closed'' = the declared population `closed` — any shop with a close date — which is 16'
     - - - declaration
-        - store.resolution.active_is_the_absent_close_date — the question used the declared NAME of the
-          `closed` population, whose two subsets carry their own separate surfaces ('shut for good', 'closed
-          and reopened') that the question did not say. The declaration fixes the reading, so this was
-          not asked.
+        - 'the Store grounding declares `counts store_key`, and dim_store.store_key declares `finer_than:
+          store_code`, so premises roll up into places and counting places answers a different question'
       - - what it settled
-        - '''closed'' = every premises with a closing date — 16, permanently closed and restructured together'
+        - '''stores'' = premises — one count per shop per trading period (distinct store_key): 16'
     - - - declaration
-        - 'This bundle holds no opening-hours data: dim_store carries only open_date and close_date, declared
-          as the trading-state columns. The hour-of-day reading cannot be expressed here, so there was
-          no fork to price.'
+        - store.resolution.the_channel_is_the_location_sentinel, default `physical`, disclosure required
       - - what it settled
-        - '''closed'' = the store''s own trading state — it has a closing date and no longer trades'
+        - '''stores'' = physical shops only, 73 of the 74 register rows'
     - - - declaration
-        - 'store.resolution.the_channel_is_the_location_sentinel, `physical` default on a subject question.
-          MEASURED AS IMMATERIAL HERE: the closed count is 16 either way, because the online row carries
-          no close date.'
+        - no declaration binds a period to the store register (order.default.an_unscoped_question_covers_all_time
+          governs the sales line, not dim_store), so the absence of a window is mine to state
       - - what it settled
-        - '''stores'' = the physical shops — the online outlet excluded'
+        - '''are closed'' = as things stand now, no period predicate — every closure on the books, 2013-12-05
+          to 2019-11-03'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -990,14 +1033,16 @@ sections:
     - - shape
       - one figure
     - - population it answered over
-      - 'The 16 rows of contoso_served.dim_store where store_code <> -1 AND close_date IS NOT NULL, counted
-        as distinct store_key. Two restrictions, both from declarations, neither named by the question:
-        `physical` only, per store.resolution.the_channel_is_the_location_sentinel''s declared subject
-        default, excluding the single online outlet — measured as costing this figure nothing, since that
-        row has no close date and is `active` either way; and `closed` as close_date IS NOT NULL, per
-        store.resolution.active_is_the_absent_close_date, taking the population the question named by
-        name rather than either of its narrower subsets. No period, country, state or other restriction,
-        and no grouping — one figure over the whole register.'
+      - 'The 16 rows of contoso_served.dim_store that carry a close date, counted as distinct store_key.
+        Three restrictions, all mine, all declared: (1) PHYSICAL ONLY — the single online outlet (store_code
+        = -1) is excluded, because store.resolution.the_channel_is_the_location_sentinel makes `physical`
+        the default when a question names no channel. This changes nothing: that row has no close date,
+        so 16 is equally the figure over all 74 register rows. (2) `closed` = close_date IS NOT NULL,
+        the population store.resolution.active_is_the_absent_close_date names with the question''s own
+        word; its declared subsets are smaller — 9 shut for good, 7 closed and reopened. (3) PREMISES,
+        not places — counted by store_key as the Store grounding''s `counts store_key` declares; the same
+        16 shops stand on 14 distinct sites, so a question about places would be answered 14. No period
+        filter of any kind: this is the register as it stands today, covering closures from 2013 to 2019.'
 - id: thinking
   title: How it got there, step by step
   subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
@@ -1008,172 +1053,154 @@ sections:
     value:
     - step: '1'
       asks: stores
-      sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-        \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1"
-      means: 'One row per physical shop premises on Contoso''s store register — 73 of them, standing on
-        66 distinct sites, with no time restriction of any kind. Each row is a shop that stood on one
-        place for one trading period, carrying its own name, country, state, floor area, opening date
-        and closing date; a site re-let to a later shop appears once per tenancy, which is why 73 premises
-        sit on only 66 sites. This is the whole register, still-trading and closed rows together: 57 rows
-        carry no close date and 16 do. Nothing is counted or filtered yet — this is the set the `closed`
-        restriction and the count will run over. The one row NOT here is the online outlet (store_code
-        -1), excluded by the declared channel default.'
+      sql: "SELECT\n  'every row in dim_store' AS population,\n  COUNT(*) AS store_rows,\n  COUNT(DISTINCT\
+        \ store_key) AS premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM contoso_served.dim_store\n\
+        UNION ALL\nSELECT\n  'physical (declared default: store_code <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+        \ AS TEXT) <> '-1'\nUNION ALL\nSELECT\n  'online (store_code = -1)',\n  COUNT(*),\n  COUNT(DISTINCT\
+        \ store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code\
+        \ AS TEXT) = '-1'\nUNION ALL\nSELECT\n  'physical + active (close_date IS NULL)',\n  COUNT(*),\n\
+        \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+        \  CAST(store_code AS TEXT) <> '-1' AND close_date IS NULL\nUNION ALL\nSELECT\n  'physical + closed\
+        \ (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
+        FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS\
+        \ NULL\nUNION ALL\nSELECT\n  'physical + shut (subset: status_annotation = Closed)',\n  COUNT(*),\n\
+        \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\nWHERE\n\
+        \  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation = 'Closed'\n\
+        UNION ALL\nSELECT\n  'physical + restructured (subset: status_annotation = Restructured)',\n \
+        \ COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM contoso_served.dim_store\n\
+        WHERE\n  CAST(store_code AS TEXT) <> '-1'\n  AND NOT close_date IS NULL\n  AND status_annotation\
+        \ = 'Restructured'\nORDER BY\n  1"
+      means: 'The size of the `stores` population I will answer over, counted three ways side by side:
+        raw rows of dim_store, distinct premises (store_key, the grain the Store concept declares it is
+        counted by), and distinct sites (store_code, the place the premises stood on). One row per candidate
+        population — all rows, the physical default, the online sentinel on its own, and then the physical
+        rows split by trading state into active, closed, and closed''s two declared subsets (shut and
+        restructured). No period filter and no region filter: this is the register as it stands, not a
+        count of closures in any window.'
       readings:
       - word: stores
-        took: the physical shops only — 73 premises, the online outlet left out
-        could_also_mean: all 74 outlets including the online shop, or the online shop alone (1 row)
-        declaration: 'store.resolution.the_channel_is_the_location_sentinel — `physical` is the declared
-          default for a question about Store naming no channel, and the answer must disclose it. MEASURED:
-          this choice does not move the closed figure at all, because the online row carries no close
-          date and so is `active` either way — closed is 16 premises whether the channel default is applied
-          or not.'
-      - word: stores
-        took: premises — one store per store_key, 73 of them, which is the grain the closed count will
-          use
-        could_also_mean: sites — one store per store_code, 66 of them, since a re-let site holds a succession
-          of premises
-        declaration: 'The Store concept declares `key store_key counts store_key`, so premises is the
-          declared counting grain; `dim_store.store_key#finer_than: store_code` makes the site a legitimate
-          coarser axis but requires the answer to disclose which level it used. THIS FORK DOES MOVE THE
-          DOWNSTREAM FIGURE: the closed population is 16 premises but only 14 sites, because two closed
-          premises share a site with another closed premises. The Store definition and dim_location.units_ever_here
-          prose pull opposite ways on this in words (''a store is NOT its place'' vs ''a store is its
-          location and not its row''); the explicit `counts:` key is what I followed, and I will restate
-          both numbers on the answer step.'
+        took: the physical premises in dim_store — the 73 rows with store_code <> -1, counted by distinct
+          store_key
+        could_also_mean: all 74 rows including the single online outlet, or the 67 distinct sites rather
+          than the premises that stood on them
+        declaration: store.resolution.the_channel_is_the_location_sentinel declares `physical` the default
+          for a question naming no channel, and must disclose it; the Store grounding declares `counts
+          store_key`, so premises and not sites is the counting grain
+      - word: closed
+        took: nothing yet on this step — the base is left unfiltered on trading state, but all three readings
+          are measured here so the next step chooses from figures rather than guesses
+        could_also_mean: the declared population `closed` (has a close date), or its subset `shut` (status_annotation
+          = 'Closed', closed for good and not replaced), or its subset `restructured` (closed and reopened)
+        declaration: store.resolution.active_is_the_absent_close_date names all four populations; the
+          question's own word `closed` is the NAME of one of them, so the reading is fixed by declaration
+          and not open to assumption
       turns:
-      - why: Establish the `stores` base relation (dim_store) and see at once how its rows split by the
-          channel sentinel and the trading-state columns, so the later `closed` step is built on measured
-          values rather than assumption.
-        did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN store_code = -1 THEN ''online''
-          ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN ''no close date'' ELSE ''has
-          close date'' END AS close_state, COALESCE(status_annotation, ''<NULL>'') AS status_annotation,
-          COUNT(*) AS store_rows, COUNT(DISTINCT store_key) AS premises, COUNT(DISTINCT store_code) AS
-          sites FROM contoso_served.dim_store GROUP BY 1,2,3 ORDER BY 1,2,3'
+      - why: Establish the `stores` base relation and measure how its rows split on the two declared subject
+          axes (channel sentinel on store_code, trading state on close_date/status_annotation) before
+          any filter is chosen.
+        did: 'probe ''dim_store.status_annotation'' AND ALSO: SELECT CASE WHEN CAST(store_code AS VARCHAR)
+          = ''-1'' THEN ''online'' ELSE ''physical'' END AS channel, CASE WHEN close_date IS NULL THEN
+          ''no close date (active)'' ELSE ''has close date (closed)'' END AS trading_state, COALESCE(status_annotation,
+          ''<NULL>'') AS status_annotation, COUNT(*) AS store_rows, COUNT(DISTINCT store_key) AS premises,
+          COUNT(DISTINCT store_code) AS sites FROM contoso_served.dim_store GROUP BY 1, 2, 3 ORDER BY
+          1, 2, 3'
         came_back: 'dim_store.status_annotation (varchar) holds 3 distinct value(s): '''', ''Closed'',
-          ''Restructured''   AND ALSO: 4 row(s): [{"channel": "online", "close_state": "no close date",
-          "status_annotation": "<NULL>", "store_rows": 1, "premises": 1, "sites": 1}, {"channel": "physical",
-          "close_state": "has close date", "status_annotation": "Closed", "store_rows": 9, "premises":
-          9, "sites": 9}, {"channel": "physical", "close_state": "has close date", "status_annotation":
-          "Restructured", "store_rows": 7, "premises": 7, "sites": 6}, {"channel": "physical", "close_state":
-          "no close date", "status_annotation": "", "store_rows": 57, "premises": 57, "sites": 57}]'
-      - why: Pin the `stores` base at both declared grains over the whole population at once — the concept
-          declares `counts store_key` (premises) while `dim_store.store_code` prose says sites are "what
-          a store is counted by", and the per-group counts above (7 Restructured rows over only 6 sites)
-          suggest the two readings give different numbers.
-        did: "WITH s AS (\n  SELECT\n    *\n  FROM contoso_served.dim_store\n)\nSELECT\n  'every row,\
-          \ no population applied' AS population,\n  COUNT(*) AS store_rows,\n  COUNT(DISTINCT store_key)\
-          \ AS premises,\n  COUNT(DISTINCT store_code) AS sites\nFROM s\nUNION ALL\nSELECT\n  'physical\
-          \ (store_code <> -1)',\n  COUNT(*),\n  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\n\
-          FROM s\nWHERE\n  store_code <> -1\nUNION ALL\nSELECT\n  'online (store_code = -1)',\n  COUNT(*),\n\
-          \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  store_code = -1\n\
-          UNION ALL\nSELECT\n  'physical + closed (close_date IS NOT NULL)',\n  COUNT(*),\n  COUNT(DISTINCT\
-          \ store_key),\n  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  store_code <> -1 AND NOT close_date\
-          \ IS NULL\nUNION ALL\nSELECT\n  'physical + active (close_date IS NULL)',\n  COUNT(*),\n  COUNT(DISTINCT\
-          \ store_key),\n  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  store_code <> -1 AND close_date\
-          \ IS NULL\nUNION ALL\nSELECT\n  'all channels + closed (close_date IS NOT NULL)',\n  COUNT(*),\n\
-          \  COUNT(DISTINCT store_key),\n  COUNT(DISTINCT store_code)\nFROM s\nWHERE\n  NOT close_date\
-          \ IS NULL\nORDER BY\n  1"
-        came_back: '6 row(s): [{"population": "all channels + closed (close_date IS NOT NULL)", "store_rows":
-          16, "premises": 16, "sites": 14}, {"population": "every row, no population applied", "store_rows":
-          74, "premises": 74, "sites": 67}, {"population": "online (store_code = -1)", "store_rows": 1,
-          "premises": 1, "sites": 1}, {"population": "physical (store_code <> -1)", "store_rows": 73,
-          "premises": 73, "sites": 66}, {"population": "physical + active (close_date IS NULL)", "store_rows":
-          57, "premises": 57, "sites": 57}, {"population": "physical + closed (close_date IS NOT NULL)",
-          "store_rows": 16, "premises": 16, "sites": 14}]'
+          ''Restructured''   AND ALSO: 4 row(s): [{"channel": "online", "trading_state": "no close date
+          (active)", "status_annotation": "<NULL>", "store_rows": 1, "premises": 1, "sites": 1}, {"channel":
+          "physical", "trading_state": "has close date (closed)", "status_annotation": "Closed", "store_rows":
+          9, "premises": 9, "sites": 9}, {"channel": "physical", "trading_state": "has close date (closed)",
+          "status_annotation": "Restructured", "store_rows": 7, "premises": 7, "sites": 6}, {"channel":
+          "physical", "trading_state": "no close date (active)", "status_annotation": "", "store_rows":
+          57, "premises": 57, "sites": 57}]'
       blocked: []
     - step: '2'
       asks: are closed
       sql: "SELECT\n  store_key,\n  store_code,\n  store_name,\n  country_code,\n  state,\n  open_date,\n\
-        \  close_date,\n  status_annotation,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
-        \  store_code <> -1 AND NOT close_date IS NULL"
-      means: 'The 16 physical shop premises that have stopped trading — every row on the store register
-        that carries a closing date, with no period, country or state restriction. One row per premises,
-        each a shop that stood on one site for one trading period and then ceased; they stand on 14 distinct
-        sites, because two of these closed shops shared a site with another closed shop. Of the 16, nine
-        are annotated by the source as `Closed` and seven as `Restructured` — rebuilt or replaced rather
-        than abandoned — and both are in, because both are stores that have a closing date. Not here:
-        the 57 premises still trading, and the online outlet, which carries no close date and is therefore
-        not closed under any reading.'
+        \  close_date,\n  status_annotation\nFROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS\
+        \ TEXT) <> '-1' AND NOT close_date IS NULL\nORDER BY\n  close_date,\n  store_key"
+      means: 'One row per physical shop that has stopped trading — every premises in the store register
+        that carries a close date, with the place it stood on, when it opened, the day it closed, and
+        the source''s note on why. 16 rows. This is the population "are closed" names, not a count of
+        closures in any period: no date window is applied, so a shop that closed in 2017 and one that
+        closed last year both appear. The online outlet is excluded by the declared channel default and
+        carries no close date in any case.'
       readings:
       - word: closed
-        took: the full declared `closed` population — any premises with a closing date, 16 of them, permanent
-          and rebuilt alike
-        could_also_mean: only `shut`, the 9 annotated 'Closed' — shut for good and not replaced; or only
-          `restructured`, the 7 annotated 'Restructured' — closed and reopened
-        declaration: 'store.resolution.active_is_the_absent_close_date names four populations on this
-          axis and the question used the name of one of them: `closed`, defined as close_date IS NOT NULL,
-          with surfaces ''ceased'', ''no longer trading'', ''not active'', ''inactive''. The two narrower
-          readings are declared SUBSETS of it and have their own separate surfaces — ''shut for good'',
-          ''closed permanently'', ''closed and not replaced'' for `shut`; ''rebuilt'', ''replaced'', ''closed
-          and reopened'' for `restructured` — none of which the question said. So the declaration fixes
-          this reading and I did not ask. The subset figures, for the reader who meant one of them: shut
-          9, restructured 7.'
-      - word: closed
-        took: the store's own trading state — it has a closing date on the register and no longer trades
-        could_also_mean: not open at this hour of the day, by opening hours
-        declaration: 'This bundle holds no opening-hours data at all: dim_store carries open_date and
-          close_date, which are the day a shop opened for trade and the day it closed for good, declared
-          as the trading-state columns. The hour-of-day reading cannot be expressed here, so there is
-          no fork to price.'
+        took: the declared population `closed` — close_date IS NOT NULL — which gives 16 premises
+        could_also_mean: its declared subset `shut` (status_annotation = 'Closed', shut for good and not
+          replaced), which gives 9; or the other subset `restructured` (closed and reopened), which gives
+          7
+        declaration: store.resolution.active_is_the_absent_close_date names four populations on this axis,
+          and `closed` is the name of one of them — the question uses that word bare, while 'closed permanently'
+          and 'closed and not replaced' are the surfaces that would select `shut`, so the declaration
+          fixes the reading rather than leaving it to me
+      - word: stores
+        took: premises — distinct store_key, as carried forward from step 1
+        could_also_mean: 'sites (store_code): the 7 restructured rows sit on only 6 distinct sites, so
+          a site-grain reading of the same population would return fewer than 16'
+        declaration: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares
+          `finer_than: store_code`, so premises is the counting grain and sites would be a different question'
       turns: []
       blocked: []
     - step: '3'
       asks: How many
-      sql: "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n  store_code\
-        \ <> -1 AND NOT close_date IS NULL"
-      means: 'One row, one figure: 16 physical shop premises on Contoso''s store register have stopped
-        trading — every row carrying a closing date, over the whole register with no time limit, as a
-        snapshot of the state the register is in rather than a count of closures in any period. Nine of
-        the 16 the source annotated as closed for good, seven as restructured — rebuilt or replaced —
-        and both count, because the question asked for closed and restructured shops are declared a kind
-        of closed. NOT INCLUDED: the 57 premises still trading; the online outlet, which carries no closing
-        date and is therefore not closed under any reading and would not change this figure if it were
-        let in; and any sense of WHEN these shops closed, which the question did not ask for and which
-        this figure cannot carry. The one sensitivity worth knowing: this counts PREMISES, not places
-        — the 16 closed shops stand on 14 distinct sites, so a reader who means "how many locations are
-        now dark" wants 14, not 16.'
+      sql: "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS closed_sites,\n\
+        \  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1 ELSE 0 END) AS\
+        \ shut_for_good,\n  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE 0 END) AS closed_and_reopened,\n\
+        \  MIN(close_date) AS earliest_closure,\n  MAX(close_date) AS latest_closure\nFROM contoso_served.dim_store\n\
+        WHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date IS NULL"
+      means: '16 is the number of physical shops in Contoso''s store register that have stopped trading
+        — one count per shop per trading period, each carrying a day it closed. Those 16 shops stood on
+        14 distinct places, so two places each held two shops that have since closed. All 16 closures
+        are already in the past, between 2013-12-05 and 2019-11-03; none is a future closing date that
+        would make a shop merely scheduled to shut. What the figure does NOT say: it is not how many closed
+        in any given year (no date window is applied — it is the whole history of the register), it is
+        not how many places no longer have a shop (7 of the 16 were closed and reopened, so their site
+        trades on under a later shop row), and it excludes the online outlet, which has never closed.'
       readings:
-      - word: How many stores
-        took: a count of premises — distinct store_key — giving 16
-        could_also_mean: a count of sites — distinct store_code — giving 14, because two of the closed
-          shops stand on a site that also holds another closed shop
-        declaration: 'The Store concept declares `grounded in dim_store key store_key counts store_key`,
-          so premises is the declared counting grain; `store_key#finer_than: store_code` makes the site
-          a legitimate coarser axis whose use must be disclosed. The prose pulls both ways — dim_store.store_code
-          calls sites ''what a store is counted by'' while the Store definition insists ''a store is NOT
-          its place'' — and the Store definition itself records this collision as ''how one word came
-          to name two grains''. I followed the explicit `counts:` key; both figures are stated so a reader
-          who meant places can take 14.'
       - word: closed
-        took: every premises with a closing date — 16, permanently closed and restructured together
-        could_also_mean: only the 9 shut for good, or only the 7 restructured
-        declaration: store.resolution.active_is_the_absent_close_date — the question used the declared
-          NAME of the `closed` population, whose two subsets carry their own separate surfaces ('shut
-          for good', 'closed and reopened') that the question did not say. The declaration fixes the reading,
-          so this was not asked.
-      - word: closed
-        took: the store's own trading state — it has a closing date and no longer trades
-        could_also_mean: not open at this hour of the day, by opening hours
-        declaration: 'This bundle holds no opening-hours data: dim_store carries only open_date and close_date,
-          declared as the trading-state columns. The hour-of-day reading cannot be expressed here, so
-          there was no fork to price.'
+        took: the declared population `closed` — any shop with a close date — which is 16
+        could_also_mean: shut for good and not replaced (`shut`), which is 9; or closed and reopened (`restructured`),
+          which is 7. If what was wanted is shops gone for good, the figure is 9 — the gap is exactly
+          the 7 that were rebuilt or replaced
+        declaration: store.resolution.active_is_the_absent_close_date names four populations on this axis
+          and `closed` is the name of one of them, with 'closed permanently' and 'closed and not replaced'
+          reserved as surfaces of `shut` — so the bare word is settled by declaration, not chosen by me
       - word: stores
-        took: the physical shops — the online outlet excluded
-        could_also_mean: all 74 outlets including the online shop
-        declaration: 'store.resolution.the_channel_is_the_location_sentinel, `physical` default on a subject
-          question. MEASURED AS IMMATERIAL HERE: the closed count is 16 either way, because the online
-          row carries no close date.'
+        took: 'premises — one count per shop per trading period (distinct store_key): 16'
+        could_also_mean: 'places (store_code): 14, measured — two sites each held two shops that have
+          closed'
+        declaration: 'the Store grounding declares `counts store_key`, and dim_store.store_key declares
+          `finer_than: store_code`, so premises roll up into places and counting places answers a different
+          question'
+      - word: stores
+        took: physical shops only, 73 of the 74 register rows
+        could_also_mean: all 74 rows including the online outlet — which gives the same 16, since that
+          row carries no close date
+        declaration: store.resolution.the_channel_is_the_location_sentinel, default `physical`, disclosure
+          required
+      - word: are closed
+        took: as things stand now, no period predicate — every closure on the books, 2013-12-05 to 2019-11-03
+        could_also_mean: shops that closed within a named window such as this year or last quarter — which
+          would return 0, as the most recent closure on record is 2019-11-03
+        declaration: no declaration binds a period to the store register (order.default.an_unscoped_question_covers_all_time
+          governs the sales line, not dim_store), so the absence of a window is mine to state
       turns:
-      - why: Count the step-2 rows at the grain the Store concept declares it counts by — distinct store_key
-          — giving 16, and state the site reading of 14 alongside it rather than asking, because the `counts:`
-          key settles which grain a count of stores uses.
-        did: "SELECT\n  COUNT(DISTINCT store_key) AS how_many\nFROM contoso_served.dim_store\nWHERE\n\
-          \  store_code <> -1 AND NOT close_date IS NULL"
+      - why: Count the closed population at the grain the Store grounding declares (distinct store_key),
+          and measure the site-grain alternative beside it so the one disclosure a reader needs is a number
+          and not a guess.
+        did: "SELECT\n  COUNT(DISTINCT store_key) AS closed_stores,\n  COUNT(DISTINCT store_code) AS closed_sites,\n\
+          \  COUNT(*) AS closed_rows,\n  SUM(CASE WHEN status_annotation = 'Closed' THEN 1 ELSE 0 END)\
+          \ AS shut_for_good,\n  SUM(CASE WHEN status_annotation = 'Restructured' THEN 1 ELSE 0 END) AS\
+          \ closed_and_reopened,\n  MIN(close_date) AS earliest_closure,\n  MAX(close_date) AS latest_closure\n\
+          FROM contoso_served.dim_store\nWHERE\n  CAST(store_code AS TEXT) <> '-1' AND NOT close_date\
+          \ IS NULL"
         came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 1 row(s): [{"how_many": 16}]  Give `claimed_answer`
-          as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
-          rows settle the question, do not decline.'
+          claim, so state the answer now from these rows: 1 row(s): [{"closed_stores": 16, "closed_sites":
+          14, "closed_rows": 16, "shut_for_good": 9, "closed_and_reopened": 7, "earliest_closure": "2013-12-05",
+          "latest_closure": "2019-11-03"}]  Give `claimed_answer` as the value a person would be handed,
+          and `claimed_answer_is` from the closed list. If these rows settle the question, do not decline.'
       blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
@@ -1190,4 +1217,4 @@ v3_answer_step: '3'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: '''16'''
-v3_seconds: 191.5
+v3_seconds: 187.4
