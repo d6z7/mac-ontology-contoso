@@ -11,7 +11,7 @@ state: proposed
 An exchange rate's target currency means something only together with its source currency: the direction is part of the rate's identity, so a rate is never picked or grouped by its target currency alone.
 
 - **State** — proposed · wording proposed, awaiting acceptance
-- **Concepts** — ExchangeRate, Currency
+- **Concepts** — Currency, ExchangeRate
 - **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — exchange rate, currency, direction, from currency, to currency, fx
 - **Formerly** — `ExchangeRate.to_currency.scoped_by`, `exchange_rate.exclusion.direction_is_part_of_the_key`

@@ -173,7 +173,7 @@ Rows by origin: register 65
 
 ### `rule:Country.whose#wording`
 
-- origin: register · owner role: not declared · concept: [country](concepts/country.md), [order](concepts/order.md), [store](concepts/store.md), [customer](concepts/customer.md)
+- origin: register · owner role: not declared · concept: [country](concepts/country.md), [customer](concepts/customer.md), [order](concepts/order.md), [store](concepts/store.md)
 - source: `ontology/rules/Country.whose.yaml` → `rule`
 
 > Is this how you would state the rule “Country.whose”? The wording was sharpened for a reader and awaits your acceptance: When a question asks for figures by country without saying whose country, a sale is attributed to the country it was made in: a shop sale to the country the shop stands in, an online sale to the country the customer lives in. Every sale reaches exactly one country, so the parts add up to the whole. A question may instead ask by store country, customer country or site country and gets that reading. The answer says which country it used.

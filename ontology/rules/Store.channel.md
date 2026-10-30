@@ -11,7 +11,7 @@ state: ruled
 A store is a shop you can walk into. The online channel is recorded as a store, but a question about stores — how many there are, which ones — covers physical shops only unless it names the online channel. That default holds only when the question is about stores: revenue and every other figure of the sale includes both channels, even when the question's route passes through stores.
 
 - **State** — ruled · wording proposed, awaiting acceptance
-- **Concepts** — Store, Order
+- **Concepts** — Order, Store
 - **Formal** — **Symbolic** — implemented by the declarations below
 - **Keywords** — store, shop, online, physical, channel, web, internet, revenue, both channels
 - **Decided in** — `meaning-as-code#decisions/RULED-2026-10-18_both-channels-make-revenue.md`

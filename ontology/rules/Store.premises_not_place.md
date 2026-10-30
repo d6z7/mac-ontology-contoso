@@ -11,7 +11,7 @@ state: ruled
 A store is the premises Contoso sells from: a shop standing on one place for one trading period, with its own name, floor area, opening date and closing date. It is part of a location, not the location itself — one place may hold a succession of premises over time, each of them a store. So one store is counted by its premises, and a count or sum over stores is a different question from the same figure over places; an answer that could be read at either level says which level it used.
 
 - **State** — ruled · wording proposed, awaiting acceptance
-- **Concepts** — Store, Location
+- **Concepts** — Location, Store
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — store, premises, shop, location, place, site, count stores, tenancy
 - **Supersedes** — `Store.counted_by_site`

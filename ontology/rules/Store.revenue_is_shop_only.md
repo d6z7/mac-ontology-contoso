@@ -11,7 +11,7 @@ state: superseded
 If revenue is asked without naming a channel, only shop revenue is assumed.
 
 - **State** — superseded · wording proposed, awaiting acceptance
-- **Concepts** — Store, Order
+- **Concepts** — Order, Store
 - **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
 - **Keywords** — revenue, shop, channel, online
 - **Superseded by** — `Store.channel`
