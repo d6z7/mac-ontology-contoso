@@ -78,9 +78,26 @@ if [ ${#sqls[@]} -eq 0 ]; then
   echo "      ./build.sh"
 else
   echo "==> applying this bundle's transforms -> contoso_served.*"
-  for sql in "${sqls[@]}"; do
-    echo "    $(basename "$sql")"
-    grep -v '^[[:space:]]*--' "$sql" | duckdb "$DB" || { echo "!! failed: $sql"; exit 1; }
+  # IN PASSES, NOT ALPHABETICALLY: a view binds when it is created, and a value set cut from a served
+  # view (contoso5_brand <- dim_product) sorts before the view it reads. Each pass applies what it
+  # can; a pass that applies nothing while some remain is a real failure and stops the build.
+  pending=("${sqls[@]}")
+  while [ ${#pending[@]} -gt 0 ]; do
+    next=()
+    for sql in "${pending[@]}"; do
+      if grep -v '^[[:space:]]*--' "$sql" | duckdb "$DB" 2>/dev/null; then
+        echo "    $(basename "$sql")"
+      else
+        next+=("$sql")
+      fi
+    done
+    if [ ${#next[@]} -eq ${#pending[@]} ]; then
+      for sql in "${next[@]}"; do
+        echo "!! failed: $sql"; grep -v '^[[:space:]]*--' "$sql" | duckdb "$DB"
+      done
+      exit 1
+    fi
+    pending=("${next[@]}")
   done
 fi
 
