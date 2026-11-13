@@ -20,7 +20,7 @@ The online store is recorded as a location, but it is not a place. Questions abo
 
 ```
   declared at   ontology/concepts/location.yaml#readings.channel
-                ontology/relations/dim_location.yaml#columns.location_code.rules
+                data/datasets/dim_location.yaml#columns.location_code.rules
   realized by   mac.canon.population_select  (kind resolution)   default: physical
                 physical: location_code != -1
                 online: location_code = -1

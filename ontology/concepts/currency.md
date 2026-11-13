@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - enumeration
 - confidence:I
+resource: table://dim_currency
 ---
 
 The money a sale is denominated in: five ISO codes, pointed at by every sale and by both ends of every exchange rate. The account is knowledge/currency.md.
@@ -23,7 +24,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `dim_currency` — key `currency_code` — semantics: [`ontology/relations/dim_currency.yaml`](../relations/dim_currency.md)
+- `dim_currency` — key `currency_code` — semantics: [`data/datasets/dim_currency.yaml`](../../data/datasets/dim_currency.md)
 
 ## Grain
 
@@ -33,9 +34,9 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `currency_code` | string | key | — | — | — | — | — | — |
+| `currency_code` | string | key | — | — | — | — | the currency's code. Five are used across the sales: USD, EUR, GBP, CAD, AUD. | — |
 
-_Declared per column, over 1 column: type 1 of 1 · role 1 of 1 · identity 0 of 1 · measure 0 of 1 · rulings 0 of 1 · register 0 of 1 · description 0 of 1 · joins → 0 of 1. An em dash is a column for which nothing is declared._
+_Declared per column, over 1 column: type 1 of 1 · role 1 of 1 · identity 0 of 1 · measure 0 of 1 · rulings 0 of 1 · register 0 of 1 · description 1 of 1 · joins → 0 of 1. An em dash is a column for which nothing is declared._
 
 ## Axes
 

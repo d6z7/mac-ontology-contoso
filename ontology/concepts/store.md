@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - entity
 - confidence:I
+resource: table://dim_store
 ---
 
 THE PREMISES Contoso sells from — a shop that stood on one place for one trading period, with its own name, floor area, opening date and closing date. It is what every sale is recorded against.
@@ -25,7 +26,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `dim_store` — key `store_key` — semantics: [`ontology/relations/dim_store.yaml`](../relations/dim_store.md)
+- `dim_store` — key `store_key` — semantics: [`data/datasets/dim_store.yaml`](../../data/datasets/dim_store.md)
 
 ## Grain
 
@@ -35,17 +36,17 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `store_key` | integer | key | — | — | finer_than `store_code` | — | — | — |
-| `store_code` | integer | key | -> Location | — | — | — | — | [Location](location.md) |
-| `store_name` | string | dimension | — | — | label_of `store_code` (common) | — | — | — |
-| `country_code` | string | dimension | — | — | — | — | — | [Country](country.md) |
-| `state` | string | dimension | — | — | — | — | — | — |
-| `open_date` | date | dimension | — | — | — | — | — | — |
-| `close_date` | date | dimension | — | — | — | — | — | — |
-| `status_annotation` | string | dimension | — | — | — | — | — | — |
-| `square_metres` | integer | measure | — | stock · m2 | — | — | — | — |
+| `store_key` | integer | key | — | — | finer_than `store_code` | — | THE PREMISES — one row per shop per trading period, and the grain every sale is recorded against: `v_contoso5_sales_line.store_key` points here, never at the site. A shop has its own name, floor area, opening date and closing date, because those are properties of premises and not of a place. `999999` is the online outlet. A PLACE MAY HOLD A SUCCESSION OF PREMISES, which is why this is finer than `location_code` and why the two must never be used interchangeably: summing floor area over premises counts a re-let site once per tenancy, and counting premises answers a different question from counting sites. The `finer_than` ruling below is what says so to a reader. | — |
+| `store_code` | integer | key | -> Location | — | — | — | THE SITE code: several store rows can share it over time. The value -1 is the ONLINE PLACEHOLDER and not a place — it is how the physical/online channel split is declared (rule Store.channel: `physical` is <> -1, `online` is = -1). | [Location](location.md) |
+| `store_name` | string | dimension | — | — | label_of `store_code` (common) | — | the store's name as a reader would see it. 'Online store' is the single non-physical outlet. A reading that finds the online channel by MATCHING THIS NAME is right by luck; the channel is the `location_code` predicate. | — |
+| `country_code` | string | dimension | — | — | — | — | the country the store trades in. The online store carries '--', the sentinel dim_country names 'Online' and country.exclusion.sentinel_is_not_a_country excludes — so this column cannot attribute an internet sale to a real country. | [Country](country.md) |
+| `state` | string | dimension | — | — | — | — | the state, province or region the store sits in, within its country. | — |
+| `open_date` | date | dimension | — | — | — | — | the day the store opened for trade. | — |
+| `close_date` | date | dimension | — | — | — | — | the day the store closed, or null if it is still trading. THE TRADING-STATE COLUMN: `active` is this being null (store.resolution.active_is_the_absent_close_date). | — |
+| `status_annotation` | string | dimension | — | — | — | — | why a store stopped trading, where the source said: blank for a trading store, 'Closed' or 'Restructured' for an ended one, null on the online placeholder. Prose from the source, not a closed vocabulary of this bundle's own (rule Store.trading). | — |
+| `square_metres` | integer | measure | — | stock · m2 | — | — | the store's floor area in square metres. | — |
 
-_Declared per column, over 9 columns: type 9 of 9 · role 9 of 9 · identity 1 of 9 · measure 1 of 9 · rulings 2 of 9 · register 0 of 9 · description 0 of 9 · joins → 2 of 9. An em dash is a column for which nothing is declared._
+_Declared per column, over 9 columns: type 9 of 9 · role 9 of 9 · identity 1 of 9 · measure 1 of 9 · rulings 2 of 9 · register 0 of 9 · description 9 of 9 · joins → 2 of 9. An em dash is a column for which nothing is declared._
 
 ## Axes
 

@@ -12,19 +12,19 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `ProductKey` | integer | PK |  |
-| `ProductCode` | string | value |  |
-| `ProductName` | string | value |  |
-| `Manufacturer` | string | value |  |
-| `Brand` | string | value |  |
-| `Color` | string | value |  |
-| `WeightUnit` | string | value |  |
-| `Weight` | decimal | value |  |
-| `Cost` | decimal | value |  |
-| `Price` | decimal | value |  |
-| `CategoryKey` | integer | value |  |
-| `CategoryName` | string | value |  |
-| `SubCategoryKey` | integer | value |  |
-| `SubCategoryName` | string | value |  |
+| column | type | role |
+|---|---|---|
+| `ProductKey` | integer | PK |
+| `ProductCode` | string | value |
+| `ProductName` | string | value |
+| `Manufacturer` | string | value |
+| `Brand` | string | value |
+| `Color` | string | value |
+| `WeightUnit` | string | value |
+| `Weight` | decimal | value |
+| `Cost` | decimal | value |
+| `Price` | decimal | value |
+| `CategoryKey` | integer | value |
+| `CategoryName` | string | value |
+| `SubCategoryKey` | integer | value |
+| `SubCategoryName` | string | value |

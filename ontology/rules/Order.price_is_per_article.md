@@ -19,7 +19,7 @@ An unqualified price means what the customer paid per article: the net amount di
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.net_amount.readings.price
+  declared at   data/datasets/v_contoso5_sales_line.yaml#columns.net_amount.readings.price
   realized by   mac.canon.ratio_select  (kind aggregation)   default: price_per_article
                 price_per_article: denominator: quantity
   executed by   canons/ratio_select.py — WHICH DENOMINATOR a named ratio divides by. The twin of population_select: that one maps a word a reader says to the ROWS a concept has

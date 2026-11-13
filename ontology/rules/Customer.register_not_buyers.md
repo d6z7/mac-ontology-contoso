@@ -18,7 +18,7 @@ The customer register is wider than the buyers: a customer is a person on the re
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/dim_customer.yaml#columns.customer_key.rules
+  declared at   data/datasets/dim_customer.yaml#columns.customer_key.rules
   tested by     (nothing names a question)
 ```
 

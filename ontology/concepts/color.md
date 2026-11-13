@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - enumeration
 - confidence:I
+resource: table://dim_product
 ---
 
 The colour a product comes in — the one attribute that on its own makes a new SKU: "E400 Green" and "E400 Orange" are different products. The account is knowledge/color.md.
@@ -23,7 +24,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `dim_product` — key `product_key` — semantics: [`ontology/relations/dim_product.yaml`](../relations/dim_product.md)
+- `dim_product` — key `product_key` — semantics: [`data/datasets/dim_product.yaml`](../../data/datasets/dim_product.md)
 
 ## Grain
 
@@ -33,10 +34,10 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `color` | string | dimension | — | — | — | — | — | — |
-| `product_key` | integer | key | -> Product | — | — | — | — | — |
+| `color` | string | dimension | — | — | — | — | the product's colour. | — |
+| `product_key` | integer | key | -> Product | — | — | — | the row key: one row per product. | — |
 
-_Declared per column, over 2 columns: type 2 of 2 · role 2 of 2 · identity 1 of 2 · measure 0 of 2 · rulings 0 of 2 · register 0 of 2 · description 0 of 2 · joins → 0 of 2. An em dash is a column for which nothing is declared._
+_Declared per column, over 2 columns: type 2 of 2 · role 2 of 2 · identity 1 of 2 · measure 0 of 2 · rulings 0 of 2 · register 0 of 2 · description 2 of 2 · joins → 0 of 2. An em dash is a column for which nothing is declared._
 
 ## Axes
 

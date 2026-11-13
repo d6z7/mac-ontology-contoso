@@ -2,7 +2,7 @@
 type: Dataset
 title: 'Clean: contoso5_state'
 description: AI-friendly clean shape the ontology binds to
-relation: null
+relation: contoso_served.contoso5_state
 tags:
 - CONTOSO5
 - dataset
@@ -11,82 +11,31 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `code` | string | PK |  |
+| column | type | role |
+|---|---|---|
+| `code` | string | PK |
 
-## Rows
+## What a question may do
 
-- The rows of this relation live in a FILE: format `csv` · `data/lookups/contoso5_state.lookup.csv` · 67 row(s) measured.
+### Details
 
-| `code` |
-|---|
-| Alaska |
-| Arkansas |
-| Armagh |
-| Australian Capital Territory |
-| Ayrshire |
-| Basse-Normandie |
-| Belfast |
-| Berlin |
-| Blaenau Gwent |
-| Brandenburg |
-| Caltanissetta |
-| Connecticut |
-| Corse |
-| Delaware |
-| Drenthe |
-| Dungannon and South Tyrone |
-| Enna |
-| Fermanagh |
-| Flevoland |
-| Franche-Comté |
-| Freie Hansestadt Bremen |
-| Freistaat Thüringen |
-| Friesland |
-| Groningen |
-| Hamburg |
-| Hawaii |
-| Hessen |
-| Idaho |
-| Iowa |
-| Kansas |
-| La Réunion |
-| Limousin |
-| Maine |
-| Martinique |
-| Mayotte |
-| Mecklenburg-Vorpommern |
-| Mississippi |
-| Montana |
-| Nebraska |
-| Nevada |
-| New Brunswick |
-| New Hampshire |
-| New Mexico |
-| Newfoundland and Labrador |
-| North Dakota |
-| North Down |
-| Northern Territory |
-| Northwest Territories |
-| Nunavut |
-| Online |
-| Oregon |
-| Pesaro |
-| Rhode Island |
-| Saarland |
-| Sachsen-Anhalt |
-| South Australia |
-| South Carolina |
-| South Dakota |
-| Tasmania |
-| Utah |
-| Victoria |
-| Washington DC |
-| West Virginia |
-| Western Australia |
-| Wyoming |
-| Yukon |
-| Zeeland |
+- **Schema version** — 0.3.1-develop
+- **Confidence** — C
+- **Provenance** — authored
+- **Source** — CONTOSO5
 
-_All 67 row(s) — this IS the complete mapping._
+### Key
+
+- One row is identified by `code`.
+
+### Columns
+
+| column | key | offers | references | rulings |
+|---|---|---|---|---|
+| `code` | **key** | — | — | — |
+
+_Declared per column, over 1 column: offers 0 of 1 · references 0 of 1 · rulings 0 of 1. An em dash is a column for which nothing is declared._
+
+### Bound by
+
+_No concept binds this relation through `grounding.bindings[]`, so nothing in the ontology reads these column facts._

@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - enumeration
 - confidence:I
+resource: table://dim_product
 ---
 
 How Contoso groups what it sells: categories, each over several sub-categories, both carried as names on the product row (rule ProductCategory.level). The account is knowledge/product_category.md.
@@ -23,7 +24,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `dim_product` — key `product_key` — semantics: [`ontology/relations/dim_product.yaml`](../relations/dim_product.md)
+- `dim_product` — key `product_key` — semantics: [`data/datasets/dim_product.yaml`](../../data/datasets/dim_product.md)
 
 ## Grain
 
@@ -33,11 +34,11 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `category_name` | string | dimension | — | — | — | — | — | — |
-| `sub_category_name` | string | dimension | — | — | finer_than `category_name` | — | — | — |
-| `product_key` | integer | key | -> Product | — | — | — | — | — |
+| `category_name` | string | dimension | — | — | — | — | the product's top-level category. | — |
+| `sub_category_name` | string | dimension | — | — | finer_than `category_name` | — | the product's sub-category, one level below `category_name`. Which of the two a question means is a declared ambiguity (product_category.ambiguity.which_level). | — |
+| `product_key` | integer | key | -> Product | — | — | — | the row key: one row per product. | — |
 
-_Declared per column, over 3 columns: type 3 of 3 · role 3 of 3 · identity 1 of 3 · measure 0 of 3 · rulings 1 of 3 · register 0 of 3 · description 0 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
+_Declared per column, over 3 columns: type 3 of 3 · role 3 of 3 · identity 1 of 3 · measure 0 of 3 · rulings 1 of 3 · register 0 of 3 · description 3 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
 
 ## Axes
 

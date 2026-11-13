@@ -20,7 +20,7 @@ A store is active while it has no closing date. A store with a closing date is c
 
 ```
   declared at   ontology/concepts/store.yaml#readings.trading
-                ontology/relations/dim_store.yaml#columns.status_annotation.rules
+                data/datasets/dim_store.yaml#columns.status_annotation.rules
   realized by   mac.canon.population_select  (kind resolution)   default: active
                 closed: close_date is not null None
                 active: everything `closed` is not

@@ -12,9 +12,9 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `Date` | timestamp | PK |  |
-| `FromCurrency` | string | PK |  |
-| `ToCurrency` | string | PK |  |
-| `Exchange` | decimal | value |  |
+| column | type | role |
+|---|---|---|
+| `Date` | timestamp | PK |
+| `FromCurrency` | string | PK |
+| `ToCurrency` | string | PK |
+| `Exchange` | decimal | value |

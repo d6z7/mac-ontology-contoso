@@ -8,7 +8,7 @@ tags:
 ---
 
 
-21 relation(s) · 432,322 row(s) measured · 74 column(s) · 14 declared reference(s) · 0 register pointer(s)
+21 relation(s) · 432,322 row(s) measured · 74 column(s) · 15 declared reference(s) · 0 register pointer(s)
 
 | relation | rows | columns | key | references | registers |
 |---|---:|---:|---|---:|---:|
@@ -29,7 +29,7 @@ tags:
 | [dim_currency](dim_currency.md) | 5 | 1 | `currency_code` | 1 | 0 |
 | [dim_customer](dim_customer.md) | 104990 | 10 | `customer_key` | 1 | 0 |
 | [dim_location](dim_location.md) | 67 | 5 | `location_code` | 1 | 0 |
-| [dim_product](dim_product.md) | 2517 | 10 | `product_key` | 1 | 0 |
+| [dim_product](dim_product.md) | 2517 | 10 | `product_key` | 2 | 0 |
 | [dim_store](dim_store.md) | 74 | 9 | `store_key` | 2 | 0 |
 | [v_contoso5_fx_rate](v_contoso5_fx_rate.md) | 100450 | 4 | `date_day` + `from_currency` + `to_currency` | 2 | 0 |
 | [v_contoso5_sales_line](v_contoso5_sales_line.md) | 223974 | 19 | `order_key` + `line_number` | 5 | 0 |

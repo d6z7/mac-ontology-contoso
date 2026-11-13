@@ -3,7 +3,7 @@ type: Index
 title: CONTOSO5 data plane
 ---
 
-8 sources · 61 quality issues · 8 transforms · 21 clean datasets
+8 sources · 61 quality issues · 21 transforms · 21 clean datasets
 
 **Resolution scoreboard** — how the recorded impurities are dissolved by the gold transforms: **0 ✓ resolved · 0 ◐ partial · 0 ⚠ open gap**.
 

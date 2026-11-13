@@ -2,7 +2,7 @@
 type: Dataset
 title: 'Clean: contoso5_category_name'
 description: AI-friendly clean shape the ontology binds to
-relation: null
+relation: contoso_served.contoso5_category_name
 tags:
 - CONTOSO5
 - dataset
@@ -11,27 +11,35 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `code` | string | PK |  |
+| column | type | role |
+|---|---|---|
+| `code` | string | PK |
 
 ## Referenced by
 
 - `dim_product.category_name` → `contoso5_category_name.code`
 
-## Rows
+## What a question may do
 
-- The rows of this relation live in a FILE: format `csv` · `data/lookups/contoso5_category_name.lookup.csv` · 8 row(s) measured.
+### Details
 
-| `code` |
-|---|
-| Audio |
-| Cameras and camcorders |
-| Cell phones |
-| Computers |
-| Games and Toys |
-| Home Appliances |
-| Music, Movies and Audio Books |
-| TV and Video |
+- **Schema version** — 0.3.1-develop
+- **Confidence** — C
+- **Provenance** — authored
+- **Source** — CONTOSO5
 
-_All 8 row(s) — this IS the complete mapping._
+### Key
+
+- One row is identified by `code`.
+
+### Columns
+
+| column | key | offers | references | rulings |
+|---|---|---|---|---|
+| `code` | **key** | — | — | — |
+
+_Declared per column, over 1 column: offers 0 of 1 · references 0 of 1 · rulings 0 of 1. An em dash is a column for which nothing is declared._
+
+### Bound by
+
+_No concept binds this relation through `grounding.bindings[]`, so nothing in the ontology reads these column facts._

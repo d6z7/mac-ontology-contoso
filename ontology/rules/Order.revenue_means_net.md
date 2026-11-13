@@ -19,7 +19,7 @@ state: ruled
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.net_amount.rules
+  declared at   data/datasets/v_contoso5_sales_line.yaml#columns.net_amount.rules
   tested by     ADV-22  'Total Revenue'  board: pass (stale)
   tested by     MQ-12  'Total sales in dollars'  board: pass (stale)
 ```

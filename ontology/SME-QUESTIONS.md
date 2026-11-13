@@ -1,47 +1,33 @@
 ---
 type: Doc
 title: SME questions — ontology
-description: 6 questions and 59 sign-off requests the model and its tests put to an SME
+description: 3 questions and 59 sign-off requests the model and its tests put to an SME
 tags:
 - CONTOSO5
 - sme-questions
 ---
 
-What the model and its tests ask a subject-matter expert: **6 question(s)** and **59 sign-off request(s)**, 65 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
+What the model and its tests ask a subject-matter expert: **3 question(s)** and **59 sign-off request(s)**, 62 row(s) in all. Consolidated from the register (model conditions and change-record `sme` blocks), concept open-question fields and test oracles flagged needs-SME; projected from ontology_quality.json and acceptance/sme_needs.json, so it stays in sync.
 
 Conversation status is not part of this projection; it lives in the bundle's SME question ledger.
 
-Rows by origin: register 65
+Rows by origin: register 62
 
-## Questions — 6
+## Questions — 3
 
 ### `concept:brand#enumeration`
 
 - origin: register · owner role: not declared · concept: [brand](concepts/brand.md)
-- source: `ontology/concepts/brand.yaml` → `values`
+- source: `ontology/concepts/brand.yaml` → `grounding.source.columns[].offers.axis.closure`
 
 > Is “Brand” a closed set of values? If it is, what are all of its valid values?
 
 ### `concept:color#enumeration`
 
 - origin: register · owner role: not declared · concept: [color](concepts/color.md)
-- source: `ontology/concepts/color.yaml` → `values`
+- source: `ontology/concepts/color.yaml` → `grounding.source.columns[].offers.axis.closure`
 
 > Is “Colour” a closed set of values? If it is, what are all of its valid values?
-
-### `concept:country#enumeration`
-
-- origin: register · owner role: not declared · concept: [country](concepts/country.md)
-- source: `ontology/concepts/country.yaml` → `values`
-
-> Is “Country” a closed set of values? If it is, what are all of its valid values?
-
-### `concept:currency#enumeration`
-
-- origin: register · owner role: not declared · concept: [currency](concepts/currency.md)
-- source: `ontology/concepts/currency.yaml` → `values`
-
-> Is “Currency” a closed set of values? If it is, what are all of its valid values?
 
 ### `concept:exchange_rate#measure_type`
 
@@ -49,13 +35,6 @@ Rows by origin: register 65
 - source: `ontology/concepts/exchange_rate.yaml` → `grounding.source.columns[].offers.aggregate.type`
 
 > How does the measure “Exchange Rate” add up across its axes? No column of it declares `offers.aggregate.type` that mac.concept.column.measure_type resolves.
-
-### `concept:product_category#enumeration`
-
-- origin: register · owner role: not declared · concept: [product_category](concepts/product_category.md)
-- source: `ontology/concepts/product_category.yaml` → `values`
-
-> Is “Product Category” a closed set of values? If it is, what are all of its valid values?
 
 ## Sign-offs — 59
 

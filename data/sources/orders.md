@@ -12,11 +12,11 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `OrderKey` | integer | PK |  |
-| `CustomerKey` | integer | FK |  |
-| `StoreKey` | integer | FK |  |
-| `DT` | timestamp | FK |  |
-| `DeliveryDate` | timestamp | FK |  |
-| `CurrencyCode` | string | value |  |
+| column | type | role |
+|---|---|---|
+| `OrderKey` | integer | PK |
+| `CustomerKey` | integer | FK |
+| `StoreKey` | integer | FK |
+| `DT` | timestamp | FK |
+| `DeliveryDate` | timestamp | FK |
+| `CurrencyCode` | string | value |

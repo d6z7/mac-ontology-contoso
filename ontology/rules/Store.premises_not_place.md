@@ -19,7 +19,7 @@ A store is the premises Contoso sells from: a shop standing on one place for one
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/dim_location.yaml#columns.units_ever_here.rules
+  declared at   data/datasets/dim_location.yaml#columns.units_ever_here.rules
   tested by     RC05  'How many stores do we have?'  board: pass (stale)
 ```
 

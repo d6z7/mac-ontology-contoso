@@ -20,7 +20,7 @@ state: ruled
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.order_date.rules
+  declared at   data/datasets/v_contoso5_sales_line.yaml#columns.order_date.rules
   tested by     MQ-21  'Did we sell anything in this quarter'  board: pass (stale)
 ```
 

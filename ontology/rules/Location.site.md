@@ -18,10 +18,10 @@ Site and location name the same notion: the place a store stands on, described b
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/dim_location.yaml#columns.location_code.rules
+  declared at   data/datasets/dim_location.yaml#columns.location_code.rules
   tested by     (nothing names a question)
 ```
 
 ## What was said
 
-> *"dont call it site code ... just site, location, city"* — operator, 2026-10-24 (`ontology/relations/dim_location.yaml`)
+> *"dont call it site code ... just site, location, city"* — operator, 2026-10-24 (`data/datasets/dim_location.yaml`)

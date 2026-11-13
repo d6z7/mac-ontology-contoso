@@ -20,7 +20,7 @@ The placeholder country code `--` is not a country. It marks rows that carry no 
 
 ```
   declared at   ontology/concepts/country.yaml#readings.rows
-                ontology/relations/dim_country.yaml#columns.country_code.rules
+                data/datasets/dim_country.yaml#columns.country_code.rules
   realized by   mac.canon.population_select  (kind resolution)   default: real
                 real: country_code != '--'
                 sentinel: country_code = '--'

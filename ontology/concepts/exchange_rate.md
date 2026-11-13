@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - measure
 - confidence:I
+resource: table://v_contoso5_fx_rate
 ---
 
 What one currency was worth in another on one day: a quoted rate over a date and an ordered pair of currencies. The account is knowledge/exchange_rate.md.
@@ -23,7 +24,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `v_contoso5_fx_rate` — key `date_day`, `from_currency`, `to_currency` — semantics: [`ontology/relations/v_contoso5_fx_rate.yaml`](../relations/v_contoso5_fx_rate.md)
+- `v_contoso5_fx_rate` — key `date_day`, `from_currency`, `to_currency` — semantics: [`data/datasets/v_contoso5_fx_rate.yaml`](../../data/datasets/v_contoso5_fx_rate.md)
 
 ## Grain
 
@@ -33,12 +34,12 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `date_day` | date | key | — | — | — | — | — | — |
-| `from_currency` | string | key | — | — | — | — | — | [Currency](currency.md) |
-| `to_currency` | string | key | — | — | scoped_by `from_currency` | — | — | [Currency](currency.md) |
-| `rate` | decimal | measure | — | intensive · to-currency per from-currency | — | — | — | — |
+| `date_day` | date | key | — | — | — | — | the day the rate held. | — |
+| `from_currency` | string | key | — | — | — | — | the currency being converted FROM. Every currency appears as a source, so the view is a full matrix of currency pairs and not a USD-only lookup. | [Currency](currency.md) |
+| `to_currency` | string | key | — | — | scoped_by `from_currency` | — | the currency being converted TO. | [Currency](currency.md) |
+| `rate` | decimal | measure | — | intensive · to-currency per from-currency | — | — | what one unit of `from_currency` was worth in `to_currency` on `date_day`. Same-currency pairs are present and are exactly 1. THE AMOUNTS ON A SALES LINE ARE ALREADY USD, so converting them with this is how a figure silently becomes the wrong currency. | — |
 
-_Declared per column, over 4 columns: type 4 of 4 · role 4 of 4 · identity 0 of 4 · measure 1 of 4 · rulings 1 of 4 · register 0 of 4 · description 0 of 4 · joins → 2 of 4. An em dash is a column for which nothing is declared._
+_Declared per column, over 4 columns: type 4 of 4 · role 4 of 4 · identity 0 of 4 · measure 1 of 4 · rulings 1 of 4 · register 0 of 4 · description 4 of 4 · joins → 2 of 4. An em dash is a column for which nothing is declared._
 
 ## Axes
 

@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - entity
 - confidence:I
+resource: table://dim_location
 ---
 
 THE PLACE a store stands on — a country and a state, and nothing that belongs to the shop itself. Floor area, opening and closing dates are properties of PREMISES and live on Store; what a place owns is where it is.
@@ -26,7 +27,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `dim_location` — key `location_code` — semantics: [`ontology/relations/dim_location.yaml`](../relations/dim_location.md)
+- `dim_location` — key `location_code` — semantics: [`data/datasets/dim_location.yaml`](../../data/datasets/dim_location.md)
 
 ## Grain
 
@@ -36,13 +37,13 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `location_code` | integer | key | — | — | — | — | — | — |
-| `country_code` | string | dimension | — | — | — | — | — | [Country](country.md) |
-| `country_name` | string | dimension | — | — | label_of `country_code` (long) | — | — | — |
-| `state` | string | dimension | — | — | finer_than `country_code` | — | — | — |
-| `units_ever_here` | integer | measure | — | precomputed · units | — | — | — | — |
+| `location_code` | integer | key | — | — | — | — | THE SITE ITSELF — one row per site, which is what makes this relation the place a question about sites should be answered from. The value -1 is the online placeholder and not a place (rule Location.channel). SURFACES WIDENED 2026-10-24 BY THE OPERATOR, verbatim: "dont call it site code ... just site, location, city" (rule Location.site). `city` WAS ASKED FOR AND WITHDRAWN THE SAME DAY: this bundle has NO STORE CITY — the source store table carries a state or region and no city or town, and `GeoAreaKey` is another site identifier rather than a link to a geography. City exists only on the CUSTOMER (`dim_customer.city`), where it is declared personally identifying (`offers.suppressed: DQ-IDENTIFYING-DIM_CUSTOMER-CITY`) and says where a customer lives, not where a shop stands. Surfacing `city` here would bind "which cities" to an INTEGER site code and present codes as city names; unbound, the question fails to bind and the walk says so, which is the correct outcome for a fact this bundle does not hold. | — |
+| `country_code` | string | dimension | — | — | — | — | the country the site sits in. | [Country](country.md) |
+| `country_name` | string | dimension | — | — | label_of `country_code` (long) | — | the name of the country the site sits in, carried here as well as on dim_country. | — |
+| `state` | string | dimension | — | — | finer_than `country_code` | — | the state, province or region the site sits in. | — |
+| `units_ever_here` | integer | measure | — | precomputed · units | — | — | how many store rows have ever stood at this site. A site re-tenanted has several store rows over time; each is one premises (rule Store.premises_not_place). | — |
 
-_Declared per column, over 5 columns: type 5 of 5 · role 5 of 5 · identity 0 of 5 · measure 1 of 5 · rulings 2 of 5 · register 0 of 5 · description 0 of 5 · joins → 1 of 5. An em dash is a column for which nothing is declared._
+_Declared per column, over 5 columns: type 5 of 5 · role 5 of 5 · identity 0 of 5 · measure 1 of 5 · rulings 2 of 5 · register 0 of 5 · description 5 of 5 · joins → 1 of 5. An em dash is a column for which nothing is declared._
 
 ## Axes
 

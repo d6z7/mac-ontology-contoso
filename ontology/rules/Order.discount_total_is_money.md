@@ -20,7 +20,7 @@ A total discount is money: the sum of what was given away below the regular pric
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.discount_amount.rules
+  declared at   data/datasets/v_contoso5_sales_line.yaml#columns.discount_amount.rules
   tested by     (nothing names a question)
 ```
 

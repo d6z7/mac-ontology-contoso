@@ -2,7 +2,7 @@
 type: Dataset
 title: 'Clean: contoso5_country_code'
 description: AI-friendly clean shape the ontology binds to
-relation: null
+relation: contoso_served.contoso5_country_code
 tags:
 - CONTOSO5
 - dataset
@@ -11,29 +11,37 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `code` | string | PK |  |
-| `label` | string | value |  |
+| column | type | role |
+|---|---|---|
+| `code` | string | PK |
+| `label` | string | value |
 
 ## Referenced by
 
 - `dim_country.country_code` → `contoso5_country_code.code`
 
-## Rows
+## What a question may do
 
-- The rows of this relation live in a FILE: format `csv` · `data/lookups/contoso5_country_code.lookup.csv` · 9 row(s) measured.
+### Details
 
-| `code` | `label` |
-|---|---|
-| -- | Online |
-| AU | Australia |
-| CA | Canada |
-| DE | Germany |
-| FR | France |
-| GB | United Kingdom |
-| IT | Italy |
-| NL | Netherlands |
-| US | United States |
+- **Schema version** — 0.3.1-develop
+- **Confidence** — C
+- **Provenance** — authored
+- **Source** — CONTOSO5
 
-_All 9 row(s) — this IS the complete mapping._
+### Key
+
+- One row is identified by `code`.
+
+### Columns
+
+| column | key | offers | references | rulings |
+|---|---|---|---|---|
+| `code` | **key** | — | — | — |
+| `label` | — | axis `categorical` | — | label_of `code` (long) |
+
+_Declared per column, over 2 columns: offers 1 of 2 · references 0 of 2 · rulings 1 of 2. An em dash is a column for which nothing is declared._
+
+### Bound by
+
+_No concept binds this relation through `grounding.bindings[]`, so nothing in the ontology reads these column facts._

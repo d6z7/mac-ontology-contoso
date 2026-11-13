@@ -12,22 +12,22 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `Date` | timestamp | PK |  |
-| `DateKey` | string | value |  |
-| `Year` | integer | value |  |
-| `YearQuarter` | string | value |  |
-| `YearQuarterNumber` | integer | value |  |
-| `Quarter` | string | value |  |
-| `YearMonth` | string | value |  |
-| `YearMonthShort` | string | value |  |
-| `YearMonthNumber` | integer | value |  |
-| `Month` | string | value |  |
-| `MonthShort` | string | value |  |
-| `MonthNumber` | integer | value |  |
-| `DayofWeek` | string | value |  |
-| `DayofWeekShort` | string | value |  |
-| `DayofWeekNumber` | integer | value |  |
-| `WorkingDay` | integer | value |  |
-| `WorkingDayNumber` | integer | value |  |
+| column | type | role |
+|---|---|---|
+| `Date` | timestamp | PK |
+| `DateKey` | string | value |
+| `Year` | integer | value |
+| `YearQuarter` | string | value |
+| `YearQuarterNumber` | integer | value |
+| `Quarter` | string | value |
+| `YearMonth` | string | value |
+| `YearMonthShort` | string | value |
+| `YearMonthNumber` | integer | value |
+| `Month` | string | value |
+| `MonthShort` | string | value |
+| `MonthNumber` | integer | value |
+| `DayofWeek` | string | value |
+| `DayofWeekShort` | string | value |
+| `DayofWeekNumber` | integer | value |
+| `WorkingDay` | integer | value |
+| `WorkingDayNumber` | integer | value |

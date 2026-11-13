@@ -12,12 +12,12 @@ tags:
 
 ## Columns
 
-| column | type | role | reference |
-|---|---|---|---|
-| `OrderKey` | integer | PK |  |
-| `RowNumber` | integer | PK |  |
-| `ProductKey` | integer | FK |  |
-| `Quantity` | integer | value |  |
-| `UnitPrice` | decimal | value |  |
-| `NetPrice` | decimal | value |  |
-| `UnitCost` | decimal | value |  |
+| column | type | role |
+|---|---|---|
+| `OrderKey` | integer | PK |
+| `RowNumber` | integer | PK |
+| `ProductKey` | integer | FK |
+| `Quantity` | integer | value |
+| `UnitPrice` | decimal | value |
+| `NetPrice` | decimal | value |
+| `UnitCost` | decimal | value |

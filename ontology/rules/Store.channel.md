@@ -22,8 +22,8 @@ A store is a shop you can walk into. The online channel is recorded as a store, 
 
 ```
   declared at   ontology/concepts/store.yaml#readings.channel
-                ontology/relations/dim_store.yaml#columns.store_code.rules
-                ontology/relations/v_contoso5_sales_line.yaml#columns.channel.rules
+                data/datasets/dim_store.yaml#columns.store_code.rules
+                data/datasets/v_contoso5_sales_line.yaml#columns.channel.rules
   realized by   mac.canon.population_select  (kind resolution)   default: physical
                 physical: store_code != -1
                 online: store_code = -1

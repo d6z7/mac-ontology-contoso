@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - entity
 - confidence:I
+resource: table://dim_product
 ---
 
 A thing Contoso sells, at the level the shelf knows it: a SKU. The account is knowledge/product.md.
@@ -23,7 +24,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `dim_product` — key `product_key` — semantics: [`ontology/relations/dim_product.yaml`](../relations/dim_product.md)
+- `dim_product` — key `product_key` — semantics: [`data/datasets/dim_product.yaml`](../../data/datasets/dim_product.md)
 
 ## Grain
 
@@ -33,16 +34,16 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `product_key` | integer | key | -> Product | — | — | — | — | — |
-| `product_code` | string | dimension | — | — | label_of `product_key` (code) | — | — | — |
-| `product_name` | string | dimension | — | — | label_of `product_key` (common) | — | — | — |
-| `manufacturer` | string | dimension | — | — | label_of `brand` (legal) | — | — | — |
-| `brand` | string | dimension | — | — | — | — | — | — |
-| `color` | string | dimension | — | — | — | — | — | — |
-| `category_name` | string | dimension | — | — | — | — | — | — |
-| `sub_category_name` | string | dimension | — | — | finer_than `category_name` | — | — | — |
+| `product_key` | integer | key | -> Product | — | — | — | the row key: one row per product. | — |
+| `product_code` | string | dimension | — | — | label_of `product_key` (code) | — | the product's code in the source system, unique across all rows. | — |
+| `product_name` | string | dimension | — | — | label_of `product_key` (common) | — | the product's name as a reader would see it. | — |
+| `manufacturer` | string | dimension | — | — | label_of `brand` (legal) | — | who made the product. | — |
+| `brand` | string | dimension | — | — | — | — | the brand the product is sold under. Far fewer brands than products, so a question about brands wants the brands and not the products. | — |
+| `color` | string | dimension | — | — | — | — | the product's colour. | — |
+| `category_name` | string | dimension | — | — | — | — | the product's top-level category. | — |
+| `sub_category_name` | string | dimension | — | — | finer_than `category_name` | — | the product's sub-category, one level below `category_name`. Which of the two a question means is a declared ambiguity (product_category.ambiguity.which_level). | — |
 
-_Declared per column, over 8 columns: type 8 of 8 · role 8 of 8 · identity 1 of 8 · measure 0 of 8 · rulings 4 of 8 · register 0 of 8 · description 0 of 8 · joins → 0 of 8. An em dash is a column for which nothing is declared._
+_Declared per column, over 8 columns: type 8 of 8 · role 8 of 8 · identity 1 of 8 · measure 0 of 8 · rulings 4 of 8 · register 0 of 8 · description 8 of 8 · joins → 0 of 8. An em dash is a column for which nothing is declared._
 
 ## Axes
 

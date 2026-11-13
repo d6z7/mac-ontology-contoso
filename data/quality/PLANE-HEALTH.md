@@ -14,11 +14,11 @@ The structural health of this source's data plane — the same numbers the gates
 | link | count |
 |---|---|
 | raw sources | 8 |
-| transformations | 8 |
+| transformations | 21 |
 | served datasets | 21 |
 | ontology concepts | 11 |
 
-⚠️ **13** dataset(s) with no transformation: `contoso5_brand`, `contoso5_category_name`, `contoso5_channel`, `contoso5_color`, `contoso5_continent`, `contoso5_country_code`, `contoso5_currency`, `contoso5_gender`, `contoso5_manufacturer`, `contoso5_state`, `contoso5_status`, `contoso5_store_name`, `contoso5_sub_category_name`
+✅ every dataset is produced by a transformation.
 
 ## Lineage coverage
 
@@ -26,6 +26,19 @@ How many of each served view's columns descend from an upstream column. Computed
 
 | dataset | covered | of | coverage | |
 |---|---|---|---|---|
+| `contoso5_brand` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_category_name` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_channel` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_color` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_continent` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_country_code` | 0 | 2 | 0% | 🔴 explains nothing |
+| `contoso5_currency` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_gender` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_manufacturer` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_state` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_status` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_store_name` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_sub_category_name` | 0 | 1 | 0% | 🔴 explains nothing |
 | `dim_country` | 2 | 2 | 100% | 🟢 |
 | `dim_currency` | 1 | 1 | 100% | 🟢 |
 | `dim_customer` | 9 | 10 | 90% | 🟢 |
@@ -35,15 +48,15 @@ How many of each served view's columns descend from an upstream column. Computed
 | `v_contoso5_fx_rate` | 4 | 4 | 100% | 🟢 |
 | `v_contoso5_sales_line` | 13 | 19 | 68% | 🟢 |
 
-**Overall — 51/60 columns (85%) trace to an upstream column.**
+**Overall — 51/74 columns (69%) trace to an upstream column.**
 
 ## Change protocol — autodiscovery vs manual
 
 | | count |
 |---|---|
 | objects harvested (self-documenting) | 0 |
-| objects authored / tuned (need a protocol entry) | 0 |
-| objects with no provenance stamp | 37 |
+| objects authored / tuned (need a protocol entry) | 21 |
+| objects with no provenance stamp | 29 |
 | protocolled interventions | 0 |
 
 ⚠️ no `interventions/ledger.yaml` yet — manual changes are unrecorded.

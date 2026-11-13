@@ -6,6 +6,7 @@ tags:
 - CONTOSO5
 - enumeration
 - confidence:I
+resource: table://dim_country
 ---
 
 A country Contoso sells in. The placeholder code `--` is not a country: it marks rows with no real country, such as the online store (rule Country.rows). The account is knowledge/country.md.
@@ -23,7 +24,7 @@ _No content available — the bundle declares nothing for this section._
 
 ## Grounded in
 
-- `dim_country` — key `country_code` — semantics: [`ontology/relations/dim_country.yaml`](../relations/dim_country.md)
+- `dim_country` — key `country_code` — semantics: [`data/datasets/dim_country.yaml`](../../data/datasets/dim_country.md)
 
 ## Grain
 
@@ -33,10 +34,10 @@ _No content available — the bundle declares nothing for this section._
 
 | column | type | role | identity | measure | rulings | register | description | joins → |
 |---|---|---|---|---|---|---|---|---|
-| `country_code` | string | key | — | — | — | — | — | — |
-| `country_name` | string | dimension | — | — | label_of `country_code` (long) | — | — | — |
+| `country_code` | string | key | — | — | — | — | the country's code. The value `--` is a placeholder and not a country: it is where the source put the online store's country, and counting it would add a country Contoso does not sell in (rule Country.rows). | — |
+| `country_name` | string | dimension | — | — | label_of `country_code` (long) | — | the country's name as a reader would see it. 'Online' is the name the sentinel carries and is not a place. | — |
 
-_Declared per column, over 2 columns: type 2 of 2 · role 2 of 2 · identity 0 of 2 · measure 0 of 2 · rulings 1 of 2 · register 0 of 2 · description 0 of 2 · joins → 0 of 2. An em dash is a column for which nothing is declared._
+_Declared per column, over 2 columns: type 2 of 2 · role 2 of 2 · identity 0 of 2 · measure 0 of 2 · rulings 1 of 2 · register 0 of 2 · description 2 of 2 · joins → 0 of 2. An em dash is a column for which nothing is declared._
 
 ## Axes
 

@@ -27,7 +27,7 @@ state is a GAP to flag, not a value to guess.
 | [Product Category](../ontology/concepts/product_category.md) | enumeration | `dim_product` | nothing declared |
 | [Store](../ontology/concepts/store.md) | entity | `dim_store` | nothing declared |
 
-## How to answer — per-concept playbooks (`contract`: `default_reading`, `resolution`, `rules`)
+## How to answer — per-concept playbooks (`contract`: `default_reading`, `rules`)
 
 ### Order — `v_contoso5_sales_line`
 

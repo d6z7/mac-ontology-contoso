@@ -19,6 +19,6 @@ An exchange rate's target currency means something only together with its source
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/v_contoso5_fx_rate.yaml#columns.to_currency.rules
+  declared at   data/datasets/v_contoso5_fx_rate.yaml#columns.to_currency.rules
   tested by     AGG-14  'What is the total net revenue converted to USD?'  board: pass (stale)
 ```

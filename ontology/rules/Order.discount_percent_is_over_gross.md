@@ -19,7 +19,7 @@ A discount percentage is the money given away divided by the gross amount before
 ## How and where it is implemented
 
 ```
-  declared at   ontology/relations/v_contoso5_sales_line.yaml#columns.discount_amount.readings.percent
+  declared at   data/datasets/v_contoso5_sales_line.yaml#columns.discount_amount.readings.percent
   realized by   mac.canon.ratio_select  (kind aggregation)   default: percent
                 percent: denominator: gross_amount
   executed by   canons/ratio_select.py — WHICH DENOMINATOR a named ratio divides by. The twin of population_select: that one maps a word a reader says to the ROWS a concept has
