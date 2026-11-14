@@ -14,7 +14,7 @@ A person on Contoso's customer register, each with a name, a birth date and a pl
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.1-develop
+- **Schema version** — 0.4.0-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-10-29
 

@@ -14,7 +14,7 @@ A thing Contoso sells, at the level the shelf knows it: a SKU. The account is kn
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.1-develop
+- **Schema version** — 0.4.0-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-29
 

@@ -14,7 +14,7 @@ The colour a product comes in — the one attribute that on its own makes a new 
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.1-develop
+- **Schema version** — 0.4.0-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-30
 

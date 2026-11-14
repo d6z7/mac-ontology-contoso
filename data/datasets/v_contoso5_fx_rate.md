@@ -27,7 +27,7 @@ tags:
 
 ### Details
 
-- **Schema version** — 0.3.1-develop
+- **Schema version** — 0.4.0-develop
 - **Confidence** — C
 - **Provenance** — authored
 - **Source** — CONTOSO5

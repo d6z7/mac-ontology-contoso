@@ -16,7 +16,7 @@ THIS DEFINITION CARRIES NO COUNTS, by the operator's ruling of 2026-10-24: "you 
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.1-develop
+- **Schema version** — 0.4.0-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-30
 

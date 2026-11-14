@@ -14,7 +14,7 @@ What one currency was worth in another on one day: a quoted rate over a date and
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.1-develop
+- **Schema version** — 0.4.0-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-29
 

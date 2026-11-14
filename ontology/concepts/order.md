@@ -14,7 +14,7 @@ One customer's purchase on one date, counted by distinct `order_key` over the li
 ## Details
 
 - **Version** — 1.1
-- **Schema version** — 0.3.1-develop
+- **Schema version** — 0.4.0-develop
 - **Governance owner** — operator
 - **Last reviewed** — 2026-09-30
 
