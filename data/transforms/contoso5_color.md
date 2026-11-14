@@ -21,8 +21,8 @@ Realized by `contoso5_color.sql` (a deployed `CREATE VIEW`) — open it with the
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_color` · kinds: computed
+`contoso_served.contoso5_color` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT color_ |  | computed |
+| `code` | `dim_product.color` |  | passthrough |

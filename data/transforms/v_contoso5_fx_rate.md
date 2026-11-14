@@ -26,7 +26,7 @@ Realized by `v_contoso5_fx_rate.sql` (a deployed `CREATE VIEW`) — open it with
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `date_day` | `currencyexchange.Date` → _CAST(x.Date AS DATE)_ |  | transform |
-| `from_currency` | `currencyexchange.FromCurrency` |  | passthrough |
-| `to_currency` | `currencyexchange.ToCurrency` |  | passthrough |
-| `rate` | `currencyexchange.Exchange` |  | passthrough |
+| `date_day` | `currencyexchange."date"` → _CAST(x."date" AS DATE)_ |  | transform |
+| `from_currency` | `currencyexchange."fromcurrency"` |  | passthrough |
+| `to_currency` | `currencyexchange."tocurrency"` |  | passthrough |
+| `rate` | `currencyexchange."exchange"` |  | passthrough |

@@ -21,8 +21,8 @@ Realized by `contoso5_status.sql` (a deployed `CREATE VIEW`) — open it with th
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_status` · kinds: computed
+`contoso_served.contoso5_status` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT status_annotation_ |  | computed |
+| `code` | `dim_store.status_annotation` |  | passthrough |

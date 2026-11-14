@@ -26,13 +26,13 @@ Realized by `dim_product.sql` (a deployed `CREATE VIEW`) — open it with the **
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `product_key` | `product.ProductKey` |  | passthrough |
-| `product_code` | `product.ProductCode` |  | passthrough |
-| `product_name` | `product.ProductName` |  | passthrough |
-| `manufacturer` | `product.Manufacturer` |  | passthrough |
-| `brand` | `product.Brand` |  | passthrough |
-| `color` | `product.Color` → _(upper(substr(p.Color, 1, 1)) || substr(p.Color, 2))_ |  | transform |
-| `category_name` | `product.CategoryName` |  | passthrough |
-| `sub_category_name` | `product.SubCategoryName` |  | passthrough |
-| `weight` | `product.Weight` |  | passthrough |
-| `weight_unit` | `product.WeightUnit` |  | passthrough |
+| `product_key` | `product."productkey"` |  | passthrough |
+| `product_code` | `product."productcode"` |  | passthrough |
+| `product_name` | `product."productname"` |  | passthrough |
+| `manufacturer` | `product."manufacturer"` |  | passthrough |
+| `brand` | `product."brand"` |  | passthrough |
+| `color` | `product."color"` → _UPPER(SUBSTR(p."color", 1, 1)) || SUBSTR(p."color", 2)_ |  | transform |
+| `category_name` | `product."categoryname"` |  | passthrough |
+| `sub_category_name` | `product."subcategoryname"` |  | passthrough |
+| `weight` | `product."weight"` |  | passthrough |
+| `weight_unit` | `product."weightunit"` |  | passthrough |

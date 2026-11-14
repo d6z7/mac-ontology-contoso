@@ -26,8 +26,8 @@ Realized by `dim_location.sql` (a deployed `CREATE VIEW`) — open it with the *
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `location_code` | `store.StoreCode` |  | passthrough |
-| `country_code` | `store.CountryCode` → _any_value(s.CountryCode)_ |  | transform |
-| `country_name` | `store.CountryName` → _any_value(s.CountryName)_ |  | transform |
-| `state` | `store.State` → _any_value(s.State)_ |  | transform |
-| `units_ever_here` | _count_star()_ |  | computed |
+| `location_code` | `store."storecode"` |  | passthrough |
+| `country_code` | `store."countrycode"` → _ARBITRARY(s."countrycode")_ |  | transform |
+| `country_name` | `store."countryname"` → _ARBITRARY(s."countryname")_ |  | transform |
+| `state` | `store."state"` → _ARBITRARY(s."state")_ |  | transform |
+| `units_ever_here` | _COUNT(*)_ |  | computed |

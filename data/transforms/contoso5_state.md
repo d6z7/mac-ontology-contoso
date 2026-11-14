@@ -21,8 +21,8 @@ Realized by `contoso5_state.sql` (a deployed `CREATE VIEW`) — open it with the
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_state` · kinds: computed
+`contoso_served.contoso5_state` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT state_ |  | computed |
+| `code` | `dim_location.state` |  | passthrough |

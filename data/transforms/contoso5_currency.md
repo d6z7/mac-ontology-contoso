@@ -21,8 +21,8 @@ Realized by `contoso5_currency.sql` (a deployed `CREATE VIEW`) — open it with 
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_currency` · kinds: computed
+`contoso_served.contoso5_currency` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT currency_code_ |  | computed |
+| `code` | `dim_currency.currency_code` |  | passthrough |

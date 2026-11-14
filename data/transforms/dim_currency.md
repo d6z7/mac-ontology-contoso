@@ -26,4 +26,4 @@ Realized by `dim_currency.sql` (a deployed `CREATE VIEW`) — open it with the *
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `currency_code` | `sales.CurrencyCode` |  | passthrough |
+| `currency_code` | `sales."currencycode"` |  | passthrough |

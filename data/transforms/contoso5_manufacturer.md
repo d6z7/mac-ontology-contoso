@@ -21,8 +21,8 @@ Realized by `contoso5_manufacturer.sql` (a deployed `CREATE VIEW`) — open it w
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_manufacturer` · kinds: computed
+`contoso_served.contoso5_manufacturer` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT manufacturer_ |  | computed |
+| `code` | `dim_product.manufacturer` |  | passthrough |

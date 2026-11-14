@@ -21,8 +21,8 @@ Realized by `contoso5_category_name.sql` (a deployed `CREATE VIEW`) — open it 
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_category_name` · kinds: computed
+`contoso_served.contoso5_category_name` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT category_name_ |  | computed |
+| `code` | `dim_product.category_name` |  | passthrough |

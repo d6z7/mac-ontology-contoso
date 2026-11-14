@@ -26,19 +26,19 @@ How many of each served view's columns descend from an upstream column. Computed
 
 | dataset | covered | of | coverage | |
 |---|---|---|---|---|
-| `contoso5_brand` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_category_name` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_channel` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_color` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_continent` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_country_code` | 0 | 2 | 0% | 🔴 explains nothing |
-| `contoso5_currency` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_gender` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_manufacturer` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_state` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_status` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_store_name` | 0 | 1 | 0% | 🔴 explains nothing |
-| `contoso5_sub_category_name` | 0 | 1 | 0% | 🔴 explains nothing |
+| `contoso5_brand` | 1 | 1 | 100% | 🟢 |
+| `contoso5_category_name` | 1 | 1 | 100% | 🟢 |
+| `contoso5_channel` | 1 | 1 | 100% | 🟢 |
+| `contoso5_color` | 1 | 1 | 100% | 🟢 |
+| `contoso5_continent` | 1 | 1 | 100% | 🟢 |
+| `contoso5_country_code` | 2 | 2 | 100% | 🟢 |
+| `contoso5_currency` | 1 | 1 | 100% | 🟢 |
+| `contoso5_gender` | 1 | 1 | 100% | 🟢 |
+| `contoso5_manufacturer` | 1 | 1 | 100% | 🟢 |
+| `contoso5_state` | 1 | 1 | 100% | 🟢 |
+| `contoso5_status` | 1 | 1 | 100% | 🟢 |
+| `contoso5_store_name` | 1 | 1 | 100% | 🟢 |
+| `contoso5_sub_category_name` | 1 | 1 | 100% | 🟢 |
 | `dim_country` | 2 | 2 | 100% | 🟢 |
 | `dim_currency` | 1 | 1 | 100% | 🟢 |
 | `dim_customer` | 9 | 10 | 90% | 🟢 |
@@ -48,7 +48,7 @@ How many of each served view's columns descend from an upstream column. Computed
 | `v_contoso5_fx_rate` | 4 | 4 | 100% | 🟢 |
 | `v_contoso5_sales_line` | 13 | 19 | 68% | 🟢 |
 
-**Overall — 51/74 columns (69%) trace to an upstream column.**
+**Overall — 65/74 columns (88%) trace to an upstream column.**
 
 ## Change protocol — autodiscovery vs manual
 

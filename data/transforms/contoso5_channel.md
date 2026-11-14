@@ -21,8 +21,8 @@ Realized by `contoso5_channel.sql` (a deployed `CREATE VIEW`) — open it with t
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_channel` · kinds: computed
+`contoso_served.contoso5_channel` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT channel_ |  | computed |
+| `code` | `v_contoso5_sales_line.channel` |  | passthrough |

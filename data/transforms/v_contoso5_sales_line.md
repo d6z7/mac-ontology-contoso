@@ -28,22 +28,22 @@ Realized by `v_contoso5_sales_line.sql` (a deployed `CREATE VIEW`) — open it w
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `order_key` | `sales.OrderKey` |  | passthrough |
-| `line_number` | `sales.LineNumber` |  | passthrough |
-| `order_date` | `sales.OrderDate` → _CAST(s.OrderDate AS DATE)_ |  | transform |
-| `delivery_date` | `sales.DeliveryDate` → _CAST(s.DeliveryDate AS DATE)_ |  | transform |
-| `customer_key` | `sales.CustomerKey` |  | passthrough |
-| `store_key` | `sales.StoreKey` |  | passthrough |
-| `product_key` | `sales.ProductKey` |  | passthrough |
-| `channel` | `sales.StoreKey` → _CASE WHEN ((s.StoreKey = 999999)) THEN ('online') ELSE 'physical' END_ |  | transform |
-| `currency_code` | `sales.CurrencyCode` |  | passthrough |
-| `quantity` | `sales.Quantity` |  | passthrough |
-| `net_price` | `sales.NetPrice` |  | passthrough |
-| `unit_price` | `sales.UnitPrice` |  | passthrough |
-| `unit_cost` | `sales.UnitCost` |  | passthrough |
-| `sale_country_code` | _CASE WHEN ((s.StoreKey = 999999)) THEN ((SELECT c.Country FROM main.customer AS c WHERE (c.CustomerKey = s.CustomerKey))) ELSE (SELECT st.CountryCode FROM main._ |  | computed |
-| `net_amount` | _(s.Quantity * s.NetPrice)_ |  | computed |
-| `gross_amount` | _(s.Quantity * s.UnitPrice)_ |  | computed |
-| `cost_amount` | _(s.Quantity * s.UnitCost)_ |  | computed |
-| `discount_amount` | _(s.Quantity * (s.UnitPrice - s.NetPrice))_ |  | computed |
-| `margin_amount` | _(s.Quantity * (s.NetPrice - s.UnitCost))_ |  | computed |
+| `order_key` | `sales."orderkey"` |  | passthrough |
+| `line_number` | `sales."linenumber"` |  | passthrough |
+| `order_date` | `sales."orderdate"` → _CAST(s."orderdate" AS DATE)_ |  | transform |
+| `delivery_date` | `sales."deliverydate"` → _CAST(s."deliverydate" AS DATE)_ |  | transform |
+| `customer_key` | `sales."customerkey"` |  | passthrough |
+| `store_key` | `sales."storekey"` |  | passthrough |
+| `product_key` | `sales."productkey"` |  | passthrough |
+| `channel` | `sales."storekey"` → _CASE WHEN s."storekey" = 999999 THEN 'online' ELSE 'physical' END_ |  | transform |
+| `currency_code` | `sales."currencycode"` |  | passthrough |
+| `quantity` | `sales."quantity"` |  | passthrough |
+| `net_price` | `sales."netprice"` |  | passthrough |
+| `unit_price` | `sales."unitprice"` |  | passthrough |
+| `unit_cost` | `sales."unitcost"` |  | passthrough |
+| `sale_country_code` | _CASE WHEN s."storekey" = 999999 THEN (SELECT c."country" AS "country" FROM main.customer AS c WHERE c."customerkey" = s."customerkey") ELSE (SELECT st."countryc_ |  | computed |
+| `net_amount` | _s."quantity" * s."netprice"_ |  | computed |
+| `gross_amount` | _s."quantity" * s."unitprice"_ |  | computed |
+| `cost_amount` | _s."quantity" * s."unitcost"_ |  | computed |
+| `discount_amount` | _s."quantity" * (s."unitprice" - s."netprice")_ |  | computed |
+| `margin_amount` | _s."quantity" * (s."netprice" - s."unitcost")_ |  | computed |
