@@ -21,8 +21,8 @@ Realized by `contoso5_continent.sql` (a deployed `CREATE VIEW`) — open it with
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_continent` · kinds: computed
+`contoso_served.contoso5_continent` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT continent_ |  | computed |
+| `code` | `dim_customer.continent` |  | passthrough |

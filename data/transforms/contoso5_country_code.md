@@ -21,9 +21,9 @@ Realized by `contoso5_country_code.sql` (a deployed `CREATE VIEW`) — open it w
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_country_code` · kinds: computed
+`contoso_served.contoso5_country_code` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT country_code_ |  | computed |
-| `label` | _country_name_ |  | computed |
+| `code` | `dim_country.country_code` |  | passthrough |
+| `label` | `dim_country.country_name` |  | passthrough |

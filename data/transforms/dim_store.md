@@ -26,12 +26,12 @@ Realized by `dim_store.sql` (a deployed `CREATE VIEW`) — open it with the **SQ
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `store_key` | `store.StoreKey` |  | passthrough |
-| `store_code` | `store.StoreCode` |  | passthrough |
-| `store_name` | `store.Description` |  | passthrough |
-| `country_code` | `store.CountryCode` |  | passthrough |
-| `state` | `store.State` |  | passthrough |
-| `open_date` | `store.OpenDate` → _CAST(s.OpenDate AS DATE)_ |  | transform |
-| `close_date` | `store.CloseDate` → _CAST(s.CloseDate AS DATE)_ |  | transform |
-| `square_metres` | `store.SquareMeters` |  | passthrough |
-| `status_annotation` | _CASE WHEN ((s.CloseDate IS NULL)) THEN (s.Status) WHEN (("nullif"("trim"(s.Status), '') IS NOT NULL)) THEN (s.Status) WHEN (EXISTS(SELECT 1 FROM main.store AS l_ |  | computed |
+| `store_key` | `store."storekey"` |  | passthrough |
+| `store_code` | `store."storecode"` |  | passthrough |
+| `store_name` | `store."description"` |  | passthrough |
+| `country_code` | `store."countrycode"` |  | passthrough |
+| `state` | `store."state"` |  | passthrough |
+| `open_date` | `store."opendate"` → _CAST(s."opendate" AS DATE)_ |  | transform |
+| `close_date` | `store."closedate"` → _CAST(s."closedate" AS DATE)_ |  | transform |
+| `square_metres` | `store."squaremeters"` |  | passthrough |
+| `status_annotation` | _CASE WHEN s."closedate" IS NULL THEN s."status" WHEN NOT NULLIF(TRIM(s."status"), '') IS NULL THEN s."status" WHEN EXISTS(SELECT 1 AS "1" FROM main.store AS l W_ |  | computed |

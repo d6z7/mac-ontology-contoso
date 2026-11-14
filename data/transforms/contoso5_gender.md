@@ -21,8 +21,8 @@ Realized by `contoso5_gender.sql` (a deployed `CREATE VIEW`) — open it with th
 
 ## Lineage (column-level)
 
-`contoso_served.contoso5_gender` · kinds: computed
+`contoso_served.contoso5_gender` · kinds: passthrough
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `code` | _DISTINCT gender_ |  | computed |
+| `code` | `dim_customer.gender` |  | passthrough |

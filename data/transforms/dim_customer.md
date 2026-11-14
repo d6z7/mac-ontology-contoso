@@ -26,13 +26,13 @@ Realized by `dim_customer.sql` (a deployed `CREATE VIEW`) — open it with the *
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `customer_key` | `customer.CustomerKey` |  | passthrough |
-| `continent` | `customer.Continent` |  | passthrough |
-| `country_code` | `customer.Country` |  | passthrough |
-| `state` | `customer.State` |  | passthrough |
-| `city` | `customer.City` |  | passthrough |
-| `gender` | `customer.Gender` |  | passthrough |
-| `birth_date` | `customer.Birthday` → _CAST(c.Birthday AS DATE)_ |  | transform |
-| `valid_from` | `customer.StartDT` → _CAST(c.StartDT AS DATE)_ |  | transform |
-| `valid_to` | `customer.EndDT` → _CAST(c.EndDT AS DATE)_ |  | transform |
-| `customer_name` | _((c.GivenName || ' ') || c.Surname)_ |  | computed |
+| `customer_key` | `customer."customerkey"` |  | passthrough |
+| `continent` | `customer."continent"` |  | passthrough |
+| `country_code` | `customer."country"` |  | passthrough |
+| `state` | `customer."state"` |  | passthrough |
+| `city` | `customer."city"` |  | passthrough |
+| `gender` | `customer."gender"` |  | passthrough |
+| `birth_date` | `customer."birthday"` → _CAST(c."birthday" AS DATE)_ |  | transform |
+| `valid_from` | `customer."startdt"` → _CAST(c."startdt" AS DATE)_ |  | transform |
+| `valid_to` | `customer."enddt"` → _CAST(c."enddt" AS DATE)_ |  | transform |
+| `customer_name` | _c."givenname" || ' ' || c."surname"_ |  | computed |

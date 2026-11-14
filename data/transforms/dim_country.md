@@ -26,5 +26,5 @@ Realized by `dim_country.sql` (a deployed `CREATE VIEW`) — open it with the **
 
 | output column | ← from | rule | kind |
 |---|---|---|---|
-| `country_code` | `store.CountryCode` |  | passthrough |
-| `country_name` | `store.CountryName` → _any_value(s.CountryName)_ |  | transform |
+| `country_code` | `store."countrycode"` |  | passthrough |
+| `country_name` | `store."countryname"` → _ARBITRARY(s."countryname")_ |  | transform |
