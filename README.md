@@ -26,9 +26,8 @@ The layout is fixed by the standard (GRAMMAR_v3 §1); every reference points tow
 | `ontology/concepts/` | 11 concepts, each on ONE dataset, with its `.md` account |
 | `ontology/edges.yaml` | how two concepts join |
 | `ontology/rules/` | one decision per file: what it says, who said it, its state, its behaviour |
-| `decisions/` | the bundle's records: `MODELLING-LOG.md`, `tombstones.yaml` (0.4.0 retirements) |
 | `acceptance/` | questions, approved reference answers (SQL + expected value), oracles |
-| `evidence/` | measurements and the v3 migration's record (`evidence/v3-migration/`) |
+| `evidence/` | the bundle's records: `MODELLING-LOG.md` (why the model is shaped as it is), `tombstones.yaml` (the 0.4.0 retirements), measurements, and the v3 migration's record (`evidence/v3-migration/`) |
 | `pages/` | generated pages and projections (never authored) |
 
 ## Build the warehouse
