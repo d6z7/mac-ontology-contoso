@@ -80,3 +80,26 @@ What grammar v3 needs that the 0.4.0 bundle `mac-ontology-contoso` does not have
 - `build.sh` — outside the v3 layout (script.bundle_shell)
 - `contoso5.mac` — outside the v3 layout (declaration.resource_description)
 - `tools_trace_extract.py` — outside the v3 layout (script.bundle_local)
+
+## Status after the in-place migration (2026-11-17, branch 0.4.1-develop)
+
+**10 closed, 11 open.** Validator (v3work/v3schema/validate_v3.py): 3 errors, all LAYOUT on kept bundle files
+the v3 layout has no home for (`README.md`, `build.sh` = this bundle's deploy, `tools_trace_extract.py`).
+Compile-back (mac_compile_v3 -> 0.4.0 compiler): COMPILES, 0 errors.
+
+| # | status | how |
+|---|---|---|
+| 1 | closed | `connector: mac.connector.duckdb/1` — the major the connection file declares (`spec_version: mac.connector/1`) |
+| 2 | OPEN — operator | Color.one_spelling dropped to `proposed` (Y-7): its words stand only in dim_product.sql comments |
+| 3 | closed | Country.where_we_have_customers stays `ruled`: the words stand verbatim in the decision record it cites (FINDINGS-2026-10-19 …operator-rulings) |
+| 4 | OPEN — operator | Customer.active_on_the_reference_date dropped to `proposed`: its three sayings cite no record |
+| 5 | OPEN — operator | Location.site dropped to `proposed`: its words stand only in data/datasets/dim_location.yaml |
+| 6 | closed | Order.cost_is_procurement stays `ruled`: the words stand verbatim in MODELLING-LOG Entry 19 (now evidence/MODELLING-LOG.md), the record it cites |
+| 7–11, 13 | OPEN — operator | already `proposed`; no record carries operator words for Order.discount_percent_is_over_gross, Order.is_the_purchase, Order.margin_ratio_is_named, Order.period, Order.price_is_per_article, Product.price_is_dated (HANDOVER-2026-10-26 gives the reasons "verbatim in substance", not verbatim) |
+| 12 | closed | Order.price_terms stays `ruled`: "UnitPrice = regular/list price per unit" stands verbatim in HANDOVER-2026-10-26, the record it cites |
+| 14 | OPEN — operator | Store.premises_not_place dropped to `proposed`: its words were in the replaced 0.4.0 concept file only |
+| 15 | closed | Store.trading stays `ruled`: DNA-2026-09-25 quotes the 2026-09-30 ruling verbatim; added as the first `said` entry |
+| 16–18 | closed | the three references were circular: contoso5_country_code / contoso5_currency / contoso5_category_name are each cut FROM the column that referenced them (their .sql: `SELECT DISTINCT … FROM` dim_country / dim_currency / dim_product). Dropping them loses no fact; data/lineage/*.transform.yaml records the derivation |
+| 19 | OPEN — operator | the SME ledger (format mac.sme-questions/1) is dialogue written through the console's ledger store, with participants, owner and status; this public bundle has no ledger and no SME participants. The 18 findings' SME fields stay in governance/sme-history/migrated-finding-fields.yaml until the operator decides whether contoso gets a ledger |
+| 20 | closed | governance/tombstones.yaml -> evidence/tombstones.yaml, declared out of scope (project.out_of_scope.evidence_tombstones_yaml); no v3 declaration cites it |
+| 21 | closed | ontology/MODELLING-LOG.md -> evidence/MODELLING-LOG.md; citations repointed. (evidence/, not decisions/: a root decisions/ makes the 0.4.0 reference checker resolve every `meaning-as-code#decisions/…` citation inside the bundle) |
