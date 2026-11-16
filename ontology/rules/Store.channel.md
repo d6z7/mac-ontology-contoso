@@ -23,10 +23,11 @@ A store is a shop you can walk into. The online channel is recorded as a store, 
 ```
   declared at   ontology/concepts/store.yaml#readings.channel
                 data/datasets/dim_store.yaml#columns.store_code.rules
+                data/datasets/dim_store.yaml#columns.is_online.rules
                 data/datasets/v_contoso5_sales_line.yaml#columns.channel.rules
   realized by   mac.canon.population_select  (kind resolution)   default: physical
-                physical: store_code != -1
-                online: store_code = -1
+                physical: is_online = False
+                online: is_online = True
   executed by   planner/populations.py — WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own 
   tested by     RC05  'How many stores do we have?'  board: pass (stale)
   tested by     MQ-07  'What is the revenue from the online store?'  board: pass (stale)

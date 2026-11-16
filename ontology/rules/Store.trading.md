@@ -21,11 +21,13 @@ A store is active while it has no closing date. A store with a closing date is c
 ```
   declared at   ontology/concepts/store.yaml#readings.trading
                 data/datasets/dim_store.yaml#columns.status_annotation.rules
+                data/datasets/dim_store.yaml#columns.is_shut.rules
+                data/datasets/dim_store.yaml#columns.is_restructured.rules
   realized by   mac.canon.population_select  (kind resolution)   default: active
                 closed: close_date is not null None
                 active: everything `closed` is not
-                shut: status_annotation = 'Closed'
-                restructured: status_annotation = 'Restructured'
+                shut: is_shut = True
+                restructured: is_restructured = True
   executed by   planner/populations.py — WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own 
   tested by     RC05  'How many stores do we have?'  board: pass (stale)
   tested by     RC08  'How many stores are closed?'  board: pass (stale)

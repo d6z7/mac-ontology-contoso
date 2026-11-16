@@ -36,8 +36,9 @@ _No content available — the bundle declares nothing for this section._
 |---|---|---|---|---|---|---|---|---|
 | `country_code` | string | key | — | — | — | — | the country's code. The value `--` is a placeholder and not a country: it is where the source put the online store's country, and counting it would add a country Contoso does not sell in (rule Country.rows). | — |
 | `country_name` | string | dimension | — | — | label_of `country_code` (long) | — | the country's name as a reader would see it. 'Online' is the name the sentinel carries and is not a place. | — |
+| `is_placeholder` | boolean | housekeeping | — | — | — | — | true on the placeholder row whose code is `--` (no real country, such as the online store's), false on every real country, never empty. Made by the transform so that rule Country.rows reads its `real` and `sentinel` rows from a true/false column instead of a stored value; it selects exactly the rows the code test selected. Offered to no question on its own: a question reaches it through the rule. | — |
 
-_Declared per column, over 2 columns: type 2 of 2 · role 2 of 2 · identity 0 of 2 · measure 0 of 2 · rulings 1 of 2 · register 0 of 2 · description 2 of 2 · joins → 0 of 2. An em dash is a column for which nothing is declared._
+_Declared per column, over 3 columns: type 3 of 3 · role 3 of 3 · identity 0 of 3 · measure 0 of 3 · rulings 1 of 3 · register 0 of 3 · description 3 of 3 · joins → 0 of 3. An em dash is a column for which nothing is declared._
 
 ## Axes
 

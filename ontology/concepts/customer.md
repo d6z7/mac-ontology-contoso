@@ -43,9 +43,10 @@ _No content available — the bundle declares nothing for this section._
 | `gender` | string | dimension | — | — | — | — | the customer's recorded gender. | — |
 | `birth_date` | date | dimension | — | — | — | — | the customer's date of birth. | — |
 | `valid_from` | date | housekeeping | — | — | — | — | the day this customer record became valid — the start of the validity window that says whether a customer is active on a reference date. The register is kept as a history, so a sale could in principle be attributed to where the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should be. | — |
-| `valid_to` | date | housekeeping | — | — | — | — | the day this customer record stopped being valid — the end of the validity window. Paired with `valid_from`. | — |
+| `valid_to` | date | housekeeping | — | — | — | — | the day this customer record stopped being valid — the last day of the validity window, as the source states it. Paired with `valid_from`. | — |
+| `valid_end` | date | housekeeping | — | — | — | — | the day after `valid_to`: the half-open end of the validity window, made by the transform. A record is valid on a day when `valid_from` is on or before it and `valid_end` is after it, which selects exactly the records `valid_to` on or after that day selects. It is what rule Customer.active_on_the_reference_date reads; offered to no question on its own. | — |
 
-_Declared per column, over 10 columns: type 10 of 10 · role 10 of 10 · identity 0 of 10 · measure 0 of 10 · rulings 3 of 10 · register 0 of 10 · description 10 of 10 · joins → 1 of 10. An em dash is a column for which nothing is declared._
+_Declared per column, over 11 columns: type 11 of 11 · role 11 of 11 · identity 0 of 11 · measure 0 of 11 · rulings 3 of 11 · register 0 of 11 · description 11 of 11 · joins → 1 of 11. An em dash is a column for which nothing is declared._
 
 ## Axes
 

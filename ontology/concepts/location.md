@@ -42,8 +42,9 @@ _No content available — the bundle declares nothing for this section._
 | `country_name` | string | dimension | — | — | label_of `country_code` (long) | — | the name of the country the site sits in, carried here as well as on dim_country. | — |
 | `state` | string | dimension | — | — | finer_than `country_code` | — | the state, province or region the site sits in. | — |
 | `units_ever_here` | integer | measure | — | precomputed · units | — | — | how many store rows have ever stood at this site. A site re-tenanted has several store rows over time; each is one premises (rule Store.premises_not_place). | — |
+| `is_online` | boolean | housekeeping | — | — | — | — | true on the online placeholder (site code -1, which is not a place), false on every physical site, never empty. Made by the transform so that rule Location.channel reads `physical` as false and `online` as true instead of a stored value; it selects exactly the rows the code test selected. Offered to no question on its own: a question reaches it through the rule. | — |
 
-_Declared per column, over 5 columns: type 5 of 5 · role 5 of 5 · identity 0 of 5 · measure 1 of 5 · rulings 2 of 5 · register 0 of 5 · description 5 of 5 · joins → 1 of 5. An em dash is a column for which nothing is declared._
+_Declared per column, over 6 columns: type 6 of 6 · role 6 of 6 · identity 0 of 6 · measure 1 of 6 · rulings 2 of 6 · register 0 of 6 · description 6 of 6 · joins → 1 of 6. An em dash is a column for which nothing is declared._
 
 ## Axes
 

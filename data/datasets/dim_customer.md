@@ -23,6 +23,7 @@ tags:
 | `birth_date` | date | value |
 | `valid_from` | date | value |
 | `valid_to` | date | value |
+| `valid_end` | date | value |
 
 ## Foreign keys
 
@@ -59,11 +60,12 @@ tags:
 | `birth_date` | — | axis `time` · extremum `min`, `max` | — | — |
 | `valid_from` | — | — | — | — |
 | `valid_to` | — | — | — | — |
+| `valid_end` | — | — | — | — |
 
-_Declared per column, over 10 columns: offers 7 of 10 · references 0 of 10 · rulings 3 of 10. An em dash is a column for which nothing is declared._
+_Declared per column, over 11 columns: offers 7 of 11 · references 0 of 11 · rulings 3 of 11. An em dash is a column for which nothing is declared._
 
 ### Bound by
 
 *1 concept(s) read this relation — a change to a column's `offers` or `rulings` reaches every one of them.*
 
-- [Customer](../concepts/customer.md) — serves `customer_key`, `customer_name`, `continent`, `country_code`, `state`, `city`, `gender`, `birth_date`, `valid_from`, `valid_to`
+- [Customer](../concepts/customer.md) — serves `customer_key`, `customer_name`, `continent`, `country_code`, `state`, `city`, `gender`, `birth_date`, `valid_from`, `valid_to`, `valid_end`

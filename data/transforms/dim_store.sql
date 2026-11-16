@@ -16,7 +16,30 @@
 -- cast away here: a reader comparing a day to a day should not have to know that one side is
 -- 2019-11-03 00:00:00, and a question about a date should not have to spell one.
 --
+-- THE THREE TRUE/FALSE COLUMNS ARE DERIVED HERE, not written as literals in a rule (2026-11-16,
+-- grammar v3: a rule's rows read a column, true or false, never a stored value; "a derived field
+-- lives in the transform"). Each selects exactly the rows the literal it replaces selected:
+--   is_online        store_code = -1, the online outlet (rule Store.channel)
+--   is_shut          status_annotation = 'Closed' (rule Store.trading, option shut)
+--   is_restructured  status_annotation = 'Restructured' (rule Store.trading, option restructured)
+-- Each is TRUE or FALSE on every row, never null: a row with no status (the online placeholder) is
+-- neither shut nor restructured, which is what the literal test answered for it too. The status
+-- flags read the FILLED annotation below, so the one derivation of a blank status has one home.
 CREATE OR REPLACE VIEW contoso_served.dim_store AS
+SELECT
+  u.store_key,
+  u.store_code,
+  u.store_name,
+  u.country_code,
+  u.state,
+  u.open_date,
+  u.close_date,
+  u.status_annotation,
+  u.square_metres,
+  u.is_online,
+  coalesce(u.status_annotation = 'Closed', false)       AS is_shut,
+  coalesce(u.status_annotation = 'Restructured', false) AS is_restructured
+FROM (
 SELECT
   s."StoreKey"     AS store_key,          -- PK
   s."StoreCode"    AS store_code,      -- FK -> dim_location
@@ -43,5 +66,7 @@ SELECT
       THEN 'Restructured'
     ELSE 'Closed'
   END              AS status_annotation,  -- the landing's value where stated; derived where blank
-  s."SquareMeters" AS square_metres       -- owned by the UNIT, not the site
-FROM main.store s;
+  s."SquareMeters" AS square_metres,      -- owned by the UNIT, not the site
+  coalesce(s."StoreCode" = -1, false) AS is_online  -- the online outlet's site code is -1
+FROM main.store s
+) u;

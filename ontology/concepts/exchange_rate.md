@@ -65,7 +65,7 @@ _The fold is read from the framework registry (`measure_type.<type>.additivity.<
 
 **Referenced by** — these point at this concept:
 
-- [Order](order.md) — on `from_currency = 'USD'`
+- [Order](order.md) — on `from_currency`
 
 ## Source of record
 

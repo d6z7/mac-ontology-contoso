@@ -981,7 +981,7 @@
             "type": "string"
           },
           {
-            "description": "the reader-facing name of the country code beside it.",
+            "description": "the reader-facing name of the country code beside it. Its word ('country name') lives on the owning column, dim_country.country_name, which this column copies.",
             "key": false,
             "name": "label",
             "role": "value",
@@ -1137,6 +1137,13 @@
             "name": "country_name",
             "role": "value",
             "type": "string"
+          },
+          {
+            "description": "true on the placeholder row whose code is `--` (no real country, such as the online store's), false on every real country, never empty. Made by the transform so that rule Country.rows reads its `real` and `sentinel` rows from a true/false column instead of a stored value; it selects exactly the rows the code test selected. Offered to no question on its own: a question reaches it through the rule.",
+            "key": false,
+            "name": "is_placeholder",
+            "role": "value",
+            "type": "boolean"
           }
         ],
         "id": "dim_country",
@@ -1231,9 +1238,16 @@
             "type": "date"
           },
           {
-            "description": "the day this customer record stopped being valid \u2014 the end of the validity window. Paired with `valid_from`.",
+            "description": "the day this customer record stopped being valid \u2014 the last day of the validity window, as the source states it. Paired with `valid_from`.",
             "key": false,
             "name": "valid_to",
+            "role": "value",
+            "type": "date"
+          },
+          {
+            "description": "the day after `valid_to`: the half-open end of the validity window, made by the transform. A record is valid on a day when `valid_from` is on or before it and `valid_end` is after it, which selects exactly the records `valid_to` on or after that day selects. It is what rule Customer.active_on_the_reference_date reads; offered to no question on its own.",
+            "key": false,
+            "name": "valid_end",
             "role": "value",
             "type": "date"
           }
@@ -1282,6 +1296,13 @@
             "name": "units_ever_here",
             "role": "value",
             "type": "integer"
+          },
+          {
+            "description": "true on the online placeholder (site code -1, which is not a place), false on every physical site, never empty. Made by the transform so that rule Location.channel reads `physical` as false and `online` as true instead of a stored value; it selects exactly the rows the code test selected. Offered to no question on its own: a question reaches it through the rule.",
+            "key": false,
+            "name": "is_online",
+            "role": "value",
+            "type": "boolean"
           }
         ],
         "id": "dim_location",
@@ -1351,14 +1372,14 @@
             "type": "string"
           },
           {
-            "description": null,
+            "description": "the product's weight as the source gives it, in the unit named by `weight_unit` on the same row. NOT OFFERED TO A QUESTION: the column holds weights in several units and is empty for some products, so a sum, an average or a comparison across products would add one unit to another. Bringing every weight to one unit is a transform's job that has not been done (ontology/MODELLING-LOG.md), so no concept serves it.",
             "key": false,
             "name": "weight",
             "role": "value",
             "type": "decimal"
           },
           {
-            "description": null,
+            "description": "the unit the same row's `weight` is in, as the source spells it, blank where the source gives none. NOT OFFERED TO A QUESTION: it exists only to read `weight`, which is not offered until a transform brings every weight to one unit.",
             "key": false,
             "name": "weight_unit",
             "role": "value",
@@ -1383,14 +1404,14 @@
             "type": "integer"
           },
           {
-            "description": "THE SITE code: several store rows can share it over time. The value -1 is the ONLINE PLACEHOLDER and not a place \u2014 it is how the physical/online channel split is declared (rule Store.channel: `physical` is <> -1, `online` is = -1).",
+            "description": "THE SITE code: several store rows can share it over time. The value -1 is the ONLINE PLACEHOLDER and not a place. The transform turns it into `is_online`, which is what rule Store.channel reads (`physical` is false, `online` is true).",
             "key": true,
             "name": "store_code",
             "role": "foreign_key",
             "type": "integer"
           },
           {
-            "description": "the store's name as a reader would see it. 'Online store' is the single non-physical outlet. A reading that finds the online channel by MATCHING THIS NAME is right by luck; the channel is the `location_code` predicate.",
+            "description": "the store's name as a reader would see it. 'Online store' is the single non-physical outlet. A reading that finds the online channel by MATCHING THIS NAME is right by luck; the channel is `is_online` (rule Store.channel).",
             "key": false,
             "name": "store_name",
             "role": "value",
@@ -1437,6 +1458,27 @@
             "name": "square_metres",
             "role": "value",
             "type": "integer"
+          },
+          {
+            "description": "true on the online outlet (its site code is -1), false on every physical shop, never empty. Rule Store.channel reads `physical` as false and `online` as true.",
+            "key": false,
+            "name": "is_online",
+            "role": "value",
+            "type": "boolean"
+          },
+          {
+            "description": "true where the store closed for good (`status_annotation` is Closed), false otherwise, never empty. Rule Store.trading reads its `shut` option from it.",
+            "key": false,
+            "name": "is_shut",
+            "role": "value",
+            "type": "boolean"
+          },
+          {
+            "description": "true where the store closed and was replaced (`status_annotation` is Restructured), false otherwise, never empty. Rule Store.trading reads its `restructured` option from it.",
+            "key": false,
+            "name": "is_restructured",
+            "role": "value",
+            "type": "boolean"
           }
         ],
         "id": "dim_store",
@@ -1563,6 +1605,13 @@
             "key": true,
             "name": "currency_code",
             "role": "foreign_key",
+            "type": "string"
+          },
+          {
+            "description": "THE CURRENCY THE AMOUNTS ON THIS ROW ARE IN \u2014 USD on every line, made by the transform. The upstream publishes it and the warehouse confirms it: the source's own exchange rate on each line is the USD-to-line-currency rate. It is the source currency the exchange-rate edge joins on (order__converts_at__exchange_rate), so the join reads a column instead of a constant. Offered to no question on its own; `currency_code` is the currency a sale was transacted in.",
+            "key": false,
+            "name": "unit_currency",
+            "role": "value",
             "type": "string"
           },
           {
@@ -4024,7 +4073,8 @@
           "id": "Country.rows",
           "implemented_at": [
             "ontology/concepts/country.yaml#readings.rows",
-            "data/datasets/dim_country.yaml#columns.country_code.rules"
+            "data/datasets/dim_country.yaml#columns.country_code.rules",
+            "data/datasets/dim_country.yaml#columns.is_placeholder.rules"
           ],
           "keywords": [
             "country",
@@ -4381,7 +4431,8 @@
           "implemented_at": [
             "ontology/concepts/customer.yaml#readings.population",
             "data/datasets/dim_customer.yaml#columns.valid_from.rules",
-            "data/datasets/dim_customer.yaml#columns.valid_to.rules"
+            "data/datasets/dim_customer.yaml#columns.valid_to.rules",
+            "data/datasets/dim_customer.yaml#columns.valid_end.rules"
           ],
           "keywords": [
             "customer",
@@ -4506,8 +4557,8 @@
             },
             "concept": "order",
             "edge_id": "order__converts_at__exchange_rate",
-            "join_rule": "v_contoso5_sales_line.order_date = v_contoso5_fx_rate.date_day AND v_contoso5_sales_line.currency_code = v_contoso5_fx_rate.to_currency AND v_contoso5_fx_rate.from_currency = 'USD'",
-            "on": "from_currency = 'USD'",
+            "join_rule": "v_contoso5_sales_line.order_date = v_contoso5_fx_rate.date_day AND v_contoso5_sales_line.currency_code = v_contoso5_fx_rate.to_currency AND v_contoso5_sales_line.unit_currency = v_contoso5_fx_rate.from_currency",
+            "on": "from_currency",
             "title": "Order",
             "verified_by": null
           }
@@ -4695,7 +4746,8 @@
           "id": "Location.channel",
           "implemented_at": [
             "ontology/concepts/location.yaml#readings.channel",
-            "data/datasets/dim_location.yaml#columns.location_code.rules"
+            "data/datasets/dim_location.yaml#columns.location_code.rules",
+            "data/datasets/dim_location.yaml#columns.is_online.rules"
           ],
           "keywords": [
             "location",
@@ -4860,7 +4912,7 @@
             },
             "concept": "exchange_rate",
             "edge_id": "order__converts_at__exchange_rate",
-            "join_rule": "v_contoso5_sales_line.order_date = v_contoso5_fx_rate.date_day AND v_contoso5_sales_line.currency_code = v_contoso5_fx_rate.to_currency AND v_contoso5_fx_rate.from_currency = 'USD'",
+            "join_rule": "v_contoso5_sales_line.order_date = v_contoso5_fx_rate.date_day AND v_contoso5_sales_line.currency_code = v_contoso5_fx_rate.to_currency AND v_contoso5_sales_line.unit_currency = v_contoso5_fx_rate.from_currency",
             "on": "order_date",
             "title": "Exchange Rate",
             "verified_by": null
@@ -5355,6 +5407,7 @@
           "implemented_at": [
             "ontology/concepts/store.yaml#readings.channel",
             "data/datasets/dim_store.yaml#columns.store_code.rules",
+            "data/datasets/dim_store.yaml#columns.is_online.rules",
             "data/datasets/v_contoso5_sales_line.yaml#columns.channel.rules"
           ],
           "keywords": [
@@ -5764,6 +5817,7 @@
           "implemented_at": [
             "ontology/concepts/store.yaml#readings.channel",
             "data/datasets/dim_store.yaml#columns.store_code.rules",
+            "data/datasets/dim_store.yaml#columns.is_online.rules",
             "data/datasets/v_contoso5_sales_line.yaml#columns.channel.rules"
           ],
           "keywords": [
@@ -5886,7 +5940,9 @@
           "id": "Store.trading",
           "implemented_at": [
             "ontology/concepts/store.yaml#readings.trading",
-            "data/datasets/dim_store.yaml#columns.status_annotation.rules"
+            "data/datasets/dim_store.yaml#columns.status_annotation.rules",
+            "data/datasets/dim_store.yaml#columns.is_shut.rules",
+            "data/datasets/dim_store.yaml#columns.is_restructured.rules"
           ],
           "keywords": [
             "store",
@@ -6314,7 +6370,8 @@
       "id": "rules/Country.rows",
       "implemented_at": [
         "ontology/concepts/country.yaml#readings.rows",
-        "data/datasets/dim_country.yaml#columns.country_code.rules"
+        "data/datasets/dim_country.yaml#columns.country_code.rules",
+        "data/datasets/dim_country.yaml#columns.is_placeholder.rules"
       ],
       "key": "ontology:rule:rules/Country.rows",
       "keywords": [
@@ -6341,10 +6398,10 @@
       "trace": [
         "Country.rows   [proposed, symbolic]",
         "  says          The placeholder country code `--` is not a country. It marks rows that carry no real country, such as the online store. Questions about countries count and list real countries only, unless they name the placeholder.",
-        "  declared at   ontology/concepts/country.yaml#readings.rows\n                data/datasets/dim_country.yaml#columns.country_code.rules",
+        "  declared at   ontology/concepts/country.yaml#readings.rows\n                data/datasets/dim_country.yaml#columns.country_code.rules\n                data/datasets/dim_country.yaml#columns.is_placeholder.rules",
         "  realized by   mac.canon.population_select  (kind resolution)   default: real",
-        "                real: country_code != '--'",
-        "                sentinel: country_code = '--'",
+        "                real: is_placeholder = False",
+        "                sentinel: is_placeholder = True",
         "  executed by   planner/populations.py \u2014 WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own ",
         "  tested by     RC02  'List all countries where we have customers.'  board: pass (stale)"
       ],
@@ -6546,7 +6603,8 @@
       "implemented_at": [
         "ontology/concepts/customer.yaml#readings.population",
         "data/datasets/dim_customer.yaml#columns.valid_from.rules",
-        "data/datasets/dim_customer.yaml#columns.valid_to.rules"
+        "data/datasets/dim_customer.yaml#columns.valid_to.rules",
+        "data/datasets/dim_customer.yaml#columns.valid_end.rules"
       ],
       "key": "ontology:rule:rules/Customer.active_on_the_reference_date",
       "keywords": [
@@ -6574,9 +6632,9 @@
       "trace": [
         "Customer.active_on_the_reference_date   [ruled, symbolic]",
         "  says          A customer is active on a reference date when that date falls inside the customer's validity window \u2014 on or after the day the record became valid and on or before the day it stopped being valid. The reference date is the date the question states, else the data's own \"now\", and the answer says which. \"Customers\" with no other word means the active customers; \"registered\" customers are every customer on the register, whether valid on that date or not. Active customers are not the same set as customers who have bought something \u2014 each can hold people the other does not.",
-        "  declared at   ontology/concepts/customer.yaml#readings.population\n                data/datasets/dim_customer.yaml#columns.valid_from.rules\n                data/datasets/dim_customer.yaml#columns.valid_to.rules",
+        "  declared at   ontology/concepts/customer.yaml#readings.population\n                data/datasets/dim_customer.yaml#columns.valid_from.rules\n                data/datasets/dim_customer.yaml#columns.valid_to.rules\n                data/datasets/dim_customer.yaml#columns.valid_end.rules",
         "  realized by   mac.canon.population_select  (kind resolution)   default: active",
-        "                active: valid_from <= @as_of AND valid_to >= @as_of",
+        "                active: valid_from <= @as_of AND valid_end > @as_of",
         "                registered: every row",
         "  takes         as_of \u2014 the reference date (Stichtag) the reading is evaluated on",
         "  unstated      as_of: anchor (the vocabulary's default) \u2014 the bundle's anchor \u2014 the column declaring `offers.anchor: latest`, recorded at build time; today only when the bundle records none. Right for a validity window on the data's own time axis (\"active on the sampling date\").",
@@ -6781,7 +6839,8 @@
       "id": "rules/Location.channel",
       "implemented_at": [
         "ontology/concepts/location.yaml#readings.channel",
-        "data/datasets/dim_location.yaml#columns.location_code.rules"
+        "data/datasets/dim_location.yaml#columns.location_code.rules",
+        "data/datasets/dim_location.yaml#columns.is_online.rules"
       ],
       "key": "ontology:rule:rules/Location.channel",
       "keywords": [
@@ -6807,10 +6866,10 @@
       "trace": [
         "Location.channel   [proposed, symbolic]",
         "  says          The online store is recorded as a location, but it is not a place. Questions about locations and places cover physical locations only, unless they name the online channel.",
-        "  declared at   ontology/concepts/location.yaml#readings.channel\n                data/datasets/dim_location.yaml#columns.location_code.rules",
+        "  declared at   ontology/concepts/location.yaml#readings.channel\n                data/datasets/dim_location.yaml#columns.location_code.rules\n                data/datasets/dim_location.yaml#columns.is_online.rules",
         "  realized by   mac.canon.population_select  (kind resolution)   default: physical",
-        "                physical: location_code != -1",
-        "                online: location_code = -1",
+        "                physical: is_online = False",
+        "                online: is_online = True",
         "  executed by   planner/populations.py \u2014 WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own ",
         "  tested by     (nothing names a question)"
       ],
@@ -7490,6 +7549,7 @@
       "implemented_at": [
         "ontology/concepts/store.yaml#readings.channel",
         "data/datasets/dim_store.yaml#columns.store_code.rules",
+        "data/datasets/dim_store.yaml#columns.is_online.rules",
         "data/datasets/v_contoso5_sales_line.yaml#columns.channel.rules"
       ],
       "key": "ontology:rule:rules/Store.channel",
@@ -7519,10 +7579,10 @@
       "trace": [
         "Store.channel   [ruled, symbolic]",
         "  says          A store is a shop you can walk into. The online channel is recorded as a store, but a question about stores \u2014 how many there are, which ones \u2014 covers physical shops only unless it names the online channel. That default holds only when the question is about stores: revenue and every other figure of the sale includes both channels, even when the question's route passes through stores.",
-        "  declared at   ontology/concepts/store.yaml#readings.channel\n                data/datasets/dim_store.yaml#columns.store_code.rules\n                data/datasets/v_contoso5_sales_line.yaml#columns.channel.rules",
+        "  declared at   ontology/concepts/store.yaml#readings.channel\n                data/datasets/dim_store.yaml#columns.store_code.rules\n                data/datasets/dim_store.yaml#columns.is_online.rules\n                data/datasets/v_contoso5_sales_line.yaml#columns.channel.rules",
         "  realized by   mac.canon.population_select  (kind resolution)   default: physical",
-        "                physical: store_code != -1",
-        "                online: store_code = -1",
+        "                physical: is_online = False",
+        "                online: is_online = True",
         "  executed by   planner/populations.py \u2014 WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own ",
         "  tested by     RC05  'How many stores do we have?'  board: pass (stale)",
         "  tested by     MQ-07  'What is the revenue from the online store?'  board: pass (stale)",
@@ -7683,7 +7743,9 @@
       "id": "rules/Store.trading",
       "implemented_at": [
         "ontology/concepts/store.yaml#readings.trading",
-        "data/datasets/dim_store.yaml#columns.status_annotation.rules"
+        "data/datasets/dim_store.yaml#columns.status_annotation.rules",
+        "data/datasets/dim_store.yaml#columns.is_shut.rules",
+        "data/datasets/dim_store.yaml#columns.is_restructured.rules"
       ],
       "key": "ontology:rule:rules/Store.trading",
       "keywords": [
@@ -7711,12 +7773,12 @@
       "trace": [
         "Store.trading   [ruled, symbolic]",
         "  says          A store is active while it has no closing date. A store with a closing date is closed, and a closed store is either shut \u2014 closed for good \u2014 or restructured \u2014 closed and replaced. A question about stores covers active stores unless it names another state.",
-        "  declared at   ontology/concepts/store.yaml#readings.trading\n                data/datasets/dim_store.yaml#columns.status_annotation.rules",
+        "  declared at   ontology/concepts/store.yaml#readings.trading\n                data/datasets/dim_store.yaml#columns.status_annotation.rules\n                data/datasets/dim_store.yaml#columns.is_shut.rules\n                data/datasets/dim_store.yaml#columns.is_restructured.rules",
         "  realized by   mac.canon.population_select  (kind resolution)   default: active",
         "                closed: close_date is not null None",
         "                active: everything `closed` is not",
-        "                shut: status_annotation = 'Closed'",
-        "                restructured: status_annotation = 'Restructured'",
+        "                shut: is_shut = True",
+        "                restructured: is_restructured = True",
         "  executed by   planner/populations.py \u2014 WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own ",
         "  tested by     RC05  'How many stores do we have?'  board: pass (stale)",
         "  tested by     RC08  'How many stores are closed?'  board: pass (stale)",

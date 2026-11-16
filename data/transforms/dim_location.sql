@@ -17,12 +17,18 @@
 --
 -- SquareMeters is therefore NOT here: it is owned by the UNIT and changes between successors. What a
 -- site owns is its place.
+--
+-- `is_online` IS DERIVED HERE, not written as a literal in a rule (2026-11-16, grammar v3: a rule's
+-- rows read a column, true or false, never a stored value). It is TRUE exactly where the site code
+-- is -1 — the online placeholder, which is not a place (rule Location.channel) — and FALSE on every
+-- other row, never null, so it selects the same rows `location_code = -1` / `!= -1` selected.
 CREATE OR REPLACE VIEW contoso_served.dim_location AS
 SELECT
   s."StoreCode"    AS location_code,      -- PK
   any_value(s."CountryCode") AS country_code,
   any_value(s."CountryName") AS country_name,
   any_value(s."State")       AS state,
-  count(*)                   AS units_ever_here
+  count(*)                   AS units_ever_here,
+  coalesce(s."StoreCode" = -1, false) AS is_online   -- the online placeholder site
 FROM main.store s
 GROUP BY s."StoreCode";

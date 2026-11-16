@@ -23,6 +23,7 @@ tags:
 | `channel` | string | value |
 | `sale_country_code` | string | FK |
 | `currency_code` | string | FK |
+| `unit_currency` | string | value |
 | `quantity` | integer | value |
 | `net_price` | decimal | value |
 | `unit_price` | decimal | value |
@@ -68,6 +69,7 @@ tags:
 | `channel` | — | axis `categorical` | — | — |
 | `sale_country_code` | — | axis `categorical` | `Country` | — |
 | `currency_code` | — | axis `categorical` | — | — |
+| `unit_currency` | — | — | — | — |
 | `quantity` | — | aggregate flow / units · extremum `min`, `max` | — | — |
 | `net_price` | — | aggregate intensive / USD · extremum `min`, `max` | — | — |
 | `unit_price` | — | aggregate intensive / USD · extremum `min`, `max` | — | — |
@@ -78,7 +80,7 @@ tags:
 | `discount_amount` | — | aggregate flow / USD · extremum `min`, `max` | — | — |
 | `margin_amount` | — | aggregate flow / USD · extremum `min`, `max` | — | — |
 
-_Declared per column, over 19 columns: offers 17 of 19 · references 4 of 19 · rulings 0 of 19. An em dash is a column for which nothing is declared._
+_Declared per column, over 20 columns: offers 17 of 20 · references 4 of 20 · rulings 0 of 20. An em dash is a column for which nothing is declared._
 
 ### Bound by
 

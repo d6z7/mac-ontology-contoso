@@ -31,9 +31,12 @@ grounding:
       # file cannot: identity first, then the join, then the name, then where it is, then when it
       # traded, then how big it is. `store_key` is served because the relation's key names it — a
       # key column the concept does not serve is a load error, and Order failed exactly that way
-      # on `line_number` when the sales line migrated.
+      # on `line_number` when the sales line migrated. LAST, the true/false columns this concept's
+      # own rules read (Store.channel, Store.trading): a reading may filter only on a column the
+      # concept serves, so they are served (2026-11-16).
       serves: [store_key, store_code, store_name, country_code, state,
-               open_date, close_date, status_annotation, square_metres]
+               open_date, close_date, status_annotation, square_metres,
+               is_online, is_shut, is_restructured]
       # A STORE IS THE PREMISES, SO IT IS COUNTED BY `store_key` — ruled by the operator 2026-10-24:
       # "a Store is a PLACE on one location you can shop at ... store is part of location".
       #
@@ -77,10 +80,13 @@ readings:
     rule: Store.channel
     confidence: P
     default: physical
+    # Read from the true/false columns the transform makes (dim_store.is_online, is_shut,
+    # is_restructured), not from stored values: a rule's rows take a column, true or false
+    # (2026-11-16, grammar v3). Each selects the rows the literal it replaced selected.
     physical:
-      where: [store_code != -1]
+      where: [is_online = false]
     online:
-      where: [store_code = -1]
+      where: [is_online = true]
   trading:
     rule: Store.trading
     confidence: C
@@ -93,11 +99,11 @@ readings:
       surfaces: [open, still open, trading, not closed, operating]
     shut:
       of: closed
-      where: [status_annotation = Closed]
+      where: [is_shut = true]
       surfaces: [shut down, shut for good, closed permanently, closed and not replaced]
     restructured:
       of: closed
-      where: [status_annotation = Restructured]
+      where: [is_restructured = true]
       surfaces: [rebuilt, replaced, closed and reopened]
 governance:
   owner: operator

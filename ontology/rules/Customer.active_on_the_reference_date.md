@@ -21,8 +21,9 @@ A customer is active on a reference date when that date falls inside the custome
   declared at   ontology/concepts/customer.yaml#readings.population
                 data/datasets/dim_customer.yaml#columns.valid_from.rules
                 data/datasets/dim_customer.yaml#columns.valid_to.rules
+                data/datasets/dim_customer.yaml#columns.valid_end.rules
   realized by   mac.canon.population_select  (kind resolution)   default: active
-                active: valid_from <= @as_of AND valid_to >= @as_of
+                active: valid_from <= @as_of AND valid_end > @as_of
                 registered: every row
   takes         as_of — the reference date (Stichtag) the reading is evaluated on
   unstated      as_of: anchor (the vocabulary's default) — the bundle's anchor — the column declaring `offers.anchor: latest`, recorded at build time; today only when the bundle records none. Right for a validity window on the data's own time axis ("active on the sampling date").

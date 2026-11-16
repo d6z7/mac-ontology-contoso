@@ -22,6 +22,9 @@ tags:
 | `close_date` | date | value |
 | `status_annotation` | string | value |
 | `square_metres` | integer | value |
+| `is_online` | boolean | value |
+| `is_shut` | boolean | value |
+| `is_restructured` | boolean | value |
 
 ## Foreign keys
 
@@ -58,11 +61,14 @@ tags:
 | `close_date` | — | axis `time` · extremum `min`, `max` | — | — |
 | `status_annotation` | — | axis `categorical` | — | — |
 | `square_metres` | — | aggregate stock / m2 · extremum `min`, `max` | — | — |
+| `is_online` | — | — | — | — |
+| `is_shut` | — | — | — | — |
+| `is_restructured` | — | — | — | — |
 
-_Declared per column, over 9 columns: offers 7 of 9 · references 1 of 9 · rulings 2 of 9. An em dash is a column for which nothing is declared._
+_Declared per column, over 12 columns: offers 7 of 12 · references 1 of 12 · rulings 2 of 12. An em dash is a column for which nothing is declared._
 
 ### Bound by
 
 *1 concept(s) read this relation — a change to a column's `offers` or `rulings` reaches every one of them.*
 
-- [Store](../concepts/store.md) — serves `store_key`, `store_code`, `store_name`, `country_code`, `state`, `open_date`, `close_date`, `status_annotation`, `square_metres`
+- [Store](../concepts/store.md) — serves `store_key`, `store_code`, `store_name`, `country_code`, `state`, `open_date`, `close_date`, `status_annotation`, `square_metres`, `is_online`, `is_shut`, `is_restructured`

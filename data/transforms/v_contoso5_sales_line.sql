@@ -116,6 +116,13 @@ SELECT
   END                                            AS sale_country_code,
   s."CurrencyCode"  AS currency_code,     -- FK -> dim_currency: the ORDER's currency, NOT the unit of
                                           -- the amounts below, which are USD
+  -- THE CURRENCY THE AMOUNTS ARE IN, stated as a column (2026-11-16, grammar v3: an edge joins on
+  -- columns, never on a constant). Every amount on this line is USD: the upstream publishes it
+  -- ("amounts are USD"), acceptance/verification/manual_value_check_2026-10-08.md measured it, and
+  -- the source's own `sales.ExchangeRate` equals the USD -> line-currency rate on all 223,974 lines
+  -- (re-measured on this warehouse 2026-11-16). The FX edge reads this column as the rate's source
+  -- currency instead of writing 'USD' into its join.
+  'USD'             AS unit_currency,     -- the unit of every amount below
   s."Quantity"                                   AS quantity,      -- measure, unit: units
   s."NetPrice"                                   AS net_price,     -- measure, unit: USD (per unit)
   s."UnitPrice"                                  AS unit_price,    -- measure, unit: USD (per unit)
