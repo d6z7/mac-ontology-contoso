@@ -1,0 +1,89 @@
+# The reproduction stages of contoso5: a tool-read plane beside REPRODUCTION.md (GRAMMAR_v3 §1:46).
+#
+# Until 2026-11-17 these commands were ./build.sh at the bundle root. The v3 layout is fixed and has no root home for a
+# script, so the script became the `warehouse` and `served` stages below, unchanged in what they do, and its reasons
+# moved to REPRODUCTION.md ("Why the warehouse is built this way"). NO FRAMEWORK PATH APPEARS IN THIS FILE: `<framework>`
+# is wherever meaning-as-code is checked out.
+#
+# Run one stage from the bundle root (DB overrides the warehouse file, e.g. to try a stage on a copy):
+#   python3 -c 'import sys,yaml; print({s["id"]: s for s in yaml.safe_load(open("reproduction.yaml"))["stages"]}[sys.argv[1]]["command"])' served | bash
+narrative: REPRODUCTION.md
+stages:
+  - id: fetch
+    authoring: tool
+    billed: false
+    command: |
+      set -euo pipefail
+      RELEASE_SIZE="100k"   # orders, per the upstream's naming; REPRODUCTION.md says why before anyone changes it
+      RELEASE="https://github.com/sql-bi/Contoso-Data-Generator-V2-Data/releases/download/ready-to-use-data/parquet-${RELEASE_SIZE}.7z"
+      curl -fL -o "data/parquet-${RELEASE_SIZE}.7z" "$RELEASE"
+      bsdtar -xf "data/parquet-${RELEASE_SIZE}.7z" -C data     # or: 7z x
+    produces:
+      - data/*.parquet (gitignored, 17 MB, regenerable)
+  - id: warehouse
+    authoring: tool
+    billed: false
+    command: |
+      set -euo pipefail
+      DB="${DB:-contoso5.duckdb}"
+      command -v duckdb >/dev/null || { echo "!! duckdb not found -> brew install duckdb"; exit 1; }
+      if ! ls data/*.parquet >/dev/null 2>&1; then
+        echo "!! no parquet in data/ (gitignored, 17 MB, regenerable): run the fetch stage first"
+        exit 1
+      fi
+      echo "==> loading this bundle's landings into main.*"
+      rm -f "$DB"
+      SQL=""
+      for f in data/*.parquet; do
+        t="$(basename "$f" .parquet | tr '[:upper:]' '[:lower:]' | tr ' -' '__')"
+        SQL+="CREATE OR REPLACE TABLE \"$t\" AS SELECT * FROM read_parquet('$PWD/$f');"$'\n'
+      done
+      duckdb "$DB" -c "$SQL"
+      echo "==> creating the served schema (empty until a transform fills it)"
+      duckdb "$DB" -c "CREATE SCHEMA IF NOT EXISTS contoso_served;"
+    produces:
+      - contoso5.duckdb (main.* landings; contoso_served created empty)
+  - id: served
+    authoring: tool
+    billed: false
+    command: |
+      set -euo pipefail
+      DB="${DB:-contoso5.duckdb}"
+      command -v duckdb >/dev/null || { echo "!! duckdb not found -> brew install duckdb"; exit 1; }
+      shopt -s nullglob
+      sqls=(data/transforms/*.sql)
+      if [ ${#sqls[@]} -eq 0 ]; then
+        echo "==> no transform declared yet, so contoso_served stays EMPTY."
+        exit 0
+      fi
+      echo "==> applying this bundle's transforms -> contoso_served.*"
+      pending=("${sqls[@]}")
+      while [ ${#pending[@]} -gt 0 ]; do
+        next=()
+        for sql in "${pending[@]}"; do
+          if grep -v '^[[:space:]]*--' "$sql" | duckdb "$DB" 2>/dev/null; then
+            echo "    $(basename "$sql")"
+          else
+            next+=("$sql")
+          fi
+        done
+        if [ ${#next[@]} -eq ${#pending[@]} ]; then
+          for sql in "${next[@]}"; do
+            echo "!! failed: $sql"; grep -v '^[[:space:]]*--' "$sql" | duckdb "$DB"
+          done
+          exit 1
+        fi
+        pending=(${next[@]+"${next[@]}"})
+      done
+      echo "==> landings and served relations:"
+      duckdb "$DB" -c "SELECT table_schema, table_type, count(*) AS n FROM information_schema.tables
+                       WHERE table_schema IN ('main','contoso_served') GROUP BY 1,2 ORDER BY 1,2;"
+    produces:
+      - contoso5.duckdb (contoso_served.* views, one per data/transforms/*.sql)
+  - id: gate
+    authoring: tool
+    billed: false
+    command: python3 <framework>/tools/mac_compile_v3.py . --out <dir>   # then the 0.4.0 compiler on <dir> with contoso5.duckdb beside it
+    note: The v3 validator checks every file against the grammar; the compile-back feeds the unchanged 0.4.0 engines.
+gate:
+  command: python3 <framework>/tools/mac_compile_v3.py . --out <dir>

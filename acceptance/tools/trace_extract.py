@@ -12,7 +12,8 @@ THE LOSS RULES ARE NOT HERE. They live in `mac-console/trace_losses.py`, the one
 Debug view reaches through POST /trace/{domain}/{dataset}/losses and this extractor imports directly.
 Two copies of a diagnostic drift, and the one you are not reading is the one that is right.
 
-Usage:  python3 tools_trace_extract.py [bundle_root] > traces.json
+Usage:  python3 acceptance/tools/trace_extract.py [bundle_root] > traces.json
+(was tools_trace_extract.py at the bundle root until the v3 migration: the v3 layout has no root home for a script)
 """
 from __future__ import annotations
 
@@ -34,8 +35,8 @@ import yaml
 #: checkout is; otherwise the repositories sit beside each other, so the location is DERIVED from
 #: this file's own position and names no home.
 _ENV_CONSOLE = "MAC_CONSOLE_SRC"
-#: contoso5 -> example -> the sources repository; the platform checkout is its neighbour.
-_SIBLING_CONSOLE = (pathlib.Path(__file__).resolve().parents[2].parent
+#: tools -> acceptance -> contoso5 -> example -> the sources repository; the platform checkout is its neighbour.
+_SIBLING_CONSOLE = (pathlib.Path(__file__).resolve().parents[4].parent
                     / "mac-platform" / "packages" / "mac-console" / "src" / "mac_console")
 
 
