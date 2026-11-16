@@ -7,23 +7,29 @@ It is the worked example the MAC framework is developed and tested against: the 
 reader (a person, a planner or a language model) needs to turn a business question about this data
 into correct SQL, and the evidence that those declarations hold against the rows.
 
-Project id: `example/contoso5` · MAC stamp `0.4.0-develop` · ontology version 1.1
+Project id: `example/contoso5` · grammar v3 (MAC `0.4.1-develop`, GRAMMAR_v3.md v3.2)
 
 ## What is in it
 
+The layout is fixed by the standard (GRAMMAR_v3 §1); every reference points toward the data.
+
 | path | what |
 |---|---|
-| `mac.project.yaml` | the container: planes, runtime, connection |
-| `data/sources/` | the landing tables as delivered (SQLBI parquet) |
-| `data/transforms/` | the SQL that builds the served views (`contoso_served.*`) |
-| `data/datasets/`, `data/profiles/`, `data/quality/` | what each served column IS, measured |
-| `ontology/relations/` | what a question may do with each column: meaning, names (`surfaces`), additivity (`offers`) |
-| `ontology/concepts/` | 11 concepts (Order is the fact node; Customer, Store, Product, Country, …) with their rules |
-| `ontology/edges.yaml` | 15 typed relationships, one per join |
-| `governance/tombstones.yaml` | every retired declaration and its successor |
+| `mac.project.yaml`, `connection.yaml` | identity, connector, serving schema, the reference date (`as_of`) |
+| `data/sources/` | the landing tables as delivered (SQLBI parquet), each with its `.md` account |
+| `data/transforms/` | the SQL that builds the served views (`contoso_served.*`), each with its `.yaml` |
+| `data/datasets/` | one file per served dataset: columns, kinds, keys, measure facts, checks |
+| `data/lookups/` | value sets kept as CSV |
+| `data/lexicon/` | every word, one row per (word, address), one CSV per dataset |
+| `data/quality/` | the findings about each dataset |
+| `data/profiles/`, `data/lineage/` | tool outputs: measured types, counts, references, column lineage |
+| `ontology/concepts/` | 11 concepts, each on ONE dataset, with its `.md` account |
+| `ontology/edges.yaml` | how two concepts join |
+| `ontology/rules/` | one decision per file: what it says, who said it, its state, its behaviour |
+| `decisions/` | the bundle's records: `MODELLING-LOG.md`, `tombstones.yaml` (0.4.0 retirements) |
 | `acceptance/` | questions, approved reference answers (SQL + expected value), oracles |
-| `knowledge/`, `references/` | prose accounts and known data issues |
-| `ontology/MODELLING-LOG.md` | why the model is shaped the way it is, entry by entry |
+| `evidence/` | measurements and the v3 migration's record (`evidence/v3-migration/`) |
+| `pages/` | generated pages and projections (never authored) |
 
 ## Build the warehouse
 
@@ -39,13 +45,9 @@ cd .. && ./build.sh                 # needs duckdb on PATH
 
 ## Check it
 
-With the MAC framework checked out beside it:
-
-```
-python3 ../meaning-as-code/tools/mac_compile.py .
-```
-
-It must print `COMPILES — 0 error(s)`.
+With the MAC framework checked out beside it, the v3 tools read this layout:
+`tools/mac_compile_v3.py` compiles it for the 0.4.0 engines and the v3 validator checks every
+file against the grammar.
 
 ## Upstream semantics
 
