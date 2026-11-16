@@ -1,23 +1,13 @@
----
-type: Source
-title: orderrows
-description: Raw source-of-record — main.orderrows
-resource: table://main.orderrows
-tags:
-- CONTOSO5
-- source
-- lifecycle:draft
-- confidence:Q
----
+# orderrows
 
-## Columns
+The account of source orderrows: its documentation, as prose citing the columns (Y-4). Written by mac_migrate_v3 from the 0.4.0 source file.
 
-| column | type | role |
-|---|---|---|
-| `OrderKey` | integer | PK |
-| `RowNumber` | integer | PK |
-| `ProductKey` | integer | FK |
-| `Quantity` | integer | value |
-| `UnitPrice` | decimal | value |
-| `NetPrice` | decimal | value |
-| `UnitCost` | decimal | value |
+## Cites
+
+- `source:orderrows.OrderKey`
+- `source:orderrows.RowNumber`
+- `source:orderrows.ProductKey`
+- `source:orderrows.Quantity`
+- `source:orderrows.UnitPrice`
+- `source:orderrows.NetPrice`
+- `source:orderrows.UnitCost`

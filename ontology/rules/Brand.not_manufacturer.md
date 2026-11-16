@@ -1,23 +1,8 @@
----
-type: Rule
-title: Brand.not_manufacturer
-state: proposed
----
-
 # Brand.not_manufacturer
 
-> PROJECTED from `ontology/rules/Brand.not_manufacturer.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+The account of rule Brand.not_manufacturer. Written by mac_migrate_v3; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
 
-A brand is the name a customer buys a product under; a manufacturer is who made it. The two sets overlap in names but are two notions, and a question asking who is behind a product says which it means rather than treating them as interchangeable.
+## Cites
 
-- **State** — proposed · wording proposed, awaiting acceptance
-- **Concepts** — Brand, Product
-- **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
-- **Keywords** — brand, manufacturer, maker, made by, label, who makes
-
-## How and where it is implemented
-
-```
-  declared at   (nowhere — prose, stated in words only)
-  tested by     (nothing names a question)
-```
+- `concept:Brand`
+- `concept:Product`

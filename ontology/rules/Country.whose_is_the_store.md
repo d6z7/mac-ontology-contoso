@@ -1,24 +1,8 @@
----
-type: Rule
-title: Country.whose_is_the_store
-state: superseded
----
-
 # Country.whose_is_the_store
 
-> PROJECTED from `ontology/rules/Country.whose_is_the_store.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+The account of rule Country.whose_is_the_store. Written by mac_migrate_v3; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
 
-A question asking by country without saying whose country is answered on the country the store stands in.
+## Cites
 
-- **State** — superseded · wording proposed, awaiting acceptance
-- **Concepts** — Country, Store
-- **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
-- **Keywords** — country, store country, default
-- **Superseded by** — `Country.whose_is_asked`
-
-## How and where it is implemented
-
-```
-  declared at   (nowhere — prose, stated in words only)
-  tested by     (nothing names a question)
-```
+- `concept:Country`
+- `concept:Store`

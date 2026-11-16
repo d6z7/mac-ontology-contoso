@@ -1,24 +1,9 @@
----
-type: Rule
-title: ExchangeRate.direction_is_part_of_the_key
-state: proposed
----
-
 # ExchangeRate.direction_is_part_of_the_key
 
-> PROJECTED from `ontology/rules/ExchangeRate.direction_is_part_of_the_key.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+The account of rule ExchangeRate.direction_is_part_of_the_key. Written by mac_migrate_v3; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
 
-An exchange rate's target currency means something only together with its source currency: the direction is part of the rate's identity, so a rate is never picked or grouped by its target currency alone.
+## Cites
 
-- **State** — proposed · wording proposed, awaiting acceptance
-- **Concepts** — Currency, ExchangeRate
-- **Formal** — **Symbolic** — implemented by the declarations below
-- **Keywords** — exchange rate, currency, direction, from currency, to currency, fx
-- **Formerly** — `ExchangeRate.to_currency.scoped_by`, `exchange_rate.exclusion.direction_is_part_of_the_key`
-
-## How and where it is implemented
-
-```
-  declared at   data/datasets/v_contoso5_fx_rate.yaml#columns.to_currency.rules
-  tested by     AGG-14  'What is the total net revenue converted to USD?'  board: pass (stale)
-```
+- `concept:ExchangeRate`
+- `concept:Currency`
+- `dataset:v_contoso5_fx_rate.to_currency`

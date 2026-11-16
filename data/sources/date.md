@@ -1,33 +1,23 @@
----
-type: Source
-title: date
-description: Raw source-of-record — main.date
-resource: table://main.date
-tags:
-- CONTOSO5
-- source
-- lifecycle:draft
-- confidence:Q
----
+# date
 
-## Columns
+The account of source date: its documentation, as prose citing the columns (Y-4). Written by mac_migrate_v3 from the 0.4.0 source file.
 
-| column | type | role |
-|---|---|---|
-| `Date` | timestamp | PK |
-| `DateKey` | string | value |
-| `Year` | integer | value |
-| `YearQuarter` | string | value |
-| `YearQuarterNumber` | integer | value |
-| `Quarter` | string | value |
-| `YearMonth` | string | value |
-| `YearMonthShort` | string | value |
-| `YearMonthNumber` | integer | value |
-| `Month` | string | value |
-| `MonthShort` | string | value |
-| `MonthNumber` | integer | value |
-| `DayofWeek` | string | value |
-| `DayofWeekShort` | string | value |
-| `DayofWeekNumber` | integer | value |
-| `WorkingDay` | integer | value |
-| `WorkingDayNumber` | integer | value |
+## Cites
+
+- `source:date.Date`
+- `source:date.DateKey`
+- `source:date.Year`
+- `source:date.YearQuarter`
+- `source:date.YearQuarterNumber`
+- `source:date.Quarter`
+- `source:date.YearMonth`
+- `source:date.YearMonthShort`
+- `source:date.YearMonthNumber`
+- `source:date.Month`
+- `source:date.MonthShort`
+- `source:date.MonthNumber`
+- `source:date.DayofWeek`
+- `source:date.DayofWeekShort`
+- `source:date.DayofWeekNumber`
+- `source:date.WorkingDay`
+- `source:date.WorkingDayNumber`

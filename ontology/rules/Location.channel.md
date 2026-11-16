@@ -1,30 +1,9 @@
----
-type: Rule
-title: Location.channel
-state: proposed
----
-
 # Location.channel
 
-> PROJECTED from `ontology/rules/Location.channel.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+The account of rule Location.channel. Written by mac_migrate_v3; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
 
-The online store is recorded as a location, but it is not a place. Questions about locations and places cover physical locations only, unless they name the online channel.
+## Cites
 
-- **State** — proposed · wording proposed, awaiting acceptance
-- **Concepts** — Location
-- **Formal** — **Symbolic** — implemented by the declarations below
-- **Keywords** — location, place, site, online, physical, channel
-- **Formerly** — `location.exclusion.the_online_row_is_not_a_place`
-
-## How and where it is implemented
-
-```
-  declared at   ontology/concepts/location.yaml#readings.channel
-                data/datasets/dim_location.yaml#columns.location_code.rules
-                data/datasets/dim_location.yaml#columns.is_online.rules
-  realized by   mac.canon.population_select  (kind resolution)   default: physical
-                physical: is_online = False
-                online: is_online = True
-  executed by   planner/populations.py — WHICH ROWS a concept has. Named populations as structured predicates (planner/predicates.py), one marked `default`, and the rule's own 
-  tested by     (nothing names a question)
-```
+- `concept:Location`
+- `dataset:dim_location.location_code`
+- `dataset:dim_location.is_online`

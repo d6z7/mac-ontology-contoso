@@ -1,27 +1,7 @@
----
-type: Rule
-title: Order.price_is_per_article
-state: ruled
----
-
 # Order.price_is_per_article
 
-> PROJECTED from `ontology/rules/Order.price_is_per_article.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+The account of rule Order.price_is_per_article. Written by mac_migrate_v3; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
 
-An unqualified price means what the customer paid per article: the net amount divided by the number of units, both summed over the lines asked about — never an average of line prices.
+## Cites
 
-- **State** — ruled · wording proposed, awaiting acceptance
-- **Concepts** — Order
-- **Formal** — **Symbolic** — implemented by the declarations below
-- **Keywords** — price, average price, unit price, per article, per unit, net price
-- **Formerly** — `Order.net_amount.price`, `net_revenue.default.a_price_is_revenue_per_article`
-
-## How and where it is implemented
-
-```
-  declared at   data/datasets/v_contoso5_sales_line.yaml#columns.net_amount.readings.price
-  realized by   mac.canon.ratio_select  (kind aggregation)   default: price_per_article
-                price_per_article: denominator: quantity
-  executed by   canons/ratio_select.py — WHICH DENOMINATOR a named ratio divides by. The twin of population_select: that one maps a word a reader says to the ROWS a concept has
-  tested by     ADV-25  'Average price'  board: pass (stale)
-```
+- `concept:Order`

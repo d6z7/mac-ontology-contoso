@@ -1,34 +1,7 @@
----
-type: Rule
-title: Order.cost_is_procurement
-state: ruled
----
-
 # Order.cost_is_procurement
 
-> PROJECTED from `ontology/rules/Order.cost_is_procurement.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+The account of rule Order.cost_is_procurement. Written by mac_migrate_v3; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
 
-Cost means only what the goods cost Contoso to buy — the procurement cost. Every other money figure on a sale, gross, net, discount and margin, is revenue or income, never a cost.
+## Cites
 
-- **State** — ruled · wording proposed, awaiting acceptance
-- **Concepts** — Order
-- **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
-- **Keywords** — cost, procurement cost, cost of goods, cogs, income, what it cost us
-
-## How and where it is implemented
-
-```
-  declared at   (nowhere — prose, stated in words only)
-  tested by     (nothing names a question)
-```
-
-## What was said
-
-> *"from the shop perspective cost is procurement cost. The rest is revenue or income."* — operator, 2026-10-28 (`ontology/MODELLING-LOG.md`)
-
-
-## Examples
-
-| Question | Reading |
-|---|---|
-| what did the goods sold in 2024 cost us | procurement cost summed over 2024 sales |
+- `concept:Order`

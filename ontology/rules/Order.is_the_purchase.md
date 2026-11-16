@@ -1,29 +1,7 @@
----
-type: Rule
-title: Order.is_the_purchase
-state: ruled
----
-
 # Order.is_the_purchase
 
-> PROJECTED from `ontology/rules/Order.is_the_purchase.yaml` by tools/mac_rules.py — do not edit; change the yaml.
+The account of rule Order.is_the_purchase. Written by mac_migrate_v3; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
 
-An order is the purchase: one customer buying at one store on one day in one currency. Its lines are not orders and not events of their own — a line borrows the when, the who and the where from its order and adds only which product and how many. Counting orders counts purchases, never lines.
+## Cites
 
-- **State** — ruled · wording proposed, awaiting acceptance
-- **Concepts** — Order
-- **Formal** — **Prose** — no symbolic form yet; handed to the model as text (formalisation debt)
-- **Keywords** — order, purchase, order line, sale, event, how many orders
-
-## How and where it is implemented
-
-```
-  declared at   (nowhere — prose, stated in words only)
-  tested by     (nothing names a question)
-```
-
-## Examples
-
-| Question | Reading |
-|---|---|
-| how many orders | distinct orders (purchases), not order lines |
+- `concept:Order`
