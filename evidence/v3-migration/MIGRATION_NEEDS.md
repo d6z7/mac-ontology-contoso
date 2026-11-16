@@ -83,9 +83,12 @@ What grammar v3 needs that the 0.4.0 bundle `mac-ontology-contoso` does not have
 
 ## Status after the in-place migration (2026-11-17, branch 0.4.1-develop)
 
-**10 closed, 11 open.** Validator (v3work/v3schema/validate_v3.py): 3 errors, all LAYOUT on kept bundle files
-the v3 layout has no home for (`README.md`, `build.sh` = this bundle's deploy, `tools_trace_extract.py`).
+**10 closed, 11 open.** Validator (v3work/v3schema/validate_v3.py): PASS, 0 errors (138 files validated).
 Compile-back (mac_compile_v3 -> 0.4.0 compiler): COMPILES, 0 errors.
+
+The four files not carried are placed: `README.md` -> `REPRODUCTION.md`; `build.sh` -> the `fetch` / `warehouse` /
+`served` stages of `reproduction.yaml` (its reasons in REPRODUCTION.md); `tools_trace_extract.py` ->
+`acceptance/tools/trace_extract.py`; `contoso5.mac` removed (a generated 0.4.0 resource description).
 
 | # | status | how |
 |---|---|---|
