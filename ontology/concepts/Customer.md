@@ -18,4 +18,5 @@ The account of concept Customer. Written by mac_migrate_v3 from the 0.4.0 declar
 - `rule:Customer.active_on_the_reference_date`
 - `rule:Customer.age`
 - `rule:Customer.as_of_now_or_sale`
+- `rule:Customer.per_customer`
 - `rule:Customer.register_not_buyers`
