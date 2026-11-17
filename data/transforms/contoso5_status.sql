@@ -3,4 +3,5 @@
 CREATE OR REPLACE VIEW contoso_served.contoso5_status AS
 SELECT DISTINCT status_annotation AS code
 FROM contoso_served.dim_store
-WHERE status_annotation IS NOT NULL;
+WHERE status_annotation IS NOT NULL
+  AND status_annotation <> '';  -- the blank a trading store carries is no reason it stopped, so no member
