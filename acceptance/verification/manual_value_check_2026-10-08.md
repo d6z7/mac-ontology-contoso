@@ -63,8 +63,8 @@ definitional question was routed to a count. No value error; a question-type err
 ### 3. STORE-09 bypasses the Store population its siblings apply — "revenue of all Contoso stores"
 
 218,814,471.66 is the grand total with **no join to `dim_store` at all**, so neither
-`store.resolution.the_channel_is_the_location_sentinel` (`physical`) nor
-`store.resolution.active_is_the_absent_close_date` (`active`) was applied or disclosed. Every sibling
+`Store.channel` (`physical`) nor
+`Store.trading` (`active`) was applied or disclosed. Every sibling
 applies both and says so — STORE-08 (Armagh), STORE-11 (closed stores), MQ-07 (online), RC05, MQ-06.
 
 Under the siblings' population the answer is **128,818,965.21** — 41% lower. Decomposition:
@@ -76,7 +76,7 @@ this one question never consulted the concept whose population the other five di
 
 **21 answers across the corpus** carry `net_revenue.contract.default_reading` verbatim: "An
 unqualified price means WHAT THE CUSTOMER PAID PER ARTICLE: `{net_amount}` summed and divided by
-UnitsSold, 310.98 USD." That is the ruling for `net_revenue.default.a_price_is_revenue_per_article`,
+UnitsSold, 310.98 USD." That is the ruling for `Order.price_is_per_article`,
 and **ADV-25 is the only one of the 21 it actually governs**.
 
 Thirteen of the 21 carry an executed value: ADV-22, ADV-25, AGG-01, AGG-05, AGG-06, AGG-07, AGG-12,
