@@ -1,19 +1,29 @@
 # THE APPROVED ANSWER. A person ran the query, read the number and said yes.
 # The next run either returns this or it does not. PASS or FAIL, nothing else.
+# FOLLOWS A RULE: the answer below is the rule's current default, derived by an agent on 2026-11-17.
+# `approved_by` is absent: no person signed this figure. A figure a person signed sits under
+# `follows[].otherwise`, with its signature, under the option it answers.
 id: STORE-09
-question: >-
-  What is the revenue of all Contoso stores?
-expected: 132024417.53167
-sql: >-
-  SELECT ROUND(SUM(l.net_amount), 5) FROM contoso_served.v_contoso5_sales_line l JOIN
-  contoso_served.dim_store s ON l.store_key = s.store_key WHERE s.store_code IS DISTINCT FROM
-  -1
-note: >-
-  INDEPENDENTLY VERIFIED, not read back from the engine. The SQL below was written by hand against
-  contoso5.duckdb in a different spelling from the planner's own statement, and it returns this
-  figure exactly. Approving a number the engine produced, on the engine's own query, would test
-  the engine against itself. 'All Contoso stores' is the SHOP population, which is why this equals
-  MQ-12 and ADV-22 to the cent rather than including the online channel.
-approved_by: operator
-approved_at: '2026-10-17'
-approved_here: true
+question: What is the revenue of all Contoso stores?
+expected: 218814471.65866
+sql: SELECT ROUND(SUM(net_amount), 5) FROM contoso_served.v_contoso5_sales_line
+follows:
+- rule: Order.channel
+  option: both
+  otherwise:
+    shops:
+      expected: 132024417.53167
+      sql: SELECT ROUND(SUM(net_amount), 5) FROM contoso_served.v_contoso5_sales_line WHERE NOT is_web_sale
+      approved_by: operator
+      approved_at: '2026-10-17'
+      approved_here: true
+    online:
+      expected: 86790054.12699
+      sql: SELECT ROUND(SUM(net_amount), 5) FROM contoso_served.v_contoso5_sales_line WHERE is_web_sale
+note: 'FOLLOWS Order.channel = both: a figure of the sale that names no channel covers both channels, the web shop
+  included, even when the question reaches the sale through stores (operator ruling 2026-10-18, RULED-2026-10-18_both-channels-make-revenue).
+  The rule is proposed: it applies and is disclosed as proposed (GRAMMAR_v3 L3, Y-6). The answer under every other
+  option is under `follows[].otherwise`, with its signature where a person signed it; acceptance/tools/rule_switch_test.py
+  runs each and shows which differ.'
+expected_by: agent
+expected_at: '2026-11-17'

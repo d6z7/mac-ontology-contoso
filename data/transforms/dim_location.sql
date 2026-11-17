@@ -29,6 +29,11 @@ SELECT
   any_value(s."CountryName") AS country_name,
   any_value(s."State")       AS state,
   count(*)                   AS units_ever_here,
-  coalesce(s."StoreCode" = -1, false) AS is_online   -- the online placeholder site
+  coalesce(s."StoreCode" = -1, false) AS is_online,  -- the online placeholder site
+  -- WHETHER A SITE CLOSED, two readings, both derived here so rule Location.closed chooses between columns. Never empty.
+  --   has_closed_store  a store at this site has closed (at least one row carries a closing date)
+  --   is_closed_now     no store at this site trades (every row carries a closing date)
+  coalesce(bool_or(s."CloseDate" IS NOT NULL), false)  AS has_closed_store,
+  coalesce(bool_and(s."CloseDate" IS NOT NULL), false) AS is_closed_now
 FROM main.store s
 GROUP BY s."StoreCode";

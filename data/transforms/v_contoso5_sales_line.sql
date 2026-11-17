@@ -64,6 +64,10 @@ SELECT
   -- they are, so a question whose SUBJECT is a store still defaults to physical shops and "how
   -- many stores do we have" is still 57.
   CASE WHEN s."StoreKey" = 999999 THEN 'online' ELSE 'physical' END AS channel,
+  -- THE SAME SPLIT AS TRUE / FALSE, so rule Order.channel reads its options from a column (grammar v3: a rule's rows
+  -- read a column, true or false, never a stored value). True on every web-shop line, false on every shop line, never
+  -- empty; it selects exactly the lines `channel` names `online`.
+  coalesce(s."StoreKey" = 999999, false) AS is_web_sale,
   -- THE COUNTRY OF THE SALE, ON THE FACT. ADDED 2026-10-25 on the operator's ruling of the same
   -- day ("ok go B1 now"), recorded in
   -- meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md.

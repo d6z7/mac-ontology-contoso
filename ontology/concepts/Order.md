@@ -10,6 +10,7 @@ The account of concept Order. Written by mac_migrate_v3 from the 0.4.0 declarati
 - `dataset:v_contoso5_sales_line.delivery_date`
 - `dataset:v_contoso5_sales_line.customer_key`
 - `dataset:v_contoso5_sales_line.store_key`
+- `dataset:v_contoso5_sales_line.is_web_sale`
 - `dataset:v_contoso5_sales_line.product_key`
 - `dataset:v_contoso5_sales_line.currency_code`
 - `dataset:v_contoso5_sales_line.quantity`
@@ -21,6 +22,7 @@ The account of concept Order. Written by mac_migrate_v3 from the 0.4.0 declarati
 - `dataset:v_contoso5_sales_line.unit_price`
 - `dataset:v_contoso5_sales_line.net_price`
 - `dataset:v_contoso5_sales_line.unit_cost`
+- `rule:Order.channel`
 - `rule:Order.cost_is_procurement`
 - `rule:Order.date`
 - `rule:Order.default_measure`

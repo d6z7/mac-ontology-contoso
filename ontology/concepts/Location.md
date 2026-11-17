@@ -10,5 +10,8 @@ The account of concept Location. Written by mac_migrate_v3 from the 0.4.0 declar
 - `dataset:dim_location.state`
 - `dataset:dim_location.units_ever_here`
 - `dataset:dim_location.is_online`
+- `dataset:dim_location.has_closed_store`
+- `dataset:dim_location.is_closed_now`
 - `rule:Location.channel`
+- `rule:Location.closed`
 - `rule:Location.site`
