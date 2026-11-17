@@ -106,3 +106,19 @@ The four files not carried are placed: `README.md` -> `REPRODUCTION.md`; `build.
 | 19 | OPEN — operator | the SME ledger (format mac.sme-questions/1) is dialogue written through the console's ledger store, with participants, owner and status; this public bundle has no ledger and no SME participants. The 18 findings' SME fields stay in governance/sme-history/migrated-finding-fields.yaml until the operator decides whether contoso gets a ledger |
 | 20 | closed | governance/tombstones.yaml -> evidence/tombstones.yaml, declared out of scope (project.out_of_scope.evidence_tombstones_yaml); no v3 declaration cites it |
 | 21 | closed | ontology/MODELLING-LOG.md -> evidence/MODELLING-LOG.md; citations repointed. (evidence/, not decisions/: a root decisions/ makes the 0.4.0 reference checker resolve every `meaning-as-code#decisions/…` citation inside the bundle) |
+
+## Round 2: the v3 build (mac_compile L0 + L15, 2026-11-17)
+
+Build before: DOES NOT BUILD, 6 errors, 2 warnings. After: 2 errors, 2 warnings; pointers 903 of 903 resolve.
+
+| build finding | status | how |
+|---|---|---|
+| 6 quality files filed under a source | closed | 3e93052: each filed under the dataset its source feeds; the three sources that feed none (orderrows, orders, date) under v_contoso5_sales_line, one evidence line each saying why |
+| value-set keys typed `identifier` (dim_country.country_code, dim_currency.currency_code) | closed | 369f330: `dimension` (L0); no record types either column |
+| contoso5_status key: 1 empty row | closed | 369f330: the blank status of a trading store is no member; transform and lookup agree |
+| ABOUT-NOT-SERVED (Store.channel, Store.premises_not_place) | closed | 26b3abc: parent `project`, concept:Store kept second, no address removed |
+| LAYOUT: compile.json, contoso5.duckdb | not bundle work | both are gitignored working-tree files (the compiler's own output and the warehouse the connection names); the validator walks the working tree, not the tracked files |
+| out_of_scope `acceptance/runs/answers_before_*/**` stale | kept | gitignored here, but live where the bench writes: the compiled bundle holds acceptance/runs/answers_before_20261116T223953Z, which this entry waives for the 0.4.0 compiler (the rule's own reason). Removing it would take the compiled bundle down |
+| L15: `interpreter`, `model_catalog`, `data_signoff` | OPEN — operator | decisions, not bundle work |
+| L15: 8 profiles older than their dataset or transform | open | a profiler run over the warehouse (tools plane) |
+| warnings: 13 lookups unread, contoso5_country_code.label read by nothing | open | unchanged; not errors |
