@@ -1,71 +1,69 @@
 ---
 type: Dataset
-title: 'Clean: dim_customer'
-description: AI-friendly clean shape the ontology binds to
-relation: contoso_served.dim_customer
+title: dim_customer
+description: dataset dim_customer
+relation: dim_customer
 tags:
-- CONTOSO5
+- Contoso 5
 - dataset
-- lifecycle:draft
 ---
+
+- **Served as** — `"contoso_served"."dim_customer"`
+- **Key** — `customer_key`
+- **Made by** — [dim_customer](../transforms/dim_customer.md)
+- **valid** — start=`valid_from`, end=`valid_end`
+- **Trust** — authored
 
 ## Columns
 
-| column | type | role |
-|---|---|---|
-| `customer_key` | integer | PK |
-| `customer_name` | string | value |
-| `continent` | string | value |
-| `country_code` | string | FK |
-| `state` | string | value |
-| `city` | string | value |
-| `gender` | string | value |
-| `birth_date` | date | value |
-| `valid_from` | date | value |
-| `valid_to` | date | value |
-| `valid_end` | date | value |
+| column | is | key | label | measure | names | other | means |
+|---|---|---|---|---|---|---|---|
+| `customer_key` | identifier | PK | — | — | — | — | the row key: one row per customer. The register is not the buyer list — many customers have never ordered (rule Customer.register_not_buyers). |
+| `customer_name` | name | — | — | — | names `customer_key` (common) | match=`pattern` | the customer's name as registered. |
+| `continent` | dimension | — | — | — | — | — | the continent the customer lives on. |
+| `country_code` | dimension | — | — | — | — | parent=`continent` | the country the CUSTOMER lives in. No customer carries the `--` online placeholder. This is the only column that can place an internet sale in a real country. |
+| `state` | dimension | — | — | — | — | within=`country_code` | the state, province or region the customer lives in. |
+| `city` | dimension | — | — | — | — | match=`pattern` | the city the customer lives in. |
+| `gender` | dimension | — | — | — | — | — | the customer's recorded gender. |
+| `birth_date` | date | — | — | — | — | — | the customer's date of birth. |
+| `valid_from` | identifier | — | — | — | — | — | the day this customer record became valid — the start of the validity window that says whether a customer is active on a reference date. The register is kept as a history, so a sale could in principle be attributed to where the customer lived ON THE ORDER DATE — nothing in this bundle declares that it should be. |
+| `valid_to` | identifier | — | — | — | — | — | the day this customer record stopped being valid — the last day of the validity window, as the source states it. Paired with `valid_from`. |
+| `valid_end` | identifier | — | — | — | — | — | the day after `valid_to`: the half-open end of the validity window, made by the transform. A record is valid on a day when `valid_from` is on or before it and `valid_end` is after it, which selects exactly the records `valid_to` on or after that day selects. It is what rule Customer.active_on_the_reference_date reads; offered to no question on its own. |
 
-## Foreign keys
+## Checks
 
-- `country_code` → `dim_country.country_code` (many:one, mandatory:optional)
+_This dataset declares no checks._
 
-## Referenced by
+## Value sets
 
-- `v_contoso5_sales_line.customer_key` → `dim_customer.customer_key`
+- `country_code` → value set [`dim_country`](dim_country.md).`country_code` via edge `customer__based_in__country`
 
 ## What a question may do
 
-### Details
+_What each column's kind (`is:`) lets a question do — the L1 kind table (`mac_vocabulary.yaml#law.terms.L1`), read per column; nothing here is declared on the column itself._
 
-- **Schema version** — 0.4.0-develop
-- **Confidence** — C
-- **Provenance** — authored
-- **Source** — CONTOSO5
+| column | is | group | filter | add | count distinct | min/max | words | shown |
+|---|---|---|---|---|---|---|---|---|
+| `customer_key` | `identifier` | through its concept | exact; pattern with `match: pattern` | — | yes | — | exact | yes |
+| `customer_name` | `name` | via `names` | via `names` | — | — | — | values; pattern for common / long / short | display (L13) |
+| `continent` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
+| `country_code` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
+| `state` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
+| `city` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
+| `gender` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
+| `birth_date` | `date` | grains | period | — | yes | yes | calendar words | yes |
+| `valid_from` | `identifier` | through its concept | exact; pattern with `match: pattern` | — | yes | — | exact | yes |
+| `valid_to` | `identifier` | through its concept | exact; pattern with `match: pattern` | — | yes | — | exact | yes |
+| `valid_end` | `identifier` | through its concept | exact; pattern with `match: pattern` | — | yes | — | exact | yes |
 
-### Key
+## Bound by
 
-- One row is identified by `customer_key`.
+*1 concept(s) take rows from this dataset — a change to a column's declaration reaches every one of them.*
 
-### Columns
+- [Customer](../../ontology/concepts/Customer.md) — serves `customer_key`, `customer_name`, `continent`, `country_code`, `state`, `city`, `gender`, `birth_date`, `valid_from`, `valid_to`, `valid_end`
 
-| column | key | offers | references | rulings |
-|---|---|---|---|---|
-| `customer_key` | **key** | — | — | — |
-| `customer_name` | — | axis `categorical` · suppressed `DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME` | — | label_of `customer_key` (common) |
-| `continent` | — | axis `categorical` | — | — |
-| `country_code` | — | axis `categorical` | — | finer_than `continent` |
-| `state` | — | axis `categorical` | — | scoped_by `country_code` |
-| `city` | — | axis `categorical` · suppressed `DQ-IDENTIFYING-DIM_CUSTOMER-CITY` | — | — |
-| `gender` | — | axis `categorical` | — | — |
-| `birth_date` | — | axis `time` · extremum `min`, `max` | — | — |
-| `valid_from` | — | — | — | — |
-| `valid_to` | — | — | — | — |
-| `valid_end` | — | — | — | — |
+## Findings
 
-_Declared per column, over 11 columns: offers 7 of 11 · references 0 of 11 · rulings 3 of 11. An em dash is a column for which nothing is declared._
-
-### Bound by
-
-*1 concept(s) read this relation — a change to a column's `offers` or `rulings` reaches every one of them.*
-
-- [Customer](../concepts/customer.md) — serves `customer_key`, `customer_name`, `continent`, `country_code`, `state`, `city`, `gender`, `birth_date`, `valid_from`, `valid_to`, `valid_end`
+- [DQ-IDENTIFYING-DIM_CUSTOMER-CITY](../quality/DQ-IDENTIFYING-DIM_CUSTOMER-CITY.md) — medium · open — nobody has ruled — `dim_customer.city` names individuals — 21,317 of 34,581 values are held by exactly one row
+- [DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME](../quality/DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME.md) — medium · open — nobody has ruled — `dim_customer.customer_name` names individuals — 94,488 of 99,200 values are held by exactly one row
+- [DQ-DANGLINGKEY-GEOAREAKEY](../quality/DQ-DANGLINGKEY-GEOAREAKEY.md) — medium · open — nobody has ruled — `GeoAreaKey` is key-shaped and no relation in scope carries it as a key

@@ -1,53 +1,50 @@
 ---
 type: Dataset
-title: 'Clean: dim_currency'
-description: AI-friendly clean shape the ontology binds to
-relation: contoso_served.dim_currency
+title: dim_currency
+description: dataset dim_currency
+relation: dim_currency
 tags:
-- CONTOSO5
+- Contoso 5
 - dataset
-- lifecycle:draft
+- value set
 ---
+
+- **Served as** — `"contoso_served"."dim_currency"`
+- **Key** — `currency_code`
+- **Made by** — [dim_currency](../transforms/dim_currency.md)
+- **Members** — its rows are the members of a value set: —
+- **Trust** — authored
 
 ## Columns
 
-| column | type | role |
-|---|---|---|
-| `currency_code` | string | PK · FK |
+| column | is | key | label | measure | names | other | means |
+|---|---|---|---|---|---|---|---|
+| `currency_code` | dimension | PK | — | — | — | — | the currency's code. Five are used across the sales: USD, EUR, GBP, CAD, AUD. |
 
-## Foreign keys
+## Checks
 
-- `currency_code` → `contoso5_currency.code`
+_This dataset declares no checks._
 
-## Referenced by
+## Value sets
 
-- `v_contoso5_fx_rate.from_currency` → `dim_currency.currency_code`
-- `v_contoso5_fx_rate.to_currency` → `dim_currency.currency_code`
-- `v_contoso5_sales_line.currency_code` → `dim_currency.currency_code`
+- ← [`v_contoso5_fx_rate`](v_contoso5_fx_rate.md).`from_currency` links to `currency_code` via edge `exchange_rate__quotes_from__currency`
+- ← [`v_contoso5_fx_rate`](v_contoso5_fx_rate.md).`to_currency` links to `currency_code` via edge `exchange_rate__quotes_to__currency`
+- ← [`v_contoso5_sales_line`](v_contoso5_sales_line.md).`currency_code` links to `currency_code` via edge `order__paid_in__currency`
 
 ## What a question may do
 
-### Details
+_What each column's kind (`is:`) lets a question do — the L1 kind table (`mac_vocabulary.yaml#law.terms.L1`), read per column; nothing here is declared on the column itself._
 
-- **Schema version** — 0.4.0-develop
-- **Confidence** — C
-- **Provenance** — authored
-- **Source** — CONTOSO5
+| column | is | group | filter | add | count distinct | min/max | words | shown |
+|---|---|---|---|---|---|---|---|---|
+| `currency_code` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
 
-### Key
+## Bound by
 
-- One row is identified by `currency_code`.
+*1 concept(s) take rows from this dataset — a change to a column's declaration reaches every one of them.*
 
-### Columns
+- [Currency](../../ontology/concepts/Currency.md) — serves `currency_code`
 
-| column | key | offers | references | rulings |
-|---|---|---|---|---|
-| `currency_code` | **key** | — | — | — |
+## Findings
 
-_Declared per column, over 1 column: offers 0 of 1 · references 0 of 1 · rulings 0 of 1. An em dash is a column for which nothing is declared._
-
-### Bound by
-
-*1 concept(s) read this relation — a change to a column's `offers` or `rulings` reaches every one of them.*
-
-- [Currency](../concepts/currency.md) — serves `currency_code`
+_No finding is filed under this dataset._

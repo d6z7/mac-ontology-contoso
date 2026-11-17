@@ -1,41 +1,47 @@
 ---
 type: Dataset
-title: 'Clean: contoso5_state'
-description: AI-friendly clean shape the ontology binds to
-relation: contoso_served.contoso5_state
+title: contoso5_state
+description: dataset contoso5_state
+relation: contoso5_state
 tags:
-- CONTOSO5
+- Contoso 5
 - dataset
-- lifecycle:draft
 ---
+
+- **Stored as** — a file: `data/lookups/contoso5_state.csv` (67 row(s))
+- **Key** — `code`
+- **Made by** — [contoso5_state](../transforms/contoso5_state.md)
+- **Trust** — authored
 
 ## Columns
 
-| column | type | role |
-|---|---|---|
-| `code` | string | PK |
+| column | is | key | label | measure | names | other | means |
+|---|---|---|---|---|---|---|---|
+| `code` | identifier | PK | — | — | — | — | THE MEMBER: a state, province or region. This relation IS the declared value set for that column, so a value absent here is a value the warehouse does not hold. |
+
+## Checks
+
+_This dataset declares no checks._
+
+## Value sets
+
+_No column of this dataset is linked to a value set, and none links to it._
 
 ## What a question may do
 
-### Details
+_What each column's kind (`is:`) lets a question do — the L1 kind table (`mac_vocabulary.yaml#law.terms.L1`), read per column; nothing here is declared on the column itself._
 
-- **Schema version** — 0.4.0-develop
-- **Confidence** — C
-- **Provenance** — authored
-- **Source** — CONTOSO5
+| column | is | group | filter | add | count distinct | min/max | words | shown |
+|---|---|---|---|---|---|---|---|---|
+| `code` | `identifier` | through its concept | exact; pattern with `match: pattern` | — | yes | — | exact | yes |
 
-### Key
+## Bound by
 
-- One row is identified by `code`.
+_No concept takes rows from this dataset (no concept's `table:` names it), so no question reads these columns through the ontology._
 
-### Columns
+## Findings
 
-| column | key | offers | references | rulings |
-|---|---|---|---|---|
-| `code` | **key** | — | — | — |
-
-_Declared per column, over 1 column: offers 0 of 1 · references 0 of 1 · rulings 0 of 1. An em dash is a column for which nothing is declared._
-
-### Bound by
-
-_No concept binds this relation through `grounding.bindings[]`, so nothing in the ontology reads these column facts._
+- [DQ-CASE-G-contoso5_state-COLUMNS](../quality/DQ-CASE-G-contoso5_state-COLUMNS.md) — high · open — nobody has ruled — data-sanity case G-contoso5_state-COLUMNS did not pass
+- [DQ-CASE-G-contoso5_state-KEY](../quality/DQ-CASE-G-contoso5_state-KEY.md) — high · open — nobody has ruled — data-sanity case G-contoso5_state-KEY did not pass
+- [DQ-CASE-G-contoso5_state-NULLS](../quality/DQ-CASE-G-contoso5_state-NULLS.md) — medium · open — nobody has ruled — data-sanity case G-contoso5_state-NULLS did not pass
+- [DQ-UNCLAIMED-CONTOSO5_STATE](../quality/DQ-UNCLAIMED-CONTOSO5_STATE.md) — medium · accepted · said by ontology-developer — served relation `contoso5_state` is claimed by no concept

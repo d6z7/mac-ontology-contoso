@@ -1,28 +1,24 @@
 ---
 type: Transform
-title: 'Cleansing: contoso5_continent'
-description: Cleansing → contoso_served.contoso5_continent
-relation: contoso_served.contoso5_continent
+title: 'Transform: contoso5_continent'
+description: Produces dataset:contoso5_continent
+relation: contoso5_continent
 tags:
-- CONTOSO5
+- Contoso 5
 - transform
-- lifecycle:draft
 sql_file: data/transforms/contoso5_continent.sql
 ---
 
-Produces `contoso_served.contoso5_continent` · grain: —
+Produces `dataset:contoso5_continent` · driven by **undeclared** (`-- mac.transform.driven_by:` on the `.sql`; absent = undeclared, trusted as generated)
 
-## Rules
+## Repairs
+
+_This transform declares no `repairs`._
+
 ## Lineage
-- Clean dataset: [contoso5_continent](../datasets/contoso5_continent.md)
+
+- Produces: [contoso5_continent](../datasets/contoso5_continent.md)
 
 ## SQL realization
-Realized by `contoso5_continent.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
 
-## Lineage (column-level)
-
-`contoso_served.contoso5_continent` · kinds: passthrough
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `code` | `dim_customer.continent` |  | passthrough |
+Realized by `data/transforms/contoso5_continent.sql` — open it with the **SQL** button.

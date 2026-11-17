@@ -1,33 +1,25 @@
 ---
 type: Transform
-title: 'Cleansing: dim_location'
-description: Cleansing → contoso_served.dim_location
-relation: contoso_served.dim_location
+title: 'Transform: dim_location'
+description: Produces dataset:dim_location
+relation: dim_location
 tags:
-- CONTOSO5
+- Contoso 5
 - transform
-- lifecycle:draft
 sql_file: data/transforms/dim_location.sql
 ---
 
-Produces `contoso_served.dim_location` · grain: —
+Produces `dataset:dim_location` · driven by **proposed** (`-- mac.transform.driven_by:` on the `.sql`; absent = undeclared, trusted as generated)
 
-## Rules
+## Repairs
+
+_This transform declares no `repairs`._
+
 ## Lineage
+
 - Source: [store](../sources/store.md)
-- Clean dataset: [dim_location](../datasets/dim_location.md)
+- Produces: [dim_location](../datasets/dim_location.md)
 
 ## SQL realization
-Realized by `dim_location.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
 
-## Lineage (column-level)
-
-`contoso_served.dim_location` · kinds: computed + passthrough + transform
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `location_code` | `store."storecode"` |  | passthrough |
-| `country_code` | `store."countrycode"` → _ARBITRARY(s."countrycode")_ |  | transform |
-| `country_name` | `store."countryname"` → _ARBITRARY(s."countryname")_ |  | transform |
-| `state` | `store."state"` → _ARBITRARY(s."state")_ |  | transform |
-| `units_ever_here` | _COUNT(*)_ |  | computed |
+Realized by `data/transforms/dim_location.sql` — open it with the **SQL** button.

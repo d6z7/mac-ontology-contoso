@@ -1,54 +1,53 @@
 ---
 type: Dataset
-title: 'Clean: v_contoso5_fx_rate'
-description: AI-friendly clean shape the ontology binds to
-relation: contoso_served.v_contoso5_fx_rate
+title: v_contoso5_fx_rate
+description: dataset v_contoso5_fx_rate
+relation: v_contoso5_fx_rate
 tags:
-- CONTOSO5
+- Contoso 5
 - dataset
-- lifecycle:draft
 ---
+
+- **Served as** — `"contoso_served"."v_contoso5_fx_rate"`
+- **Key** — `date_day`, `from_currency`, `to_currency`
+- **Made by** — [v_contoso5_fx_rate](../transforms/v_contoso5_fx_rate.md)
+- **Trust** — authored
 
 ## Columns
 
-| column | type | role |
-|---|---|---|
-| `date_day` | date | PK1 |
-| `from_currency` | string | PK2 · FK |
-| `to_currency` | string | PK3 · FK |
-| `rate` | decimal | value |
+| column | is | key | label | measure | names | other | means |
+|---|---|---|---|---|---|---|---|
+| `date_day` | date | PK1 | — | — | — | — | the day the rate held. |
+| `from_currency` | dimension | PK2 | — | — | — | — | the currency being converted FROM. Every currency appears as a source, so the view is a full matrix of currency pairs and not a USD-only lookup. |
+| `to_currency` | dimension | PK3 | — | — | — | within=`from_currency` | the currency being converted TO. |
+| `rate` | measure | — | — | rate · to-currency per from-currency · over_time `average` | — | — | what one unit of `from_currency` was worth in `to_currency` on `date_day`. Same-currency pairs are present and are exactly 1. THE AMOUNTS ON A SALES LINE ARE ALREADY USD, so converting them with this is how a figure silently becomes the wrong currency. |
 
-## Foreign keys
+## Checks
 
-- `from_currency` → `dim_currency.currency_code` (many:one, mandatory:mandatory)
-- `to_currency` → `dim_currency.currency_code` (many:one, mandatory:mandatory)
+_This dataset declares no checks._
+
+## Value sets
+
+- `from_currency` → value set [`dim_currency`](dim_currency.md).`currency_code` via edge `exchange_rate__quotes_from__currency`
+- `to_currency` → value set [`dim_currency`](dim_currency.md).`currency_code` via edge `exchange_rate__quotes_to__currency`
 
 ## What a question may do
 
-### Details
+_What each column's kind (`is:`) lets a question do — the L1 kind table (`mac_vocabulary.yaml#law.terms.L1`), read per column; nothing here is declared on the column itself._
 
-- **Schema version** — 0.4.0-develop
-- **Confidence** — C
-- **Provenance** — authored
-- **Source** — CONTOSO5
+| column | is | group | filter | add | count distinct | min/max | words | shown |
+|---|---|---|---|---|---|---|---|---|
+| `date_day` | `date` | grains | period | — | yes | yes | calendar words | yes |
+| `from_currency` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
+| `to_currency` | `dimension` | yes (unnests `many`) | member, pattern; threshold if ordinal | — | yes | if ordinal | values + lexicon | yes |
+| `rate` | `measure` | — | threshold | L2 | — | yes | lexicon | yes |
 
-### Key
+## Bound by
 
-- One row is identified by `date_day`, `from_currency`, `to_currency`.
+*1 concept(s) take rows from this dataset — a change to a column's declaration reaches every one of them.*
 
-### Columns
+- [ExchangeRate](../../ontology/concepts/ExchangeRate.md) — serves `date_day`, `from_currency`, `to_currency`, `rate`
 
-| column | key | offers | references | rulings |
-|---|---|---|---|---|
-| `date_day` | **key** | axis `time` | — | — |
-| `from_currency` | **key** | axis `categorical` | — | — |
-| `to_currency` | **key** | axis `categorical` | — | scoped_by `from_currency` |
-| `rate` | — | aggregate intensive / to-currency per from-currency · extremum `min`, `max` | — | — |
+## Findings
 
-_Declared per column, over 4 columns: offers 4 of 4 · references 0 of 4 · rulings 1 of 4. An em dash is a column for which nothing is declared._
-
-### Bound by
-
-*1 concept(s) read this relation — a change to a column's `offers` or `rulings` reaches every one of them.*
-
-- [Exchange Rate](../concepts/exchange_rate.md) — serves `date_day`, `from_currency`, `to_currency`, `rate`
+- [DQ-AMBIGREF-CURRENCYCODE](../quality/DQ-AMBIGREF-CURRENCYCODE.md) — high · open — nobody has ruled — `CurrencyCode` includes perfectly into 2 different keys — which is THE reference?

@@ -6,13 +6,11 @@ tags: [reference, guardrail]
 
 # DQ-ORPHAN-ORDERROWS
 
-*medium · confidence ?*
+*medium · open — nobody has ruled · filed under `v_contoso5_sales_line`*
 
-**Finding.** 223,974 rows harvested and never curated; no data/transforms/*.yaml declares it as an input
+**Finding.** raw landing `orderrows` is consumed by no transformation
 
-**Current handling.** —
+**About.** `source:orderrows`
 
-**Residual risk.** —
-
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Needs.** a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing?
 

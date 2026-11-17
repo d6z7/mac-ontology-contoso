@@ -1,29 +1,25 @@
 ---
 type: Transform
-title: 'Cleansing: dim_currency'
-description: Cleansing → contoso_served.dim_currency
-relation: contoso_served.dim_currency
+title: 'Transform: dim_currency'
+description: Produces dataset:dim_currency
+relation: dim_currency
 tags:
-- CONTOSO5
+- Contoso 5
 - transform
-- lifecycle:draft
 sql_file: data/transforms/dim_currency.sql
 ---
 
-Produces `contoso_served.dim_currency` · grain: —
+Produces `dataset:dim_currency` · driven by **undeclared** (`-- mac.transform.driven_by:` on the `.sql`; absent = undeclared, trusted as generated)
 
-## Rules
+## Repairs
+
+_This transform declares no `repairs`._
+
 ## Lineage
+
 - Source: [sales](../sources/sales.md)
-- Clean dataset: [dim_currency](../datasets/dim_currency.md)
+- Produces: [dim_currency](../datasets/dim_currency.md)
 
 ## SQL realization
-Realized by `dim_currency.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
 
-## Lineage (column-level)
-
-`contoso_served.dim_currency` · kinds: passthrough
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `currency_code` | `sales."currencycode"` |  | passthrough |
+Realized by `data/transforms/dim_currency.sql` — open it with the **SQL** button.

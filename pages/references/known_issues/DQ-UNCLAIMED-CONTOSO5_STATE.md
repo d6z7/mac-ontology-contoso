@@ -6,13 +6,11 @@ tags: [reference, guardrail]
 
 # DQ-UNCLAIMED-CONTOSO5_STATE
 
-*medium · confidence ?*
+*medium · accepted · said by ontology-developer · filed under `contoso5_state`*
 
-**Finding.** 22 relation(s) are served and 8 are claimed by at least one of 11 concept(s); `contoso5_state` is claimed by none. A served relation is one a question can read, so an unclaimed one is either a notion nobody modelled or a relation that should not be served — and the delivered artifacts do not say which.
+**Finding.** served relation `contoso5_state` is claimed by no concept
 
-**Current handling.** —
+**About.** `dataset:contoso5_state`
 
-**Residual risk.** —
-
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Needs.** Which is it? ANSWER ONE OF: model_a_concept | stop_serving_it | backs_no_notion. A decline is a legitimate answer and the reason is the deliverable — `backs_no_notion` with no reason leaves the next reader exactly where this finding found them.
 

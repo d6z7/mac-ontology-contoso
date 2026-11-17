@@ -1,35 +1,40 @@
 ---
 type: DQ Issue
 title: data-sanity case G-contoso5_state-COLUMNS did not pass
-description: Prove contoso5_state still has every column we recorded QUESTION. Is
-  this table still shaped the way we found it? ANSWER. 1 columns were recorded and
-  are expected to still be there. RISK. A renamed or
+description: data-sanity case G-contoso5_state-COLUMNS did not pass
 tags:
-- CONTOSO5
+- Contoso 5
 - severity:high
-- confidence:?
-- lifecycle:draft
+- disposition:open
 ---
 
-`DQ-CASE-G-contoso5_state-COLUMNS` · severity **high** · confidence **?** · disposition **open — nobody has ruled**
+`DQ-CASE-G-contoso5_state-COLUMNS` · severity **high** · disposition **open — nobody has ruled** · filed under [contoso5_state](../datasets/contoso5_state.md)
 
 ## Finding
-Prove contoso5_state still has every column we recorded QUESTION. Is this table still shaped the way we found it? ANSWER. 1 columns were recorded and are expected to still be there. RISK. A renamed or
 
-## Current handling
-—
+data-sanity case G-contoso5_state-COLUMNS did not pass
 
-## Residual risk
-—
+## About
 
-## Sign-off required
-—
+- `dataset:contoso5_state`
+
+## Needs
+
+**Needs** — a disposition: fix the data, or accept the reading with a reason.
 
 ## Disposition
 
-**open** — ruled by **nobody named**.
+**open**.
+- said by **mac_dq_findings.py/1**
 
-_No reason recorded. `accepted` and `wont_fix` both require one._
+## Repaired by
 
-## Table
-- [customer](../sources/customer.md)
+_No transform's `repairs` names this finding._
+
+## Blocks and waives
+
+_It blocks and waives nothing._
+
+## Evidence
+
+- Prove contoso5_state still has every column we recorded QUESTION. Is this table still shaped the way we found it? ANSWER. 1 columns were recorded and are expected to still be there. RISK. A renamed or

@@ -1,35 +1,40 @@
 ---
 type: DQ Issue
 title: data-sanity case G-contoso5_color-NULLS did not pass
-description: Prove the 1 always-filled columns are still always filled QUESTION. Has
-  anything started arriving empty? ANSWER. 1 of 1 columns held no empties when recorded.
-  RISK. An empty in a column used to identi
+description: data-sanity case G-contoso5_color-NULLS did not pass
 tags:
-- CONTOSO5
+- Contoso 5
 - severity:medium
-- confidence:?
-- lifecycle:draft
+- disposition:open
 ---
 
-`DQ-CASE-G-contoso5_color-NULLS` · severity **medium** · confidence **?** · disposition **open — nobody has ruled**
+`DQ-CASE-G-contoso5_color-NULLS` · severity **medium** · disposition **open — nobody has ruled** · filed under [contoso5_color](../datasets/contoso5_color.md)
 
 ## Finding
-Prove the 1 always-filled columns are still always filled QUESTION. Has anything started arriving empty? ANSWER. 1 of 1 columns held no empties when recorded. RISK. An empty in a column used to identi
 
-## Current handling
-—
+data-sanity case G-contoso5_color-NULLS did not pass
 
-## Residual risk
-—
+## About
 
-## Sign-off required
-—
+- `dataset:contoso5_color`
+
+## Needs
+
+**Needs** — a disposition: fix the data, or accept the reading with a reason.
 
 ## Disposition
 
-**open** — ruled by **nobody named**.
+**open**.
+- said by **mac_dq_findings.py/1**
 
-_No reason recorded. `accepted` and `wont_fix` both require one._
+## Repaired by
 
-## Table
-- [product](../sources/product.md)
+_No transform's `repairs` names this finding._
+
+## Blocks and waives
+
+_It blocks and waives nothing._
+
+## Evidence
+
+- Prove the 1 always-filled columns are still always filled QUESTION. Has anything started arriving empty? ANSWER. 1 of 1 columns held no empties when recorded. RISK. An empty in a column used to identi

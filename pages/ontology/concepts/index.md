@@ -3,18 +3,16 @@ type: Index
 title: Contoso 5 — concepts (MAC-in-OKF)
 ---
 
-# Contoso 5 — MAC objects as OKF pages
+# Contoso 5 — concepts
 
-- [Brand](brand.md)
-- [Colour](color.md)
-- [Country](country.md)
-- [Currency](currency.md)
-- [Customer](customer.md)
-- [Exchange Rate](exchange_rate.md)
-- [Location](location.md)
-- [Order](order.md)
-- [Product](product.md)
-- [Product Category](product_category.md)
-- [Store](store.md)
-
-## Rules
+- [Brand](Brand.md)
+- [Colour](Color.md)
+- [Country](Country.md)
+- [Currency](Currency.md)
+- [Customer](Customer.md)
+- [ExchangeRate](ExchangeRate.md)
+- [Location](Location.md)
+- [Order](Order.md)
+- [Product](Product.md)
+- [ProductCategory](ProductCategory.md)
+- [Store](Store.md)
