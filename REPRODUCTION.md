@@ -27,7 +27,7 @@ The layout is fixed by the standard (GRAMMAR_v3 §1); every reference points tow
 | `ontology/edges.yaml` | how two concepts join |
 | `ontology/rules/` | one decision per file: what it says, who said it, its state, its behaviour |
 | `acceptance/` | questions, approved reference answers (SQL + expected value), oracles, and the acceptance tools (`acceptance/tools/`, incl. `trace_extract.py`) |
-| `evidence/` | the bundle's records: `MODELLING-LOG.md` (why the model is shaped as it is), measurements, and the v3 migration's record (`evidence/v3-migration/`) |
+| `evidence/` | the bundle's records: `MODELLING-LOG.md` (why the model is shaped as it is), measurements, and what the bundle still needs (`evidence/TODO.md`) |
 | `pages/` | generated pages and projections (never authored) |
 | `REPRODUCTION.md`, `reproduction.yaml` | this account, and the stages that rebuild the warehouse |
 
