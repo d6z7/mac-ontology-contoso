@@ -1,6 +1,6 @@
 # Order.default_measure
 
-The default measure of Order, written by mac_migrate_v3 from the 0.4.0 declaration (round 2; Y-6: a proposed default applies and is disclosed as proposed).
+The default measure of Order (Y-6: a proposed default applies and is disclosed as proposed).
 
 ## Cites
 

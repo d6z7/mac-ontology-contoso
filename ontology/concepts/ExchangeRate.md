@@ -1,6 +1,6 @@
 # ExchangeRate
 
-The account of concept ExchangeRate. Written by mac_migrate_v3 from the 0.4.0 declaration; each heading after `Cites` carries 0.4.0 prose that has no key in grammar v3 (X-3).
+The account of concept ExchangeRate.
 
 ## Cites
 
