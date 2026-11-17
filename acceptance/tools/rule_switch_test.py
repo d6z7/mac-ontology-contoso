@@ -19,6 +19,9 @@ Per reference and rule, this checks, against the warehouse:
   ENGINE      (--engine) for a reference with a pinned interpreter intent, the rule's default is flipped in a copy of
               the bundle and the intent re-planned by the runtime (no model, no warehouse) through
               mac_keys_change_an_answer's own copy and replay: CHANGED, SAME, or both refused.
+  ROUTES      with --engine, every live route choice's default is flipped to every other setting over the questions
+              mac_keys_change_an_answer generates from the declarations, and the plans that move are counted; a
+              route choice no reference follows (no acceptance question crosses it) is named.
 
 Per rule: an option no reference distinguishes from the default is UNDISTINGUISHED — the corpus does not test it
 (the rule is dead there or untested). A rule with no distinguished option fails.
@@ -100,16 +103,41 @@ def compare_answers(selfcheck, want, got_res) -> bool:
     return v in selfcheck.SOUND
 
 
-def engine_switch(root: Path, variants: Path, rules: dict, refs: list) -> dict:
-    """{(id, rule, option): CHANGED | SAME | BOTH REFUSED | RUNTIME REFUSES THE SETTING | NO INTENT | DID NOT LOAD}
-    by flipping the default in a
-    copy of the bundle and re-planning the pinned intent — mac_keys_change_an_answer's write_variant and replay."""
+def _runtime():
     sys.path.insert(0, str(mac_root() / "tools"))
     import _neighbours  # noqa: E402
     _neighbours.ensure_runtime_on_path()
     import mac_keys_change_an_answer as K  # noqa: E402
     import mac_model as M  # noqa: E402
+    return K, M
 
+
+def _flipped(K, M, root: Path, vdir: Path, rid: str, opt: str) -> Path:
+    """A copy of the bundle (mac_keys_change_an_answer.write_variant) with rule `rid`'s default set to `opt`."""
+    K.write_variant(root, vdir, None)
+    rp = vdir / "ontology" / "rules" / f"{rid}.yaml"
+    doc = yaml.safe_load(rp.read_text(encoding="utf-8"))
+    doc["choice"]["default"] = opt
+    rp.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    M.clear_cache()
+    return vdir
+
+
+def _verdict(b: str, a: str) -> str:
+    if a.startswith("raised") and not b.startswith("raised"):
+        return "RUNTIME REFUSES THE SETTING: " + a[7:140]
+    if a != b:
+        return "CHANGED"
+    if '"type": "Refusal"' in b or b.startswith("raised"):
+        return "BOTH REFUSED"
+    return "SAME"
+
+
+def engine_switch(root: Path, variants: Path, rules: dict, refs: list) -> dict:
+    """{(id, rule, option): CHANGED | SAME | BOTH REFUSED | RUNTIME REFUSES THE SETTING | NO INTENT | DID NOT LOAD}
+    by flipping the default in a copy of the bundle and re-planning the pinned intent — mac_keys_change_an_answer's
+    write_variant and replay."""
+    K, M = _runtime()
     intents, _ = K.corpus(root)
     out: dict = {}
     wanted = {}
@@ -129,27 +157,43 @@ def engine_switch(root: Path, variants: Path, rules: dict, refs: list) -> dict:
     if isinstance(base, str):
         return {(i, r, o): f"DID NOT LOAD: {base}" for (r, o), v in wanted.items() for i in v}
     for (rid, opt), qids in sorted(wanted.items()):
-        vdir = variants / f"{rid}={opt}"
-        K.write_variant(root, vdir, None)
-        rp = vdir / "ontology" / "rules" / f"{rid}.yaml"
-        doc = yaml.safe_load(rp.read_text(encoding="utf-8"))
-        doc["choice"]["default"] = opt
-        rp.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True), encoding="utf-8")
-        M.clear_cache()
-        after = K.replay(vdir, {i: intents[i] for i in qids})
+        after = K.replay(_flipped(K, M, root, variants / f"{rid}={opt}", rid, opt), {i: intents[i] for i in qids})
         for i in qids:
+            out[(i, rid, opt)] = (f"DID NOT LOAD: {after[:120]}" if isinstance(after, str)
+                                  else _verdict(base.get(i, ""), after.get(i, "")))
+    return out
+
+
+def route_choices(rules: dict) -> list:
+    """Live route-choice rules (an option with `route`)."""
+    return sorted(rid for rid, r in rules.items() if r.get("state") in ACTS
+                  and any(isinstance(o, dict) and o.get("route")
+                          for o in ((r.get("choice") or {}).get("options") or {}).values()))
+
+
+def engine_generated(root: Path, variants: Path, rules: dict, rids: list) -> dict:
+    """{(rule, setting): (moved, of)}: for every route choice, flip its default to every other setting
+    over the questions mac_keys_change_an_answer GENERATES from the declarations (its corpus of a bundle copy, which
+    carries no acceptance plane: every concept counted, every fact summed, each sliced by every concept one edge
+    away) and count the plans that move."""
+    K, M = _runtime()
+    out: dict = {}
+    base_dir = variants / "generated-baseline"
+    K.write_variant(root, base_dir, None)
+    gen, _origin = K.corpus(base_dir)
+    base = K.replay(base_dir, gen)
+    if isinstance(base, str):
+        return {(rid, "-"): (f"DID NOT LOAD: {base[:120]}", 0) for rid in rids}
+    for rid in rids:
+        ch = rules[rid].get("choice") or {}
+        settings = [o for o in list((ch.get("options") or {}).keys()) + ["ask"] if o != ch.get("default")]
+        for opt in settings:
+            after = K.replay(_flipped(K, M, root, variants / f"generated-{rid}={opt}", rid, opt), gen)
             if isinstance(after, str):
-                out[(i, rid, opt)] = f"DID NOT LOAD: {after[:120]}"
+                out[(rid, opt)] = (f"DID NOT LOAD: {after[:120]}", len(gen))
                 continue
-            b, a = base.get(i, ""), after.get(i, "")
-            if a.startswith("raised") and not b.startswith("raised"):
-                out[(i, rid, opt)] = "RUNTIME REFUSES THE SETTING: " + a[7:140]
-            elif a != b:
-                out[(i, rid, opt)] = "CHANGED"
-            elif '"type": "Refusal"' in b or b.startswith("raised"):
-                out[(i, rid, opt)] = "BOTH REFUSED"
-            else:
-                out[(i, rid, opt)] = "SAME"
+            moved = sorted(k for k in gen if after.get(k) != base.get(k))
+            out[(rid, opt)] = (moved, len(gen))
     return out
 
 
@@ -216,6 +260,10 @@ def main(argv=None) -> int:
                              "default_answer": d.get("expected", d.get("expected_outcome")), "option_answer": shown})
 
     engine = engine_switch(ROOT, Path(a.variants).resolve(), rules, refs) if a.engine else {}
+    routes = route_choices(rules)
+    followed = {e["rule"] for d in refs for e in d["follows"]}
+    unfollowed = [r for r in routes if r not in followed]
+    generated = engine_generated(ROOT, Path(a.variants).resolve(), rules, routes) if (a.engine and routes) else {}
 
     def brief(v):
         if isinstance(v, dict):
@@ -244,8 +292,25 @@ def main(argv=None) -> int:
             tally[v.split(":")[0]] = tally.get(v.split(":")[0], 0) + 1
         print("\n  ENGINE (default flipped in a bundle copy, pinned intent re-planned): "
               + ", ".join(f"{n} {k}" for k, n in sorted(tally.items())))
+    if routes:
+        print("\n  ROUTE CHOICES over the runtime's generated questions"
+              + (f"; followed by no reference: {', '.join(unfollowed)}" if unfollowed else ""))
+        for rid in routes:
+            ch = rules[rid].get("choice") or {}
+            print(f"    {rid} (default {ch.get('default')!r}, options {sorted((ch.get('options') or {}))})")
+            for (r, opt), (moved, of) in sorted(generated.items()):
+                if r != rid:
+                    continue
+                if isinstance(moved, str):
+                    print(f"      -> {opt}: {moved}")
+                else:
+                    print(f"      -> {opt}: {len(moved)} of {of} generated question(s) move"
+                          + (f" ({', '.join(moved[:4])}{', ...' if len(moved) > 4 else ''})" if moved else ""))
+            if not generated:
+                print("      (run with --engine to flip it over the runtime's generated questions)")
     if a.json:
-        Path(a.json).write_text(json.dumps({"rows": rows, "failures": failures,
+        Path(a.json).write_text(json.dumps({"rows": rows, "failures": failures, "unfollowed": unfollowed,
+                                            "generated": {"|".join(k): v for k, v in generated.items()},
                                             "engine": {"|".join(k): v for k, v in engine.items()}},
                                            indent=1, default=str), encoding="utf-8")
     undist = sum(1 for s in per_option.values() if not s["differs"])

@@ -6,3 +6,4 @@ The account of concept Currency. Written by mac_migrate_v3 from the 0.4.0 declar
 
 - `dataset:dim_currency.currency_code`
 - `rule:Currency.code_is_not_the_unit`
+- `rule:Currency.whose`
