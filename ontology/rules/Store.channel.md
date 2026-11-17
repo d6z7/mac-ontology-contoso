@@ -4,6 +4,7 @@ The account of rule Store.channel. Written by mac_migrate_v3; each heading after
 
 ## Cites
 
+- `project`
 - `concept:Store`
 - `concept:Order`
 - `dataset:dim_store.store_code`
