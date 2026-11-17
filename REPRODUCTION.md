@@ -72,9 +72,9 @@ run served       # every data/transforms/*.sql -> contoso_served.* (re-runnable 
 
 ## Check it
 
-With the MAC framework checked out beside it, the v3 tools read this layout:
-`tools/mac_compile_v3.py` compiles it for the 0.4.0 engines and the v3 validator checks every
-file against the grammar.
+With the MAC framework checked out beside it, `tools/mac_compile.py .` builds this layout: the
+v3 validator checks every file against the grammar, law L0 builds the bundle, and the L15 verdict
+says what it can answer. It exits 1 on any error; `--write` persists `pages/compile.json`.
 
 ## Upstream semantics
 
