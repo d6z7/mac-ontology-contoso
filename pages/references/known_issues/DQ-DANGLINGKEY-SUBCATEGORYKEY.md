@@ -6,13 +6,13 @@ tags: [reference, guardrail]
 
 # DQ-DANGLINGKEY-SUBCATEGORYKEY
 
-*medium · confidence ?*
+*medium · open — nobody has ruled · filed under `dim_product`*
 
-**Finding.** reported on 1 plane-relation(s) (product 32 distinct); 32 distinct value(s) on product. It follows this bundle's own key-naming convention and points at nothing.
+**Finding.** `SubCategoryKey` is key-shaped and no relation in scope carries it as a key
 
-**Current handling.** —
+**About.** `source:product`
 
-**Residual risk.** —
+**Needs.** Is the parent MISSING from the extract, already INLINE on the row, or is SubCategoryKey just an attribute? ANSWER ONE OF: inline_dimension | attribute_only | missing_extract. RECOMMENDED: inline_dimension — product.SubCategoryName carries the SAME 32 distinct value(s) as SubCategoryKey — the label already travels with the key, so a concept grounds on product and no parent relation is needed at all
 
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Recommended.** inline_dimension
 

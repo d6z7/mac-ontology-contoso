@@ -6,13 +6,13 @@ tags: [reference, guardrail]
 
 # DQ-AMBIGREF-CURRENCYCODE
 
-*high · confidence ?*
+*high · open — nobody has ruled · filed under `v_contoso5_fx_rate`*
 
-**Finding.** measured on 4 reference(s) across 2 relation(s) (orders, sales): inclusion is 1.0 into every one of currencyexchange.FromCurrency, currencyexchange.ToCurrency, at the same key role and over the same rows. Value inclusion CANNOT separate them, so neither was drawn as the sole reference.
+**Finding.** `CurrencyCode` includes perfectly into 2 different keys — which is THE reference?
 
-**Current handling.** —
+**About.** `source:currencyexchange`
 
-**Residual risk.** —
+**Needs.** Which of currencyexchange.FromCurrency, currencyexchange.ToCurrency is THE reference for CurrencyCode? ANSWER ONE OF: currencyexchange.FromCurrency | currencyexchange.ToCurrency | both_are_real | neither. No recommendation is offered from the data because the data cannot carry one.
 
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Recommended.** the endpoint the child is DENOMINATED IN — for an amount and an FX rate table, the child column is the `from` side
 

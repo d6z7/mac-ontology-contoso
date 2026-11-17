@@ -1,35 +1,40 @@
 ---
 type: DQ Issue
 title: data-sanity case G-contoso5_country_code-NULLS did not pass
-description: Prove the 2 always-filled columns are still always filled QUESTION. Has
-  anything started arriving empty? ANSWER. 2 of 2 columns held no empties when recorded.
-  RISK. An empty in a column used to identi
+description: data-sanity case G-contoso5_country_code-NULLS did not pass
 tags:
-- CONTOSO5
+- Contoso 5
 - severity:medium
-- confidence:?
-- lifecycle:draft
+- disposition:open
 ---
 
-`DQ-CASE-G-contoso5_country_code-NULLS` · severity **medium** · confidence **?** · disposition **open — nobody has ruled**
+`DQ-CASE-G-contoso5_country_code-NULLS` · severity **medium** · disposition **open — nobody has ruled** · filed under [contoso5_country_code](../datasets/contoso5_country_code.md)
 
 ## Finding
-Prove the 2 always-filled columns are still always filled QUESTION. Has anything started arriving empty? ANSWER. 2 of 2 columns held no empties when recorded. RISK. An empty in a column used to identi
 
-## Current handling
-—
+data-sanity case G-contoso5_country_code-NULLS did not pass
 
-## Residual risk
-—
+## About
 
-## Sign-off required
-—
+- `dataset:contoso5_country_code`
+
+## Needs
+
+**Needs** — a disposition: fix the data, or accept the reading with a reason.
 
 ## Disposition
 
-**open** — ruled by **nobody named**.
+**open**.
+- said by **mac_dq_findings.py/1**
 
-_No reason recorded. `accepted` and `wont_fix` both require one._
+## Repaired by
 
-## Table
-- [customer](../sources/customer.md)
+_No transform's `repairs` names this finding._
+
+## Blocks and waives
+
+_It blocks and waives nothing._
+
+## Evidence
+
+- Prove the 2 always-filled columns are still always filled QUESTION. Has anything started arriving empty? ANSWER. 2 of 2 columns held no empties when recorded. RISK. An empty in a column used to identi

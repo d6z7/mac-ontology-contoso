@@ -1,30 +1,25 @@
 ---
 type: Transform
-title: 'Cleansing: dim_country'
-description: Cleansing → contoso_served.dim_country
-relation: contoso_served.dim_country
+title: 'Transform: dim_country'
+description: Produces dataset:dim_country
+relation: dim_country
 tags:
-- CONTOSO5
+- Contoso 5
 - transform
-- lifecycle:draft
 sql_file: data/transforms/dim_country.sql
 ---
 
-Produces `contoso_served.dim_country` · grain: —
+Produces `dataset:dim_country` · driven by **ruled** (`-- mac.transform.driven_by:` on the `.sql`; absent = undeclared, trusted as generated)
 
-## Rules
+## Repairs
+
+_This transform declares no `repairs`._
+
 ## Lineage
+
 - Source: [store](../sources/store.md)
-- Clean dataset: [dim_country](../datasets/dim_country.md)
+- Produces: [dim_country](../datasets/dim_country.md)
 
 ## SQL realization
-Realized by `dim_country.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
 
-## Lineage (column-level)
-
-`contoso_served.dim_country` · kinds: passthrough + transform
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `country_code` | `store."countrycode"` |  | passthrough |
-| `country_name` | `store."countryname"` → _ARBITRARY(s."countryname")_ |  | transform |
+Realized by `data/transforms/dim_country.sql` — open it with the **SQL** button.

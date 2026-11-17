@@ -6,13 +6,11 @@ tags: [reference, guardrail]
 
 # DQ-CASE-G-contoso5_state-KEY
 
-*high · confidence ?*
+*high · open — nobody has ruled · filed under `contoso5_state`*
 
-**Finding.** Prove the declared key of contoso5_state is still unique QUESTION. Can two rows now share code? ANSWER. 1 column(s) are declared as the key of this relation. RISK. A duplicated key multiplies every me
+**Finding.** data-sanity case G-contoso5_state-KEY did not pass
 
-**Current handling.** —
+**About.** `dataset:contoso5_state`
 
-**Residual risk.** —
-
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Needs.** a disposition: fix the data, or accept the reading with a reason.
 

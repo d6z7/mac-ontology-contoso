@@ -6,13 +6,11 @@ tags: [reference, guardrail]
 
 # DQ-CASE-G-contoso5_country_code-COLUMNS
 
-*high · confidence ?*
+*high · open — nobody has ruled · filed under `contoso5_country_code`*
 
-**Finding.** Prove contoso5_country_code still has every column we recorded QUESTION. Is this table still shaped the way we found it? ANSWER. 2 columns were recorded and are expected to still be there. RISK. A ren
+**Finding.** data-sanity case G-contoso5_country_code-COLUMNS did not pass
 
-**Current handling.** —
+**About.** `dataset:contoso5_country_code`
 
-**Residual risk.** —
-
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Needs.** a disposition: fix the data, or accept the reading with a reason.
 

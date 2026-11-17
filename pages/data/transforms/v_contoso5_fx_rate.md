@@ -1,32 +1,25 @@
 ---
 type: Transform
-title: 'Cleansing: v_contoso5_fx_rate'
-description: Cleansing → contoso_served.v_contoso5_fx_rate
-relation: contoso_served.v_contoso5_fx_rate
+title: 'Transform: v_contoso5_fx_rate'
+description: Produces dataset:v_contoso5_fx_rate
+relation: v_contoso5_fx_rate
 tags:
-- CONTOSO5
+- Contoso 5
 - transform
-- lifecycle:draft
 sql_file: data/transforms/v_contoso5_fx_rate.sql
 ---
 
-Produces `contoso_served.v_contoso5_fx_rate` · grain: —
+Produces `dataset:v_contoso5_fx_rate` · driven by **undeclared** (`-- mac.transform.driven_by:` on the `.sql`; absent = undeclared, trusted as generated)
 
-## Rules
+## Repairs
+
+_This transform declares no `repairs`._
+
 ## Lineage
+
 - Source: [currencyexchange](../sources/currencyexchange.md)
-- Clean dataset: [v_contoso5_fx_rate](../datasets/v_contoso5_fx_rate.md)
+- Produces: [v_contoso5_fx_rate](../datasets/v_contoso5_fx_rate.md)
 
 ## SQL realization
-Realized by `v_contoso5_fx_rate.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
 
-## Lineage (column-level)
-
-`contoso_served.v_contoso5_fx_rate` · kinds: passthrough + transform
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `date_day` | `currencyexchange."date"` → _CAST(x."date" AS DATE)_ |  | transform |
-| `from_currency` | `currencyexchange."fromcurrency"` |  | passthrough |
-| `to_currency` | `currencyexchange."tocurrency"` |  | passthrough |
-| `rate` | `currencyexchange."exchange"` |  | passthrough |
+Realized by `data/transforms/v_contoso5_fx_rate.sql` — open it with the **SQL** button.

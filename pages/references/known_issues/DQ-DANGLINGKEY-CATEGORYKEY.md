@@ -6,13 +6,13 @@ tags: [reference, guardrail]
 
 # DQ-DANGLINGKEY-CATEGORYKEY
 
-*medium · confidence ?*
+*medium · open — nobody has ruled · filed under `dim_product`*
 
-**Finding.** reported on 1 plane-relation(s) (product 8 distinct); 8 distinct value(s) on product. It follows this bundle's own key-naming convention and points at nothing.
+**Finding.** `CategoryKey` is key-shaped and no relation in scope carries it as a key
 
-**Current handling.** —
+**About.** `source:product`
 
-**Residual risk.** —
+**Needs.** Is the parent MISSING from the extract, already INLINE on the row, or is CategoryKey just an attribute? ANSWER ONE OF: inline_dimension | attribute_only | missing_extract. RECOMMENDED: inline_dimension — product.CategoryName carries the SAME 8 distinct value(s) as CategoryKey, dense over 1..8 — the label already travels with the key, so a concept grounds on product and no parent relation is needed at all
 
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Recommended.** inline_dimension
 

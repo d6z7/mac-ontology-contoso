@@ -6,13 +6,11 @@ tags: [reference, guardrail]
 
 # DQ-CASE-G-contoso5_manufacturer-KEY
 
-*high · confidence ?*
+*high · open — nobody has ruled · filed under `contoso5_manufacturer`*
 
-**Finding.** Prove the declared key of contoso5_manufacturer is still unique QUESTION. Can two rows now share code? ANSWER. 1 column(s) are declared as the key of this relation. RISK. A duplicated key multiplies e
+**Finding.** data-sanity case G-contoso5_manufacturer-KEY did not pass
 
-**Current handling.** —
+**About.** `dataset:contoso5_manufacturer`
 
-**Residual risk.** —
-
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Needs.** a disposition: fix the data, or accept the reading with a reason.
 

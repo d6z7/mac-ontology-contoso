@@ -1,31 +1,41 @@
 ---
 type: DQ Issue
 title: raw landing `orders` is consumed by no transformation
-description: 93,470 rows harvested and never curated; no data/transforms/*.yaml declares
-  it as an input
+description: raw landing `orders` is consumed by no transformation
 tags:
-- CONTOSO5
+- Contoso 5
 - severity:medium
-- confidence:?
-- lifecycle:draft
+- disposition:open
 ---
 
-`DQ-ORPHAN-ORDERS` · severity **medium** · confidence **?** · disposition **open — nobody has ruled**
+`DQ-ORPHAN-ORDERS` · severity **medium** · disposition **open — nobody has ruled** · filed under [v_contoso5_sales_line](../datasets/v_contoso5_sales_line.md)
 
 ## Finding
-93,470 rows harvested and never curated; no data/transforms/*.yaml declares it as an input
 
-## Current handling
-—
+raw landing `orders` is consumed by no transformation
 
-## Residual risk
-—
+## About
 
-## Sign-off required
-—
+- `source:orders`
+
+## Needs
+
+**Needs** — a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing?
 
 ## Disposition
 
-**open** — ruled by **nobody named**.
+**open**.
+- said by **mac_dq_findings.py/1**
 
-_No reason recorded. `accepted` and `wont_fix` both require one._
+## Repaired by
+
+_No transform's `repairs` names this finding._
+
+## Blocks and waives
+
+_It blocks and waives nothing._
+
+## Evidence
+
+- 93,470 rows harvested and never curated; no data/transforms/*.yaml declares it as an input
+- Filed under v_contoso5_sales_line: `orders` feeds no dataset, and this dataset's transform reads `sales`, which carries the order header columns (OrderDate, DeliveryDate, CustomerKey, StoreKey, CurrencyCode) on every line (DQ-DUP-ORDERROWS-SALES).

@@ -6,13 +6,11 @@ tags: [reference, guardrail]
 
 # DQ-CASE-G-contoso5_color-COLUMNS
 
-*high · confidence ?*
+*high · open — nobody has ruled · filed under `contoso5_color`*
 
-**Finding.** Prove contoso5_color still has every column we recorded QUESTION. Is this table still shaped the way we found it? ANSWER. 1 columns were recorded and are expected to still be there. RISK. A renamed or
+**Finding.** data-sanity case G-contoso5_color-COLUMNS did not pass
 
-**Current handling.** —
+**About.** `dataset:contoso5_color`
 
-**Residual risk.** —
-
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Needs.** a disposition: fix the data, or accept the reading with a reason.
 

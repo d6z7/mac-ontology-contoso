@@ -1,28 +1,24 @@
 ---
 type: Transform
-title: 'Cleansing: contoso5_channel'
-description: Cleansing → contoso_served.contoso5_channel
-relation: contoso_served.contoso5_channel
+title: 'Transform: contoso5_channel'
+description: Produces dataset:contoso5_channel
+relation: contoso5_channel
 tags:
-- CONTOSO5
+- Contoso 5
 - transform
-- lifecycle:draft
 sql_file: data/transforms/contoso5_channel.sql
 ---
 
-Produces `contoso_served.contoso5_channel` · grain: —
+Produces `dataset:contoso5_channel` · driven by **undeclared** (`-- mac.transform.driven_by:` on the `.sql`; absent = undeclared, trusted as generated)
 
-## Rules
+## Repairs
+
+_This transform declares no `repairs`._
+
 ## Lineage
-- Clean dataset: [contoso5_channel](../datasets/contoso5_channel.md)
+
+- Produces: [contoso5_channel](../datasets/contoso5_channel.md)
 
 ## SQL realization
-Realized by `contoso5_channel.sql` (a deployed `CREATE VIEW`) — open it with the **SQL** button in the header, or in the Source browser.
 
-## Lineage (column-level)
-
-`contoso_served.contoso5_channel` · kinds: passthrough
-
-| output column | ← from | rule | kind |
-|---|---|---|---|
-| `code` | `v_contoso5_sales_line.channel` |  | passthrough |
+Realized by `data/transforms/contoso5_channel.sql` — open it with the **SQL** button.

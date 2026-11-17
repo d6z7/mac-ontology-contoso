@@ -6,13 +6,13 @@ tags: [reference, guardrail]
 
 # DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME
 
-*medium · confidence ?*
+*medium · open — nobody has ruled · filed under `dim_customer`*
 
-**Finding.** 94,488 of 99,200 distinct values (95%) over 104,990 rows are held by exactly one row (mac_profile.py/6, one GROUPING SETS scan). A column most of whose values name one row is an identifier wearing a dimension's role: GROUP BY it returns one row per person, and the query succeeds.
+**Finding.** `dim_customer.customer_name` names individuals — 94,488 of 99,200 values are held by exactly one row
 
-**Current handling.** —
+**About.** `dataset:dim_customer`
 
-**Residual risk.** —
+**Blocks.** `dataset:dim_customer.customer_name` — a question reading it refuses while the finding is open.
 
-**Resolution.** Not yet reconciled (newly harvested) — an honest open item.
+**Needs.** a ruling on the concept that grounds `dim_customer.customer_name`: `rulings: {never_axis: privacy, evidence: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME}` on the column, or a written reason the axis is safe to offer. Until then the planner has nothing to refuse with.
 

@@ -1,11 +1,9 @@
 ---
 type: Index
-title: CONTOSO5 data plane
+title: Contoso 5 data plane
 ---
 
-8 sources · 61 quality issues · 21 transforms · 21 clean datasets
-
-**Resolution scoreboard** — how the recorded impurities are dissolved by the gold transforms: **0 ✓ resolved · 0 ◐ partial · 0 ⚠ open gap**.
+8 sources · 21 transforms · 21 datasets · 61 findings
 
 📋 **[Issues & inconsistencies — the full overview](data/quality/0-issues-overview.md)**
 
@@ -21,8 +19,31 @@ title: CONTOSO5 data plane
 - [sales](data/sources/sales.md)
 - [store](data/sources/store.md)
 
-## Data quality (by severity → resolution)
-- **high** [`CurrencyCode` includes perfectly into 2 different keys — which is THE reference?](data/quality/DQ-AMBIGREF-CURRENCYCODE.md)
+## Datasets
+- [contoso5_brand](data/datasets/contoso5_brand.md)
+- [contoso5_category_name](data/datasets/contoso5_category_name.md)
+- [contoso5_channel](data/datasets/contoso5_channel.md)
+- [contoso5_color](data/datasets/contoso5_color.md)
+- [contoso5_continent](data/datasets/contoso5_continent.md)
+- [contoso5_country_code](data/datasets/contoso5_country_code.md)
+- [contoso5_currency](data/datasets/contoso5_currency.md)
+- [contoso5_gender](data/datasets/contoso5_gender.md)
+- [contoso5_manufacturer](data/datasets/contoso5_manufacturer.md)
+- [contoso5_state](data/datasets/contoso5_state.md)
+- [contoso5_status](data/datasets/contoso5_status.md)
+- [contoso5_store_name](data/datasets/contoso5_store_name.md)
+- [contoso5_sub_category_name](data/datasets/contoso5_sub_category_name.md)
+- [dim_country](data/datasets/dim_country.md)
+- [dim_currency](data/datasets/dim_currency.md)
+- [dim_customer](data/datasets/dim_customer.md)
+- [dim_location](data/datasets/dim_location.md)
+- [dim_product](data/datasets/dim_product.md)
+- [dim_store](data/datasets/dim_store.md)
+- [v_contoso5_fx_rate](data/datasets/v_contoso5_fx_rate.md)
+- [v_contoso5_sales_line](data/datasets/v_contoso5_sales_line.md)
+
+## Findings (by severity)
+- **high** [`CurrencyCode` includes perfectly into 2 different keys — which is THE reference](data/quality/DQ-AMBIGREF-CURRENCYCODE.md)
 - **high** [data-sanity case G-contoso5_brand-COLUMNS did not pass](data/quality/DQ-CASE-G-contoso5_brand-COLUMNS.md)
 - **high** [data-sanity case G-contoso5_brand-KEY did not pass](data/quality/DQ-CASE-G-contoso5_brand-KEY.md)
 - **high** [data-sanity case G-contoso5_category_name-COLUMNS did not pass](data/quality/DQ-CASE-G-contoso5_category_name-COLUMNS.md)
@@ -65,8 +86,8 @@ title: CONTOSO5 data plane
 - **medium** [`GeoAreaKey` is key-shaped and no relation in scope carries it as a key](data/quality/DQ-DANGLINGKEY-GEOAREAKEY.md)
 - **medium** [`SubCategoryKey` is key-shaped and no relation in scope carries it as a key](data/quality/DQ-DANGLINGKEY-SUBCATEGORYKEY.md)
 - **medium** [`sales` re-delivers every line of `orderrows` — one fact, twice](data/quality/DQ-DUP-ORDERROWS-SALES.md)
-- **medium** [`dim_customer.city` names individuals — 21,317 of 34,581 values are held by exactly one row](data/quality/DQ-IDENTIFYING-DIM_CUSTOMER-CITY.md)
-- **medium** [`dim_customer.customer_name` names individuals — 94,488 of 99,200 values are held by exactly one row](data/quality/DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME.md)
+- **medium** [`dim_customer.city` names individuals — 21,317 of 34,581 values are held by exac](data/quality/DQ-IDENTIFYING-DIM_CUSTOMER-CITY.md)
+- **medium** [`dim_customer.customer_name` names individuals — 94,488 of 99,200 values are hel](data/quality/DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME.md)
 - **medium** [raw landing `date` is consumed by no transformation](data/quality/DQ-ORPHAN-DATE.md)
 - **medium** [raw landing `orderrows` is consumed by no transformation](data/quality/DQ-ORPHAN-ORDERROWS.md)
 - **medium** [raw landing `orders` is consumed by no transformation](data/quality/DQ-ORPHAN-ORDERS.md)
@@ -83,26 +104,3 @@ title: CONTOSO5 data plane
 - **medium** [served relation `contoso5_status` is claimed by no concept](data/quality/DQ-UNCLAIMED-CONTOSO5_STATUS.md)
 - **medium** [served relation `contoso5_store_name` is claimed by no concept](data/quality/DQ-UNCLAIMED-CONTOSO5_STORE_NAME.md)
 - **medium** [served relation `contoso5_sub_category_name` is claimed by no concept](data/quality/DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME.md)
-
-## Clean datasets
-- [contoso5_brand](data/datasets/contoso5_brand.md)
-- [contoso5_category_name](data/datasets/contoso5_category_name.md)
-- [contoso5_channel](data/datasets/contoso5_channel.md)
-- [contoso5_color](data/datasets/contoso5_color.md)
-- [contoso5_continent](data/datasets/contoso5_continent.md)
-- [contoso5_country_code](data/datasets/contoso5_country_code.md)
-- [contoso5_currency](data/datasets/contoso5_currency.md)
-- [contoso5_gender](data/datasets/contoso5_gender.md)
-- [contoso5_manufacturer](data/datasets/contoso5_manufacturer.md)
-- [contoso5_state](data/datasets/contoso5_state.md)
-- [contoso5_status](data/datasets/contoso5_status.md)
-- [contoso5_store_name](data/datasets/contoso5_store_name.md)
-- [contoso5_sub_category_name](data/datasets/contoso5_sub_category_name.md)
-- [dim_country](data/datasets/dim_country.md)
-- [dim_currency](data/datasets/dim_currency.md)
-- [dim_customer](data/datasets/dim_customer.md)
-- [dim_location](data/datasets/dim_location.md)
-- [dim_product](data/datasets/dim_product.md)
-- [dim_store](data/datasets/dim_store.md)
-- [v_contoso5_fx_rate](data/datasets/v_contoso5_fx_rate.md)
-- [v_contoso5_sales_line](data/datasets/v_contoso5_sales_line.md)

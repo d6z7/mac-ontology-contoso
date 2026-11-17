@@ -1,81 +1,69 @@
 ---
 type: Doc
 title: SME questions — data & data quality
-description: 61 sign-offs + 0 proposed changes awaiting SME
+description: 48 open ask(s)
 tags:
-- CONTOSO5
+- Contoso 5
 - sme-questions
 ---
 
-The open **SME sign-offs** the data + data-quality work surfaces — 61 from the quality register plus proposed transform changes awaiting ratification. Prioritised by severity; each links to the finding it unblocks. This list is projected from the register + transforms, so it stays in sync.
+The open asks the findings carry — each finding's `needs` (the ask), its `remedies` (the answer set) and the `recommended` one, prioritised by severity. Projected from `data/quality/*.yaml`.
 
 ## High priority — 27 question(s)
 
-| ask | answer one of | owner | on (finding) | status | table |
+| ask | answer one of | recommended | asked in | on (finding) | dataset |
 |---|---|---|---|---|---|
-| CurrencyCode includes perfectly into all of currencyexchange.FromCurrency, currencyexchange.ToCurrency. Which is THE reference? | currencyexchange.FromCurrency \| currencyexchange.ToCurrency \| both_are_real \| neither | domain-owner | [`CurrencyCode` includes perfectly into 2 different keys ](DQ-AMBIGREF-CURRENCYCODE.md) | unreconciled | currencyexchange |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_brand-COLUMNS did not pass](DQ-CASE-G-contoso5_brand-COLUMNS.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_brand-KEY did not pass](DQ-CASE-G-contoso5_brand-KEY.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_category_name-COLUMNS did no](DQ-CASE-G-contoso5_category_name-COLUMNS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_category_name-KEY did not pa](DQ-CASE-G-contoso5_category_name-KEY.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_channel-COLUMNS did not pass](DQ-CASE-G-contoso5_channel-COLUMNS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_channel-KEY did not pass](DQ-CASE-G-contoso5_channel-KEY.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_color-COLUMNS did not pass](DQ-CASE-G-contoso5_color-COLUMNS.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_color-KEY did not pass](DQ-CASE-G-contoso5_color-KEY.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_continent-COLUMNS did not pa](DQ-CASE-G-contoso5_continent-COLUMNS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_continent-KEY did not pass](DQ-CASE-G-contoso5_continent-KEY.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_country_code-COLUMNS did not](DQ-CASE-G-contoso5_country_code-COLUMNS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_country_code-KEY did not pas](DQ-CASE-G-contoso5_country_code-KEY.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_currency-COLUMNS did not pas](DQ-CASE-G-contoso5_currency-COLUMNS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_currency-KEY did not pass](DQ-CASE-G-contoso5_currency-KEY.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_gender-COLUMNS did not pass](DQ-CASE-G-contoso5_gender-COLUMNS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_gender-KEY did not pass](DQ-CASE-G-contoso5_gender-KEY.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_manufacturer-COLUMNS did not](DQ-CASE-G-contoso5_manufacturer-COLUMNS.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_manufacturer-KEY did not pas](DQ-CASE-G-contoso5_manufacturer-KEY.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_state-COLUMNS did not pass](DQ-CASE-G-contoso5_state-COLUMNS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_state-KEY did not pass](DQ-CASE-G-contoso5_state-KEY.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_status-COLUMNS did not pass](DQ-CASE-G-contoso5_status-COLUMNS.md) | unreconciled | store |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_status-KEY did not pass](DQ-CASE-G-contoso5_status-KEY.md) | unreconciled | store |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_store_name-COLUMNS did not p](DQ-CASE-G-contoso5_store_name-COLUMNS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_store_name-KEY did not pass](DQ-CASE-G-contoso5_store_name-KEY.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_sub_category_name-COLUMNS di](DQ-CASE-G-contoso5_sub_category_name-COLUMNS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_sub_category_name-KEY did no](DQ-CASE-G-contoso5_sub_category_name-KEY.md) | unreconciled | — |
+| Which of currencyexchange.FromCurrency, currencyexchange.ToCurrency is THE reference for CurrencyCode? ANSWER ONE OF: currencyexchange.FromCurrency \| currencyexchange.ToCurrency \| both_are_real \| n | currencyexchange.FromCurrency: CurrencyCode references currencyexchange.FromCurrency, the reference to currencyexchange. | the endpoint the child is DENOMINATED IN — for an amount and | — | [DQ-AMBIGREF-CURRENCYCODE](DQ-AMBIGREF-CURRENCYCODE.md) | v_contoso5_fx_rate |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_brand-COLUMNS](DQ-CASE-G-contoso5_brand-COLUMNS.md) | contoso5_brand |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_brand-KEY](DQ-CASE-G-contoso5_brand-KEY.md) | contoso5_brand |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_category_name-COLUMNS](DQ-CASE-G-contoso5_category_name-COLUMNS.md) | contoso5_category_name |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_category_name-KEY](DQ-CASE-G-contoso5_category_name-KEY.md) | contoso5_category_name |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_channel-COLUMNS](DQ-CASE-G-contoso5_channel-COLUMNS.md) | contoso5_channel |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_channel-KEY](DQ-CASE-G-contoso5_channel-KEY.md) | contoso5_channel |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_color-COLUMNS](DQ-CASE-G-contoso5_color-COLUMNS.md) | contoso5_color |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_color-KEY](DQ-CASE-G-contoso5_color-KEY.md) | contoso5_color |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_continent-COLUMNS](DQ-CASE-G-contoso5_continent-COLUMNS.md) | contoso5_continent |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_continent-KEY](DQ-CASE-G-contoso5_continent-KEY.md) | contoso5_continent |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_country_code-COLUMNS](DQ-CASE-G-contoso5_country_code-COLUMNS.md) | contoso5_country_code |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_country_code-KEY](DQ-CASE-G-contoso5_country_code-KEY.md) | contoso5_country_code |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_currency-COLUMNS](DQ-CASE-G-contoso5_currency-COLUMNS.md) | contoso5_currency |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_currency-KEY](DQ-CASE-G-contoso5_currency-KEY.md) | contoso5_currency |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_gender-COLUMNS](DQ-CASE-G-contoso5_gender-COLUMNS.md) | contoso5_gender |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_gender-KEY](DQ-CASE-G-contoso5_gender-KEY.md) | contoso5_gender |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_manufacturer-COLUMNS](DQ-CASE-G-contoso5_manufacturer-COLUMNS.md) | contoso5_manufacturer |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_manufacturer-KEY](DQ-CASE-G-contoso5_manufacturer-KEY.md) | contoso5_manufacturer |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_state-COLUMNS](DQ-CASE-G-contoso5_state-COLUMNS.md) | contoso5_state |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_state-KEY](DQ-CASE-G-contoso5_state-KEY.md) | contoso5_state |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_status-COLUMNS](DQ-CASE-G-contoso5_status-COLUMNS.md) | contoso5_status |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_status-KEY](DQ-CASE-G-contoso5_status-KEY.md) | contoso5_status |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_store_name-COLUMNS](DQ-CASE-G-contoso5_store_name-COLUMNS.md) | contoso5_store_name |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_store_name-KEY](DQ-CASE-G-contoso5_store_name-KEY.md) | contoso5_store_name |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_sub_category_name-COLUMNS](DQ-CASE-G-contoso5_sub_category_name-COLUMNS.md) | contoso5_sub_category_name |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_sub_category_name-KEY](DQ-CASE-G-contoso5_sub_category_name-KEY.md) | contoso5_sub_category_name |
 
-## Medium priority — 34 question(s)
+## Medium priority — 21 question(s)
 
-| ask | answer one of | owner | on (finding) | status | table |
+| ask | answer one of | recommended | asked in | on (finding) | dataset |
 |---|---|---|---|---|---|
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_brand-NULLS did not pass](DQ-CASE-G-contoso5_brand-NULLS.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_category_name-NULLS did not ](DQ-CASE-G-contoso5_category_name-NULLS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_channel-NULLS did not pass](DQ-CASE-G-contoso5_channel-NULLS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_color-NULLS did not pass](DQ-CASE-G-contoso5_color-NULLS.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_continent-NULLS did not pass](DQ-CASE-G-contoso5_continent-NULLS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_country_code-NULLS did not p](DQ-CASE-G-contoso5_country_code-NULLS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_currency-NULLS did not pass](DQ-CASE-G-contoso5_currency-NULLS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_gender-NULLS did not pass](DQ-CASE-G-contoso5_gender-NULLS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_manufacturer-NULLS did not p](DQ-CASE-G-contoso5_manufacturer-NULLS.md) | unreconciled | product |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_state-NULLS did not pass](DQ-CASE-G-contoso5_state-NULLS.md) | unreconciled | customer |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_store_name-NULLS did not pas](DQ-CASE-G-contoso5_store_name-NULLS.md) | unreconciled | — |
-| a disposition: fix the data, or accept the reading with a reason. | — | domain-owner | [data-sanity case G-contoso5_sub_category_name-NULLS did ](DQ-CASE-G-contoso5_sub_category_name-NULLS.md) | unreconciled | — |
-| CategoryKey is key-shaped with no parent in scope. Which absence is it? | inline_dimension \| attribute_only \| missing_extract | domain-owner | [`CategoryKey` is key-shaped and no relation in scope car](DQ-DANGLINGKEY-CATEGORYKEY.md) | unreconciled | product |
-| GeoAreaKey is key-shaped with no parent in scope. Which absence is it? | inline_dimension \| attribute_only \| missing_extract | domain-owner | [`GeoAreaKey` is key-shaped and no relation in scope carr](DQ-DANGLINGKEY-GEOAREAKEY.md) | unreconciled | customer |
-| SubCategoryKey is key-shaped with no parent in scope. Which absence is it? | inline_dimension \| attribute_only \| missing_extract | domain-owner | [`SubCategoryKey` is key-shaped and no relation in scope ](DQ-DANGLINGKEY-SUBCATEGORYKEY.md) | unreconciled | product |
-| `orderrows` and `sales` deliver the same 223,974 rows. Which is the fact of record? | orderrows \| sales \| both_are_distinct_facts \| neither_serve_a_transform | domain-owner | [`sales` re-delivers every line of `orderrows` — one fact](DQ-DUP-ORDERROWS-SALES.md) | unreconciled | sales |
-| a ruling on the concept that grounds `dim_customer.city`: `rulings: {never_axis: privacy, evidence: DQ-IDENTIFYING-DIM_CUSTOMER-CITY}` on the column, or a written reason the axis is safe to offer. Unt | — | domain-owner | [`dim_customer.city` names individuals — 21,317 of 34,581](DQ-IDENTIFYING-DIM_CUSTOMER-CITY.md) | unreconciled | customer |
-| a ruling on the concept that grounds `dim_customer.customer_name`: `rulings: {never_axis: privacy, evidence: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME}` on the column, or a written reason the axis is  | — | domain-owner | [`dim_customer.customer_name` names individuals — 94,488 ](DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME.md) | unreconciled | — |
-| a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing? | — | domain-owner | [raw landing `date` is consumed by no transformation](DQ-ORPHAN-DATE.md) | unreconciled | currencyexchange |
-| a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing? | — | domain-owner | [raw landing `orderrows` is consumed by no transformation](DQ-ORPHAN-ORDERROWS.md) | unreconciled | — |
-| a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing? | — | domain-owner | [raw landing `orders` is consumed by no transformation](DQ-ORPHAN-ORDERS.md) | unreconciled | — |
-| `contoso5_brand` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_brand` is claimed by no concep](DQ-UNCLAIMED-CONTOSO5_BRAND.md) | unreconciled | product |
-| `contoso5_category_name` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_category_name` is claimed by n](DQ-UNCLAIMED-CONTOSO5_CATEGORY_NAME.md) | unreconciled | — |
-| `contoso5_channel` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_channel` is claimed by no conc](DQ-UNCLAIMED-CONTOSO5_CHANNEL.md) | unreconciled | — |
-| `contoso5_color` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_color` is claimed by no concep](DQ-UNCLAIMED-CONTOSO5_COLOR.md) | unreconciled | product |
-| `contoso5_continent` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_continent` is claimed by no co](DQ-UNCLAIMED-CONTOSO5_CONTINENT.md) | unreconciled | customer |
-| `contoso5_country_code` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_country_code` is claimed by no](DQ-UNCLAIMED-CONTOSO5_COUNTRY_CODE.md) | unreconciled | customer |
-| `contoso5_currency` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_currency` is claimed by no con](DQ-UNCLAIMED-CONTOSO5_CURRENCY.md) | unreconciled | — |
-| `contoso5_gender` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_gender` is claimed by no conce](DQ-UNCLAIMED-CONTOSO5_GENDER.md) | unreconciled | customer |
-| `contoso5_manufacturer` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_manufacturer` is claimed by no](DQ-UNCLAIMED-CONTOSO5_MANUFACTURER.md) | unreconciled | product |
-| `contoso5_state` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_state` is claimed by no concep](DQ-UNCLAIMED-CONTOSO5_STATE.md) | unreconciled | customer |
-| `contoso5_status` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_status` is claimed by no conce](DQ-UNCLAIMED-CONTOSO5_STATUS.md) | unreconciled | store |
-| `contoso5_store_name` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_store_name` is claimed by no c](DQ-UNCLAIMED-CONTOSO5_STORE_NAME.md) | unreconciled | — |
-| `contoso5_sub_category_name` is served and claimed by no concept. Which is it? | model_a_concept \| stop_serving_it \| backs_no_notion | domain-owner | [served relation `contoso5_sub_category_name` is claimed ](DQ-UNCLAIMED-CONTOSO5_SUB_CATEGORY_NAME.md) | unreconciled | — |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_brand-NULLS](DQ-CASE-G-contoso5_brand-NULLS.md) | contoso5_brand |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_category_name-NULLS](DQ-CASE-G-contoso5_category_name-NULLS.md) | contoso5_category_name |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_channel-NULLS](DQ-CASE-G-contoso5_channel-NULLS.md) | contoso5_channel |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_color-NULLS](DQ-CASE-G-contoso5_color-NULLS.md) | contoso5_color |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_continent-NULLS](DQ-CASE-G-contoso5_continent-NULLS.md) | contoso5_continent |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_country_code-NULLS](DQ-CASE-G-contoso5_country_code-NULLS.md) | contoso5_country_code |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_currency-NULLS](DQ-CASE-G-contoso5_currency-NULLS.md) | contoso5_currency |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_gender-NULLS](DQ-CASE-G-contoso5_gender-NULLS.md) | contoso5_gender |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_manufacturer-NULLS](DQ-CASE-G-contoso5_manufacturer-NULLS.md) | contoso5_manufacturer |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_state-NULLS](DQ-CASE-G-contoso5_state-NULLS.md) | contoso5_state |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_store_name-NULLS](DQ-CASE-G-contoso5_store_name-NULLS.md) | contoso5_store_name |
+| a disposition: fix the data, or accept the reading with a reason. | — | — | — | [DQ-CASE-G-contoso5_sub_category_name-NULLS](DQ-CASE-G-contoso5_sub_category_name-NULLS.md) | contoso5_sub_category_name |
+| Is the parent MISSING from the extract, already INLINE on the row, or is CategoryKey just an attribute? ANSWER ONE OF: inline_dimension \| attribute_only \| missing_extract. RECOMMENDED: inline_dimens | inline_dimension: a concept is grounded on the carrying relation, using the key for identity and its twin for the label; | inline_dimension | — | [DQ-DANGLINGKEY-CATEGORYKEY](DQ-DANGLINGKEY-CATEGORYKEY.md) | dim_product |
+| Is the parent MISSING from the extract, already INLINE on the row, or is GeoAreaKey just an attribute? ANSWER ONE OF: inline_dimension \| attribute_only \| missing_extract. NO RECOMMENDATION — no colu | inline_dimension: a concept is grounded on the carrying relation, using the key for identity and its twin for the label; | — | — | [DQ-DANGLINGKEY-GEOAREAKEY](DQ-DANGLINGKEY-GEOAREAKEY.md) | dim_customer |
+| Is the parent MISSING from the extract, already INLINE on the row, or is SubCategoryKey just an attribute? ANSWER ONE OF: inline_dimension \| attribute_only \| missing_extract. RECOMMENDED: inline_dim | inline_dimension: a concept is grounded on the carrying relation, using the key for identity and its twin for the label; | inline_dimension | — | [DQ-DANGLINGKEY-SUBCATEGORYKEY](DQ-DANGLINGKEY-SUBCATEGORYKEY.md) | dim_product |
+| Which is the FACT OF RECORD? ANSWER ONE OF: orderrows \| sales \| both_are_distinct_facts \| neither_serve_a_transform. RECOMMENDED: serve exactly ONE — see the ruling. | orderrows: the normalised detail is the record, and every question at this grain must JOIN a header relation to reach th | serve exactly ONE of them | — | [DQ-DUP-ORDERROWS-SALES](DQ-DUP-ORDERROWS-SALES.md) | v_contoso5_sales_line |
+| a ruling on the concept that grounds `dim_customer.city`: `rulings: {never_axis: privacy, evidence: DQ-IDENTIFYING-DIM_CUSTOMER-CITY}` on the column, or a written reason the axis is safe to offer. Unt | — | — | — | [DQ-IDENTIFYING-DIM_CUSTOMER-CITY](DQ-IDENTIFYING-DIM_CUSTOMER-CITY.md) | dim_customer |
+| a ruling on the concept that grounds `dim_customer.customer_name`: `rulings: {never_axis: privacy, evidence: DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME}` on the column, or a written reason the axis is  | — | — | — | [DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME](DQ-IDENTIFYING-DIM_CUSTOMER-CUSTOMER_NAME.md) | dim_customer |
+| a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing? | — | — | — | [DQ-ORPHAN-DATE](DQ-ORPHAN-DATE.md) | v_contoso5_sales_line |
+| a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing? | — | — | — | [DQ-ORPHAN-ORDERROWS](DQ-ORPHAN-ORDERROWS.md) | v_contoso5_sales_line |
+| a ruling: is this relation OUT OF SCOPE for this bundle, or is a served relation missing? | — | — | — | [DQ-ORPHAN-ORDERS](DQ-ORPHAN-ORDERS.md) | v_contoso5_sales_line |
+

@@ -1,35 +1,40 @@
 ---
 type: DQ Issue
 title: data-sanity case G-contoso5_country_code-KEY did not pass
-description: Prove the declared key of contoso5_country_code is still unique QUESTION.
-  Can two rows now share code? ANSWER. 1 column(s) are declared as the key of this
-  relation. RISK. A duplicated key multiplies e
+description: data-sanity case G-contoso5_country_code-KEY did not pass
 tags:
-- CONTOSO5
+- Contoso 5
 - severity:high
-- confidence:?
-- lifecycle:draft
+- disposition:open
 ---
 
-`DQ-CASE-G-contoso5_country_code-KEY` · severity **high** · confidence **?** · disposition **open — nobody has ruled**
+`DQ-CASE-G-contoso5_country_code-KEY` · severity **high** · disposition **open — nobody has ruled** · filed under [contoso5_country_code](../datasets/contoso5_country_code.md)
 
 ## Finding
-Prove the declared key of contoso5_country_code is still unique QUESTION. Can two rows now share code? ANSWER. 1 column(s) are declared as the key of this relation. RISK. A duplicated key multiplies e
 
-## Current handling
-—
+data-sanity case G-contoso5_country_code-KEY did not pass
 
-## Residual risk
-—
+## About
 
-## Sign-off required
-—
+- `dataset:contoso5_country_code`
+
+## Needs
+
+**Needs** — a disposition: fix the data, or accept the reading with a reason.
 
 ## Disposition
 
-**open** — ruled by **nobody named**.
+**open**.
+- said by **mac_dq_findings.py/1**
 
-_No reason recorded. `accepted` and `wont_fix` both require one._
+## Repaired by
 
-## Table
-- [customer](../sources/customer.md)
+_No transform's `repairs` names this finding._
+
+## Blocks and waives
+
+_It blocks and waives nothing._
+
+## Evidence
+
+- Prove the declared key of contoso5_country_code is still unique QUESTION. Can two rows now share code? ANSWER. 1 column(s) are declared as the key of this relation. RISK. A duplicated key multiplies e
