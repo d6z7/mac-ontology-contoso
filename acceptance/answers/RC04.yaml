@@ -1,16 +1,17 @@
 id: RC04
-captured_at: '2026-10-29T14:20:21+00:00'
-ontology_fingerprint: e39de9fa1d870ace
-acceptance_fingerprint: af7d72067fb69b16
+captured_at: '2026-11-17T23:10:34+00:00'
+ontology_fingerprint: ec6d95efb1654a0d
+acceptance_fingerprint: a3baf3c7fe46a2af
 engine:
   interpret: live
   provider: v3-walk
-  model: claude-opus-5
+  model: claude-opus-4-6
   mode: llm-execute
   athena: false
-  run_file: 20261029T141701Z_merged.json
+  run_file: 20261117T224755Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+  method: bench
 connection:
   view_schema: contoso_served
   target: contoso5.duckdb
@@ -20,124 +21,79 @@ answer: ''
 intent:
   subject: customers
   operation: aggregate
-  qdmr_simplified: "  1       FROM       customers                           “customers”\n  2  ← 1  WHERE\
-    \      customers as of 31.12.2025 <= None  “as of 31.12.2025”\n  3  ← 2  AGGREGATE  count distinct\
-    \ of customers         “how many customers do we have”\n  answer: step 3   confidence: 0.62\n  UNDERSTOOD\
-    \ AS: You want a single number: how many customers existed on 31 December 2025 — i.e. a headcount\
-    \ snapshot of the customer base at that date (customers whose relationship with us had begun on or\
-    \ before 31.12.2025), counting each customer once. The answer is one figure, not a breakdown, and\
-    \ it does not look at anything that happened after that date.\n  AMBIGUOUS 'customers' — ASKS: Should\
-    \ this count every customer we have on the books at that date, or only the ones that were still active\
-    \ (not churned / not cancelled) on 31.12.2025?\n      could mean: every customer ever acquired whose\
-    \ record existed by that date\n      could mean: only customers that were still active or subscribed\
-    \ on that date\n      could mean: only customers who bought something in 2025\n      took: every customer\
-    \ whose relationship had begun on or before 31.12.2025, with no activity or status filter\n  AMBIGUOUS\
-    \ 'as of 31.12.2025' — ASKS: Do you want the state of the customer base exactly on 31 December 2025\
-    \ (a snapshot), or the number of customers that were trading with us during 2025?\n      could mean:\
-    \ a snapshot: all customers on the books at that single date\n      could mean: a period count: distinct\
-    \ customers with activity during the year 2025\n      could mean: a period count: distinct customers\
-    \ with activity in December 2025\n      took: a snapshot at that single date\n  AMBIGUOUS 'customers'\
-    \ — ASKS: If one company has several accounts or contacts with us, should that count as one customer\
-    \ or as several?\n      could mean: one per company / legal entity\n      could mean: one per account\
-    \ or contract\n      could mean: one per individual contact person\n      took: one per customer record,\
-    \ counted distinctly\n  AMBIGUOUS 'we' — ASKS: Should this be the whole company, or just one country,\
-    \ region or business unit you have in mind?\n      could mean: the whole company, all markets\n  \
-    \    could mean: a single country or region\n      could mean: a single business unit or product line\n\
-    \      took: the whole company, no market or unit restriction\n  cannot_express: Whether a customer\
-    \ was 'active' or 'churned' on 31.12.2025 — these steps apply no status test, because the question\
-    \ gives no definition of an active customer.\n  OUTPUT SHAPE: one figure · one row(s) · carrying how\
-    \ many customers"
-  understood_as_in_human_words: 'You want a single number: how many customers existed on 31 December 2025
-    — i.e. a headcount snapshot of the customer base at that date (customers whose relationship with us
-    had begun on or before 31.12.2025), counting each customer once. The answer is one figure, not a breakdown,
-    and it does not look at anything that happened after that date.'
-  population_actually_answered: The 75,282 customers of contoso_served.dim_customer with `valid_from <=
-    2025-12-31 AND valid_to >= 2025-12-31` — the declared `active` population of Customer evaluated at
-    the date the question states, taken because `Customer.active_on_the_reference_date` makes `active`
-    the reading when a question says only "customers". No country, market, channel or purchase restriction
-    was applied; the starting point was the whole register of 104,990.
+  qdmr_simplified: "  1       FROM       customers\n  2  ← 1  DURING     by None             “as of 31.12.2025”\n\
+    \  3  ← 2  AGGREGATE  count of customers  “how many customers”\n  answer: step 3   confidence: 0.85\n\
+    \  UNDERSTOOD AS: How many customers do we have as of 31.12.2025?\n  AMBIGUOUS 'customers' — ASKS:\
+    \ Should we count all customers on record, or only those who are active (e.g. not churned or closed)\
+    \ as of that date?\n      could mean: all customers ever created up to 31.12.2025\n      could mean:\
+    \ only customers that are active/open as of 31.12.2025\n      took: only customers that are active/open\
+    \ as of 31.12.2025\n  AMBIGUOUS 'as of 31.12.2025' — ASKS: Does 'as of 31.12.2025' mean customers\
+    \ whose accounts existed by that date, or customers who had activity (e.g. a purchase) by that date?\n\
+    \      could mean: customers whose account existed by 31.12.2025\n      could mean: customers who\
+    \ made at least one purchase by 31.12.2025\n      took: customers whose account existed by 31.12.2025\n\
+    \  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
+  understood_as_in_human_words: How many customers do we have as of 31.12.2025?
+  population_actually_answered: Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end
+    > 2025-12-31, i.e. active customers as of that date per rule Customer.active_on_the_reference_date
+    (default 'active'). No channel, country or buyer restriction applied. This is not all registered customers
+    — it excludes those whose validity window does not cover the reference date.
   how_the_result_must_be_presented:
     shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
     figures_the_answer_step_computes:
-    - count distinct of customers
+    - count of customers
     answer_step: '3'
     verb: aggregate
-    said: how many customers do we have
-    stage1_confidence: 0.62
+    said: how many customers
+    stage1_confidence: 0.85
   canonical_question: &id001
-    understood_as: 'You want a single number: how many customers existed on 31 December 2025 — i.e. a
-      headcount snapshot of the customer base at that date (customers whose relationship with us had begun
-      on or before 31.12.2025), counting each customer once. The answer is one figure, not a breakdown,
-      and it does not look at anything that happened after that date.'
+    understood_as: How many customers do we have as of 31.12.2025?
     steps:
     - id: '1'
       do: from
       thing: customers
-      said: customers
     - id: '2'
-      do: where
+      do: during
       of: '1'
-      thing: customers as of 31.12.2025
-      op: <=
-      than:
-        value: 31.12.2025
-        said: as of 31.12.2025
       said: as of 31.12.2025
     - id: '3'
       do: aggregate
       of: '2'
+      said: how many customers
       figures: &id002
-      - how: count distinct
+      - how: count
         of: customers
         said: how many customers
-      said: how many customers do we have
     answer: '3'
-    output_shape: &id004
+    output_shape: &id003
       shape: one figure
-      said: How many customers do we have as of 31.12.2025?
-      rows: one
-      key_columns: &id006 []
-      figure_columns: &id007
+      key_columns: &id005 []
+      figure_columns: &id006
       - how many customers
+      rows: one
+      said: how many customers
+    confidence: 0.85
+    periods:
+    - said: as of 31.12.2025
+      start: '2025-12-31'
+      end: '2025-12-31'
+      grain: day
     ambiguities:
     - words: customers
-      question: Should this count every customer we have on the books at that date, or only the ones that
-        were still active (not churned / not cancelled) on 31.12.2025?
+      question: Should we count all customers on record, or only those who are active (e.g. not churned
+        or closed) as of that date?
       readings:
-      - every customer ever acquired whose record existed by that date
-      - only customers that were still active or subscribed on that date
-      - only customers who bought something in 2025
-      assumed: every customer whose relationship had begun on or before 31.12.2025, with no activity or
-        status filter
+      - all customers ever created up to 31.12.2025
+      - only customers that are active/open as of 31.12.2025
+      assumed: only customers that are active/open as of 31.12.2025
     - words: as of 31.12.2025
-      question: Do you want the state of the customer base exactly on 31 December 2025 (a snapshot), or
-        the number of customers that were trading with us during 2025?
+      question: Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers
+        who had activity (e.g. a purchase) by that date?
       readings:
-      - 'a snapshot: all customers on the books at that single date'
-      - 'a period count: distinct customers with activity during the year 2025'
-      - 'a period count: distinct customers with activity in December 2025'
-      assumed: a snapshot at that single date
-    - words: customers
-      question: If one company has several accounts or contacts with us, should that count as one customer
-        or as several?
-      readings:
-      - one per company / legal entity
-      - one per account or contract
-      - one per individual contact person
-      assumed: one per customer record, counted distinctly
-    - words: we
-      question: Should this be the whole company, or just one country, region or business unit you have
-        in mind?
-      readings:
-      - the whole company, all markets
-      - a single country or region
-      - a single business unit or product line
-      assumed: the whole company, no market or unit restriction
-    cannot_express: &id003
-    - Whether a customer was 'active' or 'churned' on 31.12.2025 — these steps apply no status test, because
-      the question gives no definition of an active customer.
-    confidence: 0.62
+      - customers whose account existed by 31.12.2025
+      - customers who made at least one purchase by 31.12.2025
+      assumed: customers whose account existed by 31.12.2025
+    cannot_express: []
   steps: 3
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
@@ -154,419 +110,205 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "customers → the active customers on the stated reference date — 75,282 — because the declaration\
-      \ makes `active` (the date inside the validity window at both ends) the reading a question naming\
-      \ neither takes, and requires the answer to disclose it\n        could also mean: the registered\
-      \ customers: every row on the register whether valid on that date or not, which is 104,990, and\
-      \ is also the figure for `understood_as`'s reading of customers whose relationship had begun by\
-      \ that date — since the latest valid_from in the data is 2010-12-30, nothing had yet to begin, so\
-      \ those two readings coincide at 104,990. The 29,708-row gap is customers whose validity window\
-      \ had already closed before 31.12.2025"
-    ref: 'Customer.active_on_the_reference_date: `customers` with no other word means the active customers;
-      `registered` customers are every customer on the register; default `active`, disclosed'
+    text: "customers → active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end\
+      \ > 2025-12-31), per rule Customer.active_on_the_reference_date default 'active'\n        could\
+      \ also mean: all registered customers ever on the register (rule choice 'registered'), or buyers\
+      \ who purchased something"
+    ref: rule Customer.active_on_the_reference_date — default is 'active'
   - kind: ''
-    text: "customers → one row per customer_key, counted once — measured 104,990 rows over 104,990 distinct\
-      \ keys, so counting rows and counting distinct customers cannot differ here\n        could also\
-      \ mean: one per company or one per contact person, neither of which this register distinguishes"
-    ref: declaration://none
-  - kind: ''
-    text: "we → the whole register, with no country, channel or business-unit restriction\n        could\
-      \ also mean: a single market — no declaration narrows it and the question names none"
-    ref: declaration://none
-  - kind: ''
-    text: "as of 31.12.2025 → a snapshot at that single date, bound to @as_of as the question states it\n\
-      \        could also mean: a period count over 2025 or over December 2025, which would have to be\
-      \ measured on orders rather than on the register"
-    ref: 'Customer.active_on_the_reference_date: @as_of binds the date the question states'
-  - kind: ''
-    text: "<= 31.12.2025 → the two-sided window test the declaration defines for `active`, giving 75,282\n\
-      \        could also mean: the one-sided `valid_from <= 31.12.2025` the decomposition wrote, which\
-      \ passes all 104,990 rows because the latest valid_from in the data is 2010-12-30 — so as written\
-      \ it is not a restriction at all"
-    ref: 'Customer.active_on_the_reference_date: on or after the day the record became valid AND on or
-      before the day it stopped being valid'
-  - kind: ''
-    text: "customers → active on the reference date — record valid on 31.12.2025 — giving 75,282\n   \
-      \     could also mean: registered: every customer ever on the register, valid that day or not, giving\
-      \ 104,990 — which is also the figure for the reading `understood_as` assumed (relationship begun\
-      \ on or before that date), since the latest valid_from in the data is 2010-12-30 and so nothing\
-      \ had yet to begin. The choice moves the figure by 29,708; it is the declaration, not my judgement,\
-      \ that settles it"
-    ref: 'Customer.active_on_the_reference_date: `customers` with no other word means the active customers;
-      `registered` is every row; default `active`, disclosed'
-  - kind: ''
-    text: "customers → the register, not the buyers — no purchase required\n        could also mean: customers\
-      \ with at least one order, a separate and differently-sized population reached through the sales\
-      \ line"
-    ref: 'Customer.register_not_buyers; and Customer.active_on_the_reference_date: active customers are
-      not the same set as customers who have bought something'
-  - kind: ''
-    text: "as of 31.12.2025 → a snapshot at that one date, bound to @as_of from the question's own words\
-      \ rather than the bundle anchor or today\n        could also mean: a period count of customers active\
-      \ or trading during 2025, or during December 2025"
-    ref: 'Customer.active_on_the_reference_date: @as_of binds the date the question states; else the bundle''s
-      anchor; else today'
-  - kind: ''
-    text: "customers → one per customer_key — measured 104,990 distinct keys over 104,990 rows, so counting\
-      \ rows and counting distinct customers cannot differ here\n        could also mean: one per company\
-      \ or per contact person, a grain this register does not distinguish"
-    ref: declaration://none
-  - kind: ''
-    text: "we → the whole company — no market or unit restriction\n        could also mean: a single country,\
-      \ region or business unit, which the question does not name and no declaration narrows to"
-    ref: declaration://none
+    text: "as of 31.12.2025 → reference date for the customer validity window, not a filter on order_date\n\
+      \        could also mean: a filter on sales order_date, but the question asks about customers not\
+      \ sales"
+    ref: rule Customer.active_on_the_reference_date — 'The reference date is the date the question states'
   concepts: []
   rules:
-  - id: 'Customer.active_on_the_reference_date: `customers` with no other word means the active customers;
-      `registered` customers are every customer on the register; default `active`, disclosed'
-    why: '''customers'' = the active customers on the stated reference date — 75,282 — because the declaration
-      makes `active` (the date inside the validity window at both ends) the reading a question naming
-      neither takes, and requires the answer to disclose it'
-  - id: 'Customer.active_on_the_reference_date: @as_of binds the date the question states'
-    why: '''as of 31.12.2025'' = a snapshot at that single date, bound to @as_of as the question states
-      it'
-  - id: 'Customer.active_on_the_reference_date: on or after the day the record became valid AND on or
-      before the day it stopped being valid'
-    why: '''<= 31.12.2025'' = the two-sided window test the declaration defines for `active`, giving 75,282'
-  - id: 'Customer.active_on_the_reference_date: `customers` with no other word means the active customers;
-      `registered` is every row; default `active`, disclosed'
-    why: '''customers'' = active on the reference date — record valid on 31.12.2025 — giving 75,282'
-  - id: 'Customer.register_not_buyers; and Customer.active_on_the_reference_date: active customers are
-      not the same set as customers who have bought something'
-    why: '''customers'' = the register, not the buyers — no purchase required'
-  - id: 'Customer.active_on_the_reference_date: @as_of binds the date the question states; else the bundle''s
-      anchor; else today'
-    why: '''as of 31.12.2025'' = a snapshot at that one date, bound to @as_of from the question''s own
-      words rather than the bundle anchor or today'
+  - id: rule Customer.active_on_the_reference_date — default is 'active'
+    why: '''customers'' = active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end
+      > 2025-12-31), per rule Customer.active_on_the_reference_date default ''active'''
+  - id: rule Customer.active_on_the_reference_date — 'The reference date is the date the question states'
+    why: '''as of 31.12.2025'' = reference date for the customer validity window, not a filter on order_date'
   edges: []
 sql:
-- "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n\
-  \  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-- "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer"
-- "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
-  \ <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-answer_sql: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-  WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
+- "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <=\
+  \ CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+- "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+  \  AND valid_end > CAST('2025-12-31' AS DATE)"
+- "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+  \  AND valid_end > CAST('2025-12-31' AS DATE)"
+answer_sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+  \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
 sql_valid: true
 result:
   status: ok
   rows: 1
-  cols: &id010
+  cols: &id007
   - how_many_customers
   sample_rows:
   - - 75282
   capped: false
 prompt:
-  chars: 88604
-  lines: 968
+  chars: 143797
+  lines: 2594
   sections:
   - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 1 — the JSON schema of its answer
   - STAGE 2 — system prompt for walking one step
-  - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/8581b217dc94.txt
-  sha: 8581b217dc94
-  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
-    it is now.'
+  - STAGE 2 — the declarations, at the end of that system prompt
+  - STAGE 2 — the JSON schemas of a step call
+  - STAGE 2 — what writes the per-question text (candidates, refusals)
+  file: acceptance/prompts/143fce7bb1bb.txt
+  sha: 143fce7bb1bb
+  reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+    the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+    given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 error: null
 v3_report:
   canonical_question_json: *id001
-  canonical_question_simplified: "  1       FROM       customers                           “customers”\n\
-    \  2  ← 1  WHERE      customers as of 31.12.2025 <= None  “as of 31.12.2025”\n  3  ← 2  AGGREGATE\
-    \  count distinct of customers         “how many customers do we have”\n  answer: step 3   confidence:\
-    \ 0.62\n  UNDERSTOOD AS: You want a single number: how many customers existed on 31 December 2025\
-    \ — i.e. a headcount snapshot of the customer base at that date (customers whose relationship with\
-    \ us had begun on or before 31.12.2025), counting each customer once. The answer is one figure, not\
-    \ a breakdown, and it does not look at anything that happened after that date.\n  AMBIGUOUS 'customers'\
-    \ — ASKS: Should this count every customer we have on the books at that date, or only the ones that\
-    \ were still active (not churned / not cancelled) on 31.12.2025?\n      could mean: every customer\
-    \ ever acquired whose record existed by that date\n      could mean: only customers that were still\
-    \ active or subscribed on that date\n      could mean: only customers who bought something in 2025\n\
-    \      took: every customer whose relationship had begun on or before 31.12.2025, with no activity\
-    \ or status filter\n  AMBIGUOUS 'as of 31.12.2025' — ASKS: Do you want the state of the customer base\
-    \ exactly on 31 December 2025 (a snapshot), or the number of customers that were trading with us during\
-    \ 2025?\n      could mean: a snapshot: all customers on the books at that single date\n      could\
-    \ mean: a period count: distinct customers with activity during the year 2025\n      could mean: a\
-    \ period count: distinct customers with activity in December 2025\n      took: a snapshot at that\
-    \ single date\n  AMBIGUOUS 'customers' — ASKS: If one company has several accounts or contacts with\
-    \ us, should that count as one customer or as several?\n      could mean: one per company / legal\
-    \ entity\n      could mean: one per account or contract\n      could mean: one per individual contact\
-    \ person\n      took: one per customer record, counted distinctly\n  AMBIGUOUS 'we' — ASKS: Should\
-    \ this be the whole company, or just one country, region or business unit you have in mind?\n    \
-    \  could mean: the whole company, all markets\n      could mean: a single country or region\n    \
-    \  could mean: a single business unit or product line\n      took: the whole company, no market or\
-    \ unit restriction\n  cannot_express: Whether a customer was 'active' or 'churned' on 31.12.2025 —\
-    \ these steps apply no status test, because the question gives no definition of an active customer.\n\
-    \  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
-  understood_as: 'You want a single number: how many customers existed on 31 December 2025 — i.e. a headcount
-    snapshot of the customer base at that date (customers whose relationship with us had begun on or before
-    31.12.2025), counting each customer once. The answer is one figure, not a breakdown, and it does not
-    look at anything that happened after that date.'
+  canonical_question_simplified: "  1       FROM       customers\n  2  ← 1  DURING     by None       \
+    \      “as of 31.12.2025”\n  3  ← 2  AGGREGATE  count of customers  “how many customers”\n  answer:\
+    \ step 3   confidence: 0.85\n  UNDERSTOOD AS: How many customers do we have as of 31.12.2025?\n  AMBIGUOUS\
+    \ 'customers' — ASKS: Should we count all customers on record, or only those who are active (e.g.\
+    \ not churned or closed) as of that date?\n      could mean: all customers ever created up to 31.12.2025\n\
+    \      could mean: only customers that are active/open as of 31.12.2025\n      took: only customers\
+    \ that are active/open as of 31.12.2025\n  AMBIGUOUS 'as of 31.12.2025' — ASKS: Does 'as of 31.12.2025'\
+    \ mean customers whose accounts existed by that date, or customers who had activity (e.g. a purchase)\
+    \ by that date?\n      could mean: customers whose account existed by 31.12.2025\n      could mean:\
+    \ customers who made at least one purchase by 31.12.2025\n      took: customers whose account existed\
+    \ by 31.12.2025\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
+  understood_as: How many customers do we have as of 31.12.2025?
   ambiguities_it_saw:
   - words: customers
-    asks: Should this count every customer we have on the books at that date, or only the ones that were
-      still active (not churned / not cancelled) on 31.12.2025?
+    asks: Should we count all customers on record, or only those who are active (e.g. not churned or closed)
+      as of that date?
     readings:
-    - every customer ever acquired whose record existed by that date
-    - only customers that were still active or subscribed on that date
-    - only customers who bought something in 2025
-    took: every customer whose relationship had begun on or before 31.12.2025, with no activity or status
-      filter
+    - all customers ever created up to 31.12.2025
+    - only customers that are active/open as of 31.12.2025
+    took: only customers that are active/open as of 31.12.2025
   - words: as of 31.12.2025
-    asks: Do you want the state of the customer base exactly on 31 December 2025 (a snapshot), or the
-      number of customers that were trading with us during 2025?
+    asks: Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers who
+      had activity (e.g. a purchase) by that date?
     readings:
-    - 'a snapshot: all customers on the books at that single date'
-    - 'a period count: distinct customers with activity during the year 2025'
-    - 'a period count: distinct customers with activity in December 2025'
-    took: a snapshot at that single date
-  - words: customers
-    asks: If one company has several accounts or contacts with us, should that count as one customer or
-      as several?
-    readings:
-    - one per company / legal entity
-    - one per account or contract
-    - one per individual contact person
-    took: one per customer record, counted distinctly
-  - words: we
-    asks: Should this be the whole company, or just one country, region or business unit you have in mind?
-    readings:
-    - the whole company, all markets
-    - a single country or region
-    - a single business unit or product line
-    took: the whole company, no market or unit restriction
+    - customers whose account existed by 31.12.2025
+    - customers who made at least one purchase by 31.12.2025
+    took: customers whose account existed by 31.12.2025
   presentation:
     claimed_answer_is: one figure
     answer_step: '3'
     answer_step_asks:
       do: aggregate
       of: '2'
+      said: how many customers
       figures: *id002
-      said: how many customers do we have
-    confidence_stage1: 0.62
+    confidence_stage1: 0.85
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer"
+    sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+      \  AND valid_end > CAST('2025-12-31' AS DATE)"
     params: {}
   - step: '2'
-    sql: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer\nWHERE\n\
-      \  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-    params: &id008
-      as_of: '2025-12-31'
+    sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+      \  AND valid_end > CAST('2025-12-31' AS DATE)"
+    params: {}
   - step: '3'
-    sql: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-      WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-    params: &id009
-      as_of: '2025-12-31'
-  what_it_calculated: 'One figure, returned by the query: 75,282 customers stood on Contoso''s register
-    as valid, current customers on 31 December 2025 — a snapshot of that single day, each person counted
-    once. What it does NOT include: the 29,708 customers whose record had stopped being valid before that
-    date (add them back and you get 104,990, every person ever on the register); and it is not a count
-    of buyers — no order is required to be in this figure, so it can hold people who never bought and
-    can miss people who did.'
-  rows_returned: &id005
+    sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+      \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    params: {}
+  what_it_calculated: The count of customers whose validity window includes 31 December 2025 — i.e. active
+    customers on that reference date. One number, 75,282.
+  rows_returned: &id004
   - how_many_customers: 75282
   synthesis:
     claimed: '75282'
     shape: one figure
-    answered_population: The 75,282 customers of contoso_served.dim_customer with `valid_from <= 2025-12-31
-      AND valid_to >= 2025-12-31` — the declared `active` population of Customer evaluated at the date
-      the question states, taken because `Customer.active_on_the_reference_date` makes `active` the reading
-      when a question says only "customers". No country, market, channel or purchase restriction was applied;
-      the starting point was the whole register of 104,990.
+    answered_population: Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end
+      > 2025-12-31, i.e. active customers as of that date per rule Customer.active_on_the_reference_date
+      (default 'active'). No channel, country or buyer restriction applied. This is not all registered
+      customers — it excludes those whose validity window does not cover the reference date.
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
-    step_asks: customers
-    turns:
-    - why: Establish the starting relation for "customers" (dim_customer, one row per customer) and see
-        the validity-window columns that the declared Customer population rule will act on in step 2.
-      did: 'probe ''dim_customer.valid_to'' AND ALSO: SELECT COUNT(*) AS rows_in_register, COUNT(DISTINCT
-        customer_key) AS distinct_customers, MIN(valid_from) AS min_valid_from, MAX(valid_from) AS max_valid_from,
-        MIN(valid_to) AS min_valid_to, MAX(valid_to) AS max_valid_to, SUM(CASE WHEN valid_to IS NULL THEN
-        1 ELSE 0 END) AS null_valid_to, SUM(CASE WHEN valid_from IS NULL THEN 1 ELSE 0 END) AS null_valid_from
-        FROM contoso_served.dim_customer'
-      came_back: 'dim_customer.valid_to (date) holds 60+ distinct value(s), first 60: datetime.date(2005,
-        1, 1), datetime.date(2005, 1, 2), datetime.date(2005, 1, 3), datetime.date(2005, 1, 5), datetime.date(2005,
-        1, 6), datetime.date(2005, 1, 7), datetime.date(2005, 1, 8), datetime.date(2005, 1, 9), datetime.date(2005,
-        1, 10), datetime.date(2005, 1, 11), datetime.date(2005, 1, 12), datetime.date(2005, 1, 13), datetime.date(2005,
-        1, 15), datetime.date(2005, 1, 16), datetime.date(2005, 1, 17), datetime.date(2005, 1, 18), datetime.date(2005,
-        1, 20), datetime.date(2005, 1, 21), datetime.date(2005, 1, 22), datetime.date(2005, 1, 23), datetime.date(2005,
-        1, 24), datetime.date(2005, 1, 25), datetime.date(2005, 1, 26), datetime.date(2005, 1, 27), datetime.date(2005,
-        1, 28), datetime.date(2005, 1, 29), datetime.date(2005, 1, 30), datetime.date(2005, 1, 31), datetime.date(2005,
-        2, 1), datetime.date(2005, 2, 2), datetime.date(2005, 2, 3), datetime.date(2005, 2, 4), datetime.date(2005,
-        2, 5), datetime.date(2005, 2, 7), datetime.date(2005, 2, 8), datetime.date(2005, 2, 9), datetime.date(2005,
-        2, 10), datetime.date(2005, 2, 11), datetime.date(2005, 2, 12), datetime.date(2005, 2, 13), datetime.date(2005,
-        2, 14), '
-    - why: 'THIS CHANGES THE QUESTION: the declaration `Customer.active_on_the_reference_date` fixes "customers"
-        with no other word as the ACTIVE customers — the reference date inside the record''s validity
-        window at BOTH ends — whereas `understood_as` assumed every customer whose relationship had begun
-        by 31.12.2025; since max valid_from is 2010-12-30, that assumed reading is simply the whole register,
-        so this step prices both readings on the base relation before step 2 restricts it.'
-      did: 'SELECT COUNT(*) AS registered_all_rows, SUM(CASE WHEN valid_from <= DATE :as_of THEN 1 ELSE
-        0 END) AS begun_on_or_before, SUM(CASE WHEN valid_from <= DATE :as_of AND valid_to >= DATE :as_of
-        THEN 1 ELSE 0 END) AS active_on_as_of, SUM(CASE WHEN valid_to < DATE :as_of THEN 1 ELSE 0 END)
-        AS window_already_ended, SUM(CASE WHEN valid_from > DATE :as_of THEN 1 ELSE 0 END) AS not_yet_begun
-        FROM contoso_served.dim_customer params {"as_of": "2025-12-31"}'
-      came_back: "THE DATABASE SAID: ParserException: Parser Error: syntax error at or near \"$\"\n\n\
-        LINE 1: ...(*) AS registered_all_rows, SUM(CASE WHEN valid_from <= DATE $as_of THEN 1 ELSE 0 END)\
-        \ AS begun_on_or_before, SUM(CASE...\n                                                       \
-        \                 ^"
-    - why: 'Same measurement, with the date literal cast instead of the `DATE $param` form the parser
-        rejected: price the three readings of "customers" against 31.12.2025 on the base relation.'
-      did: 'SELECT COUNT(*) AS registered_all_rows, SUM(CASE WHEN valid_from <= CAST(:as_of AS DATE) THEN
-        1 ELSE 0 END) AS begun_on_or_before, SUM(CASE WHEN valid_from <= CAST(:as_of AS DATE) AND valid_to
-        >= CAST(:as_of AS DATE) THEN 1 ELSE 0 END) AS active_on_as_of, SUM(CASE WHEN valid_to < CAST(:as_of
-        AS DATE) THEN 1 ELSE 0 END) AS window_already_ended, SUM(CASE WHEN valid_from > CAST(:as_of AS
-        DATE) THEN 1 ELSE 0 END) AS not_yet_begun FROM contoso_served.dim_customer params {"as_of": "2025-12-31"}'
-      came_back: '1 row(s): [{"registered_all_rows": 104990, "begun_on_or_before": 104990, "active_on_as_of":
-        75282, "window_already_ended": 29708, "not_yet_begun": 0}]'
-    settled_on: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer"
-    means: 'The customer register itself, one row per customer on Contoso''s books — 104,990 rows over
-      104,990 distinct customer keys, so each person appears exactly once and no validity-window fan-out
-      has to be collapsed. Each row carries the two days that bound its record''s validity, which is what
-      the next step tests against 31 December 2025. This is the register, not the buyer list: nothing
-      here says whether the customer ever ordered.'
+    step_asks: ''
+    turns: []
+    settled_on: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31'\
+      \ AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    means: All customer records that are active (valid) as of 31 December 2025 — one row per customer
+      whose validity window includes that date.
     readings_taken:
     - word: customers
-      took: the active customers on the stated reference date — 75,282 — because the declaration makes
-        `active` (the date inside the validity window at both ends) the reading a question naming neither
-        takes, and requires the answer to disclose it
-      could_also_mean: 'the registered customers: every row on the register whether valid on that date
-        or not, which is 104,990, and is also the figure for `understood_as`''s reading of customers whose
-        relationship had begun by that date — since the latest valid_from in the data is 2010-12-30, nothing
-        had yet to begin, so those two readings coincide at 104,990. The 29,708-row gap is customers whose
-        validity window had already closed before 31.12.2025'
-      declaration: 'Customer.active_on_the_reference_date: `customers` with no other word means the active
-        customers; `registered` customers are every customer on the register; default `active`, disclosed'
-    - word: customers
-      took: one row per customer_key, counted once — measured 104,990 rows over 104,990 distinct keys,
-        so counting rows and counting distinct customers cannot differ here
-      could_also_mean: one per company or one per contact person, neither of which this register distinguishes
-      declaration: null
-    - word: we
-      took: the whole register, with no country, channel or business-unit restriction
-      could_also_mean: a single market — no declaration narrows it and the question names none
-      declaration: null
+      took: active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end > 2025-12-31),
+        per rule Customer.active_on_the_reference_date default 'active'
+      could_also_mean: all registered customers ever on the register (rule choice 'registered'), or buyers
+        who purchased something
+      declaration: rule Customer.active_on_the_reference_date — default is 'active'
+    - word: as of 31.12.2025
+      took: reference date for the customer validity window, not a filter on order_date
+      could_also_mean: a filter on sales order_date, but the question asks about customers not sales
+      declaration: rule Customer.active_on_the_reference_date — 'The reference date is the date the question
+        states'
     blocked_by: []
   - step: '2'
     step_asks: as of 31.12.2025
     turns: []
-    settled_on: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer\n\
-      WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-    means: 'The customers whose record was valid on 31 December 2025 — 75,282 of them, one row per customer,
-      each a person whose validity window had opened on or before that day and had not yet closed by it.
-      It is a snapshot of who stood on the register as a current customer on that single date: it does
-      not ask whether they ever ordered, and it drops the 29,708 customers whose window had already closed
-      before that day.'
-    readings_taken:
-    - word: as of 31.12.2025
-      took: a snapshot at that single date, bound to @as_of as the question states it
-      could_also_mean: a period count over 2025 or over December 2025, which would have to be measured
-        on orders rather than on the register
-      declaration: 'Customer.active_on_the_reference_date: @as_of binds the date the question states'
-    - word: <= 31.12.2025
-      took: the two-sided window test the declaration defines for `active`, giving 75,282
-      could_also_mean: the one-sided `valid_from <= 31.12.2025` the decomposition wrote, which passes
-        all 104,990 rows because the latest valid_from in the data is 2010-12-30 — so as written it is
-        not a restriction at all
-      declaration: 'Customer.active_on_the_reference_date: on or after the day the record became valid
-        AND on or before the day it stopped being valid'
+    settled_on: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31'\
+      \ AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    means: 'Same as step 1: all customer records active as of 31 December 2025. The date was already folded
+      into step 1''s validity-window predicate.'
+    readings_taken: []
     blocked_by: []
   - step: '3'
-    step_asks: how many customers do we have
+    step_asks: how many customers
     turns:
-    - why: Count the customers the restriction kept, one per customer, to hand back the single figure
-        the question asks for.
-      did: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-        WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 1 row(s): [{"how_many_customers": 75282}]  Give `claimed_answer`
-        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
-        rows settle the question, do not decline.'
-    settled_on: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-      WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-    means: 'One figure, returned by the query: 75,282 customers stood on Contoso''s register as valid,
-      current customers on 31 December 2025 — a snapshot of that single day, each person counted once.
-      What it does NOT include: the 29,708 customers whose record had stopped being valid before that
-      date (add them back and you get 104,990, every person ever on the register); and it is not a count
-      of buyers — no order is required to be in this figure, so it can hold people who never bought and
-      can miss people who did.'
-    readings_taken:
-    - word: customers
-      took: active on the reference date — record valid on 31.12.2025 — giving 75,282
-      could_also_mean: 'registered: every customer ever on the register, valid that day or not, giving
-        104,990 — which is also the figure for the reading `understood_as` assumed (relationship begun
-        on or before that date), since the latest valid_from in the data is 2010-12-30 and so nothing
-        had yet to begin. The choice moves the figure by 29,708; it is the declaration, not my judgement,
-        that settles it'
-      declaration: 'Customer.active_on_the_reference_date: `customers` with no other word means the active
-        customers; `registered` is every row; default `active`, disclosed'
-    - word: customers
-      took: the register, not the buyers — no purchase required
-      could_also_mean: customers with at least one order, a separate and differently-sized population
-        reached through the sales line
-      declaration: 'Customer.register_not_buyers; and Customer.active_on_the_reference_date: active customers
-        are not the same set as customers who have bought something'
-    - word: as of 31.12.2025
-      took: a snapshot at that one date, bound to @as_of from the question's own words rather than the
-        bundle anchor or today
-      could_also_mean: a period count of customers active or trading during 2025, or during December 2025
-      declaration: 'Customer.active_on_the_reference_date: @as_of binds the date the question states;
-        else the bundle''s anchor; else today'
-    - word: customers
-      took: one per customer_key — measured 104,990 distinct keys over 104,990 rows, so counting rows
-        and counting distinct customers cannot differ here
-      could_also_mean: one per company or per contact person, a grain this register does not distinguish
-      declaration: null
-    - word: we
-      took: the whole company — no market or unit restriction
-      could_also_mean: a single country, region or business unit, which the question does not name and
-        no declaration narrows to
-      declaration: null
+    - why: the answer step's SQL you wrote on your first turn
+      did: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      came_back: '1 row(s): [{"how_many_customers": 75282}]'
+    settled_on: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n \
+      \ valid_from <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    means: The count of customers whose validity window includes 31 December 2025 — i.e. active customers
+      on that reference date. One number, 75,282.
+    readings_taken: []
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 88,604 chars · 968 lines  [8581b217dc94]
+  summary: 143,797 chars · 2594 lines  [143fce7bb1bb]
   detail:
-    chars: 88604
-    lines: 968
+    chars: 143797
+    lines: 2594
     sections:
     - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 1 — the JSON schema of its answer
     - STAGE 2 — system prompt for walking one step
-    - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/8581b217dc94.txt
-    sha: 8581b217dc94
-    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
-      as it is now.'
+    - STAGE 2 — the declarations, at the end of that system prompt
+    - STAGE 2 — the JSON schemas of a step call
+    - STAGE 2 — what writes the per-question text (candidates, refusals)
+    file: acceptance/prompts/143fce7bb1bb.txt
+    sha: 143fce7bb1bb
+    reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+      the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+      given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 - stage: understood_as
   status: ok
   ms: 0
   summary: ''
   detail:
-    prose: 'You want a single number: how many customers existed on 31 December 2025 — i.e. a headcount
-      snapshot of the customer base at that date (customers whose relationship with us had begun on or
-      before 31.12.2025), counting each customer once. The answer is one figure, not a breakdown, and
-      it does not look at anything that happened after that date.'
-    population: The 75,282 customers of contoso_served.dim_customer with `valid_from <= 2025-12-31 AND
-      valid_to >= 2025-12-31` — the declared `active` population of Customer evaluated at the date the
-      question states, taken because `Customer.active_on_the_reference_date` makes `active` the reading
-      when a question says only "customers". No country, market, channel or purchase restriction was applied;
-      the starting point was the whole register of 104,990.
+    prose: How many customers do we have as of 31.12.2025?
+    population: Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end > 2025-12-31,
+      i.e. active customers as of that date per rule Customer.active_on_the_reference_date (default 'active').
+      No channel, country or buyer restriction applied. This is not all registered customers — it excludes
+      those whose validity window does not cover the reference date.
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
     steps_readable:
-    - '  1       FROM       customers                           “customers”'
-    - '  2  ← 1  WHERE      customers as of 31.12.2025 <= None  “as of 31.12.2025”'
-    - '  3  ← 2  AGGREGATE  count distinct of customers         “how many customers do we have”'
-    - '  answer: step 3   confidence: 0.62'
+    - '  1       FROM       customers'
+    - '  2  ← 1  DURING             “as of 31.12.2025”'
+    - '  3  ← 2  AGGREGATE  count of customers  “how many customers”'
+    - '  answer: step 3   confidence: 0.85'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -574,54 +316,35 @@ stages:
   detail:
     ambiguities:
     - words: customers
-      asks: Should this count every customer we have on the books at that date, or only the ones that
-        were still active (not churned / not cancelled) on 31.12.2025?
+      asks: Should we count all customers on record, or only those who are active (e.g. not churned or
+        closed) as of that date?
       readings:
-      - every customer ever acquired whose record existed by that date
-      - only customers that were still active or subscribed on that date
-      - only customers who bought something in 2025
-      took: every customer whose relationship had begun on or before 31.12.2025, with no activity or status
-        filter
+      - all customers ever created up to 31.12.2025
+      - only customers that are active/open as of 31.12.2025
+      took: only customers that are active/open as of 31.12.2025
     - words: as of 31.12.2025
-      asks: Do you want the state of the customer base exactly on 31 December 2025 (a snapshot), or the
-        number of customers that were trading with us during 2025?
+      asks: Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers who
+        had activity (e.g. a purchase) by that date?
       readings:
-      - 'a snapshot: all customers on the books at that single date'
-      - 'a period count: distinct customers with activity during the year 2025'
-      - 'a period count: distinct customers with activity in December 2025'
-      took: a snapshot at that single date
-    - words: customers
-      asks: If one company has several accounts or contacts with us, should that count as one customer
-        or as several?
-      readings:
-      - one per company / legal entity
-      - one per account or contract
-      - one per individual contact person
-      took: one per customer record, counted distinctly
-    - words: we
-      asks: Should this be the whole company, or just one country, region or business unit you have in
-        mind?
-      readings:
-      - the whole company, all markets
-      - a single country or region
-      - a single business unit or product line
-      took: the whole company, no market or unit restriction
+      - customers whose account existed by 31.12.2025
+      - customers who made at least one purchase by 31.12.2025
+      took: customers whose account existed by 31.12.2025
 - stage: cannot_express
-  status: ok
+  status: skipped
   ms: 0
   summary: ''
   detail:
-    cannot_express: *id003
+    cannot_express: []
 - stage: output_shape
   status: ok
   ms: 0
   summary: ''
   detail:
-    output_shape: *id004
+    output_shape: *id003
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.62 — stage 1's own confidence in this decomposition
+  summary: 0.85 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -636,86 +359,34 @@ stages:
   detail:
     readings:
     - word: customers
-      took: the active customers on the stated reference date — 75,282 — because the declaration makes
-        `active` (the date inside the validity window at both ends) the reading a question naming neither
-        takes, and requires the answer to disclose it
-      could_also_mean: 'the registered customers: every row on the register whether valid on that date
-        or not, which is 104,990, and is also the figure for `understood_as`''s reading of customers whose
-        relationship had begun by that date — since the latest valid_from in the data is 2010-12-30, nothing
-        had yet to begin, so those two readings coincide at 104,990. The 29,708-row gap is customers whose
-        validity window had already closed before 31.12.2025'
-      declaration: 'Customer.active_on_the_reference_date: `customers` with no other word means the active
-        customers; `registered` customers are every customer on the register; default `active`, disclosed'
-    - word: customers
-      took: one row per customer_key, counted once — measured 104,990 rows over 104,990 distinct keys,
-        so counting rows and counting distinct customers cannot differ here
-      could_also_mean: one per company or one per contact person, neither of which this register distinguishes
-      declaration: null
-    - word: we
-      took: the whole register, with no country, channel or business-unit restriction
-      could_also_mean: a single market — no declaration narrows it and the question names none
-      declaration: null
+      took: active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end > 2025-12-31),
+        per rule Customer.active_on_the_reference_date default 'active'
+      could_also_mean: all registered customers ever on the register (rule choice 'registered'), or buyers
+        who purchased something
+      declaration: rule Customer.active_on_the_reference_date — default is 'active'
     - word: as of 31.12.2025
-      took: a snapshot at that single date, bound to @as_of as the question states it
-      could_also_mean: a period count over 2025 or over December 2025, which would have to be measured
-        on orders rather than on the register
-      declaration: 'Customer.active_on_the_reference_date: @as_of binds the date the question states'
-    - word: <= 31.12.2025
-      took: the two-sided window test the declaration defines for `active`, giving 75,282
-      could_also_mean: the one-sided `valid_from <= 31.12.2025` the decomposition wrote, which passes
-        all 104,990 rows because the latest valid_from in the data is 2010-12-30 — so as written it is
-        not a restriction at all
-      declaration: 'Customer.active_on_the_reference_date: on or after the day the record became valid
-        AND on or before the day it stopped being valid'
-    - word: customers
-      took: active on the reference date — record valid on 31.12.2025 — giving 75,282
-      could_also_mean: 'registered: every customer ever on the register, valid that day or not, giving
-        104,990 — which is also the figure for the reading `understood_as` assumed (relationship begun
-        on or before that date), since the latest valid_from in the data is 2010-12-30 and so nothing
-        had yet to begin. The choice moves the figure by 29,708; it is the declaration, not my judgement,
-        that settles it'
-      declaration: 'Customer.active_on_the_reference_date: `customers` with no other word means the active
-        customers; `registered` is every row; default `active`, disclosed'
-    - word: customers
-      took: the register, not the buyers — no purchase required
-      could_also_mean: customers with at least one order, a separate and differently-sized population
-        reached through the sales line
-      declaration: 'Customer.register_not_buyers; and Customer.active_on_the_reference_date: active customers
-        are not the same set as customers who have bought something'
-    - word: as of 31.12.2025
-      took: a snapshot at that one date, bound to @as_of from the question's own words rather than the
-        bundle anchor or today
-      could_also_mean: a period count of customers active or trading during 2025, or during December 2025
-      declaration: 'Customer.active_on_the_reference_date: @as_of binds the date the question states;
-        else the bundle''s anchor; else today'
-    - word: customers
-      took: one per customer_key — measured 104,990 distinct keys over 104,990 rows, so counting rows
-        and counting distinct customers cannot differ here
-      could_also_mean: one per company or per contact person, a grain this register does not distinguish
-      declaration: null
-    - word: we
-      took: the whole company — no market or unit restriction
-      could_also_mean: a single country, region or business unit, which the question does not name and
-        no declaration narrows to
-      declaration: null
+      took: reference date for the customer validity window, not a filter on order_date
+      could_also_mean: a filter on sales order_date, but the question asks about customers not sales
+      declaration: rule Customer.active_on_the_reference_date — 'The reference date is the date the question
+        states'
 - stage: plan
   status: ok
   ms: 0
   summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer\n\
-        \n-- step 2\nSELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer\n\
-        WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)\n\n-- step 3\n\
-        SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-        WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
+      sql: "-- step 1\nSELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31'\
+        \ AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)\n\n-- step 2\nSELECT\n  *\nFROM contoso_served.dim_customer\n\
+        WHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)\n\
+        \n-- step 3\nSELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
       params: {}
 - stage: execute
   status: ok
   ms: 0
   summary: ''
   detail:
-    rows: *id005
+    rows: *id004
     stopped_at: null
     the_data_does_not_hold: []
 - stage: calculated
@@ -723,12 +394,8 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'One figure, returned by the query: 75,282 customers stood on Contoso''s register
-      as valid, current customers on 31 December 2025 — a snapshot of that single day, each person counted
-      once. What it does NOT include: the 29,708 customers whose record had stopped being valid before
-      that date (add them back and you get 104,990, every person ever on the register); and it is not
-      a count of buyers — no order is required to be in this figure, so it can hold people who never bought
-      and can miss people who did.'
+    what_it_calculated: The count of customers whose validity window includes 31 December 2025 — i.e.
+      active customers on that reference date. One number, 75,282.
 - stage: evaluate
   status: ok
   ms: 0
@@ -753,22 +420,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 88,604 chars · 968 lines
+      - 143,797 chars · 2594 lines
     - - sections
-      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
-        STAGE 2 — the declarations, sent once
+      - STAGE 1 — question to canonical question (QDMR), STAGE 1 — the JSON schema of its answer, STAGE
+        2 — system prompt for walking one step, STAGE 2 — the declarations, at the end of that system
+        prompt, STAGE 2 — the JSON schemas of a step call, STAGE 2 — what writes the per-question text
+        (candidates, refusals)
     - - digest
-      - 8581b217dc94
+      - 143fce7bb1bb
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: 'You want a single number: how many customers existed on 31 December 2025 — i.e. a headcount
-      snapshot of the customer base at that date (customers whose relationship with us had begun on or
-      before 31.12.2025), counting each customer once. The answer is one figure, not a breakdown, and
-      it does not look at anything that happened after that date.'
+    value: How many customers do we have as of 31.12.2025?
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -776,10 +442,10 @@ sections:
   body:
     kind: list
     value:
-    - '  1       FROM       customers                           “customers”'
-    - '  2  ← 1  WHERE      customers as of 31.12.2025 <= None  “as of 31.12.2025”'
-    - '  3  ← 2  AGGREGATE  count distinct of customers         “how many customers do we have”'
-    - '  answer: step 3   confidence: 0.62'
+    - '  1       FROM       customers'
+    - '  2  ← 1  DURING             “as of 31.12.2025”'
+    - '  3  ← 2  AGGREGATE  count of customers  “how many customers”'
+    - '  answer: step 3   confidence: 0.85'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -789,14 +455,14 @@ sections:
     value:
     - - shape
       - one figure
-    - - said
-      - How many customers do we have as of 31.12.2025?
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
     - - rows
       - one
-    - - key_columns
-      - *id006
-    - - figure_columns
-      - *id007
+    - - said
+      - how many customers
 - id: ambiguities
   title: What it saw more than one reading of
   subtitle: one frame per ambiguity — the reading it took, and what settled it
@@ -807,47 +473,23 @@ sections:
     - - - the words
         - customers
       - - what it would ask
-        - Should this count every customer we have on the books at that date, or only the ones that were
-          still active (not churned / not cancelled) on 31.12.2025?
+        - Should we count all customers on record, or only those who are active (e.g. not churned or closed)
+          as of that date?
       - - could mean
-        - - every customer ever acquired whose record existed by that date
-          - only customers that were still active or subscribed on that date
-          - only customers who bought something in 2025
+        - - all customers ever created up to 31.12.2025
+          - only customers that are active/open as of 31.12.2025
       - - took
-        - every customer whose relationship had begun on or before 31.12.2025, with no activity or status
-          filter
+        - only customers that are active/open as of 31.12.2025
     - - - the words
         - as of 31.12.2025
       - - what it would ask
-        - Do you want the state of the customer base exactly on 31 December 2025 (a snapshot), or the
-          number of customers that were trading with us during 2025?
+        - Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers who
+          had activity (e.g. a purchase) by that date?
       - - could mean
-        - - 'a snapshot: all customers on the books at that single date'
-          - 'a period count: distinct customers with activity during the year 2025'
-          - 'a period count: distinct customers with activity in December 2025'
+        - - customers whose account existed by 31.12.2025
+          - customers who made at least one purchase by 31.12.2025
       - - took
-        - a snapshot at that single date
-    - - - the words
-        - customers
-      - - what it would ask
-        - If one company has several accounts or contacts with us, should that count as one customer or
-          as several?
-      - - could mean
-        - - one per company / legal entity
-          - one per account or contract
-          - one per individual contact person
-      - - took
-        - one per customer record, counted distinctly
-    - - - the words
-        - we
-      - - what it would ask
-        - Should this be the whole company, or just one country, region or business unit you have in mind?
-      - - could mean
-        - - the whole company, all markets
-          - a single country or region
-          - a single business unit or product line
-      - - took
-        - the whole company, no market or unit restriction
+        - customers whose account existed by 31.12.2025
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -856,28 +498,25 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer"
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
       params: {}
     - step: '2'
-      sql: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer\nWHERE\n\
-        \  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-      params: *id008
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      params: {}
     - step: '3'
-      sql: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-        WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-      params: *id009
+      sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      params: {}
 - id: what_it_calculated
   title: What it says its rows are
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: 'One figure, returned by the query: 75,282 customers stood on Contoso''s register as valid,
-      current customers on 31 December 2025 — a snapshot of that single day, each person counted once.
-      What it does NOT include: the 29,708 customers whose record had stopped being valid before that
-      date (add them back and you get 104,990, every person ever on the register); and it is not a count
-      of buyers — no order is required to be in this figure, so it can hold people who never bought and
-      can miss people who did.'
+    value: The count of customers whose validity window includes 31 December 2025 — i.e. active customers
+      on that reference date. One number, 75,282.
 - id: declarations
   title: Which declarations it read, and what each settled
   subtitle: the path the decision took through the ontology — read off the walk's own citations, never
@@ -887,39 +526,14 @@ sections:
     kind: records
     value:
     - - - declaration
-        - 'Customer.active_on_the_reference_date: `customers` with no other word means the active customers;
-          `registered` customers are every customer on the register; default `active`, disclosed'
+        - rule Customer.active_on_the_reference_date — default is 'active'
       - - what it settled
-        - '''customers'' = the active customers on the stated reference date — 75,282 — because the declaration
-          makes `active` (the date inside the validity window at both ends) the reading a question naming
-          neither takes, and requires the answer to disclose it'
+        - '''customers'' = active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end
+          > 2025-12-31), per rule Customer.active_on_the_reference_date default ''active'''
     - - - declaration
-        - 'Customer.active_on_the_reference_date: @as_of binds the date the question states'
+        - rule Customer.active_on_the_reference_date — 'The reference date is the date the question states'
       - - what it settled
-        - '''as of 31.12.2025'' = a snapshot at that single date, bound to @as_of as the question states
-          it'
-    - - - declaration
-        - 'Customer.active_on_the_reference_date: on or after the day the record became valid AND on or
-          before the day it stopped being valid'
-      - - what it settled
-        - '''<= 31.12.2025'' = the two-sided window test the declaration defines for `active`, giving
-          75,282'
-    - - - declaration
-        - 'Customer.active_on_the_reference_date: `customers` with no other word means the active customers;
-          `registered` is every row; default `active`, disclosed'
-      - - what it settled
-        - '''customers'' = active on the reference date — record valid on 31.12.2025 — giving 75,282'
-    - - - declaration
-        - 'Customer.register_not_buyers; and Customer.active_on_the_reference_date: active customers are
-          not the same set as customers who have bought something'
-      - - what it settled
-        - '''customers'' = the register, not the buyers — no purchase required'
-    - - - declaration
-        - 'Customer.active_on_the_reference_date: @as_of binds the date the question states; else the
-          bundle''s anchor; else today'
-      - - what it settled
-        - '''as of 31.12.2025'' = a snapshot at that one date, bound to @as_of from the question''s own
-          words rather than the bundle anchor or today'
+        - '''as of 31.12.2025'' = reference date for the customer validity window, not a filter on order_date'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -927,8 +541,8 @@ sections:
   body:
     kind: rows
     value:
-      columns: *id010
-      rows: *id005
+      columns: *id007
+      rows: *id004
       row_count: 1
       capped: false
 - id: answer
@@ -943,11 +557,10 @@ sections:
     - - shape
       - one figure
     - - population it answered over
-      - The 75,282 customers of contoso_served.dim_customer with `valid_from <= 2025-12-31 AND valid_to
-        >= 2025-12-31` — the declared `active` population of Customer evaluated at the date the question
-        states, taken because `Customer.active_on_the_reference_date` makes `active` the reading when
-        a question says only "customers". No country, market, channel or purchase restriction was applied;
-        the starting point was the whole register of 104,990.
+      - Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end > 2025-12-31, i.e.
+        active customers as of that date per rule Customer.active_on_the_reference_date (default 'active').
+        No channel, country or buyer restriction applied. This is not all registered customers — it excludes
+        those whose validity window does not cover the reference date.
 - id: thinking
   title: How it got there, step by step
   subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
@@ -957,158 +570,45 @@ sections:
     kind: steps
     value:
     - step: '1'
-      asks: customers
-      sql: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer"
-      means: 'The customer register itself, one row per customer on Contoso''s books — 104,990 rows over
-        104,990 distinct customer keys, so each person appears exactly once and no validity-window fan-out
-        has to be collapsed. Each row carries the two days that bound its record''s validity, which is
-        what the next step tests against 31 December 2025. This is the register, not the buyer list: nothing
-        here says whether the customer ever ordered.'
+      asks: ''
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      means: All customer records that are active (valid) as of 31 December 2025 — one row per customer
+        whose validity window includes that date.
       readings:
       - word: customers
-        took: the active customers on the stated reference date — 75,282 — because the declaration makes
-          `active` (the date inside the validity window at both ends) the reading a question naming neither
-          takes, and requires the answer to disclose it
-        could_also_mean: 'the registered customers: every row on the register whether valid on that date
-          or not, which is 104,990, and is also the figure for `understood_as`''s reading of customers
-          whose relationship had begun by that date — since the latest valid_from in the data is 2010-12-30,
-          nothing had yet to begin, so those two readings coincide at 104,990. The 29,708-row gap is customers
-          whose validity window had already closed before 31.12.2025'
-        declaration: 'Customer.active_on_the_reference_date: `customers` with no other word means the
-          active customers; `registered` customers are every customer on the register; default `active`,
-          disclosed'
-      - word: customers
-        took: one row per customer_key, counted once — measured 104,990 rows over 104,990 distinct keys,
-          so counting rows and counting distinct customers cannot differ here
-        could_also_mean: one per company or one per contact person, neither of which this register distinguishes
-        declaration: null
-      - word: we
-        took: the whole register, with no country, channel or business-unit restriction
-        could_also_mean: a single market — no declaration narrows it and the question names none
-        declaration: null
-      turns:
-      - why: Establish the starting relation for "customers" (dim_customer, one row per customer) and
-          see the validity-window columns that the declared Customer population rule will act on in step
-          2.
-        did: 'probe ''dim_customer.valid_to'' AND ALSO: SELECT COUNT(*) AS rows_in_register, COUNT(DISTINCT
-          customer_key) AS distinct_customers, MIN(valid_from) AS min_valid_from, MAX(valid_from) AS max_valid_from,
-          MIN(valid_to) AS min_valid_to, MAX(valid_to) AS max_valid_to, SUM(CASE WHEN valid_to IS NULL
-          THEN 1 ELSE 0 END) AS null_valid_to, SUM(CASE WHEN valid_from IS NULL THEN 1 ELSE 0 END) AS
-          null_valid_from FROM contoso_served.dim_customer'
-        came_back: 'dim_customer.valid_to (date) holds 60+ distinct value(s), first 60: datetime.date(2005,
-          1, 1), datetime.date(2005, 1, 2), datetime.date(2005, 1, 3), datetime.date(2005, 1, 5), datetime.date(2005,
-          1, 6), datetime.date(2005, 1, 7), datetime.date(2005, 1, 8), datetime.date(2005, 1, 9), datetime.date(2005,
-          1, 10), datetime.date(2005, 1, 11), datetime.date(2005, 1, 12), datetime.date(2005, 1, 13),
-          datetime.date(2005, 1, 15), datetime.date(2005, 1, 16), datetime.date(2005, 1, 17), datetime.date(2005,
-          1, 18), datetime.date(2005, 1, 20), datetime.date(2005, 1, 21), datetime.date(2005, 1, 22),
-          datetime.date(2005, 1, 23), datetime.date(2005, 1, 24), datetime.date(2005, 1, 25), datetime.date(2005,
-          1, 26), datetime.date(2005, 1, 27), datetime.date(2005, 1, 28), datetime.date(2005, 1, 29),
-          datetime.date(2005, 1, 30), datetime.date(2005, 1, 31), datetime.date(2005, 2, 1), datetime.date(2005,
-          2, 2), datetime.date(2005, 2, 3), datetime.date(2005, 2, 4), datetime.date(2005, 2, 5), datetime.date(2005,
-          2, 7), datetime.date(2005, 2, 8), datetime.date(2005, 2, 9), datetime.date(2005, 2, 10), datetime.date(2005,
-          2, 11), datetime.date(2005, 2, 12), datetime.date(2005, 2, 13), datetime.date(2005, 2, 14), '
-      - why: 'THIS CHANGES THE QUESTION: the declaration `Customer.active_on_the_reference_date` fixes
-          "customers" with no other word as the ACTIVE customers — the reference date inside the record''s
-          validity window at BOTH ends — whereas `understood_as` assumed every customer whose relationship
-          had begun by 31.12.2025; since max valid_from is 2010-12-30, that assumed reading is simply
-          the whole register, so this step prices both readings on the base relation before step 2 restricts
-          it.'
-        did: 'SELECT COUNT(*) AS registered_all_rows, SUM(CASE WHEN valid_from <= DATE :as_of THEN 1 ELSE
-          0 END) AS begun_on_or_before, SUM(CASE WHEN valid_from <= DATE :as_of AND valid_to >= DATE :as_of
-          THEN 1 ELSE 0 END) AS active_on_as_of, SUM(CASE WHEN valid_to < DATE :as_of THEN 1 ELSE 0 END)
-          AS window_already_ended, SUM(CASE WHEN valid_from > DATE :as_of THEN 1 ELSE 0 END) AS not_yet_begun
-          FROM contoso_served.dim_customer params {"as_of": "2025-12-31"}'
-        came_back: "THE DATABASE SAID: ParserException: Parser Error: syntax error at or near \"$\"\n\n\
-          LINE 1: ...(*) AS registered_all_rows, SUM(CASE WHEN valid_from <= DATE $as_of THEN 1 ELSE 0\
-          \ END) AS begun_on_or_before, SUM(CASE...\n                                                \
-          \                        ^"
-      - why: 'Same measurement, with the date literal cast instead of the `DATE $param` form the parser
-          rejected: price the three readings of "customers" against 31.12.2025 on the base relation.'
-        did: 'SELECT COUNT(*) AS registered_all_rows, SUM(CASE WHEN valid_from <= CAST(:as_of AS DATE)
-          THEN 1 ELSE 0 END) AS begun_on_or_before, SUM(CASE WHEN valid_from <= CAST(:as_of AS DATE) AND
-          valid_to >= CAST(:as_of AS DATE) THEN 1 ELSE 0 END) AS active_on_as_of, SUM(CASE WHEN valid_to
-          < CAST(:as_of AS DATE) THEN 1 ELSE 0 END) AS window_already_ended, SUM(CASE WHEN valid_from
-          > CAST(:as_of AS DATE) THEN 1 ELSE 0 END) AS not_yet_begun FROM contoso_served.dim_customer
-          params {"as_of": "2025-12-31"}'
-        came_back: '1 row(s): [{"registered_all_rows": 104990, "begun_on_or_before": 104990, "active_on_as_of":
-          75282, "window_already_ended": 29708, "not_yet_begun": 0}]'
+        took: active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end > 2025-12-31),
+          per rule Customer.active_on_the_reference_date default 'active'
+        could_also_mean: all registered customers ever on the register (rule choice 'registered'), or
+          buyers who purchased something
+        declaration: rule Customer.active_on_the_reference_date — default is 'active'
+      - word: as of 31.12.2025
+        took: reference date for the customer validity window, not a filter on order_date
+        could_also_mean: a filter on sales order_date, but the question asks about customers not sales
+        declaration: rule Customer.active_on_the_reference_date — 'The reference date is the date the
+          question states'
+      turns: []
       blocked: []
     - step: '2'
       asks: as of 31.12.2025
-      sql: "SELECT\n  customer_key,\n  valid_from,\n  valid_to\nFROM contoso_served.dim_customer\nWHERE\n\
-        \  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-      means: 'The customers whose record was valid on 31 December 2025 — 75,282 of them, one row per customer,
-        each a person whose validity window had opened on or before that day and had not yet closed by
-        it. It is a snapshot of who stood on the register as a current customer on that single date: it
-        does not ask whether they ever ordered, and it drops the 29,708 customers whose window had already
-        closed before that day.'
-      readings:
-      - word: as of 31.12.2025
-        took: a snapshot at that single date, bound to @as_of as the question states it
-        could_also_mean: a period count over 2025 or over December 2025, which would have to be measured
-          on orders rather than on the register
-        declaration: 'Customer.active_on_the_reference_date: @as_of binds the date the question states'
-      - word: <= 31.12.2025
-        took: the two-sided window test the declaration defines for `active`, giving 75,282
-        could_also_mean: the one-sided `valid_from <= 31.12.2025` the decomposition wrote, which passes
-          all 104,990 rows because the latest valid_from in the data is 2010-12-30 — so as written it
-          is not a restriction at all
-        declaration: 'Customer.active_on_the_reference_date: on or after the day the record became valid
-          AND on or before the day it stopped being valid'
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      means: 'Same as step 1: all customer records active as of 31 December 2025. The date was already
+        folded into step 1''s validity-window predicate.'
+      readings: []
       turns: []
       blocked: []
     - step: '3'
-      asks: how many customers do we have
-      sql: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-        WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-      means: 'One figure, returned by the query: 75,282 customers stood on Contoso''s register as valid,
-        current customers on 31 December 2025 — a snapshot of that single day, each person counted once.
-        What it does NOT include: the 29,708 customers whose record had stopped being valid before that
-        date (add them back and you get 104,990, every person ever on the register); and it is not a count
-        of buyers — no order is required to be in this figure, so it can hold people who never bought
-        and can miss people who did.'
-      readings:
-      - word: customers
-        took: active on the reference date — record valid on 31.12.2025 — giving 75,282
-        could_also_mean: 'registered: every customer ever on the register, valid that day or not, giving
-          104,990 — which is also the figure for the reading `understood_as` assumed (relationship begun
-          on or before that date), since the latest valid_from in the data is 2010-12-30 and so nothing
-          had yet to begin. The choice moves the figure by 29,708; it is the declaration, not my judgement,
-          that settles it'
-        declaration: 'Customer.active_on_the_reference_date: `customers` with no other word means the
-          active customers; `registered` is every row; default `active`, disclosed'
-      - word: customers
-        took: the register, not the buyers — no purchase required
-        could_also_mean: customers with at least one order, a separate and differently-sized population
-          reached through the sales line
-        declaration: 'Customer.register_not_buyers; and Customer.active_on_the_reference_date: active
-          customers are not the same set as customers who have bought something'
-      - word: as of 31.12.2025
-        took: a snapshot at that one date, bound to @as_of from the question's own words rather than the
-          bundle anchor or today
-        could_also_mean: a period count of customers active or trading during 2025, or during December
-          2025
-        declaration: 'Customer.active_on_the_reference_date: @as_of binds the date the question states;
-          else the bundle''s anchor; else today'
-      - word: customers
-        took: one per customer_key — measured 104,990 distinct keys over 104,990 rows, so counting rows
-          and counting distinct customers cannot differ here
-        could_also_mean: one per company or per contact person, a grain this register does not distinguish
-        declaration: null
-      - word: we
-        took: the whole company — no market or unit restriction
-        could_also_mean: a single country, region or business unit, which the question does not name and
-          no declaration narrows to
-        declaration: null
+      asks: how many customers
+      sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      means: The count of customers whose validity window includes 31 December 2025 — i.e. active customers
+        on that reference date. One number, 75,282.
+      readings: []
       turns:
-      - why: Count the customers the restriction kept, one per customer, to hand back the single figure
-          the question asks for.
-        did: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.dim_customer\n\
-          WHERE\n  valid_from <= CAST($as_of AS DATE) AND valid_to >= CAST($as_of AS DATE)"
-        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 1 row(s): [{"how_many_customers": 75282}]  Give
-          `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from the closed
-          list. If these rows settle the question, do not decline.'
+      - why: the answer step's SQL you wrote on your first turn
+        did: the statement above
+        came_back: '1 row(s): [{"how_many_customers": 75282}]'
       blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
@@ -1125,4 +625,9 @@ v3_answer_step: '3'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: '''75282'''
-v3_seconds: 159.0
+v3_seconds: 47.9
+revisions:
+  code: e90b8bc5de81d11df27e5a54effdc9e5ca2c94a8
+  code_dirty: false
+  bundle: b2827aca75fcd5ef4bbc8af3d238bd449bcc7802
+  declarations_dirty: false

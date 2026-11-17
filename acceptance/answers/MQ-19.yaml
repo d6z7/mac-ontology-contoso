@@ -1,17 +1,17 @@
 id: MQ-19
-captured_at: '2026-10-24T21:44:52+00:00'
-ontology_fingerprint: 0d005cb5612ea9b3
-acceptance_fingerprint: 2ec94494afcc4218
-projection_fingerprint: 4702762cd1902fc3
+captured_at: '2026-11-17T23:10:34+00:00'
+ontology_fingerprint: ec6d95efb1654a0d
+acceptance_fingerprint: a3baf3c7fe46a2af
 engine:
   interpret: live
   provider: v3-walk
-  model: claude-opus-5
+  model: claude-opus-4-6
   mode: llm-execute
   athena: false
-  run_file: full_rerun.json
+  run_file: 20261117T224755Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+  method: bench
 connection:
   view_schema: contoso_served
   target: contoso5.duckdb
@@ -19,109 +19,76 @@ connection:
 route: v3-walk
 answer: ''
 intent:
-  subject: size of a shop
+  subject: size
   operation: aggregate
-  qdmr_simplified: "  1       FROM       our shops              “our shops”\n  2  ← 1  AGGREGATE  avg\
-    \ of size of a shop  “the average size”\n  answer: step 2   confidence: 0.62\n  UNDERSTOOD AS: Across\
-    \ all of our shops, one figure: the average size of a shop, where each shop counts once regardless\
-    \ of how big or busy it is. I read \"size\" as the shop's physical floor area, and I am including\
-    \ every shop on the books — not filtering to only currently open or trading ones.\n  AMBIGUOUS 'size'\
-    \ — ASKS: When you say the size of a shop, do you mean its floor area, how many staff work there,\
-    \ or how much it sells?\n      could mean: Physical floor area of the shop (e.g. square metres or\
-    \ square feet)\n      could mean: Number of staff working at the shop\n      could mean: How much\
-    \ the shop sells — its sales volume or revenue\n      could mean: How many products the shop carries\n\
-    \      took: Physical floor area of the shop\n  AMBIGUOUS 'our shops' — ASKS: Should this cover every\
-    \ shop we have on record, or only the ones currently open and trading?\n      could mean: Every shop\
-    \ on record, including closed, temporary or not-yet-opened ones\n      could mean: Only shops that\
-    \ are currently open and trading\n      took: Every shop on record\n  cannot_express: Whether the\
-    \ average should be weighted by anything (e.g. by trading days or by region) rather than one shop\
-    \ counting as one\n  OUTPUT SHAPE: one figure · one row(s) · carrying average size"
-  understood_as_in_human_words: 'Across all of our shops, one figure: the average size of a shop, where
-    each shop counts once regardless of how big or busy it is. I read "size" as the shop''s physical floor
-    area, and I am including every shop on the books — not filtering to only currently open or trading
-    ones.'
-  population_actually_answered: 'The 57 physical shops with no close date. Two restrictions, both from
-    declarations and not from the question''s wording: `close_date IS NULL`, because Store.trading
-    declares `default: active` with `applies: subject` and the question named no trading status; and `location_code
-    != -1`, because Store.channel declares `default: physical`
-    with `applies: subject` — the subject of "the average size of a shop" is a Store, so both defaults
-    reach it. The channel filter changes nothing arithmetically: the online row is the single row in the
-    table carrying no floor area, so it could never have entered a mean of square metres. All 57 rows
-    carry an area, so this is a mean of 57 values and not of some smaller surviving subset. This is NARROWER
-    than the document''s `understood_as`, which said every shop on the books — that reading gives 1494.79
-    m² over 73 shops, 1.1% lower.'
+  qdmr_simplified: "  1       FROM       shops\n  2  ← 1  AGGREGATE  avg of size\n  answer: step 2   confidence:\
+    \ 0.75\n  UNDERSTOOD AS: What is the average size of our shops, across all shops?\n  AMBIGUOUS 'size'\
+    \ — ASKS: When you say 'size', do you mean the physical floor area (e.g. square metres/feet), the\
+    \ number of employees, or some other measure?\n      could mean: physical floor area (square metres\
+    \ or square feet)\n      could mean: number of employees\n      could mean: another measure of size\
+    \ (e.g. sales volume)\n  AMBIGUOUS 'our shops' — ASKS: Should this include all shops regardless of\
+    \ status, or only currently open/active shops?\n      could mean: all shops ever\n      could mean:\
+    \ only currently open/active shops\n  OUTPUT SHAPE: one figure · one row(s) · carrying average size"
+  understood_as_in_human_words: What is the average size of our shops, across all shops?
+  population_actually_answered: 'The 57 active physical stores: dim_store rows where is_online = false
+    (Store.channel default: physical) AND close_date IS NULL (Store.trading default: active). No period
+    restriction applied (no period named). The online channel row is excluded by Store.channel; closed/restructured
+    stores are excluded by Store.trading.'
   how_the_result_must_be_presented:
     shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
     figures_the_answer_step_computes:
-    - avg of size of a shop
+    - avg of size
     answer_step: '2'
     verb: aggregate
-    said: the average size
-    stage1_confidence: 0.62
+    said: null
+    stage1_confidence: 0.75
   canonical_question: &id001
-    understood_as: 'Across all of our shops, one figure: the average size of a shop, where each shop counts
-      once regardless of how big or busy it is. I read "size" as the shop''s physical floor area, and
-      I am including every shop on the books — not filtering to only currently open or trading ones.'
+    understood_as: What is the average size of our shops, across all shops?
     steps:
     - id: '1'
       do: from
-      thing: our shops
-      said: our shops
+      thing: shops
     - id: '2'
       do: aggregate
       of: '1'
-      said: the average size
       figures: &id002
       - how: avg
-        of: size of a shop
+        of: size
         said: average size
     answer: '2'
-    output_shape: &id004
+    output_shape: &id003
       shape: one figure
-      said: the average size of our shops
-      rows: one
-      key_columns: &id006 []
-      figure_columns: &id007
+      key_columns: &id005 []
+      figure_columns: &id006
       - average size
+      rows: one
+      said: average size of our shops
+    confidence: 0.75
+    periods: []
     ambiguities:
     - words: size
-      question: When you say the size of a shop, do you mean its floor area, how many staff work there,
-        or how much it sells?
+      question: When you say 'size', do you mean the physical floor area (e.g. square metres/feet), the
+        number of employees, or some other measure?
       readings:
-      - Physical floor area of the shop (e.g. square metres or square feet)
-      - Number of staff working at the shop
-      - How much the shop sells — its sales volume or revenue
-      - How many products the shop carries
-      assumed: Physical floor area of the shop
+      - physical floor area (square metres or square feet)
+      - number of employees
+      - another measure of size (e.g. sales volume)
     - words: our shops
-      question: Should this cover every shop we have on record, or only the ones currently open and trading?
+      question: Should this include all shops regardless of status, or only currently open/active shops?
       readings:
-      - Every shop on record, including closed, temporary or not-yet-opened ones
-      - Only shops that are currently open and trading
-      assumed: Every shop on record
-    cannot_express: &id003
-    - Whether the average should be weighted by anything (e.g. by trading days or by region) rather than
-      one shop counting as one
-    confidence: 0.62
+      - all shops ever
+      - only currently open/active shops
+    cannot_express: []
   steps: 2
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
   table:
     columns:
-    - name: shops
-      type: number
-    - name: average_size_sqm
-      type: number
-    - name: smallest_sqm
-      type: number
-    - name: largest_sqm
+    - name: average_size
       type: number
     rows:
-    - - 57
-      - 1511.75
-      - 245
-      - 3500
+    - - 1511.7543859649122
   value: 1511.75
   raw: '1511.75'
   reading: one figure
@@ -129,366 +96,182 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "our shops → the 57 physical shops with no close date — currently trading premises\n       \
-      \ could also mean: every shop on the books including the 16 closed ones (73 physical rows, average\
-      \ 1494.79 m²), or all 74 rows including the online outlet (still 73 with an area, so the same 1494.79\
-      \ m²). The choice moves the average by 16.96 m², about 1.1%, because closed shops averaged 1434.38\
-      \ m²; it does not change which shop is largest or smallest, as both extremes (245 and 3500 m²) are\
-      \ trading."
-    ref: 'Store.trading — `default: active`, `applies: subject`, confidence
-      C because a person ruled it; and Store.channel — `default:
-      physical`, `applies: subject`. Both reach this step because the question''s subject is a Store,
-      not a measure.'
+    text: "shops → Active physical stores: is_online = false AND close_date IS NULL\n        could also\
+      \ mean: All shops ever (including closed), or all store rows including online"
+    ref: 'Store.channel default: physical; Store.trading default: active'
   - kind: ''
-    text: "size → dim_store.square_metres — floor area in square metres, running 245 to 3500\n       \
-      \ could also mean: how many staff work there, or how much it sells. I cannot price either: no relation\
-      \ in this bundle carries a staff column, and a sales reading would be a different concept (NetRevenue)\
-      \ rather than a property of the premises."
-    ref: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among its surfaces,
-      so the word binds here by declaration.
-  - kind: ''
-    text: "our shops → the 57 physical shops currently trading — those with no close date\n        could\
-      \ also mean: every shop on the books, closed ones included: 73 shops averaging 1494.79 m². The readings\
-      \ differ by 16.96 m², about 1.1%, so I applied the declared default and disclose the alternative\
-      \ rather than asking. The choice does not move the extremes — both the smallest shop at 245 m² and\
-      \ the largest at 3500 m² are trading — and changes no ordering, only this one mean."
-    ref: 'Store.trading (`default: active`, `applies: subject`, confidence
-      C — a person ruled it) and Store.channel (`default: physical`,
-      `applies: subject`)'
-  - kind: ''
-    text: "size → floor area in square metres — dim_store.square_metres\n        could also mean: how\
-      \ many staff work there, or how much the shop sells. Neither is priceable in this bundle: no relation\
-      \ carries a staff column, and a sales reading would answer with a different concept (NetRevenue)\
-      \ rather than a property of the premises."
-    ref: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among its surfaces,
-      so the word binds here by declaration
-  - kind: ''
-    text: "average → the plain unweighted mean — one shop, one vote\n        could also mean: a mean weighted\
-      \ by trading days, revenue or region, which the question had no way to express. Unweighted is what\
-      \ \"each shop counts once\" means, and it is what this figure is."
-    ref: declaration://none
+    text: "size → square_metres on dim_store, the floor area\n        could also mean: Number of employees\
+      \ or sales volume, but square_metres is declared with surface words 'size | area'"
+    ref: dim_store.square_metres declared as 'floor space | size | area | square meters | how big'
   concepts: []
   rules:
-  - id: 'Store.trading — `default: active`'
-    why: '''our shops'' = the 57 physical shops with no close date — currently trading premises'
-  - id: '`applies: subject`'
-    why: '''our shops'' = the 57 physical shops with no close date — currently trading premises'
-  - id: confidence C because a person ruled it
-    why: '''our shops'' = the 57 physical shops with no close date — currently trading premises'
-  - id: 'and Store.channel — `default: physical`'
-    why: '''our shops'' = the 57 physical shops with no close date — currently trading premises'
-  - id: '`applies: subject`. Both reach this step because the question''s subject is a Store'
-    why: '''our shops'' = the 57 physical shops with no close date — currently trading premises'
-  - id: not a measure.
-    why: '''our shops'' = the 57 physical shops with no close date — currently trading premises'
-  - id: dim_store.square_metres declares `size`
-    why: '''size'' = dim_store.square_metres — floor area in square metres, running 245 to 3500'
-  - id: '`how big`'
-    why: '''size'' = dim_store.square_metres — floor area in square metres, running 245 to 3500'
-  - id: '`floor space` and `area` among its surfaces'
-    why: '''size'' = dim_store.square_metres — floor area in square metres, running 245 to 3500'
-  - id: so the word binds here by declaration.
-    why: '''size'' = dim_store.square_metres — floor area in square metres, running 245 to 3500'
-  - id: 'Store.trading (`default: active`'
-    why: '''our shops'' = the 57 physical shops currently trading — those with no close date'
-  - id: 'confidence C — a person ruled it) and Store.channel (`default:
-      physical`'
-    why: '''our shops'' = the 57 physical shops currently trading — those with no close date'
-  - id: '`applies: subject`)'
-    why: '''our shops'' = the 57 physical shops currently trading — those with no close date'
-  - id: so the word binds here by declaration
-    why: '''size'' = floor area in square metres — dim_store.square_metres'
+  - id: 'Store.channel default: physical; Store.trading default: active'
+    why: '''shops'' = Active physical stores: is_online = false AND close_date IS NULL'
+  - id: dim_store.square_metres declared as 'floor space | size | area | square meters | how big'
+    why: '''size'' = square_metres on dim_store, the floor area'
   edges: []
 sql:
-- "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n  MIN(square_metres)\
-  \ AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\nWHERE\n  location_code\
-  \ <> -1 AND close_date IS NULL"
-- "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  square_metres\nFROM contoso_served.dim_store\n\
-  WHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n  store_key"
-answer_sql: "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n  MIN(square_metres)\
-  \ AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\nWHERE\n  location_code\
-  \ <> -1 AND close_date IS NULL"
+- "SELECT\n  AVG(square_metres) AS average_size\nFROM contoso_served.dim_store\nWHERE\n  is_online = FALSE\
+  \ AND close_date IS NULL"
+- "SELECT\n  store_key,\n  store_name,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n  is_online\
+  \ = FALSE AND close_date IS NULL"
+answer_sql: "SELECT\n  AVG(square_metres) AS average_size\nFROM contoso_served.dim_store\nWHERE\n  is_online\
+  \ = FALSE AND close_date IS NULL"
 sql_valid: true
 result:
   status: ok
   rows: 1
-  cols: &id008
-  - shops
-  - average_size_sqm
-  - smallest_sqm
-  - largest_sqm
+  cols: &id007
+  - average_size
   sample_rows:
-  - - 57
-    - 1511.75
-    - 245
-    - 3500
+  - - 1511.7543859649122
   capped: false
 prompt:
-  chars: 84131
-  lines: 1027
+  chars: 143797
+  lines: 2594
   sections:
   - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 1 — the JSON schema of its answer
   - STAGE 2 — system prompt for walking one step
-  - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/465e28b73001.txt
-  sha: 465e28b73001
-  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
-    it is now.'
+  - STAGE 2 — the declarations, at the end of that system prompt
+  - STAGE 2 — the JSON schemas of a step call
+  - STAGE 2 — what writes the per-question text (candidates, refusals)
+  file: acceptance/prompts/143fce7bb1bb.txt
+  sha: 143fce7bb1bb
+  reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+    the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+    given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 error: null
 v3_report:
   canonical_question_json: *id001
-  canonical_question_simplified: "  1       FROM       our shops              “our shops”\n  2  ← 1  AGGREGATE\
-    \  avg of size of a shop  “the average size”\n  answer: step 2   confidence: 0.62\n  UNDERSTOOD AS:\
-    \ Across all of our shops, one figure: the average size of a shop, where each shop counts once regardless\
-    \ of how big or busy it is. I read \"size\" as the shop's physical floor area, and I am including\
-    \ every shop on the books — not filtering to only currently open or trading ones.\n  AMBIGUOUS 'size'\
-    \ — ASKS: When you say the size of a shop, do you mean its floor area, how many staff work there,\
-    \ or how much it sells?\n      could mean: Physical floor area of the shop (e.g. square metres or\
-    \ square feet)\n      could mean: Number of staff working at the shop\n      could mean: How much\
-    \ the shop sells — its sales volume or revenue\n      could mean: How many products the shop carries\n\
-    \      took: Physical floor area of the shop\n  AMBIGUOUS 'our shops' — ASKS: Should this cover every\
-    \ shop we have on record, or only the ones currently open and trading?\n      could mean: Every shop\
-    \ on record, including closed, temporary or not-yet-opened ones\n      could mean: Only shops that\
-    \ are currently open and trading\n      took: Every shop on record\n  cannot_express: Whether the\
-    \ average should be weighted by anything (e.g. by trading days or by region) rather than one shop\
-    \ counting as one\n  OUTPUT SHAPE: one figure · one row(s) · carrying average size"
-  understood_as: 'Across all of our shops, one figure: the average size of a shop, where each shop counts
-    once regardless of how big or busy it is. I read "size" as the shop''s physical floor area, and I
-    am including every shop on the books — not filtering to only currently open or trading ones.'
+  canonical_question_simplified: "  1       FROM       shops\n  2  ← 1  AGGREGATE  avg of size\n  answer:\
+    \ step 2   confidence: 0.75\n  UNDERSTOOD AS: What is the average size of our shops, across all shops?\n\
+    \  AMBIGUOUS 'size' — ASKS: When you say 'size', do you mean the physical floor area (e.g. square\
+    \ metres/feet), the number of employees, or some other measure?\n      could mean: physical floor\
+    \ area (square metres or square feet)\n      could mean: number of employees\n      could mean: another\
+    \ measure of size (e.g. sales volume)\n  AMBIGUOUS 'our shops' — ASKS: Should this include all shops\
+    \ regardless of status, or only currently open/active shops?\n      could mean: all shops ever\n \
+    \     could mean: only currently open/active shops\n  OUTPUT SHAPE: one figure · one row(s) · carrying\
+    \ average size"
+  understood_as: What is the average size of our shops, across all shops?
   ambiguities_it_saw:
   - words: size
-    asks: When you say the size of a shop, do you mean its floor area, how many staff work there, or how
-      much it sells?
+    asks: When you say 'size', do you mean the physical floor area (e.g. square metres/feet), the number
+      of employees, or some other measure?
     readings:
-    - Physical floor area of the shop (e.g. square metres or square feet)
-    - Number of staff working at the shop
-    - How much the shop sells — its sales volume or revenue
-    - How many products the shop carries
-    took: Physical floor area of the shop
+    - physical floor area (square metres or square feet)
+    - number of employees
+    - another measure of size (e.g. sales volume)
+    took: null
   - words: our shops
-    asks: Should this cover every shop we have on record, or only the ones currently open and trading?
+    asks: Should this include all shops regardless of status, or only currently open/active shops?
     readings:
-    - Every shop on record, including closed, temporary or not-yet-opened ones
-    - Only shops that are currently open and trading
-    took: Every shop on record
+    - all shops ever
+    - only currently open/active shops
+    took: null
   presentation:
     claimed_answer_is: one figure
     answer_step: '2'
     answer_step_asks:
       do: aggregate
       of: '1'
-      said: the average size
       figures: *id002
-    confidence_stage1: 0.62
+    confidence_stage1: 0.75
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  square_metres\nFROM contoso_served.dim_store\n\
-      WHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n  store_key"
+    sql: "SELECT\n  store_key,\n  store_name,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
+      \  is_online = FALSE AND close_date IS NULL"
     params: {}
   - step: '2'
-    sql: "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n  MIN(square_metres)\
-      \ AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\nWHERE\n\
-      \  location_code <> -1 AND close_date IS NULL"
+    sql: "SELECT\n  AVG(square_metres) AS average_size\nFROM contoso_served.dim_store\nWHERE\n  is_online\
+      \ = FALSE AND close_date IS NULL"
     params: {}
-  what_it_calculated: 'The one row returned says: across the 57 physical shops currently trading, the
-    average floor area is 1511.75 square metres, the smallest being 245 m² and the largest 3500 m². Each
-    shop counted once, regardless of its revenue, age or how busy it is — a plain mean of 57 numbers.
-    It is a snapshot of the premises as the store dimension stands today, not an average over any period:
-    floor area is declared a stock, so there is no time window in this figure. NOT included: the 16 physical
-    shops that have closed (their own mean was 1434.38 m²) and the online outlet, which has no floor area.
-    Not weighted by anything.'
-  rows_returned: &id005
-  - shops: 57
-    average_size_sqm: 1511.75
-    smallest_sqm: 245
-    largest_sqm: 3500
+  what_it_calculated: The average floor area in square metres across all currently active physical stores
+    (shops with no closing date, excluding the online channel).
+  rows_returned: &id004
+  - average_size: 1511.7543859649122
   synthesis:
     claimed: '1511.75'
     shape: one figure
-    answered_population: 'The 57 physical shops with no close date. Two restrictions, both from declarations
-      and not from the question''s wording: `close_date IS NULL`, because Store.trading
-      declares `default: active` with `applies: subject` and the question named no trading status; and
-      `location_code != -1`, because Store.channel declares `default:
-      physical` with `applies: subject` — the subject of "the average size of a shop" is a Store, so both
-      defaults reach it. The channel filter changes nothing arithmetically: the online row is the single
-      row in the table carrying no floor area, so it could never have entered a mean of square metres.
-      All 57 rows carry an area, so this is a mean of 57 values and not of some smaller surviving subset.
-      This is NARROWER than the document''s `understood_as`, which said every shop on the books — that
-      reading gives 1494.79 m² over 73 shops, 1.1% lower.'
+    answered_population: 'The 57 active physical stores: dim_store rows where is_online = false (Store.channel
+      default: physical) AND close_date IS NULL (Store.trading default: active). No period restriction
+      applied (no period named). The online channel row is excluded by Store.channel; closed/restructured
+      stores are excluded by Store.trading.'
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
-    step_asks: our shops
-    turns:
-    - why: Measure every reading of "our shops" at once — all rows, physical only, active only, physical+active
-        — with the floor-area average each would give, so the population for this step is chosen on numbers
-        rather than on the wording.
-      did: 'probe ''dim_store.square_metres'' AND ALSO: SELECT ''all_rows_any_channel_any_state'' AS reading,
-        COUNT(*) AS shop_rows, COUNT(square_metres) AS rows_with_area, ROUND(AVG(square_metres), 2) AS
-        avg_sqm FROM contoso_served.dim_store UNION ALL SELECT ''physical_any_state'', COUNT(*), COUNT(square_metres),
-        ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 UNION ALL
-        SELECT ''active_any_channel'', COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM
-        contoso_served.dim_store WHERE close_date IS NULL UNION ALL SELECT ''physical_active_declared_defaults'',
-        COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE
-        location_code <> -1 AND close_date IS NULL UNION ALL SELECT ''physical_closed'', COUNT(*), COUNT(square_metres),
-        ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 AND close_date
-        IS NOT NULL ORDER BY reading'
-      came_back: 'dim_store.square_metres is a NUMBER (integer): it runs from 245 to 3500 over 39 distinct
-        value(s) in 73 row(s)   AND ALSO: 5 row(s): [{"reading": "active_any_channel", "shop_rows": 58,
-        "rows_with_area": 57, "avg_sqm": 1511.75}, {"reading": "all_rows_any_channel_any_state", "shop_rows":
-        74, "rows_with_area": 73, "avg_sqm": 1494.79}, {"reading": "physical_active_declared_defaults",
-        "shop_rows": 57, "rows_with_area": 57, "avg_sqm": 1511.75}, {"reading": "physical_any_state",
-        "shop_rows": 73, "rows_with_area": 73, "avg_sqm": 1494.79}, {"reading": "physical_closed", "shop_rows":
-        16, "rows_with_area": 16, "avg_sqm": 1434.38}]'
-    - why: 'THIS CHANGES THE QUESTION: `Store.trading` declares `default:
-        active` with `applies: subject`, and the subject here IS a Store, so "our shops" resolves to the
-        57 physical shops still trading — not "every shop on the books" as `understood_as` assumed; what
-        is now being answered is the average floor area of a currently-trading physical shop, and the
-        alternative reading is priced below (1494.79 m² over 73) because the two differ by only 1.1%.'
-      did: 'probe ''dim_store.square_metres'' AND ALSO: SELECT ''all_rows_any_channel_any_state'' AS reading,
-        COUNT(*) AS shop_rows, COUNT(square_metres) AS rows_with_area, ROUND(AVG(square_metres), 2) AS
-        avg_sqm FROM contoso_served.dim_store UNION ALL SELECT ''physical_any_state'', COUNT(*), COUNT(square_metres),
-        ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 UNION ALL
-        SELECT ''active_any_channel'', COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM
-        contoso_served.dim_store WHERE close_date IS NULL UNION ALL SELECT ''physical_active_declared_defaults'',
-        COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE
-        location_code <> -1 AND close_date IS NULL UNION ALL SELECT ''physical_closed'', COUNT(*), COUNT(square_metres),
-        ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 AND close_date
-        IS NOT NULL ORDER BY reading'
-      came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
-        THE DATABASE SAID: only a read is accepted here: start with SELECT, WITH, DESCRIBE, SUMMARIZE
-        or SHOW'
-    - why: Settle the population again with the identical filter written as a CTE and `!=` instead of
-        `<>`, since the previous read was refused on its text and not on what it does.
-      did: 'probe ''dim_store.square_metres'' AND ALSO: SELECT ''all_rows_any_channel_any_state'' AS reading,
-        COUNT(*) AS shop_rows, COUNT(square_metres) AS rows_with_area, ROUND(AVG(square_metres), 2) AS
-        avg_sqm FROM contoso_served.dim_store UNION ALL SELECT ''physical_any_state'', COUNT(*), COUNT(square_metres),
-        ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 UNION ALL
-        SELECT ''active_any_channel'', COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM
-        contoso_served.dim_store WHERE close_date IS NULL UNION ALL SELECT ''physical_active_declared_defaults'',
-        COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE
-        location_code <> -1 AND close_date IS NULL UNION ALL SELECT ''physical_closed'', COUNT(*), COUNT(square_metres),
-        ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 AND close_date
-        IS NOT NULL ORDER BY reading'
-      came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
-        THE DATABASE SAID: only a read is accepted here: start with SELECT, WITH, DESCRIBE, SUMMARIZE
-        or SHOW'
-    settled_on: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  square_metres\nFROM\
-      \ contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n  store_key"
-    means: 'The shops this question will be answered over: one row per trading physical shop, 57 of them,
-      each with its name, country, state/region and floor area in square metres. Every one carries an
-      area, so nothing drops out of the average later. Excluded: the 16 physical shops that have closed,
-      and the one online outlet, which is not premises and carries no floor area at all.'
+    step_asks: ''
+    turns: []
+    settled_on: "SELECT\n  store_key,\n  store_name,\n  square_metres\nFROM contoso_served.dim_store\n\
+      WHERE\n  is_online = FALSE AND close_date IS NULL"
+    means: The active physical stores (shops currently trading, no closing date, excluding the online
+      channel), each with its floor area in square metres — the population over which the average size
+      will be computed.
     readings_taken:
-    - word: our shops
-      took: the 57 physical shops with no close date — currently trading premises
-      could_also_mean: every shop on the books including the 16 closed ones (73 physical rows, average
-        1494.79 m²), or all 74 rows including the online outlet (still 73 with an area, so the same 1494.79
-        m²). The choice moves the average by 16.96 m², about 1.1%, because closed shops averaged 1434.38
-        m²; it does not change which shop is largest or smallest, as both extremes (245 and 3500 m²) are
-        trading.
-      declaration: 'Store.trading — `default: active`, `applies: subject`,
-        confidence C because a person ruled it; and Store.channel
-        — `default: physical`, `applies: subject`. Both reach this step because the question''s subject
-        is a Store, not a measure.'
+    - word: shops
+      took: 'Active physical stores: is_online = false AND close_date IS NULL'
+      could_also_mean: All shops ever (including closed), or all store rows including online
+      declaration: 'Store.channel default: physical; Store.trading default: active'
     - word: size
-      took: dim_store.square_metres — floor area in square metres, running 245 to 3500
-      could_also_mean: 'how many staff work there, or how much it sells. I cannot price either: no relation
-        in this bundle carries a staff column, and a sales reading would be a different concept (NetRevenue)
-        rather than a property of the premises.'
-      declaration: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among
-        its surfaces, so the word binds here by declaration.
+      took: square_metres on dim_store, the floor area
+      could_also_mean: Number of employees or sales volume, but square_metres is declared with surface
+        words 'size | area'
+      declaration: dim_store.square_metres declared as 'floor space | size | area | square meters | how
+        big'
     blocked_by: []
   - step: '2'
-    step_asks: the average size
+    step_asks: ''
     turns:
-    - why: Take the unweighted mean floor area over the 57 shops step 1 settled on, each shop counting
-        once, and report it with the row count behind it.
-      did: "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n  MIN(square_metres)\
-        \ AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\nWHERE\n\
-        \  location_code <> -1 AND close_date IS NULL"
-      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 1 row(s): [{"shops": 57, "average_size_sqm": 1511.75,
-        "smallest_sqm": 245, "largest_sqm": 3500}]  Give `claimed_answer` as the value a person would
-        be handed, and `claimed_answer_is` from the closed list. If these rows settle the question, do
-        not decline.'
-    settled_on: "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n \
-      \ MIN(square_metres) AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\n\
-      WHERE\n  location_code <> -1 AND close_date IS NULL"
-    means: 'The one row returned says: across the 57 physical shops currently trading, the average floor
-      area is 1511.75 square metres, the smallest being 245 m² and the largest 3500 m². Each shop counted
-      once, regardless of its revenue, age or how busy it is — a plain mean of 57 numbers. It is a snapshot
-      of the premises as the store dimension stands today, not an average over any period: floor area
-      is declared a stock, so there is no time window in this figure. NOT included: the 16 physical shops
-      that have closed (their own mean was 1434.38 m²) and the online outlet, which has no floor area.
-      Not weighted by anything.'
-    readings_taken:
-    - word: our shops
-      took: the 57 physical shops currently trading — those with no close date
-      could_also_mean: 'every shop on the books, closed ones included: 73 shops averaging 1494.79 m².
-        The readings differ by 16.96 m², about 1.1%, so I applied the declared default and disclose the
-        alternative rather than asking. The choice does not move the extremes — both the smallest shop
-        at 245 m² and the largest at 3500 m² are trading — and changes no ordering, only this one mean.'
-      declaration: 'Store.trading (`default: active`, `applies: subject`,
-        confidence C — a person ruled it) and Store.channel (`default:
-        physical`, `applies: subject`)'
-    - word: size
-      took: floor area in square metres — dim_store.square_metres
-      could_also_mean: 'how many staff work there, or how much the shop sells. Neither is priceable in
-        this bundle: no relation carries a staff column, and a sales reading would answer with a different
-        concept (NetRevenue) rather than a property of the premises.'
-      declaration: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among
-        its surfaces, so the word binds here by declaration
-    - word: average
-      took: the plain unweighted mean — one shop, one vote
-      could_also_mean: a mean weighted by trading days, revenue or region, which the question had no way
-        to express. Unweighted is what "each shop counts once" means, and it is what this figure is.
-      declaration: null
+    - why: the answer step's SQL you wrote on your first turn
+      did: "SELECT\n  AVG(square_metres) AS average_size\nFROM contoso_served.dim_store\nWHERE\n  is_online\
+        \ = FALSE AND close_date IS NULL"
+      came_back: '1 row(s): [{"average_size": 1511.7543859649122}]'
+    settled_on: "SELECT\n  AVG(square_metres) AS average_size\nFROM contoso_served.dim_store\nWHERE\n\
+      \  is_online = FALSE AND close_date IS NULL"
+    means: The average floor area in square metres across all currently active physical stores (shops
+      with no closing date, excluding the online channel).
+    readings_taken: []
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  summary: 143,797 chars · 2594 lines  [143fce7bb1bb]
   detail:
-    chars: 84131
-    lines: 1027
+    chars: 143797
+    lines: 2594
     sections:
     - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 1 — the JSON schema of its answer
     - STAGE 2 — system prompt for walking one step
-    - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/465e28b73001.txt
-    sha: 465e28b73001
-    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
-      as it is now.'
+    - STAGE 2 — the declarations, at the end of that system prompt
+    - STAGE 2 — the JSON schemas of a step call
+    - STAGE 2 — what writes the per-question text (candidates, refusals)
+    file: acceptance/prompts/143fce7bb1bb.txt
+    sha: 143fce7bb1bb
+    reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+      the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+      given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 - stage: understood_as
   status: ok
   ms: 0
   summary: ''
   detail:
-    prose: 'Across all of our shops, one figure: the average size of a shop, where each shop counts once
-      regardless of how big or busy it is. I read "size" as the shop''s physical floor area, and I am
-      including every shop on the books — not filtering to only currently open or trading ones.'
-    population: 'The 57 physical shops with no close date. Two restrictions, both from declarations and
-      not from the question''s wording: `close_date IS NULL`, because Store.trading
-      declares `default: active` with `applies: subject` and the question named no trading status; and
-      `location_code != -1`, because Store.channel declares `default:
-      physical` with `applies: subject` — the subject of "the average size of a shop" is a Store, so both
-      defaults reach it. The channel filter changes nothing arithmetically: the online row is the single
-      row in the table carrying no floor area, so it could never have entered a mean of square metres.
-      All 57 rows carry an area, so this is a mean of 57 values and not of some smaller surviving subset.
-      This is NARROWER than the document''s `understood_as`, which said every shop on the books — that
-      reading gives 1494.79 m² over 73 shops, 1.1% lower.'
+    prose: What is the average size of our shops, across all shops?
+    population: 'The 57 active physical stores: dim_store rows where is_online = false (Store.channel
+      default: physical) AND close_date IS NULL (Store.trading default: active). No period restriction
+      applied (no period named). The online channel row is excluded by Store.channel; closed/restructured
+      stores are excluded by Store.trading.'
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
-    steps_readable: "  1       FROM       our shops              “our shops”\n  2  ← 1  AGGREGATE  avg\
-      \ of size of a shop  “the average size”\n  answer: step 2   confidence: 0.62"
+    steps_readable:
+    - '  1       FROM       shops'
+    - '  2  ← 1  AGGREGATE  avg of size'
+    - '  answer: step 2   confidence: 0.75'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -496,36 +279,35 @@ stages:
   detail:
     ambiguities:
     - words: size
-      asks: When you say the size of a shop, do you mean its floor area, how many staff work there, or
-        how much it sells?
+      asks: When you say 'size', do you mean the physical floor area (e.g. square metres/feet), the number
+        of employees, or some other measure?
       readings:
-      - Physical floor area of the shop (e.g. square metres or square feet)
-      - Number of staff working at the shop
-      - How much the shop sells — its sales volume or revenue
-      - How many products the shop carries
-      took: Physical floor area of the shop
+      - physical floor area (square metres or square feet)
+      - number of employees
+      - another measure of size (e.g. sales volume)
+      took: null
     - words: our shops
-      asks: Should this cover every shop we have on record, or only the ones currently open and trading?
+      asks: Should this include all shops regardless of status, or only currently open/active shops?
       readings:
-      - Every shop on record, including closed, temporary or not-yet-opened ones
-      - Only shops that are currently open and trading
-      took: Every shop on record
+      - all shops ever
+      - only currently open/active shops
+      took: null
 - stage: cannot_express
-  status: ok
+  status: skipped
   ms: 0
   summary: ''
   detail:
-    cannot_express: *id003
+    cannot_express: []
 - stage: output_shape
   status: ok
   ms: 0
   summary: ''
   detail:
-    output_shape: *id004
+    output_shape: *id003
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.62 — stage 1's own confidence in this decomposition
+  summary: 0.75 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -539,63 +321,32 @@ stages:
   summary: ''
   detail:
     readings:
-    - word: our shops
-      took: the 57 physical shops with no close date — currently trading premises
-      could_also_mean: every shop on the books including the 16 closed ones (73 physical rows, average
-        1494.79 m²), or all 74 rows including the online outlet (still 73 with an area, so the same 1494.79
-        m²). The choice moves the average by 16.96 m², about 1.1%, because closed shops averaged 1434.38
-        m²; it does not change which shop is largest or smallest, as both extremes (245 and 3500 m²) are
-        trading.
-      declaration: 'Store.trading — `default: active`, `applies: subject`,
-        confidence C because a person ruled it; and Store.channel
-        — `default: physical`, `applies: subject`. Both reach this step because the question''s subject
-        is a Store, not a measure.'
+    - word: shops
+      took: 'Active physical stores: is_online = false AND close_date IS NULL'
+      could_also_mean: All shops ever (including closed), or all store rows including online
+      declaration: 'Store.channel default: physical; Store.trading default: active'
     - word: size
-      took: dim_store.square_metres — floor area in square metres, running 245 to 3500
-      could_also_mean: 'how many staff work there, or how much it sells. I cannot price either: no relation
-        in this bundle carries a staff column, and a sales reading would be a different concept (NetRevenue)
-        rather than a property of the premises.'
-      declaration: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among
-        its surfaces, so the word binds here by declaration.
-    - word: our shops
-      took: the 57 physical shops currently trading — those with no close date
-      could_also_mean: 'every shop on the books, closed ones included: 73 shops averaging 1494.79 m².
-        The readings differ by 16.96 m², about 1.1%, so I applied the declared default and disclose the
-        alternative rather than asking. The choice does not move the extremes — both the smallest shop
-        at 245 m² and the largest at 3500 m² are trading — and changes no ordering, only this one mean.'
-      declaration: 'Store.trading (`default: active`, `applies: subject`,
-        confidence C — a person ruled it) and Store.channel (`default:
-        physical`, `applies: subject`)'
-    - word: size
-      took: floor area in square metres — dim_store.square_metres
-      could_also_mean: 'how many staff work there, or how much the shop sells. Neither is priceable in
-        this bundle: no relation carries a staff column, and a sales reading would answer with a different
-        concept (NetRevenue) rather than a property of the premises.'
-      declaration: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among
-        its surfaces, so the word binds here by declaration
-    - word: average
-      took: the plain unweighted mean — one shop, one vote
-      could_also_mean: a mean weighted by trading days, revenue or region, which the question had no way
-        to express. Unweighted is what "each shop counts once" means, and it is what this figure is.
-      declaration: null
+      took: square_metres on dim_store, the floor area
+      could_also_mean: Number of employees or sales volume, but square_metres is declared with surface
+        words 'size | area'
+      declaration: dim_store.square_metres declared as 'floor space | size | area | square meters | how
+        big'
 - stage: plan
   status: ok
   ms: 0
   summary: 2 statement(s), one per settled step · walk order 1 -> 2
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  square_metres\n\
-        FROM contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n\
-        \  store_key\n\n-- step 2\nSELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n\
-        \  MIN(square_metres) AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\n\
-        WHERE\n  location_code <> -1 AND close_date IS NULL"
+      sql: "-- step 1\nSELECT\n  store_key,\n  store_name,\n  square_metres\nFROM contoso_served.dim_store\n\
+        WHERE\n  is_online = FALSE AND close_date IS NULL\n\n-- step 2\nSELECT\n  AVG(square_metres) AS\
+        \ average_size\nFROM contoso_served.dim_store\nWHERE\n  is_online = FALSE AND close_date IS NULL"
       params: {}
 - stage: execute
   status: ok
   ms: 0
   summary: ''
   detail:
-    rows: *id005
+    rows: *id004
     stopped_at: null
     the_data_does_not_hold: []
 - stage: calculated
@@ -603,13 +354,8 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'The one row returned says: across the 57 physical shops currently trading, the
-      average floor area is 1511.75 square metres, the smallest being 245 m² and the largest 3500 m².
-      Each shop counted once, regardless of its revenue, age or how busy it is — a plain mean of 57 numbers.
-      It is a snapshot of the premises as the store dimension stands today, not an average over any period:
-      floor area is declared a stock, so there is no time window in this figure. NOT included: the 16
-      physical shops that have closed (their own mean was 1434.38 m²) and the online outlet, which has
-      no floor area. Not weighted by anything.'
+    what_it_calculated: The average floor area in square metres across all currently active physical stores
+      (shops with no closing date, excluding the online channel).
 - stage: evaluate
   status: ok
   ms: 0
@@ -634,21 +380,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 84,131 chars · 1027 lines
+      - 143,797 chars · 2594 lines
     - - sections
-      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
-        STAGE 2 — the declarations, sent once
+      - STAGE 1 — question to canonical question (QDMR), STAGE 1 — the JSON schema of its answer, STAGE
+        2 — system prompt for walking one step, STAGE 2 — the declarations, at the end of that system
+        prompt, STAGE 2 — the JSON schemas of a step call, STAGE 2 — what writes the per-question text
+        (candidates, refusals)
     - - digest
-      - 465e28b73001
+      - 143fce7bb1bb
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: 'Across all of our shops, one figure: the average size of a shop, where each shop counts once
-      regardless of how big or busy it is. I read "size" as the shop''s physical floor area, and I am
-      including every shop on the books — not filtering to only currently open or trading ones.'
+    value: What is the average size of our shops, across all shops?
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -656,27 +402,9 @@ sections:
   body:
     kind: list
     value:
-    - '  1       FROM       our shops              “our shops”'
-    - '  2  ← 1  AGGREGATE  avg of size of a shop  “the average size”'
-    - '  answer: step 2   confidence: 0.62'
-    - '  UNDERSTOOD AS: Across all of our shops, one figure: the average size of a shop, where each shop
-      counts once regardless of how big or busy it is. I read "size" as the shop''s physical floor area,
-      and I am including every shop on the books — not filtering to only currently open or trading ones.'
-    - '  AMBIGUOUS ''size'' — ASKS: When you say the size of a shop, do you mean its floor area, how many
-      staff work there, or how much it sells?'
-    - '      could mean: Physical floor area of the shop (e.g. square metres or square feet)'
-    - '      could mean: Number of staff working at the shop'
-    - '      could mean: How much the shop sells — its sales volume or revenue'
-    - '      could mean: How many products the shop carries'
-    - '      took: Physical floor area of the shop'
-    - '  AMBIGUOUS ''our shops'' — ASKS: Should this cover every shop we have on record, or only the ones
-      currently open and trading?'
-    - '      could mean: Every shop on record, including closed, temporary or not-yet-opened ones'
-    - '      could mean: Only shops that are currently open and trading'
-    - '      took: Every shop on record'
-    - '  cannot_express: Whether the average should be weighted by anything (e.g. by trading days or by
-      region) rather than one shop counting as one'
-    - '  OUTPUT SHAPE: one figure · one row(s) · carrying average size'
+    - '  1       FROM       shops'
+    - '  2  ← 1  AGGREGATE  avg of size'
+    - '  answer: step 2   confidence: 0.75'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -686,36 +414,42 @@ sections:
     value:
     - - shape
       - one figure
-    - - said
-      - the average size of our shops
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
     - - rows
       - one
-    - - key_columns
-      - *id006
-    - - figure_columns
-      - *id007
+    - - said
+      - average size of our shops
 - id: ambiguities
   title: What it saw more than one reading of
-  subtitle: each with the reading it took and the declaration that settled it
+  subtitle: one frame per ambiguity — the reading it took, and what settled it
   status: ok
   body:
-    kind: table
+    kind: records
     value:
-    - words: size
-      asks: When you say the size of a shop, do you mean its floor area, how many staff work there, or
-        how much it sells?
-      readings:
-      - Physical floor area of the shop (e.g. square metres or square feet)
-      - Number of staff working at the shop
-      - How much the shop sells — its sales volume or revenue
-      - How many products the shop carries
-      took: Physical floor area of the shop
-    - words: our shops
-      asks: Should this cover every shop we have on record, or only the ones currently open and trading?
-      readings:
-      - Every shop on record, including closed, temporary or not-yet-opened ones
-      - Only shops that are currently open and trading
-      took: Every shop on record
+    - - - the words
+        - size
+      - - declared meaning
+        - Store (concept Store, declared surface 'size')
+      - - declared definition
+        - THE PREMISES Contoso sells from — a shop that stood on one place for one trading period, with
+          its own name, floor area, opening date and closing date.
+      - - what it would ask
+        - When you say 'size', do you mean the physical floor area (e.g. square metres/feet), the number
+          of employees, or some other measure?
+      - - could mean
+        - - physical floor area (square metres or square feet)
+          - number of employees
+          - another measure of size (e.g. sales volume)
+    - - - the words
+        - our shops
+      - - what it would ask
+        - Should this include all shops regardless of status, or only currently open/active shops?
+      - - could mean
+        - - all shops ever
+          - only currently open/active shops
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -724,13 +458,12 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  square_metres\nFROM contoso_served.dim_store\n\
-        WHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n  store_key"
+      sql: "SELECT\n  store_key,\n  store_name,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
+        \  is_online = FALSE AND close_date IS NULL"
       params: {}
     - step: '2'
-      sql: "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n  MIN(square_metres)\
-        \ AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\nWHERE\n\
-        \  location_code <> -1 AND close_date IS NULL"
+      sql: "SELECT\n  AVG(square_metres) AS average_size\nFROM contoso_served.dim_store\nWHERE\n  is_online\
+        \ = FALSE AND close_date IS NULL"
       params: {}
 - id: what_it_calculated
   title: What it says its rows are
@@ -738,13 +471,24 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'The one row returned says: across the 57 physical shops currently trading, the average floor
-      area is 1511.75 square metres, the smallest being 245 m² and the largest 3500 m². Each shop counted
-      once, regardless of its revenue, age or how busy it is — a plain mean of 57 numbers. It is a snapshot
-      of the premises as the store dimension stands today, not an average over any period: floor area
-      is declared a stock, so there is no time window in this figure. NOT included: the 16 physical shops
-      that have closed (their own mean was 1434.38 m²) and the online outlet, which has no floor area.
-      Not weighted by anything.'
+    value: The average floor area in square metres across all currently active physical stores (shops
+      with no closing date, excluding the online channel).
+- id: declarations
+  title: Which declarations it read, and what each settled
+  subtitle: the path the decision took through the ontology — read off the walk's own citations, never
+    inferred from what it could have read
+  status: ok
+  body:
+    kind: records
+    value:
+    - - - declaration
+        - 'Store.channel default: physical; Store.trading default: active'
+      - - what it settled
+        - '''shops'' = Active physical stores: is_online = false AND close_date IS NULL'
+    - - - declaration
+        - dim_store.square_metres declared as 'floor space | size | area | square meters | how big'
+      - - what it settled
+        - '''size'' = square_metres on dim_store, the floor area'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -752,8 +496,8 @@ sections:
   body:
     kind: rows
     value:
-      columns: *id008
-      rows: *id005
+      columns: *id007
+      rows: *id004
       row_count: 1
       capped: false
 - id: answer
@@ -768,154 +512,50 @@ sections:
     - - shape
       - one figure
     - - population it answered over
-      - 'The 57 physical shops with no close date. Two restrictions, both from declarations and not from
-        the question''s wording: `close_date IS NULL`, because Store.trading
-        declares `default: active` with `applies: subject` and the question named no trading status; and
-        `location_code != -1`, because Store.channel declares
-        `default: physical` with `applies: subject` — the subject of "the average size of a shop" is a
-        Store, so both defaults reach it. The channel filter changes nothing arithmetically: the online
-        row is the single row in the table carrying no floor area, so it could never have entered a mean
-        of square metres. All 57 rows carry an area, so this is a mean of 57 values and not of some smaller
-        surviving subset. This is NARROWER than the document''s `understood_as`, which said every shop
-        on the books — that reading gives 1494.79 m² over 73 shops, 1.1% lower.'
+      - 'The 57 active physical stores: dim_store rows where is_online = false (Store.channel default:
+        physical) AND close_date IS NULL (Store.trading default: active). No period restriction applied
+        (no period named). The online channel row is excluded by Store.channel; closed/restructured stores
+        are excluded by Store.trading.'
 - id: thinking
-  title: Every turn it took, and what came back
-  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  title: How it got there, step by step
+  subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
+    reasoning a verdict can be re-examined from, with no model call.
   status: ok
   body:
-    kind: table
+    kind: steps
     value:
     - step: '1'
-      step_asks: our shops
-      turns:
-      - why: Measure every reading of "our shops" at once — all rows, physical only, active only, physical+active
-          — with the floor-area average each would give, so the population for this step is chosen on
-          numbers rather than on the wording.
-        did: 'probe ''dim_store.square_metres'' AND ALSO: SELECT ''all_rows_any_channel_any_state'' AS
-          reading, COUNT(*) AS shop_rows, COUNT(square_metres) AS rows_with_area, ROUND(AVG(square_metres),
-          2) AS avg_sqm FROM contoso_served.dim_store UNION ALL SELECT ''physical_any_state'', COUNT(*),
-          COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code
-          <> -1 UNION ALL SELECT ''active_any_channel'', COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres),
-          2) FROM contoso_served.dim_store WHERE close_date IS NULL UNION ALL SELECT ''physical_active_declared_defaults'',
-          COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE
-          location_code <> -1 AND close_date IS NULL UNION ALL SELECT ''physical_closed'', COUNT(*), COUNT(square_metres),
-          ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 AND close_date
-          IS NOT NULL ORDER BY reading'
-        came_back: 'dim_store.square_metres is a NUMBER (integer): it runs from 245 to 3500 over 39 distinct
-          value(s) in 73 row(s)   AND ALSO: 5 row(s): [{"reading": "active_any_channel", "shop_rows":
-          58, "rows_with_area": 57, "avg_sqm": 1511.75}, {"reading": "all_rows_any_channel_any_state",
-          "shop_rows": 74, "rows_with_area": 73, "avg_sqm": 1494.79}, {"reading": "physical_active_declared_defaults",
-          "shop_rows": 57, "rows_with_area": 57, "avg_sqm": 1511.75}, {"reading": "physical_any_state",
-          "shop_rows": 73, "rows_with_area": 73, "avg_sqm": 1494.79}, {"reading": "physical_closed", "shop_rows":
-          16, "rows_with_area": 16, "avg_sqm": 1434.38}]'
-      - why: 'THIS CHANGES THE QUESTION: `Store.trading` declares `default:
-          active` with `applies: subject`, and the subject here IS a Store, so "our shops" resolves to
-          the 57 physical shops still trading — not "every shop on the books" as `understood_as` assumed;
-          what is now being answered is the average floor area of a currently-trading physical shop, and
-          the alternative reading is priced below (1494.79 m² over 73) because the two differ by only
-          1.1%.'
-        did: 'probe ''dim_store.square_metres'' AND ALSO: SELECT ''all_rows_any_channel_any_state'' AS
-          reading, COUNT(*) AS shop_rows, COUNT(square_metres) AS rows_with_area, ROUND(AVG(square_metres),
-          2) AS avg_sqm FROM contoso_served.dim_store UNION ALL SELECT ''physical_any_state'', COUNT(*),
-          COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code
-          <> -1 UNION ALL SELECT ''active_any_channel'', COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres),
-          2) FROM contoso_served.dim_store WHERE close_date IS NULL UNION ALL SELECT ''physical_active_declared_defaults'',
-          COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE
-          location_code <> -1 AND close_date IS NULL UNION ALL SELECT ''physical_closed'', COUNT(*), COUNT(square_metres),
-          ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 AND close_date
-          IS NOT NULL ORDER BY reading'
-        came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
-          THE DATABASE SAID: only a read is accepted here: start with SELECT, WITH, DESCRIBE, SUMMARIZE
-          or SHOW'
-      - why: Settle the population again with the identical filter written as a CTE and `!=` instead of
-          `<>`, since the previous read was refused on its text and not on what it does.
-        did: 'probe ''dim_store.square_metres'' AND ALSO: SELECT ''all_rows_any_channel_any_state'' AS
-          reading, COUNT(*) AS shop_rows, COUNT(square_metres) AS rows_with_area, ROUND(AVG(square_metres),
-          2) AS avg_sqm FROM contoso_served.dim_store UNION ALL SELECT ''physical_any_state'', COUNT(*),
-          COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code
-          <> -1 UNION ALL SELECT ''active_any_channel'', COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres),
-          2) FROM contoso_served.dim_store WHERE close_date IS NULL UNION ALL SELECT ''physical_active_declared_defaults'',
-          COUNT(*), COUNT(square_metres), ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE
-          location_code <> -1 AND close_date IS NULL UNION ALL SELECT ''physical_closed'', COUNT(*), COUNT(square_metres),
-          ROUND(AVG(square_metres), 2) FROM contoso_served.dim_store WHERE location_code <> -1 AND close_date
-          IS NOT NULL ORDER BY reading'
-        came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
-          THE DATABASE SAID: only a read is accepted here: start with SELECT, WITH, DESCRIBE, SUMMARIZE
-          or SHOW'
-      settled_on: "SELECT\n  store_key,\n  store_name,\n  country_code,\n  state,\n  square_metres\nFROM\
-        \ contoso_served.dim_store\nWHERE\n  location_code <> -1 AND close_date IS NULL\nORDER BY\n  store_key"
-      means: 'The shops this question will be answered over: one row per trading physical shop, 57 of
-        them, each with its name, country, state/region and floor area in square metres. Every one carries
-        an area, so nothing drops out of the average later. Excluded: the 16 physical shops that have
-        closed, and the one online outlet, which is not premises and carries no floor area at all.'
-      readings_taken:
-      - word: our shops
-        took: the 57 physical shops with no close date — currently trading premises
-        could_also_mean: every shop on the books including the 16 closed ones (73 physical rows, average
-          1494.79 m²), or all 74 rows including the online outlet (still 73 with an area, so the same
-          1494.79 m²). The choice moves the average by 16.96 m², about 1.1%, because closed shops averaged
-          1434.38 m²; it does not change which shop is largest or smallest, as both extremes (245 and
-          3500 m²) are trading.
-        declaration: 'Store.trading — `default: active`, `applies:
-          subject`, confidence C because a person ruled it; and Store.channel
-          — `default: physical`, `applies: subject`. Both reach this step because the question''s subject
-          is a Store, not a measure.'
+      asks: ''
+      sql: "SELECT\n  store_key,\n  store_name,\n  square_metres\nFROM contoso_served.dim_store\nWHERE\n\
+        \  is_online = FALSE AND close_date IS NULL"
+      means: The active physical stores (shops currently trading, no closing date, excluding the online
+        channel), each with its floor area in square metres — the population over which the average size
+        will be computed.
+      readings:
+      - word: shops
+        took: 'Active physical stores: is_online = false AND close_date IS NULL'
+        could_also_mean: All shops ever (including closed), or all store rows including online
+        declaration: 'Store.channel default: physical; Store.trading default: active'
       - word: size
-        took: dim_store.square_metres — floor area in square metres, running 245 to 3500
-        could_also_mean: 'how many staff work there, or how much it sells. I cannot price either: no relation
-          in this bundle carries a staff column, and a sales reading would be a different concept (NetRevenue)
-          rather than a property of the premises.'
-        declaration: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among
-          its surfaces, so the word binds here by declaration.
-      blocked_by: []
+        took: square_metres on dim_store, the floor area
+        could_also_mean: Number of employees or sales volume, but square_metres is declared with surface
+          words 'size | area'
+        declaration: dim_store.square_metres declared as 'floor space | size | area | square meters |
+          how big'
+      turns: []
+      blocked: []
     - step: '2'
-      step_asks: the average size
+      asks: ''
+      sql: "SELECT\n  AVG(square_metres) AS average_size\nFROM contoso_served.dim_store\nWHERE\n  is_online\
+        \ = FALSE AND close_date IS NULL"
+      means: The average floor area in square metres across all currently active physical stores (shops
+        with no closing date, excluding the online channel).
+      readings: []
       turns:
-      - why: Take the unweighted mean floor area over the 57 shops step 1 settled on, each shop counting
-          once, and report it with the row count behind it.
-        did: "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n  MIN(square_metres)\
-          \ AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\nWHERE\n\
-          \  location_code <> -1 AND close_date IS NULL"
-        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 1 row(s): [{"shops": 57, "average_size_sqm":
-          1511.75, "smallest_sqm": 245, "largest_sqm": 3500}]  Give `claimed_answer` as the value a person
-          would be handed, and `claimed_answer_is` from the closed list. If these rows settle the question,
-          do not decline.'
-      settled_on: "SELECT\n  COUNT(*) AS shops,\n  ROUND(AVG(square_metres), 2) AS average_size_sqm,\n\
-        \  MIN(square_metres) AS smallest_sqm,\n  MAX(square_metres) AS largest_sqm\nFROM contoso_served.dim_store\n\
-        WHERE\n  location_code <> -1 AND close_date IS NULL"
-      means: 'The one row returned says: across the 57 physical shops currently trading, the average floor
-        area is 1511.75 square metres, the smallest being 245 m² and the largest 3500 m². Each shop counted
-        once, regardless of its revenue, age or how busy it is — a plain mean of 57 numbers. It is a snapshot
-        of the premises as the store dimension stands today, not an average over any period: floor area
-        is declared a stock, so there is no time window in this figure. NOT included: the 16 physical
-        shops that have closed (their own mean was 1434.38 m²) and the online outlet, which has no floor
-        area. Not weighted by anything.'
-      readings_taken:
-      - word: our shops
-        took: the 57 physical shops currently trading — those with no close date
-        could_also_mean: 'every shop on the books, closed ones included: 73 shops averaging 1494.79 m².
-          The readings differ by 16.96 m², about 1.1%, so I applied the declared default and disclose
-          the alternative rather than asking. The choice does not move the extremes — both the smallest
-          shop at 245 m² and the largest at 3500 m² are trading — and changes no ordering, only this one
-          mean.'
-        declaration: 'Store.trading (`default: active`, `applies: subject`,
-          confidence C — a person ruled it) and Store.channel
-          (`default: physical`, `applies: subject`)'
-      - word: size
-        took: floor area in square metres — dim_store.square_metres
-        could_also_mean: 'how many staff work there, or how much the shop sells. Neither is priceable
-          in this bundle: no relation carries a staff column, and a sales reading would answer with a
-          different concept (NetRevenue) rather than a property of the premises.'
-        declaration: dim_store.square_metres declares `size`, `how big`, `floor space` and `area` among
-          its surfaces, so the word binds here by declaration
-      - word: average
-        took: the plain unweighted mean — one shop, one vote
-        could_also_mean: a mean weighted by trading days, revenue or region, which the question had no
-          way to express. Unweighted is what "each shop counts once" means, and it is what this figure
-          is.
-        declaration: null
-      blocked_by: []
+      - why: the answer step's SQL you wrote on your first turn
+        did: the statement above
+        came_back: '1 row(s): [{"average_size": 1511.7543859649122}]'
+      blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
   subtitle: ''
@@ -930,4 +570,9 @@ v3_answer_step: '2'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: '''1511.75'' within rounding of 1511.7543859649122 (differs by 0.00438596)'
-v3_seconds: 133.8
+v3_seconds: 39.8
+revisions:
+  code: e90b8bc5de81d11df27e5a54effdc9e5ca2c94a8
+  code_dirty: false
+  bundle: b2827aca75fcd5ef4bbc8af3d238bd449bcc7802
+  declarations_dirty: false
