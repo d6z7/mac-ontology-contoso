@@ -1,44 +1,92 @@
 # THE APPROVED ANSWER. A person ran the query, read the number and said yes.
 # The next run either returns this or it does not. PASS or FAIL, nothing else.
+# FOLLOWS A RULE: the answer below is the rule's current default, derived by an agent on 2026-11-17.
+# `approved_by` is absent: no person signed this figure. A figure a person signed sits under
+# `follows[].otherwise`, with its signature, under the option it answers.
 id: ADV-08
-question: >-
-  Average order value by country
+question: Average order value by country
 expected:
   rows: 8
   ordered: true
   values:
   - - Italy
-    - 2617.6212424204546
+    - 2459.713409681529
   - - United Kingdom
-    - 2498.534870680272
+    - 2413.058351252094
   - - United States
-    - 2430.235981993551
+    - 2356.1342873427134
   - - Germany
-    - 2427.4714664860758
+    - 2319.6036696949727
   - - Canada
-    - 2396.9452554029012
+    - 2307.129991292436
   - - Australia
-    - 2348.501842758297
+    - 2288.9622417611786
   - - France
-    - 2272.6785397252747
+    - 2250.412963111935
   - - Netherlands
-    - 2239.5331512892135
-sql: >-
-  SELECT co.country_name, SUM(l.net_amount)/COUNT(DISTINCT l.order_key) FROM
-  contoso_served.v_contoso5_sales_line l JOIN contoso_served.dim_store s ON
-  l.store_key=s.store_key JOIN contoso_served.dim_country co ON s.country_code=co.country_code
-  WHERE s.store_code IS DISTINCT FROM -1 GROUP BY co.country_name ORDER BY 2 DESC
-note: >-
-  INDEPENDENTLY VERIFIED 2026-10-18, not read back from the engine: the SQL below was written by
-  hand against contoso5.duckdb and returns this figure exactly. SHOP POPULATION throughout (`store_code IS DISTINCT FROM -1`), AND IT IS DECLARED HERE RATHER
-  THAN INHERITED. Shop-only was the bundle''s default for Store until the operator reversed it on
-  2026-10-18 -- "now i am for correctnes and correctness is both" -- so this restriction is a
-  choice this reference has to justify, and the justification is the AXIS and not a default: the
-  online channel is one row of `dim_store` carrying `store_code = -1`, and it has neither a
-  country nor a floor area, so it cannot appear on an axis that groups by either. A question that
-  names the online channel is answered -- see MQ-07 and ADV-24. COUNTED BY
-  DISTINCT ORDER over the LINE relation — an order is many lines, so counting rows would divide by
-  the wrong denominator. Italy verified at 2617.6212424204546.
-approved_by: operator
-approved_at: '2026-10-17'
-approved_here: true
+    - 2204.8959680224666
+sql: SELECT co.country_name, SUM(l.net_amount) / COUNT(DISTINCT l.order_key) FROM contoso_served.v_contoso5_sales_line
+  l JOIN contoso_served.dim_country co ON l.sale_country_code = co.country_code GROUP BY co.country_name ORDER BY
+  2 DESC
+follows:
+- rule: Country.whose
+  option: territory
+  otherwise:
+    store:
+      expected:
+        rows: 8
+        ordered: true
+        values:
+        - - Italy
+          - 2617.6212424204546
+        - - United Kingdom
+          - 2498.534870680272
+        - - United States
+          - 2430.235981993551
+        - - Germany
+          - 2427.4714664860758
+        - - Canada
+          - 2396.9452554029012
+        - - Australia
+          - 2348.501842758297
+        - - France
+          - 2272.6785397252747
+        - - Netherlands
+          - 2239.5331512892135
+      sql: SELECT co.country_name, SUM(l.net_amount)/COUNT(DISTINCT l.order_key) FROM contoso_served.v_contoso5_sales_line
+        l JOIN contoso_served.dim_store s ON l.store_key=s.store_key JOIN contoso_served.dim_country co ON s.country_code=co.country_code
+        WHERE s.store_code IS DISTINCT FROM -1 GROUP BY co.country_name ORDER BY 2 DESC
+      approved_by: operator
+      approved_at: '2026-10-17'
+      approved_here: true
+    customer:
+      expected:
+        rows: 8
+        ordered: true
+        values:
+        - - Italy
+          - 2459.713409681529
+        - - United Kingdom
+          - 2413.058351252094
+        - - United States
+          - 2356.1342873427134
+        - - Germany
+          - 2319.6036696949727
+        - - Canada
+          - 2307.129991292436
+        - - Australia
+          - 2288.9622417611786
+        - - France
+          - 2250.412963111935
+        - - Netherlands
+          - 2204.8959680224666
+      sql: SELECT co.country_name, SUM(l.net_amount) / COUNT(DISTINCT l.order_key) FROM contoso_served.v_contoso5_sales_line
+        l JOIN contoso_served.dim_customer cu ON l.customer_key = cu.customer_key JOIN contoso_served.dim_country
+        co ON cu.country_code = co.country_code GROUP BY co.country_name ORDER BY 2 DESC
+note: 'FOLLOWS Country.whose = territory: a question that names a country but not whose is answered on the country
+  of the sale: a shop sale in the country the shop stands in, a web sale in the country the customer lives in (operator
+  ruling 2026-10-25, RULED-2026-10-25_a-sale-is-attributed-by-its-channel). The answer under every other option
+  is under `follows[].otherwise`, with its signature where a person signed it; acceptance/tools/rule_switch_test.py
+  runs each and shows which differ.'
+expected_by: agent
+expected_at: '2026-11-17'

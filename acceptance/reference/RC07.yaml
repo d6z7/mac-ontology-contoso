@@ -1,50 +1,53 @@
 # THE APPROVED ANSWER. A person ran the query, read the number and said yes.
 # The next run either returns this or it does not. PASS or FAIL, nothing else.
+# FOLLOWS A RULE: the answer below is the rule's current default, derived by an agent on 2026-11-17.
+# `approved_by` is absent: no person signed this figure. A figure a person signed sits under
+# `follows[].otherwise`, with its signature, under the option it answers.
 id: RC07
 question: How many customers are in Germany?
-expected: 9981
-sql: |
-  SELECT count(DISTINCT cu.customer_key)
-  FROM contoso_served.dim_customer cu
-  JOIN contoso_served.dim_country c ON cu.country_code = c.country_code
-  WHERE c.country_name = 'Germany'
+expected: 7135
+sql: SELECT count(DISTINCT customer_key) FROM contoso_served.dim_customer WHERE country_code = 'DE' AND valid_from
+  <= DATE '2025-12-31' AND valid_to >= DATE '2025-12-31'
+follows:
+- rule: Customer.active_on_the_reference_date
+  option: active
+  otherwise:
+    registered:
+      expected: 9981
+      sql: |
+        SELECT count(DISTINCT cu.customer_key)
+        FROM contoso_served.dim_customer cu
+        JOIN contoso_served.dim_country c ON cu.country_code = c.country_code
+        WHERE c.country_name = 'Germany'
+      approved_by: operator
+      approved_at: '2026-09-25'
+note: 'FOLLOWS Customer.active_on_the_reference_date = active: "customers" with no other word are the customers
+  active on the reference date: the date the question states, else the data''s own now, 2025-12-31 (the newest order
+  date). The rule is proposed: it applies and is disclosed as proposed (GRAMMAR_v3 L3, Y-6). The answer under every
+  other option is under `follows[].otherwise`, with its signature where a person signed it; acceptance/tools/rule_switch_test.py
+  runs each and shows which differ.'
+expected_by: agent
+expected_at: '2026-11-17'
 sql_repointed:
   by: agent
   at: '2026-10-22'
-  why: >-
-    THE FILED SQL QUERIED A DIFFERENT BUNDLE, so this reference had never been verified. It was
-    cloned from example/contoso, whose objects are v_contoso_order_line and dim_contoso_customer
-    with PascalCase columns (CustomerKey, NetPrice, Quantity, Country, CountryFull, ProductKey,
-    OrderDate). contoso5 names them v_contoso5_sales_line and dim_customer with snake_case
-    columns, and normalises the country NAME onto dim_country. Measured 2026-10-22 across all 74
-    references: 9 would not run, and 8 of those 9 were these clones.
-  what_changed: 'only the sql field, as a translation of identifiers'
-  what_did_not: >-
-    expected, approved_by, approved_at and note are untouched. THE APPROVAL IS THE ANSWER; the SQL
-    is the check. The translated query reproduces the approved expected value EXACTLY, which is
-    the evidence that the translation is faithful rather than a new claim.
-  verified: >-
-    run against contoso5.duckdb on 2026-10-22 and it reproduces this file's own expected value.
-note: >-
-  USD, like every stored amount in this fact — see AGG-01 for the measurement that establishes
-  it. "Germany" is the CUSTOMER's country, not the store's.
-
-  THE ANSWER MUST DISCLOSE ITS CURRENCY, because a German reader will assume euros and the
-  number is not in euros. Displayed in EUR at the order-date rate it is 22 500 378.82 — six per
-  cent lower, and a figure nobody would notice was the wrong currency.
-  CountryFull='Germany'
-note: CountryFull, not Country -- Country holds the ISO code 'DE'
-approved_by: operator
-approved_at: '2026-09-25'
+  why: 'THE FILED SQL QUERIED A DIFFERENT BUNDLE, so this reference had never been verified. It was cloned from
+    example/contoso, whose objects are v_contoso_order_line and dim_contoso_customer with PascalCase columns (CustomerKey,
+    NetPrice, Quantity, Country, CountryFull, ProductKey, OrderDate). contoso5 names them v_contoso5_sales_line
+    and dim_customer with snake_case columns, and normalises the country NAME onto dim_country. Measured 2026-10-22
+    across all 74 references: 9 would not run, and 8 of those 9 were these clones.'
+  what_changed: only the sql field, as a translation of identifiers
+  what_did_not: expected, approved_by, approved_at and note are untouched. THE APPROVAL IS THE ANSWER; the SQL is
+    the check. The translated query reproduces the approved expected value EXACTLY, which is the evidence that the
+    translation is faithful rather than a new claim.
+  verified: run against contoso5.duckdb on 2026-10-22 and it reproduces this file's own expected value.
 cloned_from:
   bundle: example/contoso
   path: acceptance/reference/RC07.yaml
   commit: e7465b1
   cloned_at: '2026-09-29'
-  basis: >-
-    Approved on the same landing: main.* is identical in both bundles (8 tables, row counts and
-    columns measured equal on 2026-09-29; 223 974 sales lines), so the approved value is the value
-    here too. The `sql` above is the approving bundle's served view
-    (contoso_served.v_contoso_order_line, dim_contoso_*), NOT this bundle's plane
-    (v_contoso5_sales_line, dim_*): the expected value stands, the derivation on this bundle's
-    own served plane is owed before its capture is judged against it.
+  basis: 'Approved on the same landing: main.* is identical in both bundles (8 tables, row counts and columns measured
+    equal on 2026-09-29; 223 974 sales lines), so the approved value is the value here too. The `sql` above is the
+    approving bundle''s served view (contoso_served.v_contoso_order_line, dim_contoso_*), NOT this bundle''s plane
+    (v_contoso5_sales_line, dim_*): the expected value stands, the derivation on this bundle''s own served plane
+    is owed before its capture is judged against it.'

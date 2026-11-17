@@ -9,13 +9,12 @@ The account of rule Customer.per_customer.
 - `rule:Customer.active_on_the_reference_date.active`
 - `rule:Customer.active_on_the_reference_date.registered`
 
-## Why it is a choice (2026-11-17)
+## Why it is a choice
 
 "Revenue per customer" divides by a count of customers, and the register holds three different counts: the customers
 who bought (the distinct `customer_key` on the sales lines), the customers active on the reference date (rule
 Customer.active_on_the_reference_date, `active`), and every customer on the register (`registered`). Half the register
-has never ordered, so the three give different figures. Before this rule no declaration said which one a per-customer
-figure divides by, and the corpus answered it three ways.
+has never ordered, so the three give different figures.
 
 ## The default and what decided it
 
@@ -23,9 +22,9 @@ figure divides by, and the corpus answered it three ways.
 answer depends on the rule you set. you can set i one way or another way. the ruling must be transparent and must be
 changeable"). It is `proposed`: it applies and is disclosed as proposed (GRAMMAR_v3 L3, Y-6).
 
-What the operator said earlier, recorded here so the choice can be set against it:
+What the operator has said on it, so the choice can be set against his words:
 
-- 2026-10-23, on the question that became MQ-23: "try adding a question: revenue per actvie cutsomer - (who placed
+- 2026-10-23, asking for MQ-23: "try adding a question: revenue per actvie cutsomer - (who placed
   order in the past) ... and see what happens then." This reads an active customer as one who has ordered: the
   `buyers` option.
 - 2026-10-24, on ADV-03: "adv03 accept", approving revenue per customer by country divided by every customer on file:

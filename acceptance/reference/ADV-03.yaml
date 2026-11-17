@@ -1,8 +1,10 @@
 # THE APPROVED ANSWER. A person ran the query, read the number and said yes.
 # The next run either returns this or it does not. PASS or FAIL, nothing else.
+# FOLLOWS A RULE: the answer below is the rule's current default, derived by an agent on 2026-11-17.
+# `approved_by` is absent: no person signed this figure. A figure a person signed sits under
+# `follows[].otherwise`, with its signature, under the option it answers.
 id: ADV-03
-question: >-
-  Revenue per customer by country
+question: Revenue per customer by country
 expected:
   rows: 8
   ordered: false
@@ -11,69 +13,157 @@ expected:
   - revenue_per_customer
   values:
   - - United States
-    - 2475.76
+    - 4505.3
   - - Germany
-    - 2468.57
+    - 4437.83
   - - Canada
-    - 2298.69
+    - 4313.67
   - - Netherlands
-    - 1918.45
+    - 3877.17
   - - United Kingdom
-    - 1559.4
-  - - France
-    - 1368.05
-  - - Australia
-    - 1321.79
+    - 3738.77
   - - Italy
-    - 1303.61
-sql: >-
-  SELECT co.country_name, ROUND(SUM(l.net_amount) / (SELECT COUNT(*) FROM
-  contoso_served.dim_customer x WHERE x.country_code = cu.country_code), 2) AS
-  revenue_per_customer FROM contoso_served.v_contoso5_sales_line l JOIN
-  contoso_served.dim_customer cu ON l.customer_key = cu.customer_key JOIN
-  contoso_served.dim_country co ON cu.country_code = co.country_code GROUP BY co.country_name,
-  cu.country_code ORDER BY revenue_per_customer DESC
-note: >-
-  INDEPENDENTLY VERIFIED 2026-10-18, not read back from the engine: the SQL below was written by
-  hand against contoso5.duckdb and returns this figure exactly. BOTH CHANNELS, AND THE STATEMENT
-  ABOVE APPLIES NO `location_code` RESTRICTION AT ALL. The sentence that stood here claimed a
-  shop-only population and that shop-only was the bundle''s default for Store, and on 2026-10-24
-  neither half was true of this reference: the statement never carried the filter, and the default
-  was reversed by the operator on 2026-10-18 -- "now i am for correctnes and correctness is both"
-  -- so an unqualified revenue question spans the online channel too. THE APPROVED FIGURE IS
-  UNCHANGED and was always the both-channels figure; only the sentence describing it was wrong,
-  which is why this is a prose repair and not a re-approval. A RATIO WITH A COUNTABLE DENOMINATOR:
-  revenue divided by DISTINCT customers, not by rows. United States verified at
-  3640.9837488560847. RE-RULED 2026-10-23 ON TWO OPERATOR DECISIONS, and BOTH halves of the old
-  figure were wrong. First: "genuinly disputable but i hitnk the model migt right. path over
-  customer is correct" — so the country is the CUSTOMER'S, not the store's, which alone
-  invalidated every figure this reference held. Then, on the denominator: "adv03 accept",
-  accepting the walk's reading. WHAT THIS QUESTION NOW MEANS, said plainly because it is the whole
-  disagreement: a country's total net revenue, from customers REGISTERED in that country, over
-  both channels and all time, divided by EVERY CUSTOMER ON FILE in that country — not by the ones
-  who bought. THE DENOMINATOR IS THE QUESTION, and the bundle states the fact it turns on in
-  capitals on `dim_customer.customer_key`: "HALF HAVE NEVER ORDERED". Measured 2026-10-23 —
-  104,990 customers on file, 52,189 who ever placed an order, 52,801 who never did, and it is
-  upstream DESIGN rather than a data defect (docs.sqlbi.com/contoso-data-generator). So "per
-  customer" is a factor of two depending on which customer is meant: per customer ON FILE US
-  2,475.76 DE 2,468.57 CA 2,298.69 <- this reference per ACTIVE customer US 4,505.30 DE 4,437.83
-  CA 4,313.67 (the old store-path figures were US 3,640.98, DE 3,607.42, CA 3,492.85 — neither
-  reading, because the path was wrong too)
-
-  AND THE PAIR IS NOW DISCRIMINATING, which is why this reading and not the other. `MQ-23` asks
-  "revenue per active customer, counting only customers who have placed an order" and is pinned at
-  4,192.73 bundle-wide. If THIS question — the unqualified one — also meant active customers, the
-  two would ask one thing and MQ-23 would add nothing. Unqualified means everyone on the register;
-  naming "active" narrows it. One word, two questions, two numbers. WHAT IS STILL NOT DECLARED,
-  and it is the reason this took two rulings rather than none: `mac.canon.ratio_select` is the
-  mechanism for a denominator and the bundle uses it four times (discount -> GrossRevenue, margin
-  -> NetRevenue, margin -> SalesCost, net_revenue -> UnitsSold). A ratio whose denominator is a
-  COUNT OF THINGS has no declaration anywhere, so nothing could have told a reader which customer
-  "per customer" divides by. Until it does, this reference and MQ-23 are the only places that say
-  it.
-approved_by: operator
-approved_at: '2026-10-24'
-approved_here: true
+    - 3564.05
+  - - France
+    - 3350.77
+  - - Australia
+    - 3347.7
+sql: SELECT co.country_name, ROUND(SUM(l.net_amount) / COUNT(DISTINCT l.customer_key), 2) AS revenue_per_customer
+  FROM contoso_served.v_contoso5_sales_line l JOIN contoso_served.dim_country co ON l.sale_country_code = co.country_code
+  GROUP BY co.country_name ORDER BY revenue_per_customer DESC
+follows:
+- rule: Country.whose
+  option: territory
+  otherwise:
+    store:
+      expected:
+        rows: 8
+        ordered: false
+        cols:
+        - country
+        - revenue_per_customer
+        values:
+        - - United States
+          - 3640.98
+        - - Germany
+          - 3607.42
+        - - Canada
+          - 3492.85
+        - - Italy
+          - 3340.84
+        - - United Kingdom
+          - 3335.25
+        - - Netherlands
+          - 3065.53
+        - - Australia
+          - 2881.72
+        - - France
+          - 2850.42
+      sql: SELECT co.country_name, ROUND(SUM(l.net_amount) / COUNT(DISTINCT l.customer_key), 2) AS revenue_per_customer
+        FROM contoso_served.v_contoso5_sales_line l JOIN contoso_served.dim_store s ON l.store_key = s.store_key
+        JOIN contoso_served.dim_country co ON s.country_code = co.country_code WHERE NOT co.is_placeholder GROUP
+        BY co.country_name ORDER BY revenue_per_customer DESC
+    customer:
+      expected:
+        rows: 8
+        ordered: false
+        cols:
+        - country
+        - revenue_per_customer
+        values:
+        - - United States
+          - 4505.3
+        - - Germany
+          - 4437.83
+        - - Canada
+          - 4313.67
+        - - Netherlands
+          - 3877.17
+        - - United Kingdom
+          - 3738.77
+        - - Italy
+          - 3564.05
+        - - France
+          - 3350.77
+        - - Australia
+          - 3347.7
+      sql: SELECT co.country_name, ROUND(SUM(l.net_amount) / COUNT(DISTINCT l.customer_key), 2) AS revenue_per_customer
+        FROM contoso_served.v_contoso5_sales_line l JOIN contoso_served.dim_customer cu ON l.customer_key = cu.customer_key
+        JOIN contoso_served.dim_country co ON cu.country_code = co.country_code GROUP BY co.country_name ORDER BY
+        revenue_per_customer DESC
+- rule: Customer.per_customer
+  option: buyers
+  otherwise:
+    active:
+      expected:
+        rows: 8
+        ordered: false
+        cols:
+        - country
+        - revenue_per_customer
+        values:
+        - - United States
+          - 3466.02
+        - - Germany
+          - 3453.23
+        - - Canada
+          - 3202.26
+        - - Netherlands
+          - 2649.47
+        - - United Kingdom
+          - 2168.35
+        - - France
+          - 1864.45
+        - - Australia
+          - 1839.81
+        - - Italy
+          - 1830.21
+      sql: SELECT co.country_name, ROUND(r.rev / a.n, 2) AS revenue_per_customer FROM (SELECT sale_country_code
+        AS cc, SUM(net_amount) AS rev FROM contoso_served.v_contoso5_sales_line GROUP BY 1) r JOIN (SELECT country_code
+        AS cc, COUNT(*) AS n FROM contoso_served.dim_customer WHERE valid_from <= DATE '2025-12-31' AND valid_to
+        >= DATE '2025-12-31' GROUP BY 1) a ON r.cc = a.cc JOIN contoso_served.dim_country co ON co.country_code
+        = r.cc ORDER BY revenue_per_customer DESC
+    registered:
+      expected:
+        rows: 8
+        ordered: false
+        cols:
+        - country
+        - revenue_per_customer
+        values:
+        - - United States
+          - 2475.76
+        - - Germany
+          - 2468.57
+        - - Canada
+          - 2298.69
+        - - Netherlands
+          - 1918.45
+        - - United Kingdom
+          - 1559.4
+        - - France
+          - 1368.05
+        - - Australia
+          - 1321.79
+        - - Italy
+          - 1303.61
+      sql: SELECT co.country_name, ROUND(SUM(l.net_amount) / (SELECT COUNT(*) FROM contoso_served.dim_customer x
+        WHERE x.country_code = cu.country_code), 2) AS revenue_per_customer FROM contoso_served.v_contoso5_sales_line
+        l JOIN contoso_served.dim_customer cu ON l.customer_key = cu.customer_key JOIN contoso_served.dim_country
+        co ON cu.country_code = co.country_code GROUP BY co.country_name, cu.country_code ORDER BY revenue_per_customer
+        DESC
+      approved_by: operator
+      approved_at: '2026-10-24'
+      approved_here: true
+note: 'FOLLOWS Country.whose = territory: a question that names a country but not whose is answered on the country
+  of the sale: a shop sale in the country the shop stands in, a web sale in the country the customer lives in (operator
+  ruling 2026-10-25, RULED-2026-10-25_a-sale-is-attributed-by-its-channel). FOLLOWS Customer.per_customer = buyers:
+  a per-customer figure divides by the customers who bought: the distinct customers on the sales lines it sums.
+  The rule is proposed: it applies and is disclosed as proposed (GRAMMAR_v3 L3, Y-6). The answer under every other
+  option is under `follows[].otherwise`, with its signature where a person signed it; acceptance/tools/rule_switch_test.py
+  runs each and shows which differ.'
+expected_by: agent
+expected_at: '2026-11-17'
 superseded_value:
   rows: 8
   ordered: true
@@ -97,14 +187,12 @@ superseded_value:
     - 1321.79
   - - Italy
     - 1303.61
-superseded_reason: >-
-  ROW ORDER IS NOT AN ANSWER UNLESS THE QUESTION ASKED FOR ONE, and this question asks for a SET.
-  Ruled by the operator on 2026-10-24 ("go 1 2 3 4") over a proposal naming all nine references.
-  `ordered: true` made row POSITION part of the signed contract, so a correct answer returning the
-  right members in another order graded as a failure -- the defect measured on MQ-08 on
-  2026-10-09, where two products inside the approved set at different positions failed a question
-  asking set membership. THE CHECK IS NOT WEAKENED. The value list here is COMPLETE, so with
-  `ordered: false` every approved row must still be PRESENT in the result --
-  `sdk/acceptance/selfcheck.py#compare` runs a membership test over all of them, not a sample.
-  What is given up is only the claim that the question asked for a sequence, which it does not. A
-  ranking keeps its order: no `top`, `highest`, `trend` or `compare` question is touched.
+superseded_reason: 'ROW ORDER IS NOT AN ANSWER UNLESS THE QUESTION ASKED FOR ONE, and this question asks for a SET.
+  Ruled by the operator on 2026-10-24 ("go 1 2 3 4") over a proposal naming all nine references. `ordered: true`
+  made row POSITION part of the signed contract, so a correct answer returning the right members in another order
+  graded as a failure -- the defect measured on MQ-08 on 2026-10-09, where two products inside the approved set
+  at different positions failed a question asking set membership. THE CHECK IS NOT WEAKENED. The value list here
+  is COMPLETE, so with `ordered: false` every approved row must still be PRESENT in the result -- `sdk/acceptance/selfcheck.py#compare`
+  runs a membership test over all of them, not a sample. What is given up is only the claim that the question asked
+  for a sequence, which it does not. A ranking keeps its order: no `top`, `highest`, `trend` or `compare` question
+  is touched.'
