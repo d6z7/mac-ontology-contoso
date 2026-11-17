@@ -9,6 +9,6 @@ The account of rule Store.trading. Written by mac_migrate_v3; each heading after
 - `dataset:dim_store.is_shut`
 - `dataset:dim_store.is_restructured`
 
-## State (v3 migration, 2026-11-17)
+## State
 
-Stays `ruled` (Y-7): the 2026-09-30 saying stands, quoted as the operator ruling of that date, in meaning-as-code#decisions/DNA-2026-09-25_ontology-design-requirements.md (the first `said` entry, verbatim as that record quotes it). The fuller wording and the 2026-10-01 sayings were recorded in the 0.4.0 knowledge page, now `pages/knowledge/store.md`, and in `data/transforms/dim_store.sql`.
+`ruled` (Y-7): the 2026-09-30 saying stands, quoted as the operator ruling of that date, in meaning-as-code#decisions/DNA-2026-09-25_ontology-design-requirements.md (the first `said` entry, verbatim as that record quotes it). The fuller wording and the 2026-10-01 sayings stand in `pages/knowledge/store.md` and in `data/transforms/dim_store.sql`.

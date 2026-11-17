@@ -10,8 +10,6 @@ The account of concept Country. Written by mac_migrate_v3 from the 0.4.0 declara
 - `rule:Country.rows`
 - `rule:Country.where_we_have_customers`
 - `rule:Country.whose`
-- `rule:Country.whose_is_asked`
-- `rule:Country.whose_is_the_store`
 
 ## grounding.note
 

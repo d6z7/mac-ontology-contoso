@@ -11,9 +11,9 @@ The account of rule Store.premises_not_place. Written by mac_migrate_v3; each he
 - `dataset:dim_store.store_key`
 - `dataset:dim_store.store_code`
 
-## State (v3 migration, 2026-11-17)
+## State
 
-`proposed`, not `ruled`: Y-7 (RULING-2026-11-16_grammar-v3) takes a ruled rule's words only from a decision record the rule cites, and drops it to `proposed` where none is found. The words were recorded in the 0.4.0 concept file `ontology/concepts/store.yaml`, which the v3 migration replaced (commit eb6eff7), so `said.in` is no longer given; no record under decisions/ carries them. The operator confirms the words (with the record they were said in) to make it `ruled` again.
+`proposed`, not `ruled`: Y-7 (RULING-2026-11-16_grammar-v3) takes a ruled rule's words only from a decision record the rule cites, and drops it to `proposed` where none is found. No record under decisions/ carries the words, so `said.in` is not given. The operator confirms the words (with the record they were said in) to make it `ruled`.
 
 ## The choice
 

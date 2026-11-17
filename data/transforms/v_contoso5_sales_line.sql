@@ -57,7 +57,7 @@ SELECT
   -- fact is stated here instead of being the ABSENCE of a predicate.
   --
   -- THE VALUE NAMES ARE THE DECLARED POPULATION NAMES, not new words:
-  -- `store.resolution.the_channel_is_the_location_sentinel` names them `physical` and `online`.
+  -- `Store.channel` names them `physical` and `online`.
   -- One axis, one vocabulary.
   --
   -- WHAT THIS DOES NOT CHANGE. `dim_store.store_code` and that population rule stay exactly as

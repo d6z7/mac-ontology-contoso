@@ -651,7 +651,7 @@
      [
       [
        "declaration",
-       "order.default.period_is_order_date, default `ordered`"
+       "Order.date, default `ordered`"
       ],
       [
        "what it settled",
@@ -671,7 +671,7 @@
      [
       [
        "declaration",
-       "country.default.whose_country_is_asked_never_assumed — disclosed rather than chosen silently; dim_customer.country_code is the declared only route from an internet sale to a real country"
+       "Country.whose — disclosed rather than chosen silently; dim_customer.country_code is the declared only route from an internet sale to a real country"
       ],
       [
        "what it settled",
@@ -701,7 +701,7 @@
      [
       [
        "declaration",
-       "country.default.whose_country_is_asked_never_assumed; dim_customer.country_code is the declared only route from an internet sale to a real country"
+       "Country.whose; dim_customer.country_code is the declared only route from an internet sale to a real country"
       ],
       [
        "what it settled",
@@ -711,7 +711,7 @@
      [
       [
        "declaration",
-       "order.default.period_is_order_date fixes the column to order_date; the delivery figure is disclosed, not chosen"
+       "Order.date fixes the column to order_date; the delivery figure is disclosed, not chosen"
       ],
       [
        "what it settled",
@@ -731,7 +731,7 @@
      [
       [
        "declaration",
-       "order_date carries `period_binding: True`, so a month grain is computed on that column; order.default.period_is_order_date makes it the date read"
+       "order_date carries `period_binding: True`, so a month grain is computed on that column; Order.date makes it the date read"
       ],
       [
        "what it settled",
@@ -771,7 +771,7 @@
      [
       [
        "declaration",
-       "country.default.whose_country_is_asked_never_assumed (C) forbids choosing between store and customer SILENTLY — hence this disclosure; dim_customer.country_code is declared the only column that can place an internet sale in a real country"
+       "Country.whose (C) forbids choosing between store and customer SILENTLY — hence this disclosure; dim_customer.country_code is declared the only column that can place an internet sale in a real country"
       ],
       [
        "what it settled",
@@ -791,7 +791,7 @@
      [
       [
        "declaration",
-       "order.default.period_is_order_date; no fiscal calendar is declared, so calendar 2024 is the only expressible reading"
+       "Order.date; no fiscal calendar is declared, so calendar 2024 is the only expressible reading"
       ],
       [
        "what it settled",
@@ -925,7 +925,7 @@
         "word": "the period column",
         "took": "order_date, so 2024 will mean orders placed in 2024",
         "could_also_mean": "delivery_date — which moves revenue between periods without changing the total, and deliveries run to 2026-01-06",
-        "declaration": "order.default.period_is_order_date, default `ordered`"
+        "declaration": "Order.date, default `ordered`"
        },
        {
         "word": "the unit of the amounts",
@@ -953,7 +953,7 @@
         "word": "in Germany",
         "took": "the customer's registered country is Germany",
         "could_also_mean": "the shop's country or the shop's site country — measured on 2024: identical to this reading for physical sales (1,540,736.67 over 1,812 lines, all three paths agreeing), and empty for internet sales (0.00 over 0 lines), because the web shop's country is the '--' sentinel",
-        "declaration": "country.default.whose_country_is_asked_never_assumed — disclosed rather than chosen silently; dim_customer.country_code is the declared only route from an internet sale to a real country"
+        "declaration": "Country.whose — disclosed rather than chosen silently; dim_customer.country_code is the declared only route from an internet sale to a real country"
        },
        {
         "word": "Germany",
@@ -970,7 +970,7 @@
       ],
       "turns": [
        {
-        "why": "Measure every declared reading of \"in Germany\" before deciding whether to ask: country.default.whose_country_is_asked_never_assumed offers store, customer and location paths and forbids picking between them silently, so I compute all three side by side and split by channel — because the Internet shop's store row carries the '--' sentinel, I expect the store and location readings to vanish on exactly the channel this question asks for.",
+        "why": "Measure every declared reading of \"in Germany\" before deciding whether to ask: Country.whose offers store, customer and location paths and forbids picking between them silently, so I compute all three side by side and split by channel — because the Internet shop's store row carries the '--' sentinel, I expect the store and location readings to vanish on exactly the channel this question asks for.",
         "did": "WITH de AS (\n  SELECT\n    country_code\n  FROM contoso_served.dim_country\n  WHERE\n    country_name ILIKE '%german%'\n), base AS (\n  SELECT\n    l.net_amount,\n    l.channel,\n    ds.country_code AS store_cc,\n    cu.country_code AS cust_cc,\n    dl.country_code AS loc_cc\n  FROM contoso_served.v_contoso5_sales_line AS l\n  LEFT JOIN contoso_served.dim_store AS ds\n    ON l.store_key = ds.store_key\n  LEFT JOIN contoso_served.dim_customer AS cu\n    ON l.customer_key = cu.customer_key\n  LEFT JOIN contoso_served.dim_location AS dl\n    ON ds.location_code = dl.location_code\n  WHERE\n    l.order_date >= CAST('2024-01-01' AS DATE)\n    AND l.order_date < CAST('2025-01-01' AS DATE)\n)\nSELECT\n  channel,\n  COUNT(*) AS lines_in_channel,\n  COUNT(CASE WHEN store_cc IN (\n    SELECT\n      country_code\n    FROM de\n  ) THEN 1 END) AS lines_store_de,\n  ROUND(\n    SUM(\n      CASE\n        WHEN store_cc IN (\n          SELECT\n            country_code\n          FROM de\n        )\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_store_de,\n  COUNT(CASE WHEN cust_cc IN (\n    SELECT\n      country_code\n    FROM de\n  ) THEN 1 END) AS lines_customer_de,\n  ROUND(\n    SUM(\n      CASE\n        WHEN cust_cc IN (\n          SELECT\n            country_code\n          FROM de\n        )\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_customer_de,\n  COUNT(CASE WHEN loc_cc IN (\n    SELECT\n      country_code\n    FROM de\n  ) THEN 1 END) AS lines_location_de,\n  ROUND(\n    SUM(\n      CASE\n        WHEN loc_cc IN (\n          SELECT\n            country_code\n          FROM de\n        )\n        THEN net_amount\n        ELSE 0\n      END\n    ),\n    2\n  ) AS revenue_location_de\nFROM base\nGROUP BY\n  channel\nORDER BY\n  channel",
         "came_back": "2 row(s): [{\"channel\": \"online\", \"lines_in_channel\": 23187, \"lines_store_de\": 0, \"revenue_store_de\": \"0.00\", \"lines_customer_de\": 2905, \"revenue_customer_de\": \"2428570.52\", \"lines_location_de\": 0, \"revenue_location_de\": \"0.00\"}, {\"channel\": \"physical\", \"lines_in_channel\": 14922, \"lines_store_de\": 1812, \"revenue_store_de\": \"1540736.67\", \"lines_customer_de\": 1812, \"revenue_customer_de\": \"1540736.67\", \"lines_location_de\": 1812, \"revenue_location_de\": \"1540736.67\"}]"
        },
@@ -998,7 +998,7 @@
         "word": "in Germany",
         "took": "the customer's country (carried forward from step 2)",
         "could_also_mean": "the shop's country — which for this population is the '--' sentinel and yields nothing at all, not a different figure",
-        "declaration": "country.default.whose_country_is_asked_never_assumed; dim_customer.country_code is the declared only route from an internet sale to a real country"
+        "declaration": "Country.whose; dim_customer.country_code is the declared only route from an internet sale to a real country"
        }
       ],
       "turns": [
@@ -1020,7 +1020,7 @@
         "word": "in 2024",
         "took": "order placed in calendar 2024 — 2,905 lines, 2,428,570.52 USD",
         "could_also_mean": "delivered in 2024 — measured: 2,908 lines, 2,429,955.62 USD, a difference of 1,385.10 or 0.06% of the year, so the two readings agree for any practical purpose at year level",
-        "declaration": "order.default.period_is_order_date fixes the column to order_date; the delivery figure is disclosed, not chosen"
+        "declaration": "Order.date fixes the column to order_date; the delivery figure is disclosed, not chosen"
        },
        {
         "word": "2024",
@@ -1048,7 +1048,7 @@
         "word": "monthly",
         "took": "calendar months of order_date, twelve groups",
         "could_also_mean": "months of delivery_date, or rolling 30-day windows",
-        "declaration": "order_date carries `period_binding: True`, so a month grain is computed on that column; order.default.period_is_order_date makes it the date read"
+        "declaration": "order_date carries `period_binding: True`, so a month grain is computed on that column; Order.date makes it the date read"
        },
        {
         "word": "month",
@@ -1132,7 +1132,7 @@
         "word": "in Germany",
         "took": "the CUSTOMER lives in Germany — 2,428,570.52 for 2024",
         "could_also_mean": "the selling shop is German, or its site is — both measured, both give 0.00 over 0 lines for internet sales because the web shop's country is the '--' sentinel. Not a live fork: the alternative is an empty result, not a rival figure. On 2024 physical sales all three readings agree exactly (1,540,736.67 over 1,812 lines), so they diverge only on the channel this question asks about",
-        "declaration": "country.default.whose_country_is_asked_never_assumed (C) forbids choosing between store and customer SILENTLY — hence this disclosure; dim_customer.country_code is declared the only column that can place an internet sale in a real country"
+        "declaration": "Country.whose (C) forbids choosing between store and customer SILENTLY — hence this disclosure; dim_customer.country_code is declared the only column that can place an internet sale in a real country"
        },
        {
         "word": "Internet shop",
@@ -1150,7 +1150,7 @@
         "word": "in 2024",
         "took": "orders PLACED in calendar 2024",
         "could_also_mean": "orders DELIVERED in 2024 — 2,908 lines and 2,429,955.62, a 0.06% difference",
-        "declaration": "order.default.period_is_order_date; no fiscal calendar is declared, so calendar 2024 is the only expressible reading"
+        "declaration": "Order.date; no fiscal calendar is declared, so calendar 2024 is the only expressible reading"
        },
        {
         "word": "monthly trend",
