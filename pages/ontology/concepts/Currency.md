@@ -12,7 +12,7 @@ rule_pages:
 - ../rules/ExchangeRate.direction_is_part_of_the_key.md
 ---
 
-The money a sale is denominated in: five ISO codes, pointed at by every sale and by both ends of every exchange rate. The account is pages/knowledge/currency.md.
+The money a sale is denominated in: five ISO codes, pointed at by every sale and by both ends of every exchange rate. The account is ontology/concepts/Currency.md.
 
 ## Details
 

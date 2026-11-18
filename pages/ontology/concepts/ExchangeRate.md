@@ -13,7 +13,7 @@ rule_pages:
 - ../rules/Order.rate_on_order_date.md
 ---
 
-What one currency was worth in another on one day: a quoted rate over a date and an ordered pair of currencies. The account is pages/knowledge/exchange_rate.md.
+What one currency was worth in another on one day: a quoted rate over a date and an ordered pair of currencies. The account is ontology/concepts/ExchangeRate.md.
 
 ## Details
 

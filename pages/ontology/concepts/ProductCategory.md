@@ -10,7 +10,7 @@ rule_pages:
 - ../rules/ProductCategory.level.md
 ---
 
-How Contoso groups what it sells: categories, each over several sub-categories, both carried as names on the product row (rule ProductCategory.level). The account is pages/knowledge/product_category.md.
+How Contoso groups what it sells: categories, each over several sub-categories, both carried as names on the product row (rule ProductCategory.level). The account is ontology/concepts/ProductCategory.md.
 
 ## Details
 

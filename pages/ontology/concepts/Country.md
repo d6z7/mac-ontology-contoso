@@ -12,7 +12,7 @@ rule_pages:
 - ../rules/Country.whose.md
 ---
 
-A country Contoso sells in. The placeholder code `--` is not a country: it marks rows with no real country, such as the online store (rule Country.rows). The account is pages/knowledge/country.md.
+A country Contoso sells in. The placeholder code `--` is not a country: it marks rows with no real country, such as the online store (rule Country.rows). The account is ontology/concepts/Country.md.
 
 ## Details
 

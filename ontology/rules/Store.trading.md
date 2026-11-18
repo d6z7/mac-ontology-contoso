@@ -11,4 +11,4 @@ The account of rule Store.trading.
 
 ## State
 
-`ruled` (Y-7): the 2026-09-30 saying stands, quoted as the operator ruling of that date, in meaning-as-code#decisions/DNA-2026-09-25_ontology-design-requirements.md (the first `said` entry, verbatim as that record quotes it). The fuller wording and the 2026-10-01 sayings stand in `pages/knowledge/store.md` and in `data/transforms/dim_store.sql`.
+`ruled` (Y-7): the 2026-09-30 saying stands, quoted as the operator ruling of that date, in meaning-as-code#decisions/DNA-2026-09-25_ontology-design-requirements.md (the first `said` entry, verbatim as that record quotes it). The fuller wording and the 2026-10-01 sayings stand in `ontology/concepts/Store.md` and in `data/transforms/dim_store.sql`.

@@ -11,7 +11,7 @@ rule_pages:
 - ../rules/Product.price_is_dated.md
 ---
 
-A thing Contoso sells, at the level the shelf knows it: a SKU. The account is pages/knowledge/product.md.
+A thing Contoso sells, at the level the shelf knows it: a SKU. The account is ontology/concepts/Product.md.
 
 ## Details
 

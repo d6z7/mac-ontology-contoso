@@ -16,7 +16,7 @@ rule_pages:
 - ../rules/Store.trading.md
 ---
 
-THE PREMISES Contoso sells from — a shop that stood on one place for one trading period, with its own name, floor area, opening date and closing date. It is what every sale is recorded against. A PLACE MAY HOLD A SUCCESSION OF PREMISES, so a store is NOT its place: see the Location concept for the place, and `dim_store.store_key#rulings.finer_than` for the declaration that one rolls up into the other. The account is pages/knowledge/store.md. THIS DEFINITION CARRIES NO COUNTS, by the operator's ruling of 2026-10-24: "you are disclosing values that variy through the time as constnts?!?!?! this is no go ... you can decribe things without constants too". Counts belong where they can be re-measured: data/profiles/dim_store.yaml.
+THE PREMISES Contoso sells from — a shop that stood on one place for one trading period, with its own name, floor area, opening date and closing date. It is what every sale is recorded against. A PLACE MAY HOLD A SUCCESSION OF PREMISES, so a store is NOT its place: see the Location concept for the place, and `dim_store.store_key#rulings.finer_than` for the declaration that one rolls up into the other. The account is ontology/concepts/Store.md. THIS DEFINITION CARRIES NO COUNTS, by the operator's ruling of 2026-10-24: "you are disclosing values that variy through the time as constnts?!?!?! this is no go ... you can decribe things without constants too". Counts belong where they can be re-measured: data/profiles/dim_store.yaml.
 
 ## Details
 

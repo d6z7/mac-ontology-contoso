@@ -10,7 +10,7 @@ rule_pages:
 - ../rules/Brand.not_manufacturer.md
 ---
 
-Whose name a product is sold under: eleven names, carried as a column on the product row with no table and no key of their own. The account is pages/knowledge/brand.md.
+Whose name a product is sold under: eleven names, carried as a column on the product row with no table and no key of their own. The account is ontology/concepts/Brand.md.
 
 ## Details
 
