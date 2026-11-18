@@ -33,7 +33,7 @@ tags:
 | `WorkingDay` | 2 | 0 | 0 | 1 |
 | `WorkingDayNumber` | 2761 | 0 | 0 | 2760 |
 
-_Measured (`data/profiles/date.yaml`, 2026-10-26T16:40:50+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/date.yaml`, 2026-11-18T03:16:03.487+01:00); a v3 source declares no columns._
 
 ## Read by
 

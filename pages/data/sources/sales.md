@@ -29,7 +29,7 @@ tags:
 | `CurrencyCode` | 5 | 0 | — | — |
 | `ExchangeRate` | 5862 | 0 | 0.67253 | 1.72530 |
 
-_Measured (`data/profiles/sales.yaml`, 2026-10-26T16:40:51+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/sales.yaml`, 2026-11-18T03:16:04.376+01:00); a v3 source declares no columns._
 
 ## Read by
 

@@ -20,7 +20,7 @@ tags:
 | `ToCurrency` | 5 | 0 | — | — |
 | `Exchange` | 31512 | 0 | 0.47908 | 2.08733 |
 
-_Measured (`data/profiles/currencyexchange.yaml`, 2026-10-26T16:40:50+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/currencyexchange.yaml`, 2026-11-18T03:16:02.987+01:00); a v3 source declares no columns._
 
 ## Read by
 

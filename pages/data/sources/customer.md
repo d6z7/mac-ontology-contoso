@@ -40,7 +40,7 @@ tags:
 | `Latitude` | 102773 | 0 | -43.34649 | 76.47497 |
 | `Longitude` | 103894 | 0 | -170.22205 | 159.03845 |
 
-_Measured (`data/profiles/customer.yaml`, 2026-10-26T16:40:50+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/customer.yaml`, 2026-11-18T03:16:03.274+01:00); a v3 source declares no columns._
 
 ## Read by
 

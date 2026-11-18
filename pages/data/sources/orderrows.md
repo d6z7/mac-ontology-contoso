@@ -23,7 +23,7 @@ tags:
 | `NetPrice` | 18407 | 0 | 0.81700 | 6247.50000 |
 | `UnitCost` | 1955 | 0 | 0.48000 | 2069.92500 |
 
-_Measured (`data/profiles/orderrows.yaml`, 2026-10-26T16:40:51+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/orderrows.yaml`, 2026-11-18T03:16:03.714+01:00); a v3 source declares no columns._
 
 ## Read by
 

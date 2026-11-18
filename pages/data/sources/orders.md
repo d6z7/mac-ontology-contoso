@@ -22,7 +22,7 @@ tags:
 | `DeliveryDate` | 3498 | 0 | 2016-05-18 00:00:00 | 2026-01-06 00:00:00 |
 | `CurrencyCode` | 5 | 0 | — | — |
 
-_Measured (`data/profiles/orders.yaml`, 2026-10-26T16:40:51+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/orders.yaml`, 2026-11-18T03:16:03.936+01:00); a v3 source declares no columns._
 
 ## Read by
 

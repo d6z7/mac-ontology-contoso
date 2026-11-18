@@ -30,7 +30,7 @@ tags:
 | `SubCategoryKey` | 32 | 0 | 101 | 808 |
 | `SubCategoryName` | 32 | 0 | — | — |
 
-_Measured (`data/profiles/product.yaml`, 2026-10-26T16:40:51+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/product.yaml`, 2026-11-18T03:16:04.145+01:00); a v3 source declares no columns._
 
 ## Read by
 

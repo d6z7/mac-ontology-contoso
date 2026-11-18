@@ -27,7 +27,7 @@ tags:
 | `SquareMeters` | 39 | 1 | 245 | 3500 |
 | `Status` | 3 | 1 | — | — |
 
-_Measured (`data/profiles/store.yaml`, 2026-10-26T16:40:51+01:00); a v3 source declares no columns._
+_Measured (`data/profiles/store.yaml`, 2026-11-18T03:16:04.582+01:00); a v3 source declares no columns._
 
 ## Read by
 

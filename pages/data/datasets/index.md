@@ -21,7 +21,7 @@ tags:
 | [contoso5_gender](contoso5_gender.md) | file | 2 | 1 | `code` | 0 | 4 |
 | [contoso5_manufacturer](contoso5_manufacturer.md) | file | 11 | 1 | `code` | 0 | 4 |
 | [contoso5_state](contoso5_state.md) | file | 67 | 1 | `code` | 0 | 4 |
-| [contoso5_status](contoso5_status.md) | file | 3 | 1 | `code` | 0 | 3 |
+| [contoso5_status](contoso5_status.md) | file | 2 | 1 | `code` | 0 | 3 |
 | [contoso5_store_name](contoso5_store_name.md) | file | 67 | 1 | `code` | 0 | 4 |
 | [contoso5_sub_category_name](contoso5_sub_category_name.md) | file | 32 | 1 | `code` | 0 | 4 |
 | [dim_country](dim_country.md) | served | 9 | 3 | `country_code` | 1 | 0 |
