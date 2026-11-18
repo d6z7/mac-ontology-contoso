@@ -16,7 +16,7 @@ rule_pages:
 - ../rules/Customer.register_not_buyers.md
 ---
 
-A person on Contoso's customer register, each with a name, a birth date and a place — continent, country, state, city. The register is not the buyer list: many registered customers have never ordered (rule Customer.register_not_buyers). The account is pages/knowledge/customer.md.
+A person on Contoso's customer register, each with a name, a birth date and a place — continent, country, state, city. The register is not the buyer list: many registered customers have never ordered (rule Customer.register_not_buyers). The account is ontology/concepts/Customer.md.
 
 ## Details
 

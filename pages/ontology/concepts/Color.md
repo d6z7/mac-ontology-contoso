@@ -10,7 +10,7 @@ rule_pages:
 - ../rules/Color.one_spelling.md
 ---
 
-The colour a product comes in — the one attribute that on its own makes a new SKU: "E400 Green" and "E400 Orange" are different products. The account is pages/knowledge/color.md.
+The colour a product comes in — the one attribute that on its own makes a new SKU: "E400 Green" and "E400 Orange" are different products. The account is ontology/concepts/Color.md.
 
 ## Details
 
