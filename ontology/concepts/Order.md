@@ -146,6 +146,17 @@ How many items went out: the quantity on a sale, summed. IT IS NOT A COUNT OF SA
 
 one row per sale (order_key, line_number)
 
+## How the per-unit figures average
+
+`net_price`, `unit_price` and `unit_cost` are PER-UNIT figures: each holds for every one of the `quantity` units on its line. So each is declared `weighted_by: quantity` (law L2). An average of one of them is Σ(quantity × figure) ÷ Σ quantity, and its total is Σ(figure × quantity) — which is exactly `net_amount`, `gross_amount` and `cost_amount`, each measured equal to `quantity` times its per-unit figure on every line. A plain mean of the column weights a one-unit line like a fifty-unit one and answers a different question.
+
+The evidence is the generator's own published semantics, not a reading of our rows:
+
+- The configuration reference (https://docs.sqlbi.com/contoso-data-generator/config-json): `OrderQuantityWeights` — "Distribution of the quantity applied to each order row."; `DiscountWeights` — "Distribution of the discounts applied to order rows." A row carries a quantity and a discount of its own.
+- The generator's source (https://github.com/sql-bi/Contoso-Data-Generator-V2, commit eaeb57a, `DatabaseGenerator/Engine.cs`): each order row draws `qty`, then prices it per unit — `unitPrice = product.Price * category.PricePerCent[...]`, `unitCost = product.Cost * category.PricePerCent[...]`, `netPrice = unitPrice * (1.0 - discount / 100.0)`.
+- The configuration data (https://docs.sqlbi.com/contoso-data-generator/config-data), Categories: "“PPC” defines the variation in the price of items of each category during the whole period (Price percent)." One product's per-unit price differs from line to line, so the mean of line prices and the price per article are different figures.
+- This bundle's rules: Order.price_is_per_article (an unqualified price is the net amount divided by the units, "never an average of line prices") and Order.price_terms (ruled: gross is quantity times unit price, net is quantity times net price, cost is quantity times unit cost).
+
 ## Cites
 
 - `dataset:v_contoso5_sales_line.order_key`

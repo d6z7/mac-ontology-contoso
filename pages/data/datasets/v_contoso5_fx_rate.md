@@ -20,7 +20,7 @@ tags:
 | `date_day` | date | PK1 | — | — | — | — | the day the rate held. |
 | `from_currency` | dimension | PK2 | — | — | — | — | the currency being converted FROM. Every currency appears as a source, so the view is a full matrix of currency pairs and not a USD-only lookup. |
 | `to_currency` | dimension | PK3 | — | — | — | within=`from_currency` | the currency being converted TO. |
-| `rate` | measure | — | — | rate · to-currency per from-currency · over_time `average` | — | — | what one unit of `from_currency` was worth in `to_currency` on `date_day`. Same-currency pairs are present and are exactly 1. THE AMOUNTS ON A SALES LINE ARE ALREADY USD, so converting them with this is how a figure silently becomes the wrong currency. |
+| `rate` | measure | — | — | rate · to-currency per from-currency · over_time `average` · plain mean | — | — | what one unit of `from_currency` was worth in `to_currency` on `date_day`. Same-currency pairs are present and are exactly 1. THE AMOUNTS ON A SALES LINE ARE ALREADY USD, so converting them with this is how a figure silently becomes the wrong currency. ITS AVERAGE IS THE PLAIN MEAN OF THE DAILY RATES, disclosed — one rate per day and ordered pair, the European Central Bank euro reference rate crossed through EUR, a day without a quote carrying the last quoted day's rate, and no traded volume behind any rate to weight it by (evidence in ontology/concepts/ExchangeRate.md, "How the rate averages"). An amount is still converted at its own day's rate, never at an averaged one (rule ExchangeRate.convert_per_day). |
 
 ## Checks
 
