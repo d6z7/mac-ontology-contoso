@@ -4,7 +4,7 @@ The account of concept ExchangeRate.
 
 ## Overview
 
-What one currency was worth in another on one day: 100,450 quoted rates over a date and an ordered pair of currencies. Read from the rows: 2016-01-01, AUD→CAD, 1.0147. nothing about a rate moves through phases. It is quoted, and it is aggregated by rule — never averaged across days. ALL THREE KEY PARTS ARE ALSO REFERENCES — the day is a date and needs no dimension, both currencies to [[Currency]] — which makes this the one bridge in the bundle. THE PAIR IS ORDERED: inverting it returns a number wrong by a factor of the rate squared.
+What one currency was worth in another on one day: quoted rates over a date and an ordered pair of currencies. nothing about a rate moves through phases. It is quoted, and it is aggregated by rule — never averaged across days. ALL THREE KEY PARTS ARE ALSO REFERENCES — the day is a date and needs no dimension, both currencies to [[Currency]] — which makes this the one bridge in the bundle. THE PAIR IS ORDERED: inverting it returns a number wrong by a factor of the rate squared.
 
 ## Grain
 

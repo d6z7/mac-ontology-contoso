@@ -4,11 +4,11 @@ The account of concept Location.
 
 ## Overview
 
-A place a store is: a country and a state, 67 of them. Read from the rows: `1, AU, Australia, Australian Capital Territory`. Store points at it, measured many:one and mandatory both ways: every location holds a store, every store has one. COARSER THAN THE STORES IT HOLDS — 67 locations to 73 shops — so a figure by location is not a figure by store, and the difference is the places with more than one. ROW -1 IS NOT A PLACE. `-1, --, Online, Online` is the online channel's sentinel, mirrored from the store table. It is held out by this concept's own `physical` population — the declared default — exactly as it is on [[Store]], and reached by naming `online`. `units_ever_here` IS A LIFETIME TOTAL, precomputed somewhere else. It answers no question with a date in it and cannot be filtered by one; sales in a place come from Sale through Store. a question says "Australia" or "Tasmania", never a location code.
+A place a store is: a country and a state. Store points at it, measured many:one and mandatory both ways: every location holds a store, every store has one. COARSER THAN THE STORES IT HOLDS, so a figure by location is not a figure by store, and the difference is the places with more than one. ROW -1 IS NOT A PLACE. `-1, --, Online, Online` is the online channel's sentinel, mirrored from the store table. It is held out by this concept's own `physical` population — the declared default — exactly as it is on [[Store]], and reached by naming `online`. `units_ever_here` IS A LIFETIME TOTAL, precomputed somewhere else. It answers no question with a date in it and cannot be filtered by one; sales in a place come from Order through Store. a question says "Australia" or "Tasmania", never a location code.
 
 ## Identity
 
-A `location_code` that IS the identity — 67 codes, one per place, no surrogate behind it.
+A `location_code` that IS the identity — one per place, no surrogate behind it.
 
 ## Grain
 
@@ -16,11 +16,11 @@ one row per location (location_code)
 
 ## Location.channel
 
-"In how many countries do we sell" answers 9 with it and 8 without, and 8 is true
+"In how many countries do we sell" counts one country too many with it, and the answer without it is true
 
 - **never** — count `--` as a country
 
-The same fact as Store's channel axis and Country's, on THIS relation's own rows. MEASURED on `dim_location`: 67 rows, 1 sentinel, 66 real places.
+The same fact as Store's channel axis and Country's, on THIS relation's own rows. `dim_location` holds one sentinel row; every other row is a real place.
 
 ## Cites
 

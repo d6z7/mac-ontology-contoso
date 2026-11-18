@@ -4,15 +4,15 @@ The account of concept Brand.
 
 ## Overview
 
-Whose name a product is sold under: eleven names, carried as a column on the product row with no table and no key of their own. WHY IT IS A CONCEPT AT ALL. "Contoso products" is something a question says. As a column flag inside Product it resolves against nothing; as a concept with a register it resolves offline — and, because Product grounds the same column, Product's own names are reached THROUGH it. IT IS NOT THE MANUFACTURER. Both are eleven-member sets on the same row and most names appear in both: a brand is what the customer sees, a manufacturer is who made it.
+Whose name a product is sold under: names carried as a column on the product row with no table and no key of their own. WHY IT IS A CONCEPT AT ALL. "Contoso products" is something a question says. As a column flag inside Product it resolves against nothing; as a concept, its names resolve offline from the column's own values — and, because Product grounds the same column, Product's own names are reached THROUGH it. IT IS NOT THE MANUFACTURER. Both are small sets of names on the same row and most names appear in both: a brand is what the customer sees, a manufacturer is who made it.
 
 ## Identity
 
-Eleven brand NAMES used as their own key — a closed set with no surrogate and no relation behind it.
+Brand NAMES used as their own key — a closed set with no surrogate and no relation behind it.
 
 ## Grain
 
-one member per brand name — eleven, over 2,517 products
+one member per brand name
 
 ## Brand.not_manufacturer
 

@@ -4,9 +4,9 @@ The account of concept Product.
 
 ## Overview
 
-A thing Contoso sells, at the level the shelf knows it: a SKU. 2,517 of them. Read from the rows — "Contoso 4G MP3 Player E400 Green" and "... E400 Orange" are two product keys — so a product here is a colour variant of a model, and the name carries brand, capacity, type, model and colour all at once.
+A thing Contoso sells, at the level the shelf knows it: a SKU. Read from the rows — "Contoso 4G MP3 Player E400 Green" and "... E400 Orange" are two product keys — so a product here is a colour variant of a model, and the name carries brand, capacity, type, model and colour all at once.
 
-Operator ruling, 2026-10-26: Product carries **no served price and no served cost**. The source has `main.product.Price` / `main.product.Cost`, but those are deliberately not promoted: they are undated standing values, while questions about money must read dated sales-line facts (`unit_price`, `net_price`, `unit_cost`) on `v_contoso5_sales_line`.
+Operator ruling: Product carries **no served price and no served cost**. The source has `product.Price` / `product.Cost`, but those are deliberately not promoted: they are undated standing values, while questions about money must read dated sales-line facts (`unit_price`, `net_price`, `unit_cost`) on `v_contoso5_sales_line`.
 
 ## Identity
 

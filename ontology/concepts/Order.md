@@ -4,7 +4,7 @@ The account of concept Order.
 
 ## What an order is
 
-THE PURCHASE. Somebody bought something, at a store, on a day, in a currency: 93,470 of them over ten years. Read from the rows: order 139000 is two products bought by one customer at one store on 2016-05-18. IT IS THE EVENT AND ITS LINES ARE NOT — operator ruling, 2026-09-30, and the rows prove it. An event needs a when, a who and a where. Across all 93,470 orders the number that differ across their own lines is ZERO for `order_date`, `delivery_date`, `customer_key`, `store_key` and `currency_code`. Only product, quantity and price vary: 61,042, 55,704 and 61,045 orders respectively. So a line owns nothing that makes it an occurrence; it borrows the when, the who and the where from the order and adds which product and how many. WHAT THE LINE GRAIN IS FOR. The six measures — [[NetRevenue]], [[GrossRevenue]], [[SalesCost]], [[Discount]], [[Margin]] and [[UnitsSold]] — are all keyed on `order_key` and `line_number`. They ARE the line, and they needed no concept to stand for it. HOW MANY IS THREE QUESTIONS, NOT ONE. Purchases are 93,470 (this concept). Items are 703,621 ([[UnitsSold]]). Rows are 223,974, which is how the storage holds the other two and is not a business quantity. IT DECLARES `product_key` BECAUSE ITS ROWS CARRY ONE. The relation is at line grain and this concept reaches order grain by counting distinct `order_key`, never by collapsing, so every row it reads has exactly one product. Declaring it is what makes this concept findable as the FACT a countable dimension anchors on: `planner/joins.py#_find_fact_anchor` looks for an EVENT-class concept declaring the counted key on its own table, and without it "how many distinct products were sold in 2023" refused, because Product has no date and the period could bind to nothing. IT HAS NO RELATION OF ITS OWN, AND THAT IS RIGHT. The raw `orders` landing repeats the header on every line and carries no measure; `sales` subsumes it column for column and row for row. So this concept reads the served line relation at order grain, by the rule below.
+THE PURCHASE. Somebody bought something, at a store, on a day, in a currency. Read from the rows: one order can be several products bought by one customer at one store on one day. IT IS THE EVENT AND ITS LINES ARE NOT — operator ruling, and the rows prove it. An event needs a when, a who and a where. No order differs across its own lines in `order_date`, `delivery_date`, `customer_key`, `store_key` or `currency_code`. Only product, quantity and price vary. So a line owns nothing that makes it an occurrence; it borrows the when, the who and the where from the order and adds which product and how many. WHAT THE LINE GRAIN IS FOR. The six measures — [[NetRevenue]], [[GrossRevenue]], [[SalesCost]], [[Discount]], [[Margin]] and [[UnitsSold]] — are all keyed on `order_key` and `line_number`. They ARE the line, and they need no concept to stand for it. HOW MANY IS THREE QUESTIONS, NOT ONE. Purchases are counted by this concept. Items are [[UnitsSold]]. Rows are how the storage holds the other two and are not a business quantity. IT DECLARES `product_key` BECAUSE ITS ROWS CARRY ONE. The relation is at line grain and this concept reaches order grain by counting distinct `order_key`, never by collapsing, so every row it reads has exactly one product. Declaring it is what makes this concept findable as the FACT a countable dimension anchors on: a question counting distinct products sold in a period binds its period here, because Product has no date. IT HAS NO RELATION OF ITS OWN, AND THAT IS RIGHT. The raw `orders` landing holds one row per order and carries no measure; `sales` carries every one of its columns on every line of the order. So this concept reads the served line relation at order grain, by the rule below.
 
 ## How identity is established
 
@@ -24,7 +24,7 @@ it is a landing no dataset reads, carries no measure, and would be a second home
 
 ## The rate is the order date's rate
 
-the rate's key is a triple; on one column the join is many:many and multiplies each line by every day the pair was quoted — 100,450 rows of it
+the rate's key is a triple; on one column the join is many:many and multiplies each line by every day the pair was quoted
 
 - **when** — an order's USD amount is wanted in the customer's currency
 - **then** — join `{v_contoso5_fx_rate}` on `{order_date}` against the rate's day AND `{currency_code}` against its to-currency, with the from-currency fixed at USD — the whole rate key minus the unit the amounts are already in.
@@ -35,7 +35,7 @@ the rate's key is a triple; on one column the join is many:many and multiplies e
 both dates are on every line and they differ, so the choice moves revenue between periods without changing the total — invisible in any one figure. Order date is the reporting convention; delivery is a logistics question.
 
 - **when** — orders are put in a period and the question does not say which date
-- **then** — bind the period to `{order_date}` — the column declared `period` — and say so in the answer; `{delivery_date}` is used only when the question asks about delivery
+- **then** — bind the period to `{order_date}` — the default (`ordered`) of rule Order.date — and say so in the answer; `{delivery_date}` is used only when the question asks about delivery
 - **never** — bind the period to `{delivery_date}` unasked, or to `{order_date}` without saying so
 
 ## An order has no state beyond its two dates
@@ -46,7 +46,7 @@ That last sentence is the one that matters at answer time. An absent column is n
 
 ## An unscoped question covers all time
 
-an unscoped total and a year-to-date total are different numbers and a reader cannot tell them apart from the figure alone. The operator ruled on 2026-09-30 that an unspecified period is always over all time, which makes the default safe as long as it is disclosed — the extent is ten years wide, so silently narrowing it would be the larger error. Confidence is C because a person ruled it.
+an unscoped total and a year-to-date total are different numbers and a reader cannot tell them apart from the figure alone. An unspecified period is always over all time (rule Order.period), which makes the default safe as long as it is disclosed — the extent is many years wide, so silently narrowing it would be the larger error.
 
 - **when** — a measure is asked for and the question names no period
 - **then** — cover the full extent of `{order_date}` and state the first and last date the answer included
@@ -56,7 +56,7 @@ an unscoped total and a year-to-date total are different numbers and a reader ca
 
 ### Overview
 
-What Contoso actually charged: quantity times the discounted price, per sale, summed. Read from the rows: 681.72 net against 717.60 gross on one sale — the gap is the discount. THE DEFAULT READING OF "REVENUE", and it is after discount. [[GrossRevenue]] is the same figure before it. Answering one when a question meant the other moves every derived figure — margin most of all — in a direction somebody will like. IT IS IN USD. The sale's `currency_code` names what the customer paid in, not what this is stated in; conversion goes through [[ExchangeRate]] at the sale's own order date.
+What Contoso actually charged: quantity times the discounted price, per sale, summed. Read from the rows: net is below gross on a discounted sale — the gap is the discount. THE DEFAULT READING OF "REVENUE", and it is after discount. [[GrossRevenue]] is the same figure before it. Answering one when a question meant the other moves every derived figure — margin most of all — in a direction somebody will like. IT IS IN USD. The sale's `currency_code` names what the customer paid in, not what this is stated in; conversion goes through [[ExchangeRate]] at the sale's own order date.
 
 ### Grain
 
@@ -72,19 +72,19 @@ the gap between net and gross is the discount, so the wrong choice moves every d
 
 ### Order.price_is_per_article
 
-the operator ruled the average is what the customer paid per article, so the denominator is articles sold and not sale lines. All three readings look like a unit price and only one answers the question.
+the average is what the customer paid per article, so the denominator is articles sold and not sale lines. All three readings look like a unit price and only one answers the question.
 
-THREE READINGS LOOK LIKE A UNIT PRICE AND ONE ANSWERS THE QUESTION, and the figures are why the choice is not presentational:
+THREE READINGS LOOK LIKE A UNIT PRICE AND ONE ANSWERS THE QUESTION, and their figures differ, which is why the choice is not presentational:
 
-| reading | arithmetic | figure |
-|---|---|---|
-| **price per article** — what this rule declares | `SUM(net_amount) / SUM(quantity)` | **310,98** |
-| averaging `net_price` | weights a one-unit sale like a fifty-unit one | 309,87 |
-| averaging `net_amount` | the value of a LINE, not of an article | 976,96 |
+| reading | arithmetic |
+|---|---|
+| **price per article** — what this rule declares | `SUM(net_amount) / SUM(quantity)` |
+| averaging `net_price` | weights a one-unit sale like a fifty-unit one |
+| averaging `net_amount` | the value of a LINE, not of an article |
 
-The pre-discount figure is [[GrossRevenue]] over the same denominator, 330,58, reached by naming gross — a different axis, held by `Order.revenue_means_net`.
+The pre-discount figure is [[GrossRevenue]] over the same denominator, reached by naming gross — a different axis, held by `Order.revenue_means_net`.
 
-`default: price_per_article` carries the operator's ruling: a question naming no reading commits to this one and discloses that it did. The surfaces a person may say are declared — price, average price, unit price, price per unit, per unit, price per article, per article — and matched exactly, case/space/underscore folded.
+`default: price_per_article` carries this reading: a question naming no reading commits to this one and discloses that it did. The surfaces a person may say are declared — price, average price, price per unit, per unit, price per article, per article — and matched exactly, case/space/underscore folded.
 
 The prohibitions are declarations, not sentences.
 
@@ -102,7 +102,7 @@ one row per sale (order_key, line_number)
 
 ### Overview
 
-What the goods on a sale cost Contoso: quantity times unit cost, per sale, summed. MARGIN IS NOT STORED. It is [[NetRevenue]] minus this, computed at whatever grain the question asks for — never a per-sale margin averaged, which weights a one-unit sale the same as a fifty-unit one.
+What the goods on a sale cost Contoso: quantity times unit cost, per sale, summed. MARGIN IS STORED, as `margin_amount`: exactly [[NetRevenue]] minus this on every line, summed at whatever grain the question asks for — never a per-sale margin averaged, which weights a one-unit sale the same as a fifty-unit one.
 
 ### Grain
 
@@ -112,7 +112,7 @@ one row per sale (order_key, line_number)
 
 ### Overview
 
-Σ Quantity × (UnitPrice − NetPrice). Money given away in discounts: 13 787 071.00 USD, 5.93% of gross sales. Declared by the operator's KPI specification of 2026-09-30 and served as `discount_amount`.
+Σ Quantity × (UnitPrice − NetPrice). Money given away in discounts, served as `discount_amount`.
 
 ### Grain
 
@@ -120,13 +120,13 @@ one row per sale (order_key, line_number)
 
 ### Order.discount_percent_is_over_gross
 
-the operator's KPI specification of 2026-09-30 fixes the denominator as gross sales. The two denominators differ by the discount itself, so the choice is not presentational: 5,93% over gross against 6,30% over net, on the same money.
+the denominator is gross sales. The two denominators differ by the discount itself, so the choice is not presentational.
 
 ## Margin — measure `margin_amount`
 
 ### Overview
 
-Σ Quantity × (NetPrice − UnitCost), identical to Revenue − COGS. Absolute profit: 122 332 211.24 USD. Declared by the operator's KPI specification of 2026-09-30 and served as `margin_amount`.
+Σ Quantity × (NetPrice − UnitCost), identical to Revenue − COGS. Absolute profit, served as `margin_amount`.
 
 ### Grain
 
@@ -134,13 +134,13 @@ one row per sale (order_key, line_number)
 
 ### Order.margin_ratio_is_named
 
-the operator's KPI specification of 2026-09-30 names both ratios and their denominators. They differ by more than a factor of two on the same profit -- 55,91% over net against 126,79% over cost -- so naming one and computing the other is a wrong answer that looks right. a question saying only "margin" names neither, so the honest outcome is to ask with both offered rather than to pick the commoner reading.
+both ratios and their denominators are named. They differ widely on the same profit, so naming one and computing the other is a wrong answer that looks right. a question saying only "margin" names neither, so the honest outcome is to ask with both offered rather than to pick the commoner reading.
 
 ## UnitsSold — measure `quantity`
 
 ### Overview
 
-How many items went out: the quantity on a sale, summed. IT IS NOT A COUNT OF SALES OR ORDERS. 223,974 sales carry a quantity each and most carry more than one — so "how many did we sell" and "how many times did we sell" are different questions with different answers, and this concept answers the first.
+How many items went out: the quantity on a sale, summed. IT IS NOT A COUNT OF SALES OR ORDERS. Every sale line carries a quantity and most carry more than one — so "how many did we sell" and "how many times did we sell" are different questions with different answers, and this column answers the first.
 
 ### Grain
 
@@ -189,4 +189,4 @@ reached by counting distinct order_key over the line relation — NOT collapsed,
 
 ## contract.default_reading
 
-A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME — operator ruling, 2026-09-30 (rule Order.period). No implied "this year" and no implied latest month. State the window the answer actually covered — its first and last `order_date` — because an unscoped total and a year-to- date total are indistinguishable from the figure alone.
+A QUESTION THAT NAMES NO PERIOD COVERS ALL TIME (rule Order.period). No implied "this year" and no implied latest month. State the window the answer actually covered — its first and last `order_date` — because an unscoped total and a year-to- date total are indistinguishable from the figure alone.
