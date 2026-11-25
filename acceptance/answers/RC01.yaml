@@ -1,16 +1,17 @@
 id: RC01
-captured_at: '2026-10-29T00:06:29+00:00'
-ontology_fingerprint: 9455837fe192e4d8
-acceptance_fingerprint: 324b16c41efe7a45
+captured_at: '2026-11-17T23:10:34+00:00'
+ontology_fingerprint: ec6d95efb1654a0d
+acceptance_fingerprint: a3baf3c7fe46a2af
 engine:
   interpret: live
   provider: v3-walk
-  model: claude-opus-5
+  model: claude-opus-4-6
   mode: llm-execute
   athena: false
-  run_file: 20261028T235941Z_merged.json
+  run_file: 20261117T224755Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+  method: bench
 connection:
   view_schema: contoso_served
   target: contoso5.duckdb
@@ -18,104 +19,46 @@ connection:
 route: v3-walk
 answer: ''
 intent:
-  subject: products we sell
+  subject: brands
   operation: select
-  qdmr_simplified: "  1       FROM      products we sell  “we sell”\n  2  ← 1  PIVOT_TO  brand       \
-    \      “brands”\n  3  ← 2  SELECT    brand             “What brands”\n  answer: step 3   confidence:\
-    \ 0.62\n  UNDERSTOOD AS: You want the list of distinct brand names we carry — one row per brand, names\
-    \ only, no figures, with no time period restriction (every brand we offer, not just ones with recent\
-    \ sales).\n  AMBIGUOUS 'do we sell' — ASKS: Do you want every brand we carry in the catalogue, or\
-    \ only brands that have actually been sold (had at least one order)?\n      could mean: every brand\
-    \ that appears on something we offer, whether or not it has ever been bought\n      could mean: only\
-    \ brands that have at least one actual sale recorded\n      took: every brand that appears on something\
-    \ we offer\n  AMBIGUOUS 'do we sell' — ASKS: Should this be brands we sell right now (currently active\
-    \ or in stock), or brands we have ever sold?\n      could mean: brands we currently offer — active\
-    \ products only\n      could mean: brands we have ever offered or sold, including discontinued ones\n\
-    \      took: brands we have ever offered — no time or status filter\n  AMBIGUOUS 'we' — ASKS: Does\
-    \ \"we\" mean the whole company, or just one store, channel, region, or business unit you have in\
-    \ mind?\n      could mean: the whole company, all stores and channels\n      could mean: a particular\
-    \ store, channel, or region you care about\n      took: the whole company\n  AMBIGUOUS 'What brands'\
-    \ — ASKS: Would you like just the brand names, or each brand with a figure beside it such as how many\
-    \ products or how much it sold?\n      could mean: just the names\n      could mean: the names plus\
-    \ a figure per brand\n      took: just the names\n  OUTPUT SHAPE: a list of names · many row(s) ·\
+  qdmr_simplified: "  1       FROM    brands\n  2  ← 1  SELECT  brand\n  answer: step 2   confidence:\
+    \ 0.95\n  UNDERSTOOD AS: List all brands we sell.\n  OUTPUT SHAPE: a list of names · many row(s) ·\
     \ named by brand"
-  understood_as_in_human_words: You want the list of distinct brand names we carry — one row per brand,
-    names only, no figures, with no time period restriction (every brand we offer, not just ones with
-    recent sales).
-  population_actually_answered: 'All 2,517 rows of contoso_served.dim_product — every product in the catalogue,
-    no restriction applied — rolled up to the 11 distinct values of `brand`. No status, period, channel
-    or store filter: Product declares no population default, dim_product carries no active/discontinued
-    or stock column, and the question named no scope. Nothing is lost in the roll-up because the edge
-    product__sold_under__brand declares and verifies Product -> Brand as mandatory cardinality 1, so every
-    product carries exactly one brand. The list is identical under the stricter reading "brands that have
-    actually sold": all 2,517 products appear on a sales line, so brands-with-a-sale is 11 as well.'
+  understood_as_in_human_words: List all brands we sell.
+  population_actually_answered: Every row in dim_product, no restrictions applied — all distinct brand
+    values across all products, giving 11 brands.
   how_the_result_must_be_presented:
     shape_it_committed_to: a list of names
     columns_the_answer_step_asks_for: &id001
     - brand
     figures_the_answer_step_computes: []
-    answer_step: '3'
+    answer_step: '2'
     verb: select
-    said: What brands
-    stage1_confidence: 0.62
+    said: null
+    stage1_confidence: 0.95
   canonical_question: &id002
-    understood_as: You want the list of distinct brand names we carry — one row per brand, names only,
-      no figures, with no time period restriction (every brand we offer, not just ones with recent sales).
+    understood_as: List all brands we sell.
     steps:
     - id: '1'
       do: from
-      thing: products we sell
-      said: we sell
+      thing: brands
     - id: '2'
-      do: pivot_to
-      of: '1'
-      to: brand
-      said: brands
-    - id: '3'
       do: select
-      of: '2'
+      of: '1'
       columns: *id001
-      said: What brands
-    answer: '3'
+    answer: '2'
     output_shape: &id003
       shape: a list of names
-      rows: many
+      said: What brands
       key_columns: &id005
       - brand
       figure_columns: &id006 []
-      said: What brands do we sell?
-    ambiguities:
-    - words: do we sell
-      question: Do you want every brand we carry in the catalogue, or only brands that have actually been
-        sold (had at least one order)?
-      readings:
-      - every brand that appears on something we offer, whether or not it has ever been bought
-      - only brands that have at least one actual sale recorded
-      assumed: every brand that appears on something we offer
-    - words: do we sell
-      question: Should this be brands we sell right now (currently active or in stock), or brands we have
-        ever sold?
-      readings:
-      - brands we currently offer — active products only
-      - brands we have ever offered or sold, including discontinued ones
-      assumed: brands we have ever offered — no time or status filter
-    - words: we
-      question: Does "we" mean the whole company, or just one store, channel, region, or business unit
-        you have in mind?
-      readings:
-      - the whole company, all stores and channels
-      - a particular store, channel, or region you care about
-      assumed: the whole company
-    - words: What brands
-      question: Would you like just the brand names, or each brand with a figure beside it such as how
-        many products or how much it sold?
-      readings:
-      - just the names
-      - the names plus a figure per brand
-      assumed: just the names
+      rows: many
+    confidence: 0.95
+    periods: []
+    ambiguities: []
     cannot_express: []
-    confidence: 0.62
-  steps: 3
+  steps: 2
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
   table:
@@ -140,101 +83,12 @@ answer_parts:
   reading: a list of names
   status: ok
   confidence: I
-  assumptions:
-  - kind: ''
-    text: "we sell → every product in the catalogue — all 2,517 rows of dim_product, no filter\n     \
-      \   could also mean: only products with at least one recorded sale"
-    ref: No population rule is declared on Product; measured instead — all 2,517 catalogue products appear
-      on a sales line, so both readings give the same 2,517 products and the same 11 brands. The fork
-      changes nothing and is not worth asking about.
-  - kind: ''
-    text: "we → the whole company, both channels, all stores\n        could also mean: one store, channel\
-      \ or region"
-    ref: The product catalogue carries no store or channel column, so it is company-wide by construction;
-      v_contoso5_sales_line.channel declares that a question naming no channel covers both (operator ruling
-      2026-10-18).
-  - kind: ''
-    text: "we sell (now vs ever) → ever offered — no time or status filter\n        could also mean: currently\
-      \ active or in stock only"
-    ref: dim_product carries no discontinued flag, active flag or stock column — the bundle holds no way
-      to express 'currently sold', so 'ever offered' is the only reading this data supports.
-  - kind: ''
-    text: "brands → dim_product.brand, the 11 names a product is sold under\n        could also mean:\
-      \ dim_product.manufacturer, who legally made it"
-    ref: 'The Brand concept is grounded in dim_product.brand with `counts brand`, and the column declares
-      ''11 brands over 2,517 products, so a question about brands wants the 11 and not the 2,517''. `manufacturer`
-      is declared as a NAME FOR brand (naming: legal, #2 of 5) with the preference order common > legal
-      > long > short > code — but `brand` is the column the concept is grounded in and the one the question''s
-      word matches, so the names shown are the brand values.'
-  - kind: ''
-    text: "do we sell → every brand in the catalogue — all 11, across all 2,517 products\n        could\
-      \ also mean: only brands with at least one recorded sale"
-    ref: 'Measured, not assumed: both readings return the SAME 11 brands, because all 2,517 catalogue
-      products appear on a sales line. The fork moves nothing, so it was not worth asking about.'
-  - kind: ''
-    text: "do we sell (now vs ever) → brands ever offered — no time or status filter\n        could also\
-      \ mean: only brands currently active or in stock"
-    ref: dim_product carries no discontinued flag, active flag or stock column, so 'currently sold' is
-      not expressible in this bundle; and Order declares that a question naming no period covers all time
-      (order.default.an_unscoped_question_covers_all_time).
-  - kind: ''
-    text: "we → the whole company — both channels, all stores\n        could also mean: one store, channel\
-      \ or region"
-    ref: dim_product carries no store or channel column, so the catalogue is company-wide by construction;
-      v_contoso5_sales_line.channel declares that a question naming no channel covers both (operator ruling
-      2026-10-18).
-  - kind: ''
-    text: "What brands → the names alone, 11 rows, no figure\n        could also mean: each brand with\
-      \ a figure beside it — product count or revenue"
-    ref: The question asked for brands, not for a measure; net_amount is the declared default money column
-      had one been wanted, and it can be added on request.
-  - kind: ''
-    text: "brands → dim_product.brand\n        could also mean: dim_product.manufacturer, the legal maker\
-      \ name for the same 11"
-    ref: The Brand concept is grounded in dim_product.brand with `counts brand`; `manufacturer` is declared
-      as the `legal` naming of the same thing, so it is an alternative spelling a reader may ask for by
-      name.
+  assumptions: []
   concepts: []
-  rules:
-  - id: No population rule is declared on Product; measured instead — all 2,517 catalogue products appear
-      on a sales line, so both readings give the same 2,517 products and the same 11 brands. The fork
-      changes nothing and is not worth asking about.
-    why: '''we sell'' = every product in the catalogue — all 2,517 rows of dim_product, no filter'
-  - id: The product catalogue carries no store or channel column, so it is company-wide by construction;
-      v_contoso5_sales_line.channel declares that a question naming no channel covers both (operator ruling
-      2026-10-18).
-    why: '''we'' = the whole company, both channels, all stores'
-  - id: dim_product carries no discontinued flag, active flag or stock column — the bundle holds no way
-      to express 'currently sold', so 'ever offered' is the only reading this data supports.
-    why: '''we sell (now vs ever)'' = ever offered — no time or status filter'
-  - id: 'The Brand concept is grounded in dim_product.brand with `counts brand`, and the column declares
-      ''11 brands over 2,517 products, so a question about brands wants the 11 and not the 2,517''. `manufacturer`
-      is declared as a NAME FOR brand (naming: legal, #2 of 5) with the preference order common > legal
-      > long > short > code — but `brand` is the column the concept is grounded in and the one the question''s
-      word matches, so the names shown are the brand values.'
-    why: '''brands'' = dim_product.brand, the 11 names a product is sold under'
-  - id: 'Measured, not assumed: both readings return the SAME 11 brands, because all 2,517 catalogue products
-      appear on a sales line. The fork moves nothing, so it was not worth asking about.'
-    why: '''do we sell'' = every brand in the catalogue — all 11, across all 2,517 products'
-  - id: dim_product carries no discontinued flag, active flag or stock column, so 'currently sold' is
-      not expressible in this bundle; and Order declares that a question naming no period covers all time
-      (order.default.an_unscoped_question_covers_all_time).
-    why: '''do we sell (now vs ever)'' = brands ever offered — no time or status filter'
-  - id: dim_product carries no store or channel column, so the catalogue is company-wide by construction;
-      v_contoso5_sales_line.channel declares that a question naming no channel covers both (operator ruling
-      2026-10-18).
-    why: '''we'' = the whole company — both channels, all stores'
-  - id: The question asked for brands, not for a measure; net_amount is the declared default money column
-      had one been wanted, and it can be added on request.
-    why: '''What brands'' = the names alone, 11 rows, no figure'
-  - id: The Brand concept is grounded in dim_product.brand with `counts brand`; `manufacturer` is declared
-      as the `legal` naming of the same thing, so it is an alternative spelling a reader may ask for by
-      name.
-    why: '''brands'' = dim_product.brand'
+  rules: []
   edges: []
 sql:
 - "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-- "SELECT\n  product_key,\n  brand\nFROM contoso_served.dim_product"
 - "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
 answer_sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
 sql_valid: true
@@ -257,96 +111,45 @@ result:
   - - Wide World Importers
   capped: false
 prompt:
-  chars: 73996
-  lines: 842
+  chars: 143797
+  lines: 2594
   sections:
   - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 1 — the JSON schema of its answer
   - STAGE 2 — system prompt for walking one step
-  - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/44362d9332a0.txt
-  sha: 44362d9332a0
-  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
-    it is now.'
+  - STAGE 2 — the declarations, at the end of that system prompt
+  - STAGE 2 — the JSON schemas of a step call
+  - STAGE 2 — what writes the per-question text (candidates, refusals)
+  file: acceptance/prompts/143fce7bb1bb.txt
+  sha: 143fce7bb1bb
+  reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+    the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+    given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 error: null
 v3_report:
   canonical_question_json: *id002
-  canonical_question_simplified: "  1       FROM      products we sell  “we sell”\n  2  ← 1  PIVOT_TO\
-    \  brand             “brands”\n  3  ← 2  SELECT    brand             “What brands”\n  answer: step\
-    \ 3   confidence: 0.62\n  UNDERSTOOD AS: You want the list of distinct brand names we carry — one\
-    \ row per brand, names only, no figures, with no time period restriction (every brand we offer, not\
-    \ just ones with recent sales).\n  AMBIGUOUS 'do we sell' — ASKS: Do you want every brand we carry\
-    \ in the catalogue, or only brands that have actually been sold (had at least one order)?\n      could\
-    \ mean: every brand that appears on something we offer, whether or not it has ever been bought\n \
-    \     could mean: only brands that have at least one actual sale recorded\n      took: every brand\
-    \ that appears on something we offer\n  AMBIGUOUS 'do we sell' — ASKS: Should this be brands we sell\
-    \ right now (currently active or in stock), or brands we have ever sold?\n      could mean: brands\
-    \ we currently offer — active products only\n      could mean: brands we have ever offered or sold,\
-    \ including discontinued ones\n      took: brands we have ever offered — no time or status filter\n\
-    \  AMBIGUOUS 'we' — ASKS: Does \"we\" mean the whole company, or just one store, channel, region,\
-    \ or business unit you have in mind?\n      could mean: the whole company, all stores and channels\n\
-    \      could mean: a particular store, channel, or region you care about\n      took: the whole company\n\
-    \  AMBIGUOUS 'What brands' — ASKS: Would you like just the brand names, or each brand with a figure\
-    \ beside it such as how many products or how much it sold?\n      could mean: just the names\n   \
-    \   could mean: the names plus a figure per brand\n      took: just the names\n  OUTPUT SHAPE: a list\
-    \ of names · many row(s) · named by brand"
-  understood_as: You want the list of distinct brand names we carry — one row per brand, names only, no
-    figures, with no time period restriction (every brand we offer, not just ones with recent sales).
-  ambiguities_it_saw:
-  - words: do we sell
-    asks: Do you want every brand we carry in the catalogue, or only brands that have actually been sold
-      (had at least one order)?
-    readings:
-    - every brand that appears on something we offer, whether or not it has ever been bought
-    - only brands that have at least one actual sale recorded
-    took: every brand that appears on something we offer
-  - words: do we sell
-    asks: Should this be brands we sell right now (currently active or in stock), or brands we have ever
-      sold?
-    readings:
-    - brands we currently offer — active products only
-    - brands we have ever offered or sold, including discontinued ones
-    took: brands we have ever offered — no time or status filter
-  - words: we
-    asks: Does "we" mean the whole company, or just one store, channel, region, or business unit you have
-      in mind?
-    readings:
-    - the whole company, all stores and channels
-    - a particular store, channel, or region you care about
-    took: the whole company
-  - words: What brands
-    asks: Would you like just the brand names, or each brand with a figure beside it such as how many
-      products or how much it sold?
-    readings:
-    - just the names
-    - the names plus a figure per brand
-    took: just the names
+  canonical_question_simplified: "  1       FROM    brands\n  2  ← 1  SELECT  brand\n  answer: step 2\
+    \   confidence: 0.95\n  UNDERSTOOD AS: List all brands we sell.\n  OUTPUT SHAPE: a list of names ·\
+    \ many row(s) · named by brand"
+  understood_as: List all brands we sell.
+  ambiguities_it_saw: []
   presentation:
     claimed_answer_is: a list of names
-    answer_step: '3'
+    answer_step: '2'
     answer_step_asks:
       do: select
-      of: '2'
+      of: '1'
       columns: *id001
-      said: What brands
-    confidence_stage1: 0.62
+    confidence_stage1: 0.95
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  product_key,\n  brand\nFROM contoso_served.dim_product"
+    sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
     params: {}
   - step: '2'
     sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
     params: {}
-  - step: '3'
-    sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-    params: {}
-  what_it_calculated: 'The complete list of brands Contoso sells under: 11 rows, one per brand name, over
-    every one of the 2,517 products in the catalogue — the first 8 returned were A. Datum, Adventure Works,
-    Contoso, Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, and the remaining 3 of
-    the 11 distinct values on this column are Tailspin Toys, The Phone Company, Wide World Importers.
-    Names only — no revenue, no product count, no ranking. What I did NOT include: any figure beside each
-    brand, the `manufacturer` spelling of the same names, and any restriction to brands with recent sales
-    — which would change nothing, since all 2,517 products have at least one recorded sales line.'
+  what_it_calculated: The 11 distinct brand names products are sold under in the Contoso product catalogue,
+    one row per brand.
   rows_returned: &id004
   - brand: A. Datum
   - brand: Adventure Works
@@ -363,201 +166,76 @@ v3_report:
     claimed: '["A. Datum", "Adventure Works", "Contoso", "Fabrikam", "Litware", "Northwind Traders", "Proseware",
       "Southridge Video", "Tailspin Toys", "The Phone Company", "Wide World Importers"]'
     shape: a list of names
-    answered_population: 'All 2,517 rows of contoso_served.dim_product — every product in the catalogue,
-      no restriction applied — rolled up to the 11 distinct values of `brand`. No status, period, channel
-      or store filter: Product declares no population default, dim_product carries no active/discontinued
-      or stock column, and the question named no scope. Nothing is lost in the roll-up because the edge
-      product__sold_under__brand declares and verifies Product -> Brand as mandatory cardinality 1, so
-      every product carries exactly one brand. The list is identical under the stricter reading "brands
-      that have actually sold": all 2,517 products appear on a sales line, so brands-with-a-sale is 11
-      as well.'
+    answered_population: Every row in dim_product, no restrictions applied — all distinct brand values
+      across all products, giving 11 brands.
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
-    step_asks: we sell
-    turns:
-    - why: Establish the base population for step 1 — the product rows we offer — and at the same time
-        price the "do we sell" fork (catalogue brands vs brands with at least one recorded sale) so a
-        later step need not guess.
-      did: 'probe ''dim_product.brand'' AND ALSO: SELECT COUNT(*) AS product_rows, COUNT(DISTINCT p.brand)
-        AS brands_in_catalogue, COUNT(DISTINCT CASE WHEN s.product_key IS NOT NULL THEN p.brand END) AS
-        brands_with_a_sale, COUNT(DISTINCT CASE WHEN s.product_key IS NOT NULL THEN p.product_key END)
-        AS products_ever_sold FROM contoso_served.dim_product p LEFT JOIN (SELECT DISTINCT product_key
-        FROM contoso_served.v_contoso5_sales_line) s ON s.product_key = p.product_key'
-      came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure Works'',
-        ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge Video'',
-        ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s): [{"product_rows":
-        2517, "brands_in_catalogue": 11, "brands_with_a_sale": 11, "products_ever_sold": 2517}]'
-    settled_on: "SELECT\n  product_key,\n  brand\nFROM contoso_served.dim_product"
-    means: 'The base population for this walk: one row per product Contoso offers, all 2,517 of them,
-      carrying the brand each is sold under. No period, status or channel restriction — and measured just
-      now, this is also exactly the set of products that have ever appeared on a sales line, so "products
-      we offer" and "products we have sold" are the same 2,517 rows here.'
-    readings_taken:
-    - word: we sell
-      took: every product in the catalogue — all 2,517 rows of dim_product, no filter
-      could_also_mean: only products with at least one recorded sale
-      declaration: No population rule is declared on Product; measured instead — all 2,517 catalogue products
-        appear on a sales line, so both readings give the same 2,517 products and the same 11 brands.
-        The fork changes nothing and is not worth asking about.
-    - word: we
-      took: the whole company, both channels, all stores
-      could_also_mean: one store, channel or region
-      declaration: The product catalogue carries no store or channel column, so it is company-wide by
-        construction; v_contoso5_sales_line.channel declares that a question naming no channel covers
-        both (operator ruling 2026-10-18).
-    - word: we sell (now vs ever)
-      took: ever offered — no time or status filter
-      could_also_mean: currently active or in stock only
-      declaration: dim_product carries no discontinued flag, active flag or stock column — the bundle
-        holds no way to express 'currently sold', so 'ever offered' is the only reading this data supports.
-    blocked_by: []
-  - step: '2'
-    step_asks: brands
+    step_asks: ''
     turns: []
     settled_on: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-    means: 'The 11 brands Contoso sells under, one row per brand, lifted from the 2,517 products of step
-      1 by rolling products up to the name each is sold under. Not 2,517 rows of product and not a count
-      of anything — the member list of the Brand axis: A. Datum, Adventure Works, Contoso, Fabrikam, Litware,
-      Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The Phone Company, Wide World Importers.
-      No figure attached, no period, no channel.'
-    readings_taken:
-    - word: brands
-      took: dim_product.brand, the 11 names a product is sold under
-      could_also_mean: dim_product.manufacturer, who legally made it
-      declaration: 'The Brand concept is grounded in dim_product.brand with `counts brand`, and the column
-        declares ''11 brands over 2,517 products, so a question about brands wants the 11 and not the
-        2,517''. `manufacturer` is declared as a NAME FOR brand (naming: legal, #2 of 5) with the preference
-        order common > legal > long > short > code — but `brand` is the column the concept is grounded
-        in and the one the question''s word matches, so the names shown are the brand values.'
+    means: Every distinct brand name a product is sold under, one row per brand, from the product dimension
+      — the full set of brands Contoso sells.
+    readings_taken: []
     blocked_by: []
-  - step: '3'
-    step_asks: What brands
+  - step: '2'
+    step_asks: ''
     turns:
-    - why: Hand back the 11 brand names already enumerated at step 2 — the answer is the member list itself,
-        so no further query is needed.
+    - why: the answer step's SQL you wrote on your first turn
       did: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 11 row(s) (first 8 of 11): [{"brand": "A. Datum"}, {"brand":
-        "Adventure Works"}, {"brand": "Contoso"}, {"brand": "Fabrikam"}, {"brand": "Litware"}, {"brand":
-        "Northwind Traders"}, {"brand": "Proseware"}, {"brand": "Southridge Video"}]  Give `claimed_answer`
-        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
-        rows settle the question, do not decline.'
+      came_back: '11 row(s): [{"brand": "A. Datum"}, {"brand": "Adventure Works"}, {"brand": "Contoso"},
+        {"brand": "Fabrikam"}, {"brand": "Litware"}, {"brand": "Northwind Traders"}, {"brand": "Proseware"},
+        {"brand": "Southridge Video"}, {"brand": "Tailspin Toys"}, {"brand": "The Phone Company"}, {"brand":
+        "Wide World Importers"}]'
     settled_on: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-    means: 'The complete list of brands Contoso sells under: 11 rows, one per brand name, over every one
-      of the 2,517 products in the catalogue — the first 8 returned were A. Datum, Adventure Works, Contoso,
-      Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, and the remaining 3 of the 11
-      distinct values on this column are Tailspin Toys, The Phone Company, Wide World Importers. Names
-      only — no revenue, no product count, no ranking. What I did NOT include: any figure beside each
-      brand, the `manufacturer` spelling of the same names, and any restriction to brands with recent
-      sales — which would change nothing, since all 2,517 products have at least one recorded sales line.'
-    readings_taken:
-    - word: do we sell
-      took: every brand in the catalogue — all 11, across all 2,517 products
-      could_also_mean: only brands with at least one recorded sale
-      declaration: 'Measured, not assumed: both readings return the SAME 11 brands, because all 2,517
-        catalogue products appear on a sales line. The fork moves nothing, so it was not worth asking
-        about.'
-    - word: do we sell (now vs ever)
-      took: brands ever offered — no time or status filter
-      could_also_mean: only brands currently active or in stock
-      declaration: dim_product carries no discontinued flag, active flag or stock column, so 'currently
-        sold' is not expressible in this bundle; and Order declares that a question naming no period covers
-        all time (order.default.an_unscoped_question_covers_all_time).
-    - word: we
-      took: the whole company — both channels, all stores
-      could_also_mean: one store, channel or region
-      declaration: dim_product carries no store or channel column, so the catalogue is company-wide by
-        construction; v_contoso5_sales_line.channel declares that a question naming no channel covers
-        both (operator ruling 2026-10-18).
-    - word: What brands
-      took: the names alone, 11 rows, no figure
-      could_also_mean: each brand with a figure beside it — product count or revenue
-      declaration: The question asked for brands, not for a measure; net_amount is the declared default
-        money column had one been wanted, and it can be added on request.
-    - word: brands
-      took: dim_product.brand
-      could_also_mean: dim_product.manufacturer, the legal maker name for the same 11
-      declaration: The Brand concept is grounded in dim_product.brand with `counts brand`; `manufacturer`
-        is declared as the `legal` naming of the same thing, so it is an alternative spelling a reader
-        may ask for by name.
+    means: The 11 distinct brand names products are sold under in the Contoso product catalogue, one row
+      per brand.
+    readings_taken: []
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 73,996 chars · 842 lines  [44362d9332a0]
+  summary: 143,797 chars · 2594 lines  [143fce7bb1bb]
   detail:
-    chars: 73996
-    lines: 842
+    chars: 143797
+    lines: 2594
     sections:
     - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 1 — the JSON schema of its answer
     - STAGE 2 — system prompt for walking one step
-    - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/44362d9332a0.txt
-    sha: 44362d9332a0
-    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
-      as it is now.'
+    - STAGE 2 — the declarations, at the end of that system prompt
+    - STAGE 2 — the JSON schemas of a step call
+    - STAGE 2 — what writes the per-question text (candidates, refusals)
+    file: acceptance/prompts/143fce7bb1bb.txt
+    sha: 143fce7bb1bb
+    reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+      the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+      given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 - stage: understood_as
   status: ok
   ms: 0
   summary: ''
   detail:
-    prose: You want the list of distinct brand names we carry — one row per brand, names only, no figures,
-      with no time period restriction (every brand we offer, not just ones with recent sales).
-    population: 'All 2,517 rows of contoso_served.dim_product — every product in the catalogue, no restriction
-      applied — rolled up to the 11 distinct values of `brand`. No status, period, channel or store filter:
-      Product declares no population default, dim_product carries no active/discontinued or stock column,
-      and the question named no scope. Nothing is lost in the roll-up because the edge product__sold_under__brand
-      declares and verifies Product -> Brand as mandatory cardinality 1, so every product carries exactly
-      one brand. The list is identical under the stricter reading "brands that have actually sold": all
-      2,517 products appear on a sales line, so brands-with-a-sale is 11 as well.'
+    prose: List all brands we sell.
+    population: Every row in dim_product, no restrictions applied — all distinct brand values across all
+      products, giving 11 brands.
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
     steps_readable:
-    - '  1       FROM      products we sell  “we sell”'
-    - '  2  ← 1  PIVOT_TO  brand             “brands”'
-    - '  3  ← 2  SELECT    brand             “What brands”'
-    - '  answer: step 3   confidence: 0.62'
+    - '  1       FROM    brands'
+    - '  2  ← 1  SELECT  brand'
+    - '  answer: step 2   confidence: 0.95'
 - stage: ambiguities
-  status: ok
+  status: skipped
   ms: 0
   summary: ''
   detail:
-    ambiguities:
-    - words: do we sell
-      asks: Do you want every brand we carry in the catalogue, or only brands that have actually been
-        sold (had at least one order)?
-      readings:
-      - every brand that appears on something we offer, whether or not it has ever been bought
-      - only brands that have at least one actual sale recorded
-      took: every brand that appears on something we offer
-    - words: do we sell
-      asks: Should this be brands we sell right now (currently active or in stock), or brands we have
-        ever sold?
-      readings:
-      - brands we currently offer — active products only
-      - brands we have ever offered or sold, including discontinued ones
-      took: brands we have ever offered — no time or status filter
-    - words: we
-      asks: Does "we" mean the whole company, or just one store, channel, region, or business unit you
-        have in mind?
-      readings:
-      - the whole company, all stores and channels
-      - a particular store, channel, or region you care about
-      took: the whole company
-    - words: What brands
-      asks: Would you like just the brand names, or each brand with a figure beside it such as how many
-        products or how much it sold?
-      readings:
-      - just the names
-      - the names plus a figure per brand
-      took: just the names
+    ambiguities: []
 - stage: cannot_express
   status: skipped
   ms: 0
@@ -573,7 +251,7 @@ stages:
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.62 — stage 1's own confidence in this decomposition
+  summary: 0.95 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -582,74 +260,19 @@ stages:
   detail:
     canonical_question: *id002
 - stage: resolve
-  status: ok
+  status: skipped
   ms: 0
   summary: ''
   detail:
-    readings:
-    - word: we sell
-      took: every product in the catalogue — all 2,517 rows of dim_product, no filter
-      could_also_mean: only products with at least one recorded sale
-      declaration: No population rule is declared on Product; measured instead — all 2,517 catalogue products
-        appear on a sales line, so both readings give the same 2,517 products and the same 11 brands.
-        The fork changes nothing and is not worth asking about.
-    - word: we
-      took: the whole company, both channels, all stores
-      could_also_mean: one store, channel or region
-      declaration: The product catalogue carries no store or channel column, so it is company-wide by
-        construction; v_contoso5_sales_line.channel declares that a question naming no channel covers
-        both (operator ruling 2026-10-18).
-    - word: we sell (now vs ever)
-      took: ever offered — no time or status filter
-      could_also_mean: currently active or in stock only
-      declaration: dim_product carries no discontinued flag, active flag or stock column — the bundle
-        holds no way to express 'currently sold', so 'ever offered' is the only reading this data supports.
-    - word: brands
-      took: dim_product.brand, the 11 names a product is sold under
-      could_also_mean: dim_product.manufacturer, who legally made it
-      declaration: 'The Brand concept is grounded in dim_product.brand with `counts brand`, and the column
-        declares ''11 brands over 2,517 products, so a question about brands wants the 11 and not the
-        2,517''. `manufacturer` is declared as a NAME FOR brand (naming: legal, #2 of 5) with the preference
-        order common > legal > long > short > code — but `brand` is the column the concept is grounded
-        in and the one the question''s word matches, so the names shown are the brand values.'
-    - word: do we sell
-      took: every brand in the catalogue — all 11, across all 2,517 products
-      could_also_mean: only brands with at least one recorded sale
-      declaration: 'Measured, not assumed: both readings return the SAME 11 brands, because all 2,517
-        catalogue products appear on a sales line. The fork moves nothing, so it was not worth asking
-        about.'
-    - word: do we sell (now vs ever)
-      took: brands ever offered — no time or status filter
-      could_also_mean: only brands currently active or in stock
-      declaration: dim_product carries no discontinued flag, active flag or stock column, so 'currently
-        sold' is not expressible in this bundle; and Order declares that a question naming no period covers
-        all time (order.default.an_unscoped_question_covers_all_time).
-    - word: we
-      took: the whole company — both channels, all stores
-      could_also_mean: one store, channel or region
-      declaration: dim_product carries no store or channel column, so the catalogue is company-wide by
-        construction; v_contoso5_sales_line.channel declares that a question naming no channel covers
-        both (operator ruling 2026-10-18).
-    - word: What brands
-      took: the names alone, 11 rows, no figure
-      could_also_mean: each brand with a figure beside it — product count or revenue
-      declaration: The question asked for brands, not for a measure; net_amount is the declared default
-        money column had one been wanted, and it can be added on request.
-    - word: brands
-      took: dim_product.brand
-      could_also_mean: dim_product.manufacturer, the legal maker name for the same 11
-      declaration: The Brand concept is grounded in dim_product.brand with `counts brand`; `manufacturer`
-        is declared as the `legal` naming of the same thing, so it is an alternative spelling a reader
-        may ask for by name.
+    readings: []
 - stage: plan
   status: ok
   ms: 0
-  summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
+  summary: 2 statement(s), one per settled step · walk order 1 -> 2
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  product_key,\n  brand\nFROM contoso_served.dim_product\n\n-- step 2\n\
-        SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand\n\n-- step 3\nSELECT\
-        \ DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
+      sql: "-- step 1\nSELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand\n\n\
+        -- step 2\nSELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
       params: {}
 - stage: execute
   status: ok
@@ -664,13 +287,8 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'The complete list of brands Contoso sells under: 11 rows, one per brand name,
-      over every one of the 2,517 products in the catalogue — the first 8 returned were A. Datum, Adventure
-      Works, Contoso, Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, and the remaining
-      3 of the 11 distinct values on this column are Tailspin Toys, The Phone Company, Wide World Importers.
-      Names only — no revenue, no product count, no ranking. What I did NOT include: any figure beside
-      each brand, the `manufacturer` spelling of the same names, and any restriction to brands with recent
-      sales — which would change nothing, since all 2,517 products have at least one recorded sales line.'
+    what_it_calculated: The 11 distinct brand names products are sold under in the Contoso product catalogue,
+      one row per brand.
 - stage: evaluate
   status: ok
   ms: 0
@@ -696,20 +314,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 73,996 chars · 842 lines
+      - 143,797 chars · 2594 lines
     - - sections
-      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
-        STAGE 2 — the declarations, sent once
+      - STAGE 1 — question to canonical question (QDMR), STAGE 1 — the JSON schema of its answer, STAGE
+        2 — system prompt for walking one step, STAGE 2 — the declarations, at the end of that system
+        prompt, STAGE 2 — the JSON schemas of a step call, STAGE 2 — what writes the per-question text
+        (candidates, refusals)
     - - digest
-      - 44362d9332a0
+      - 143fce7bb1bb
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: You want the list of distinct brand names we carry — one row per brand, names only, no figures,
-      with no time period restriction (every brand we offer, not just ones with recent sales).
+    value: List all brands we sell.
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -717,10 +336,9 @@ sections:
   body:
     kind: list
     value:
-    - '  1       FROM      products we sell  “we sell”'
-    - '  2  ← 1  PIVOT_TO  brand             “brands”'
-    - '  3  ← 2  SELECT    brand             “What brands”'
-    - '  answer: step 3   confidence: 0.62'
+    - '  1       FROM    brands'
+    - '  2  ← 1  SELECT  brand'
+    - '  answer: step 2   confidence: 0.95'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -730,61 +348,14 @@ sections:
     value:
     - - shape
       - a list of names
-    - - rows
-      - many
+    - - said
+      - What brands
     - - key_columns
       - *id005
     - - figure_columns
       - *id006
-    - - said
-      - What brands do we sell?
-- id: ambiguities
-  title: What it saw more than one reading of
-  subtitle: one frame per ambiguity — the reading it took, and what settled it
-  status: ok
-  body:
-    kind: records
-    value:
-    - - - the words
-        - do we sell
-      - - what it would ask
-        - Do you want every brand we carry in the catalogue, or only brands that have actually been sold
-          (had at least one order)?
-      - - could mean
-        - - every brand that appears on something we offer, whether or not it has ever been bought
-          - only brands that have at least one actual sale recorded
-      - - took
-        - every brand that appears on something we offer
-    - - - the words
-        - do we sell
-      - - what it would ask
-        - Should this be brands we sell right now (currently active or in stock), or brands we have ever
-          sold?
-      - - could mean
-        - - brands we currently offer — active products only
-          - brands we have ever offered or sold, including discontinued ones
-      - - took
-        - brands we have ever offered — no time or status filter
-    - - - the words
-        - we
-      - - what it would ask
-        - Does "we" mean the whole company, or just one store, channel, region, or business unit you have
-          in mind?
-      - - could mean
-        - - the whole company, all stores and channels
-          - a particular store, channel, or region you care about
-      - - took
-        - the whole company
-    - - - the words
-        - What brands
-      - - what it would ask
-        - Would you like just the brand names, or each brand with a figure beside it such as how many
-          products or how much it sold?
-      - - could mean
-        - - just the names
-          - the names plus a figure per brand
-      - - took
-        - just the names
+    - - rows
+      - many
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -793,12 +364,9 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  product_key,\n  brand\nFROM contoso_served.dim_product"
-      params: {}
-    - step: '2'
       sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
       params: {}
-    - step: '3'
+    - step: '2'
       sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
       params: {}
 - id: what_it_calculated
@@ -807,74 +375,8 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'The complete list of brands Contoso sells under: 11 rows, one per brand name, over every one
-      of the 2,517 products in the catalogue — the first 8 returned were A. Datum, Adventure Works, Contoso,
-      Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, and the remaining 3 of the 11
-      distinct values on this column are Tailspin Toys, The Phone Company, Wide World Importers. Names
-      only — no revenue, no product count, no ranking. What I did NOT include: any figure beside each
-      brand, the `manufacturer` spelling of the same names, and any restriction to brands with recent
-      sales — which would change nothing, since all 2,517 products have at least one recorded sales line.'
-- id: declarations
-  title: Which declarations it read, and what each settled
-  subtitle: the path the decision took through the ontology — read off the walk's own citations, never
-    inferred from what it could have read
-  status: ok
-  body:
-    kind: records
-    value:
-    - - - declaration
-        - No population rule is declared on Product; measured instead — all 2,517 catalogue products appear
-          on a sales line, so both readings give the same 2,517 products and the same 11 brands. The fork
-          changes nothing and is not worth asking about.
-      - - what it settled
-        - '''we sell'' = every product in the catalogue — all 2,517 rows of dim_product, no filter'
-    - - - declaration
-        - The product catalogue carries no store or channel column, so it is company-wide by construction;
-          v_contoso5_sales_line.channel declares that a question naming no channel covers both (operator
-          ruling 2026-10-18).
-      - - what it settled
-        - '''we'' = the whole company, both channels, all stores'
-    - - - declaration
-        - dim_product carries no discontinued flag, active flag or stock column — the bundle holds no
-          way to express 'currently sold', so 'ever offered' is the only reading this data supports.
-      - - what it settled
-        - '''we sell (now vs ever)'' = ever offered — no time or status filter'
-    - - - declaration
-        - 'The Brand concept is grounded in dim_product.brand with `counts brand`, and the column declares
-          ''11 brands over 2,517 products, so a question about brands wants the 11 and not the 2,517''.
-          `manufacturer` is declared as a NAME FOR brand (naming: legal, #2 of 5) with the preference
-          order common > legal > long > short > code — but `brand` is the column the concept is grounded
-          in and the one the question''s word matches, so the names shown are the brand values.'
-      - - what it settled
-        - '''brands'' = dim_product.brand, the 11 names a product is sold under'
-    - - - declaration
-        - 'Measured, not assumed: both readings return the SAME 11 brands, because all 2,517 catalogue
-          products appear on a sales line. The fork moves nothing, so it was not worth asking about.'
-      - - what it settled
-        - '''do we sell'' = every brand in the catalogue — all 11, across all 2,517 products'
-    - - - declaration
-        - dim_product carries no discontinued flag, active flag or stock column, so 'currently sold' is
-          not expressible in this bundle; and Order declares that a question naming no period covers all
-          time (order.default.an_unscoped_question_covers_all_time).
-      - - what it settled
-        - '''do we sell (now vs ever)'' = brands ever offered — no time or status filter'
-    - - - declaration
-        - dim_product carries no store or channel column, so the catalogue is company-wide by construction;
-          v_contoso5_sales_line.channel declares that a question naming no channel covers both (operator
-          ruling 2026-10-18).
-      - - what it settled
-        - '''we'' = the whole company — both channels, all stores'
-    - - - declaration
-        - The question asked for brands, not for a measure; net_amount is the declared default money column
-          had one been wanted, and it can be added on request.
-      - - what it settled
-        - '''What brands'' = the names alone, 11 rows, no figure'
-    - - - declaration
-        - The Brand concept is grounded in dim_product.brand with `counts brand`; `manufacturer` is declared
-          as the `legal` naming of the same thing, so it is an alternative spelling a reader may ask for
-          by name.
-      - - what it settled
-        - '''brands'' = dim_product.brand'
+    value: The 11 distinct brand names products are sold under in the Contoso product catalogue, one row
+      per brand.
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -899,14 +401,8 @@ sections:
     - - shape
       - a list of names
     - - population it answered over
-      - 'All 2,517 rows of contoso_served.dim_product — every product in the catalogue, no restriction
-        applied — rolled up to the 11 distinct values of `brand`. No status, period, channel or store
-        filter: Product declares no population default, dim_product carries no active/discontinued or
-        stock column, and the question named no scope. Nothing is lost in the roll-up because the edge
-        product__sold_under__brand declares and verifies Product -> Brand as mandatory cardinality 1,
-        so every product carries exactly one brand. The list is identical under the stricter reading "brands
-        that have actually sold": all 2,517 products appear on a sales line, so brands-with-a-sale is
-        11 as well.'
+      - Every row in dim_product, no restrictions applied — all distinct brand values across all products,
+        giving 11 brands.
 - id: thinking
   title: How it got there, step by step
   subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
@@ -916,115 +412,26 @@ sections:
     kind: steps
     value:
     - step: '1'
-      asks: we sell
-      sql: "SELECT\n  product_key,\n  brand\nFROM contoso_served.dim_product"
-      means: 'The base population for this walk: one row per product Contoso offers, all 2,517 of them,
-        carrying the brand each is sold under. No period, status or channel restriction — and measured
-        just now, this is also exactly the set of products that have ever appeared on a sales line, so
-        "products we offer" and "products we have sold" are the same 2,517 rows here.'
-      readings:
-      - word: we sell
-        took: every product in the catalogue — all 2,517 rows of dim_product, no filter
-        could_also_mean: only products with at least one recorded sale
-        declaration: No population rule is declared on Product; measured instead — all 2,517 catalogue
-          products appear on a sales line, so both readings give the same 2,517 products and the same
-          11 brands. The fork changes nothing and is not worth asking about.
-      - word: we
-        took: the whole company, both channels, all stores
-        could_also_mean: one store, channel or region
-        declaration: The product catalogue carries no store or channel column, so it is company-wide by
-          construction; v_contoso5_sales_line.channel declares that a question naming no channel covers
-          both (operator ruling 2026-10-18).
-      - word: we sell (now vs ever)
-        took: ever offered — no time or status filter
-        could_also_mean: currently active or in stock only
-        declaration: dim_product carries no discontinued flag, active flag or stock column — the bundle
-          holds no way to express 'currently sold', so 'ever offered' is the only reading this data supports.
-      turns:
-      - why: Establish the base population for step 1 — the product rows we offer — and at the same time
-          price the "do we sell" fork (catalogue brands vs brands with at least one recorded sale) so
-          a later step need not guess.
-        did: 'probe ''dim_product.brand'' AND ALSO: SELECT COUNT(*) AS product_rows, COUNT(DISTINCT p.brand)
-          AS brands_in_catalogue, COUNT(DISTINCT CASE WHEN s.product_key IS NOT NULL THEN p.brand END)
-          AS brands_with_a_sale, COUNT(DISTINCT CASE WHEN s.product_key IS NOT NULL THEN p.product_key
-          END) AS products_ever_sold FROM contoso_served.dim_product p LEFT JOIN (SELECT DISTINCT product_key
-          FROM contoso_served.v_contoso5_sales_line) s ON s.product_key = p.product_key'
-        came_back: 'dim_product.brand (varchar) holds 11 distinct value(s): ''A. Datum'', ''Adventure
-          Works'', ''Contoso'', ''Fabrikam'', ''Litware'', ''Northwind Traders'', ''Proseware'', ''Southridge
-          Video'', ''Tailspin Toys'', ''The Phone Company'', ''Wide World Importers''   AND ALSO: 1 row(s):
-          [{"product_rows": 2517, "brands_in_catalogue": 11, "brands_with_a_sale": 11, "products_ever_sold":
-          2517}]'
-      blocked: []
-    - step: '2'
-      asks: brands
+      asks: ''
       sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-      means: 'The 11 brands Contoso sells under, one row per brand, lifted from the 2,517 products of
-        step 1 by rolling products up to the name each is sold under. Not 2,517 rows of product and not
-        a count of anything — the member list of the Brand axis: A. Datum, Adventure Works, Contoso, Fabrikam,
-        Litware, Northwind Traders, Proseware, Southridge Video, Tailspin Toys, The Phone Company, Wide
-        World Importers. No figure attached, no period, no channel.'
-      readings:
-      - word: brands
-        took: dim_product.brand, the 11 names a product is sold under
-        could_also_mean: dim_product.manufacturer, who legally made it
-        declaration: 'The Brand concept is grounded in dim_product.brand with `counts brand`, and the
-          column declares ''11 brands over 2,517 products, so a question about brands wants the 11 and
-          not the 2,517''. `manufacturer` is declared as a NAME FOR brand (naming: legal, #2 of 5) with
-          the preference order common > legal > long > short > code — but `brand` is the column the concept
-          is grounded in and the one the question''s word matches, so the names shown are the brand values.'
+      means: Every distinct brand name a product is sold under, one row per brand, from the product dimension
+        — the full set of brands Contoso sells.
+      readings: []
       turns: []
       blocked: []
-    - step: '3'
-      asks: What brands
+    - step: '2'
+      asks: ''
       sql: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-      means: 'The complete list of brands Contoso sells under: 11 rows, one per brand name, over every
-        one of the 2,517 products in the catalogue — the first 8 returned were A. Datum, Adventure Works,
-        Contoso, Fabrikam, Litware, Northwind Traders, Proseware, Southridge Video, and the remaining
-        3 of the 11 distinct values on this column are Tailspin Toys, The Phone Company, Wide World Importers.
-        Names only — no revenue, no product count, no ranking. What I did NOT include: any figure beside
-        each brand, the `manufacturer` spelling of the same names, and any restriction to brands with
-        recent sales — which would change nothing, since all 2,517 products have at least one recorded
-        sales line.'
-      readings:
-      - word: do we sell
-        took: every brand in the catalogue — all 11, across all 2,517 products
-        could_also_mean: only brands with at least one recorded sale
-        declaration: 'Measured, not assumed: both readings return the SAME 11 brands, because all 2,517
-          catalogue products appear on a sales line. The fork moves nothing, so it was not worth asking
-          about.'
-      - word: do we sell (now vs ever)
-        took: brands ever offered — no time or status filter
-        could_also_mean: only brands currently active or in stock
-        declaration: dim_product carries no discontinued flag, active flag or stock column, so 'currently
-          sold' is not expressible in this bundle; and Order declares that a question naming no period
-          covers all time (order.default.an_unscoped_question_covers_all_time).
-      - word: we
-        took: the whole company — both channels, all stores
-        could_also_mean: one store, channel or region
-        declaration: dim_product carries no store or channel column, so the catalogue is company-wide
-          by construction; v_contoso5_sales_line.channel declares that a question naming no channel covers
-          both (operator ruling 2026-10-18).
-      - word: What brands
-        took: the names alone, 11 rows, no figure
-        could_also_mean: each brand with a figure beside it — product count or revenue
-        declaration: The question asked for brands, not for a measure; net_amount is the declared default
-          money column had one been wanted, and it can be added on request.
-      - word: brands
-        took: dim_product.brand
-        could_also_mean: dim_product.manufacturer, the legal maker name for the same 11
-        declaration: The Brand concept is grounded in dim_product.brand with `counts brand`; `manufacturer`
-          is declared as the `legal` naming of the same thing, so it is an alternative spelling a reader
-          may ask for by name.
+      means: The 11 distinct brand names products are sold under in the Contoso product catalogue, one
+        row per brand.
+      readings: []
       turns:
-      - why: Hand back the 11 brand names already enumerated at step 2 — the answer is the member list
-          itself, so no further query is needed.
-        did: "SELECT DISTINCT\n  brand\nFROM contoso_served.dim_product\nORDER BY\n  brand"
-        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 11 row(s) (first 8 of 11): [{"brand": "A. Datum"},
-          {"brand": "Adventure Works"}, {"brand": "Contoso"}, {"brand": "Fabrikam"}, {"brand": "Litware"},
-          {"brand": "Northwind Traders"}, {"brand": "Proseware"}, {"brand": "Southridge Video"}]  Give
-          `claimed_answer` as the value a person would be handed, and `claimed_answer_is` from the closed
-          list. If these rows settle the question, do not decline.'
+      - why: the answer step's SQL you wrote on your first turn
+        did: the statement above
+        came_back: '11 row(s): [{"brand": "A. Datum"}, {"brand": "Adventure Works"}, {"brand": "Contoso"},
+          {"brand": "Fabrikam"}, {"brand": "Litware"}, {"brand": "Northwind Traders"}, {"brand": "Proseware"},
+          {"brand": "Southridge Video"}, {"brand": "Tailspin Toys"}, {"brand": "The Phone Company"}, {"brand":
+          "Wide World Importers"}]'
       blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
@@ -1036,9 +443,13 @@ sections:
 v3_walk_order:
 - '1'
 - '2'
-- '3'
-v3_answer_step: '3'
+v3_answer_step: '2'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: 11 row(s) match
-v3_seconds: 107.6
+v3_seconds: 28.1
+revisions:
+  code: e90b8bc5de81d11df27e5a54effdc9e5ca2c94a8
+  code_dirty: false
+  bundle: b2827aca75fcd5ef4bbc8af3d238bd449bcc7802
+  declarations_dirty: false

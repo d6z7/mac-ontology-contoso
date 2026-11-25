@@ -1,40 +1,30 @@
----
-type: Source
-title: customer
-description: Raw source-of-record — main.customer
-resource: table://main.customer
-tags:
-- CONTOSO5
-- source
-- lifecycle:draft
-- confidence:Q
----
+# customer
 
-## Columns
+The account of source customer: its documentation, as prose citing the columns (Y-4).
 
-| column | type | role | reference |
-|---|---|---|---|
-| `CustomerKey` | integer | PK |  |
-| `GeoAreaKey` | integer | value |  |
-| `StartDT` | timestamp | value |  |
-| `EndDT` | timestamp | value |  |
-| `Continent` | string | value |  |
-| `Gender` | string | value |  |
-| `Title` | string | value |  |
-| `GivenName` | string | value |  |
-| `MiddleInitial` | string | value |  |
-| `Surname` | string | value |  |
-| `StreetAddress` | string | value |  |
-| `City` | string | value |  |
-| `State` | string | value |  |
-| `StateFull` | string | value |  |
-| `ZipCode` | string | value |  |
-| `Country` | string | value |  |
-| `CountryFull` | string | value |  |
-| `Birthday` | timestamp | value |  |
-| `Age` | integer | value |  |
-| `Occupation` | string | value |  |
-| `Company` | string | value |  |
-| `Vehicle` | string | value |  |
-| `Latitude` | decimal | value |  |
-| `Longitude` | decimal | value |  |
+## Cites
+
+- `source:customer.CustomerKey`
+- `source:customer.GeoAreaKey`
+- `source:customer.StartDT`
+- `source:customer.EndDT`
+- `source:customer.Continent`
+- `source:customer.Gender`
+- `source:customer.Title`
+- `source:customer.GivenName`
+- `source:customer.MiddleInitial`
+- `source:customer.Surname`
+- `source:customer.StreetAddress`
+- `source:customer.City`
+- `source:customer.State`
+- `source:customer.StateFull`
+- `source:customer.ZipCode`
+- `source:customer.Country`
+- `source:customer.CountryFull`
+- `source:customer.Birthday`
+- `source:customer.Age`
+- `source:customer.Occupation`
+- `source:customer.Company`
+- `source:customer.Vehicle`
+- `source:customer.Latitude`
+- `source:customer.Longitude`

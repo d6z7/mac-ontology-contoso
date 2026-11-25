@@ -1,17 +1,17 @@
 id: RC12
-captured_at: '2026-10-24T21:44:52+00:00'
-ontology_fingerprint: 0d005cb5612ea9b3
-acceptance_fingerprint: 2ec94494afcc4218
-projection_fingerprint: 4702762cd1902fc3
+captured_at: '2026-11-17T23:10:35+00:00'
+ontology_fingerprint: ec6d95efb1654a0d
+acceptance_fingerprint: a3baf3c7fe46a2af
 engine:
   interpret: live
   provider: v3-walk
-  model: claude-opus-5
+  model: claude-opus-4-6
   mode: llm-execute
   athena: false
-  run_file: full_rerun.json
+  run_file: 20261117T224755Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+  method: bench
 connection:
   view_schema: contoso_served
   target: contoso5.duckdb
@@ -19,120 +19,86 @@ connection:
 route: v3-walk
 answer: ''
 intent:
-  subject: customers
+  subject: how many
   operation: aggregate
-  qdmr_simplified: "  1       FROM       customers                    “customers”\n  2  ← 1  WHERE   \
-    \   female = 'female'            “female customers”\n  3  ← 2  WHERE      Europe = 'Europe'      \
-    \      “in Europe”\n  4  ← 3  AGGREGATE  count distinct of customers  “How many female customers”\n\
-    \  answer: step 4   confidence: 0.82\n  UNDERSTOOD AS: A count of how many customers are female and\
-    \ located in Europe — one single number covering all customers on record, with no date window and\
-    \ no restriction to active or purchasing customers.\n  AMBIGUOUS 'in Europe' — ASKS: Should 'in Europe'\
-    \ mean the customer's own country/address is in Europe, or that they belong to a sales region your\
-    \ business calls Europe (such as EMEA)?\n      could mean: Customers whose country of residence or\
-    \ billing address is a European country\n      could mean: Customers assigned to the company's 'Europe'\
-    \ sales region or territory, which may include or exclude countries differently (e.g. EMEA includes\
-    \ Middle East and Africa)\n      took: Customers whose location is recorded as Europe\n  AMBIGUOUS\
-    \ 'customers' — ASKS: Do you want every customer on record, or only ones who are currently active\
-    \ (for example, those who have bought something)?\n      could mean: All customers on record, including\
-    \ inactive or never-purchased ones\n      could mean: Only active customers\n      could mean: Only\
-    \ customers who have placed at least one order\n      took: All customers on record\n  AMBIGUOUS 'female'\
-    \ — ASKS: Should customers with no recorded gender be excluded entirely, or is there a category you'd\
-    \ want reported alongside?\n      could mean: Only customers explicitly recorded as female\n     \
-    \ could mean: Female plus a separate note of how many are unknown/unrecorded\n      took: Only customers\
-    \ explicitly recorded as female\n  AMBIGUOUS 'are in' — ASKS: Is this a count as of today, or as of\
-    \ some past date or period?\n      could mean: As of right now, using each customer's current location\n\
-    \      could mean: As of a particular date or over a particular period\n      took: As of right now,\
-    \ no date window\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many"
-  understood_as_in_human_words: A count of how many customers are female and located in Europe — one single
-    number covering all customers on record, with no date window and no restriction to active or purchasing
-    customers.
-  population_actually_answered: 'The 19,564 women on Contoso''s customer register whose recorded continent
-    is Europe — drawn from all 104,990 rows of contoso_served.dim_customer, because the Customer concept
-    is grounded in that register keyed on customer_key and the question named no purchasing or activity
-    condition. Two restrictions only: gender = ''female'' and continent = ''Europe''. No date window was
-    applied, because a register row is a standing fact with no period; I did not use valid_from/valid_to
-    to take the register as of any past date. I did NOT restrict to customers who have bought anything
-    — 10,603 of these 19,564 have never appeared on a sale.'
+  qdmr_simplified: "  1       FROM       customers\n  2  ← 1  WHERE      gender = 'female'  “female”\n\
+    \  3  ← 2  WHERE      region = 'Europe'  “in Europe”\n  4  ← 3  AGGREGATE  count of None      “how\
+    \ many female customers are in Europe”\n  answer: step 4   confidence: 0.9\n  UNDERSTOOD AS: Count\
+    \ of female customers located in Europe.\n  AMBIGUOUS 'in Europe' — ASKS: Does 'in Europe' refer to\
+    \ the customer's billing address, shipping address, or some other geographic attribute?\n      could\
+    \ mean: customer's billing/home region is Europe\n      could mean: customer's shipping address is\
+    \ in Europe\n      could mean: customer's store or branch region is Europe\n  AMBIGUOUS 'female' —\
+    \ ASKS: How is 'female' recorded — is it a gender field value such as 'Female', 'F', or something\
+    \ else?\n      could mean: gender equals 'Female'\n      could mean: gender equals 'F'\n  OUTPUT SHAPE:\
+    \ one figure · one row(s) · carrying how many"
+  understood_as_in_human_words: Count of female customers located in Europe.
+  population_actually_answered: Active customers only (valid_from <= newest order date AND valid_end >
+    newest order date), per rule Customer.active_on_the_reference_date default 'active'. Filtered to gender
+    = 'female' and continent = 'Europe'. The reference date is MAX(order_date) from v_contoso5_sales_line,
+    per rule Order.now_is_the_newest_order.
   how_the_result_must_be_presented:
     shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
     figures_the_answer_step_computes:
-    - count distinct of customers
+    - count of None
     answer_step: '4'
     verb: aggregate
-    said: How many female customers
-    stage1_confidence: 0.82
+    said: how many female customers are in Europe
+    stage1_confidence: 0.9
   canonical_question: &id001
-    understood_as: A count of how many customers are female and located in Europe — one single number
-      covering all customers on record, with no date window and no restriction to active or purchasing
-      customers.
+    understood_as: Count of female customers located in Europe.
     steps:
     - id: '1'
       do: from
       thing: customers
-      said: customers
     - id: '2'
       do: where
       of: '1'
-      thing: female
+      thing: gender
       op: '='
-      value: female
-      said: female customers
+      than:
+        value: female
+      said: female
     - id: '3'
       do: where
       of: '2'
-      thing: Europe
+      thing: region
       op: '='
-      value: Europe
+      than:
+        value: Europe
       said: in Europe
     - id: '4'
       do: aggregate
       of: '3'
       figures: &id002
-      - how: count distinct
-        of: customers
-        said: How many
-      said: How many female customers
+      - how: count
+        said: how many
+      said: how many female customers are in Europe
     answer: '4'
     output_shape: &id003
       shape: one figure
-      said: How many female customers are in Europe?
-      rows: one
       key_columns: &id005 []
       figure_columns: &id006
       - how many
+      rows: one
+      said: how many
+    confidence: 0.9
+    periods: []
     ambiguities:
     - words: in Europe
-      question: Should 'in Europe' mean the customer's own country/address is in Europe, or that they
-        belong to a sales region your business calls Europe (such as EMEA)?
+      question: Does 'in Europe' refer to the customer's billing address, shipping address, or some other
+        geographic attribute?
       readings:
-      - Customers whose country of residence or billing address is a European country
-      - Customers assigned to the company's 'Europe' sales region or territory, which may include or exclude
-        countries differently (e.g. EMEA includes Middle East and Africa)
-      assumed: Customers whose location is recorded as Europe
-    - words: customers
-      question: Do you want every customer on record, or only ones who are currently active (for example,
-        those who have bought something)?
-      readings:
-      - All customers on record, including inactive or never-purchased ones
-      - Only active customers
-      - Only customers who have placed at least one order
-      assumed: All customers on record
+      - customer's billing/home region is Europe
+      - customer's shipping address is in Europe
+      - customer's store or branch region is Europe
     - words: female
-      question: Should customers with no recorded gender be excluded entirely, or is there a category
-        you'd want reported alongside?
+      question: How is 'female' recorded — is it a gender field value such as 'Female', 'F', or something
+        else?
       readings:
-      - Only customers explicitly recorded as female
-      - Female plus a separate note of how many are unknown/unrecorded
-      assumed: Only customers explicitly recorded as female
-    - words: are in
-      question: Is this a count as of today, or as of some past date or period?
-      readings:
-      - As of right now, using each customer's current location
-      - As of a particular date or over a particular period
-      assumed: As of right now, no date window
+      - gender equals 'Female'
+      - gender equals 'F'
     cannot_express: []
-    confidence: 0.82
   steps: 4
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
@@ -141,156 +107,52 @@ answer_parts:
     - name: how_many
       type: number
     rows:
-    - - 19564
-  value: 19564
-  raw: '19564'
+    - - 14098
+  value: 14098
+  raw: '14098'
   reading: one figure
   status: ok
   confidence: I
   assumptions:
   - kind: ''
-    text: "customers → every person on the register — 104,990 rows of dim_customer, one per customer_key\n\
-      \        could also mean: only customers who have ever bought something, which is 52,189 people;\
-      \ for the female-and-Europe slice this step feeds, the two readings give 19,564 against 8,961, so\
-      \ the choice more than halves the final figure"
-    ref: The Customer concept is grounded in contoso_served.dim_customer, key customer_key, and its definition
-      names 104,990 people as what a customer IS — it warns that the register is not the buyer list rather
-      than redefining a customer as a buyer, and the question named no purchasing condition, so the register
-      is the population and the buyer figure is disclosed here instead of being asked about
+    text: "customers → Active customers as of the newest order date, per rule Customer.active_on_the_reference_date\
+      \ (default: active)\n        could also mean: All registered customers regardless of validity window\
+      \ (rule choice: registered)"
+    ref: 'rule Customer.active_on_the_reference_date, default: active'
   - kind: ''
-    text: "Europe → the customer's own recorded continent, dim_customer.continent = 'Europe' — 39,588\
-      \ people of both genders\n        could also mean: a sales region the business calls Europe, such\
-      \ as EMEA; this bundle declares no sales-region or territory concept anywhere, so that reading has\
-      \ nothing to bind to and cannot change the figure"
-    ref: continent is a declared categorical axis on dim_customer holding exactly three values — Australia,
-      Europe, North America — and country.default.whose_country_is_asked_never_assumed names the customer
-      path for a question whose subject is customers
-  - kind: ''
-    text: "female → dim_customer.gender = 'female'\n        could also mean: female plus a separate count\
-      \ of customers with no recorded gender — but there are none: gender holds exactly 'female' and 'male'\
-      \ across all 104,990 rows, no nulls and no unknown category, so there is nothing to report alongside"
-    ref: contoso5_gender is the declared value set for the column
-  - kind: ''
-    text: "female → dim_customer.gender = 'female', matching the stored value exactly — 51,927 people\n\
-      \        could also mean: nothing else here: the column holds only 'female' and 'male' over all\
-      \ 104,990 rows, with no null and no unknown category, so no one is silently dropped by this filter\
-      \ and there is no residual group to report alongside"
-    ref: contoso5_gender is the declared value set for the column, and gender is a declared categorical
-      axis on dim_customer
-  - kind: ''
-    text: "in Europe → the customer's own recorded continent, dim_customer.continent = 'Europe'\n    \
-      \    could also mean: listing European countries by hand instead — but that gives the identical\
-      \ set and the identical 19,564: Europe here is exactly DE, FR, GB, IT and NL, with no country a\
-      \ reader could argue about, and country_code is declared finer_than continent so the roll-up is\
-      \ clean"
-    ref: continent is a declared categorical axis on dim_customer; country.default.whose_country_is_asked_never_assumed
-      names the customer path for a question about customers, so this is where the customer lives and
-      not where a shop trades
-  - kind: ''
-    text: "in Europe → the place the customer lives\n        could also mean: a sales region the business\
-      \ calls Europe or EMEA, which might include Middle East and Africa; this bundle declares no sales-region\
-      \ or territory concept, so that reading has nothing to bind to"
-    ref: no region concept exists in the ontology — the only geography on a customer is continent, country,
-      state, city
-  - kind: ''
-    text: "customers → every woman on the register who lives in Europe — 19,564\n        could also mean:\
-      \ only those who have ever bought something, which is 8,961 — less than half. I did not ask, because\
-      \ the Customer concept is grounded in contoso_served.dim_customer keyed on customer_key: on this\
-      \ bundle a customer IS a person on the register, and the concept warns that the register is not\
-      \ the buyer list rather than redefining a customer as a buyer. If you meant buyers, the figure is\
-      \ 8,961"
-    ref: Customer [entity], grounded in contoso_served.dim_customer, key customer_key, 104,990 rows
-  - kind: ''
-    text: "in Europe → dim_customer.continent = 'Europe' — where the customer lives\n        could also\
-      \ mean: naming European countries by hand, which gives the identical 19,564: Europe here is exactly\
-      \ DE, FR, GB, IT and NL, with no borderline country among them. A sales region called Europe or\
-      \ EMEA cannot be meant — this bundle declares no region or territory concept, so there is nothing\
-      \ for that reading to bind to"
-    ref: country.default.whose_country_is_asked_never_assumed names the customer path for a question about
-      customers; country_code is declared finer_than continent, so the roll-up is clean
-  - kind: ''
-    text: "female → dim_customer.gender = 'female'\n        could also mean: female plus a count of customers\
-      \ with no recorded gender — but there are none: gender holds only 'female' and 'male' across all\
-      \ 104,990 rows, with no null and no unknown category, so this filter drops nobody silently"
-    ref: contoso5_gender is the declared value set for the column
-  - kind: ''
-    text: "are in → a standing count of who is on the register now, with no date applied\n        could\
-      \ also mean: the register as it stood on some past date — dim_customer carries valid_from and valid_to\
-      \ and is kept as a history, so that is expressible, but the question named no date and the bundle\
-      \ declares no rule attributing a customer's place to any particular day"
-    ref: dim_customer.valid_from — 'a sale could in principle be attributed to where the customer lived
-      ON THE ORDER DATE — nothing in this bundle declares that it should be'
+    text: "in Europe → Customer's own continent = 'Europe' (where the customer lives)\n        could also\
+      \ mean: Could mean customers who bought at a European store, but 'in Europe' most naturally describes\
+      \ where the customer is located, and dim_customer.continent is the direct attribute"
+    ref: dim_customer.continent is a declared dimension; no rule forces a different reading
   concepts: []
   rules:
-  - id: The Customer concept is grounded in contoso_served.dim_customer
-    why: '''customers'' = every person on the register — 104,990 rows of dim_customer, one per customer_key'
-  - id: key customer_key
-    why: '''customers'' = every person on the register — 104,990 rows of dim_customer, one per customer_key'
-  - id: and its definition names 104
-    why: '''customers'' = every person on the register — 104,990 rows of dim_customer, one per customer_key'
-  - id: 990 people as what a customer IS — it warns that the register is not the buyer list rather than
-      redefining a customer as a buyer
-    why: '''customers'' = every person on the register — 104,990 rows of dim_customer, one per customer_key'
-  - id: and the question named no purchasing condition
-    why: '''customers'' = every person on the register — 104,990 rows of dim_customer, one per customer_key'
-  - id: so the register is the population and the buyer figure is disclosed here instead of being asked
-      about
-    why: '''customers'' = every person on the register — 104,990 rows of dim_customer, one per customer_key'
-  - id: continent is a declared categorical axis on dim_customer holding exactly three values — Australia
-    why: '''Europe'' = the customer''s own recorded continent, dim_customer.continent = ''Europe'' — 39,588
-      people of both genders'
-  - id: Europe
-    why: '''Europe'' = the customer''s own recorded continent, dim_customer.continent = ''Europe'' — 39,588
-      people of both genders'
-  - id: North America — and country.default.whose_country_is_asked_never_assumed names the customer path
-      for a question whose subject is customers
-    why: '''Europe'' = the customer''s own recorded continent, dim_customer.continent = ''Europe'' — 39,588
-      people of both genders'
-  - id: contoso5_gender is the declared value set for the column
-    why: '''female'' = dim_customer.gender = ''female'''
-  - id: and gender is a declared categorical axis on dim_customer
-    why: '''female'' = dim_customer.gender = ''female'', matching the stored value exactly — 51,927 people'
-  - id: continent is a declared categorical axis on dim_customer
-    why: '''in Europe'' = the customer''s own recorded continent, dim_customer.continent = ''Europe'''
-  - id: country.default.whose_country_is_asked_never_assumed names the customer path for a question about
-      customers
-    why: '''in Europe'' = the customer''s own recorded continent, dim_customer.continent = ''Europe'''
-  - id: so this is where the customer lives and not where a shop trades
-    why: '''in Europe'' = the customer''s own recorded continent, dim_customer.continent = ''Europe'''
-  - id: no region concept exists in the ontology — the only geography on a customer is continent
-    why: '''in Europe'' = the place the customer lives'
-  - id: country
-    why: '''in Europe'' = the place the customer lives'
-  - id: state
-    why: '''in Europe'' = the place the customer lives'
-  - id: city
-    why: '''in Europe'' = the place the customer lives'
-  - id: Customer [entity]
-    why: '''customers'' = every woman on the register who lives in Europe — 19,564'
-  - id: grounded in contoso_served.dim_customer
-    why: '''customers'' = every woman on the register who lives in Europe — 19,564'
-  - id: '104'
-    why: '''customers'' = every woman on the register who lives in Europe — 19,564'
-  - id: 990 rows
-    why: '''customers'' = every woman on the register who lives in Europe — 19,564'
-  - id: country_code is declared finer_than continent
-    why: '''in Europe'' = dim_customer.continent = ''Europe'' — where the customer lives'
-  - id: so the roll-up is clean
-    why: '''in Europe'' = dim_customer.continent = ''Europe'' — where the customer lives'
-  - id: dim_customer.valid_from — 'a sale could in principle be attributed to where the customer lived
-      ON THE ORDER DATE — nothing in this bundle declares that it should be'
-    why: '''are in'' = a standing count of who is on the register now, with no date applied'
+  - id: 'rule Customer.active_on_the_reference_date, default: active'
+    why: '''customers'' = Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+      (default: active)'
+  - id: dim_customer.continent is a declared dimension; no rule forces a different reading
+    why: '''in Europe'' = Customer''s own continent = ''Europe'' (where the customer lives)'
   edges: []
 sql:
-- "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender\
-  \ = 'female' AND continent = 'Europe'"
-- "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer"
-- "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n  gender\
-  \ = 'female'"
-- "SELECT\n  customer_key,\n  gender,\n  continent,\n  country_code\nFROM contoso_served.dim_customer\n\
-  WHERE\n  gender = 'female' AND continent = 'Europe'"
-answer_sql: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n\
-  \  gender = 'female' AND continent = 'Europe'"
+- "SELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender = 'female'\n  AND\
+  \ continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+  \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+  \  )"
+- "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+  \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND\
+  \ valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+  \  )"
+- "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+  \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND\
+  \ valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+  \  )\n  AND gender = 'female'"
+- "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+  \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND\
+  \ valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+  \  )\n  AND gender = 'female'\n  AND continent = 'Europe'"
+answer_sql: "SELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender = 'female'\n\
+  \  AND continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+  \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+  \  )"
 sql_valid: true
 result:
   status: ok
@@ -298,77 +160,52 @@ result:
   cols: &id007
   - how_many
   sample_rows:
-  - - 19564
+  - - 14098
   capped: false
 prompt:
-  chars: 84131
-  lines: 1027
+  chars: 143797
+  lines: 2594
   sections:
   - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 1 — the JSON schema of its answer
   - STAGE 2 — system prompt for walking one step
-  - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/465e28b73001.txt
-  sha: 465e28b73001
-  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
-    it is now.'
+  - STAGE 2 — the declarations, at the end of that system prompt
+  - STAGE 2 — the JSON schemas of a step call
+  - STAGE 2 — what writes the per-question text (candidates, refusals)
+  file: acceptance/prompts/143fce7bb1bb.txt
+  sha: 143fce7bb1bb
+  reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+    the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+    given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 error: null
 v3_report:
   canonical_question_json: *id001
-  canonical_question_simplified: "  1       FROM       customers                    “customers”\n  2 \
-    \ ← 1  WHERE      female = 'female'            “female customers”\n  3  ← 2  WHERE      Europe = 'Europe'\
-    \            “in Europe”\n  4  ← 3  AGGREGATE  count distinct of customers  “How many female customers”\n\
-    \  answer: step 4   confidence: 0.82\n  UNDERSTOOD AS: A count of how many customers are female and\
-    \ located in Europe — one single number covering all customers on record, with no date window and\
-    \ no restriction to active or purchasing customers.\n  AMBIGUOUS 'in Europe' — ASKS: Should 'in Europe'\
-    \ mean the customer's own country/address is in Europe, or that they belong to a sales region your\
-    \ business calls Europe (such as EMEA)?\n      could mean: Customers whose country of residence or\
-    \ billing address is a European country\n      could mean: Customers assigned to the company's 'Europe'\
-    \ sales region or territory, which may include or exclude countries differently (e.g. EMEA includes\
-    \ Middle East and Africa)\n      took: Customers whose location is recorded as Europe\n  AMBIGUOUS\
-    \ 'customers' — ASKS: Do you want every customer on record, or only ones who are currently active\
-    \ (for example, those who have bought something)?\n      could mean: All customers on record, including\
-    \ inactive or never-purchased ones\n      could mean: Only active customers\n      could mean: Only\
-    \ customers who have placed at least one order\n      took: All customers on record\n  AMBIGUOUS 'female'\
-    \ — ASKS: Should customers with no recorded gender be excluded entirely, or is there a category you'd\
-    \ want reported alongside?\n      could mean: Only customers explicitly recorded as female\n     \
-    \ could mean: Female plus a separate note of how many are unknown/unrecorded\n      took: Only customers\
-    \ explicitly recorded as female\n  AMBIGUOUS 'are in' — ASKS: Is this a count as of today, or as of\
-    \ some past date or period?\n      could mean: As of right now, using each customer's current location\n\
-    \      could mean: As of a particular date or over a particular period\n      took: As of right now,\
-    \ no date window\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many"
-  understood_as: A count of how many customers are female and located in Europe — one single number covering
-    all customers on record, with no date window and no restriction to active or purchasing customers.
+  canonical_question_simplified: "  1       FROM       customers\n  2  ← 1  WHERE      gender = 'female'\
+    \  “female”\n  3  ← 2  WHERE      region = 'Europe'  “in Europe”\n  4  ← 3  AGGREGATE  count of None\
+    \      “how many female customers are in Europe”\n  answer: step 4   confidence: 0.9\n  UNDERSTOOD\
+    \ AS: Count of female customers located in Europe.\n  AMBIGUOUS 'in Europe' — ASKS: Does 'in Europe'\
+    \ refer to the customer's billing address, shipping address, or some other geographic attribute?\n\
+    \      could mean: customer's billing/home region is Europe\n      could mean: customer's shipping\
+    \ address is in Europe\n      could mean: customer's store or branch region is Europe\n  AMBIGUOUS\
+    \ 'female' — ASKS: How is 'female' recorded — is it a gender field value such as 'Female', 'F', or\
+    \ something else?\n      could mean: gender equals 'Female'\n      could mean: gender equals 'F'\n\
+    \  OUTPUT SHAPE: one figure · one row(s) · carrying how many"
+  understood_as: Count of female customers located in Europe.
   ambiguities_it_saw:
   - words: in Europe
-    asks: Should 'in Europe' mean the customer's own country/address is in Europe, or that they belong
-      to a sales region your business calls Europe (such as EMEA)?
+    asks: Does 'in Europe' refer to the customer's billing address, shipping address, or some other geographic
+      attribute?
     readings:
-    - Customers whose country of residence or billing address is a European country
-    - Customers assigned to the company's 'Europe' sales region or territory, which may include or exclude
-      countries differently (e.g. EMEA includes Middle East and Africa)
-    took: Customers whose location is recorded as Europe
-  - words: customers
-    asks: Do you want every customer on record, or only ones who are currently active (for example, those
-      who have bought something)?
-    readings:
-    - All customers on record, including inactive or never-purchased ones
-    - Only active customers
-    - Only customers who have placed at least one order
-    took: All customers on record
+    - customer's billing/home region is Europe
+    - customer's shipping address is in Europe
+    - customer's store or branch region is Europe
+    took: null
   - words: female
-    asks: Should customers with no recorded gender be excluded entirely, or is there a category you'd
-      want reported alongside?
+    asks: How is 'female' recorded — is it a gender field value such as 'Female', 'F', or something else?
     readings:
-    - Only customers explicitly recorded as female
-    - Female plus a separate note of how many are unknown/unrecorded
-    took: Only customers explicitly recorded as female
-  - words: are in
-    asks: Is this a count as of today, or as of some past date or period?
-    readings:
-    - As of right now, using each customer's current location
-    - As of a particular date or over a particular period
-    took: As of right now, no date window
+    - gender equals 'Female'
+    - gender equals 'F'
+    took: null
   presentation:
     claimed_answer_is: one figure
     answer_step: '4'
@@ -376,256 +213,152 @@ v3_report:
       do: aggregate
       of: '3'
       figures: *id002
-      said: How many female customers
-    confidence_stage1: 0.82
+      said: how many female customers are in Europe
+    confidence_stage1: 0.9
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer"
+    sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n \
+      \ valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )"
     params: {}
   - step: '2'
     sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n \
-      \ gender = 'female'"
+      \ valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND gender = 'female'"
     params: {}
   - step: '3'
-    sql: "SELECT\n  customer_key,\n  gender,\n  continent,\n  country_code\nFROM contoso_served.dim_customer\n\
-      WHERE\n  gender = 'female' AND continent = 'Europe'"
+    sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n \
+      \ valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND gender = 'female'\n  AND continent = 'Europe'"
     params: {}
   - step: '4'
-    sql: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n\
-      \  gender = 'female' AND continent = 'Europe'"
+    sql: "SELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender = 'female'\n\
+      \  AND continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM\
+      \ contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n\
+      \    FROM contoso_served.v_contoso5_sales_line\n  )"
     params: {}
-  what_it_calculated: 'One figure: how many distinct people on Contoso''s customer register are recorded
-    as female and living in Europe — 19,564, made up of Great Britain 7,193, Germany 5,014, Italy 2,479,
-    the Netherlands 2,461 and France 2,417. It counts people on record, not buyers and not orders: 8,961
-    of them have appeared on at least one sale across the ten years of orders and the other 10,603 have
-    never bought anything, and all are counted. No sales, revenue, store or date enters this figure at
-    all.'
+  what_it_calculated: 'The count of active female customers whose continent is Europe, as of the newest
+    order date in the data: 14,098 customers.'
   rows_returned: &id004
-  - how_many: 19564
+  - how_many: 14098
   synthesis:
-    claimed: '19564'
+    claimed: '14098'
     shape: one figure
-    answered_population: 'The 19,564 women on Contoso''s customer register whose recorded continent is
-      Europe — drawn from all 104,990 rows of contoso_served.dim_customer, because the Customer concept
-      is grounded in that register keyed on customer_key and the question named no purchasing or activity
-      condition. Two restrictions only: gender = ''female'' and continent = ''Europe''. No date window
-      was applied, because a register row is a standing fact with no period; I did not use valid_from/valid_to
-      to take the register as of any past date. I did NOT restrict to customers who have bought anything
-      — 10,603 of these 19,564 have never appeared on a sale.'
+    answered_population: Active customers only (valid_from <= newest order date AND valid_end > newest
+      order date), per rule Customer.active_on_the_reference_date default 'active'. Filtered to gender
+      = 'female' and continent = 'Europe'. The reference date is MAX(order_date) from v_contoso5_sales_line,
+      per rule Order.now_is_the_newest_order.
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
-    step_asks: customers
+    step_asks: ''
     turns:
-    - why: Establish the base population — the customer register — and at the same time look at what the
-        gender and continent columns actually hold, since the later steps filter on them.
-      did: 'probe ''dim_customer.continent'' AND ALSO: SELECT gender, continent, COUNT(*) AS customers
-        FROM contoso_served.dim_customer GROUP BY 1, 2 ORDER BY 1, 2'
-      came_back: 'dim_customer.continent (varchar) holds 3 distinct value(s): ''Australia'', ''Europe'',
-        ''North America''   AND ALSO: 6 row(s): [{"gender": "female", "continent": "Australia", "customers":
-        5033}, {"gender": "female", "continent": "Europe", "customers": 19564}, {"gender": "female", "continent":
-        "North America", "customers": 27330}, {"gender": "male", "continent": "Australia", "customers":
-        5075}, {"gender": "male", "continent": "Europe", "customers": 20024}, {"gender": "male", "continent":
-        "North America", "customers": 27964}]'
-    - why: The register row count matches the declared 104,990 and gender/continent are clean two- and
-        three-valued axes with no nulls; before settling the base I am pricing the one fork the Customer
-        concept itself flags — "HALF HAVE NEVER ORDERED ... the register is not the buyer list" — so the
-        answer step can state what the all-customers reading costs against the has-ordered reading.
-      did: "SELECT\n  c.gender,\n  c.continent,\n  COUNT(*) AS on_register,\n  COUNT(b.customer_key) AS\
-        \ have_ever_ordered\nFROM contoso_served.dim_customer AS c\nLEFT JOIN (\n  SELECT DISTINCT\n \
-        \   customer_key\n  FROM contoso_served.v_contoso5_sales_line\n) AS b\n  ON b.customer_key = c.customer_key\n\
-        GROUP BY\n  1,\n  2\nORDER BY\n  1,\n  2"
-      came_back: '6 row(s): [{"gender": "female", "continent": "Australia", "on_register": 5033, "have_ever_ordered":
-        1986}, {"gender": "female", "continent": "Europe", "on_register": 19564, "have_ever_ordered":
-        8961}, {"gender": "female", "continent": "North America", "on_register": 27330, "have_ever_ordered":
-        14935}, {"gender": "male", "continent": "Australia", "on_register": 5075, "have_ever_ordered":
-        2005}, {"gender": "male", "continent": "Europe", "on_register": 20024, "have_ever_ordered": 9020},
-        {"gender": "male", "continent": "North America", "on_register": 27964, "have_ever_ordered": 15282}]'
-    settled_on: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer"
-    means: 'One row per person on Contoso''s customer register — 104,990 of them, carrying each person''s
-      recorded gender and the continent they live on. This is everyone on record, not the buyer list:
-      it includes the 52,801 who have never appeared on a sale, and it is not restricted by any date,
-      because a register row is a standing fact and not an event.'
+    - why: Probing gender and continent columns to find exact values for "female" and "Europe".
+      did: 'probe ''dim_customer.gender'' AND ALSO: SELECT DISTINCT continent FROM contoso_served.dim_customer
+        ORDER BY continent'
+      came_back: 'dim_customer.gender (varchar) holds 2 distinct value(s): ''female'', ''male''   AND
+        ALSO: 3 row(s): [{"continent": "Australia"}, {"continent": "Europe"}, {"continent": "North America"}]'
+    settled_on: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
+      \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )"
+    means: All active customers as of the newest order date — one row per customer whose validity window
+      includes that date.
     readings_taken:
     - word: customers
-      took: every person on the register — 104,990 rows of dim_customer, one per customer_key
-      could_also_mean: only customers who have ever bought something, which is 52,189 people; for the
-        female-and-Europe slice this step feeds, the two readings give 19,564 against 8,961, so the choice
-        more than halves the final figure
-      declaration: The Customer concept is grounded in contoso_served.dim_customer, key customer_key,
-        and its definition names 104,990 people as what a customer IS — it warns that the register is
-        not the buyer list rather than redefining a customer as a buyer, and the question named no purchasing
-        condition, so the register is the population and the buyer figure is disclosed here instead of
-        being asked about
-    - word: Europe
-      took: the customer's own recorded continent, dim_customer.continent = 'Europe' — 39,588 people of
-        both genders
-      could_also_mean: a sales region the business calls Europe, such as EMEA; this bundle declares no
-        sales-region or territory concept anywhere, so that reading has nothing to bind to and cannot
-        change the figure
-      declaration: continent is a declared categorical axis on dim_customer holding exactly three values
-        — Australia, Europe, North America — and country.default.whose_country_is_asked_never_assumed
-        names the customer path for a question whose subject is customers
-    - word: female
-      took: dim_customer.gender = 'female'
-      could_also_mean: 'female plus a separate count of customers with no recorded gender — but there
-        are none: gender holds exactly ''female'' and ''male'' across all 104,990 rows, no nulls and no
-        unknown category, so there is nothing to report alongside'
-      declaration: contoso5_gender is the declared value set for the column
+      took: 'Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+        (default: active)'
+      could_also_mean: 'All registered customers regardless of validity window (rule choice: registered)'
+      declaration: 'rule Customer.active_on_the_reference_date, default: active'
+    - word: in Europe
+      took: Customer's own continent = 'Europe' (where the customer lives)
+      could_also_mean: Could mean customers who bought at a European store, but 'in Europe' most naturally
+        describes where the customer is located, and dim_customer.continent is the direct attribute
+      declaration: dim_customer.continent is a declared dimension; no rule forces a different reading
     blocked_by: []
   - step: '2'
-    step_asks: female customers
+    step_asks: female
     turns: []
     settled_on: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
-      \  gender = 'female'"
-    means: One row per woman on Contoso's customer register — 51,927 of the 104,990 people on record,
-      carrying the continent each lives on. Still everyone on record, buyers and never-buyers alike, with
-      no date restriction; all that has been taken away are the 53,063 men.
-    readings_taken:
-    - word: female
-      took: dim_customer.gender = 'female', matching the stored value exactly — 51,927 people
-      could_also_mean: 'nothing else here: the column holds only ''female'' and ''male'' over all 104,990
-        rows, with no null and no unknown category, so no one is silently dropped by this filter and there
-        is no residual group to report alongside'
-      declaration: contoso5_gender is the declared value set for the column, and gender is a declared
-        categorical axis on dim_customer
+      \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND gender = 'female'"
+    means: Active female customers as of the newest order date — one row per customer whose validity window
+      includes that date and whose gender is 'female'.
+    readings_taken: []
     blocked_by: []
   - step: '3'
     step_asks: in Europe
-    turns:
-    - why: Before fixing the Europe filter, see which countries the continent label actually gathers —
-        a reader's Europe and the data's Europe differ only if some country is assigned oddly, and naming
-        the countries makes the figure checkable.
-      did: "SELECT\n  continent,\n  country_code,\n  COUNT(*) AS female_customers\nFROM contoso_served.dim_customer\n\
-        WHERE\n  gender = 'female'\nGROUP BY\n  1,\n  2\nORDER BY\n  1,\n  2"
-      came_back: '8 row(s): [{"continent": "Australia", "country_code": "AU", "female_customers": 5033},
-        {"continent": "Europe", "country_code": "DE", "female_customers": 5014}, {"continent": "Europe",
-        "country_code": "FR", "female_customers": 2417}, {"continent": "Europe", "country_code": "GB",
-        "female_customers": 7193}, {"continent": "Europe", "country_code": "IT", "female_customers": 2479},
-        {"continent": "Europe", "country_code": "NL", "female_customers": 2461}, {"continent": "North
-        America", "country_code": "CA", "female_customers": 5013}, {"continent": "North America", "country_code":
-        "US", "female_customers": 22317}]'
-    settled_on: "SELECT\n  customer_key,\n  gender,\n  continent,\n  country_code\nFROM contoso_served.dim_customer\n\
-      WHERE\n  gender = 'female' AND continent = 'Europe'"
-    means: One row per woman on Contoso's customer register who lives in Europe — 19,564 people, spread
-      over Great Britain 7,193, Germany 5,014, Italy 2,479, the Netherlands 2,461 and France 2,417. Everyone
-      on record, buyers and never-buyers alike, with no date restriction; the 32,363 women in North America
-      and Australia have been dropped.
-    readings_taken:
-    - word: in Europe
-      took: the customer's own recorded continent, dim_customer.continent = 'Europe'
-      could_also_mean: 'listing European countries by hand instead — but that gives the identical set
-        and the identical 19,564: Europe here is exactly DE, FR, GB, IT and NL, with no country a reader
-        could argue about, and country_code is declared finer_than continent so the roll-up is clean'
-      declaration: continent is a declared categorical axis on dim_customer; country.default.whose_country_is_asked_never_assumed
-        names the customer path for a question about customers, so this is where the customer lives and
-        not where a shop trades
-    - word: in Europe
-      took: the place the customer lives
-      could_also_mean: a sales region the business calls Europe or EMEA, which might include Middle East
-        and Africa; this bundle declares no sales-region or territory concept, so that reading has nothing
-        to bind to
-      declaration: no region concept exists in the ontology — the only geography on a customer is continent,
-        country, state, city
+    turns: []
+    settled_on: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
+      \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND gender = 'female'\n  AND continent = 'Europe'"
+    means: Active female customers located in Europe as of the newest order date — one row per customer.
+    readings_taken: []
     blocked_by: []
   - step: '4'
-    step_asks: How many female customers
+    step_asks: how many female customers are in Europe
     turns:
-    - why: Read the final figure directly rather than claiming it from the sum of the grouped rows — count
-        distinct customer_key over step 3's population, with the plain row count beside it to confirm
-        the register has no duplicate people.
-      did: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many,\n  COUNT(*) AS rows_read\nFROM contoso_served.dim_customer\n\
-        WHERE\n  gender = 'female' AND continent = 'Europe'"
-      came_back: '1 row(s): [{"how_many": 19564, "rows_read": 19564}]'
-    - why: Count distinct equals the row count, so the register holds one row per person and the figure
-        is 19,564; the declarations settle every fork this question raised, so I answer and disclose rather
-        than ask.
-      did: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n\
-        \  gender = 'female' AND continent = 'Europe'"
-      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 1 row(s): [{"how_many": 19564}]  Give `claimed_answer`
-        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
-        rows settle the question, do not decline.'
-    settled_on: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\n\
-      WHERE\n  gender = 'female' AND continent = 'Europe'"
-    means: 'One figure: how many distinct people on Contoso''s customer register are recorded as female
-      and living in Europe — 19,564, made up of Great Britain 7,193, Germany 5,014, Italy 2,479, the Netherlands
-      2,461 and France 2,417. It counts people on record, not buyers and not orders: 8,961 of them have
-      appeared on at least one sale across the ten years of orders and the other 10,603 have never bought
-      anything, and all are counted. No sales, revenue, store or date enters this figure at all.'
-    readings_taken:
-    - word: customers
-      took: every woman on the register who lives in Europe — 19,564
-      could_also_mean: 'only those who have ever bought something, which is 8,961 — less than half. I
-        did not ask, because the Customer concept is grounded in contoso_served.dim_customer keyed on
-        customer_key: on this bundle a customer IS a person on the register, and the concept warns that
-        the register is not the buyer list rather than redefining a customer as a buyer. If you meant
-        buyers, the figure is 8,961'
-      declaration: Customer [entity], grounded in contoso_served.dim_customer, key customer_key, 104,990
-        rows
-    - word: in Europe
-      took: dim_customer.continent = 'Europe' — where the customer lives
-      could_also_mean: 'naming European countries by hand, which gives the identical 19,564: Europe here
-        is exactly DE, FR, GB, IT and NL, with no borderline country among them. A sales region called
-        Europe or EMEA cannot be meant — this bundle declares no region or territory concept, so there
-        is nothing for that reading to bind to'
-      declaration: country.default.whose_country_is_asked_never_assumed names the customer path for a
-        question about customers; country_code is declared finer_than continent, so the roll-up is clean
-    - word: female
-      took: dim_customer.gender = 'female'
-      could_also_mean: 'female plus a count of customers with no recorded gender — but there are none:
-        gender holds only ''female'' and ''male'' across all 104,990 rows, with no null and no unknown
-        category, so this filter drops nobody silently'
-      declaration: contoso5_gender is the declared value set for the column
-    - word: are in
-      took: a standing count of who is on the register now, with no date applied
-      could_also_mean: the register as it stood on some past date — dim_customer carries valid_from and
-        valid_to and is kept as a history, so that is expressible, but the question named no date and
-        the bundle declares no rule attributing a customer's place to any particular day
-      declaration: dim_customer.valid_from — 'a sale could in principle be attributed to where the customer
-        lived ON THE ORDER DATE — nothing in this bundle declares that it should be'
+    - why: Step 4 counts the rows from step 3 — active female customers in Europe. Running the count query.
+      did: "SELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender = 'female'\n\
+        \  AND continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM\
+        \ contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n\
+        \    FROM contoso_served.v_contoso5_sales_line\n  )"
+      came_back: '1 row(s): [{"how_many": 14098}]'
+    settled_on: "SELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender = 'female'\n\
+      \  AND continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM\
+      \ contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n\
+      \    FROM contoso_served.v_contoso5_sales_line\n  )"
+    means: 'The count of active female customers whose continent is Europe, as of the newest order date
+      in the data: 14,098 customers.'
+    readings_taken: []
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 84,131 chars · 1027 lines  [465e28b73001]
+  summary: 143,797 chars · 2594 lines  [143fce7bb1bb]
   detail:
-    chars: 84131
-    lines: 1027
+    chars: 143797
+    lines: 2594
     sections:
     - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 1 — the JSON schema of its answer
     - STAGE 2 — system prompt for walking one step
-    - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/465e28b73001.txt
-    sha: 465e28b73001
-    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
-      as it is now.'
+    - STAGE 2 — the declarations, at the end of that system prompt
+    - STAGE 2 — the JSON schemas of a step call
+    - STAGE 2 — what writes the per-question text (candidates, refusals)
+    file: acceptance/prompts/143fce7bb1bb.txt
+    sha: 143fce7bb1bb
+    reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+      the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+      given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 - stage: understood_as
   status: ok
   ms: 0
   summary: ''
   detail:
-    prose: A count of how many customers are female and located in Europe — one single number covering
-      all customers on record, with no date window and no restriction to active or purchasing customers.
-    population: 'The 19,564 women on Contoso''s customer register whose recorded continent is Europe —
-      drawn from all 104,990 rows of contoso_served.dim_customer, because the Customer concept is grounded
-      in that register keyed on customer_key and the question named no purchasing or activity condition.
-      Two restrictions only: gender = ''female'' and continent = ''Europe''. No date window was applied,
-      because a register row is a standing fact with no period; I did not use valid_from/valid_to to take
-      the register as of any past date. I did NOT restrict to customers who have bought anything — 10,603
-      of these 19,564 have never appeared on a sale.'
+    prose: Count of female customers located in Europe.
+    population: Active customers only (valid_from <= newest order date AND valid_end > newest order date),
+      per rule Customer.active_on_the_reference_date default 'active'. Filtered to gender = 'female' and
+      continent = 'Europe'. The reference date is MAX(order_date) from v_contoso5_sales_line, per rule
+      Order.now_is_the_newest_order.
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
-    steps_readable: "  1       FROM       customers                    “customers”\n  2  ← 1  WHERE  \
-      \    female = 'female'            “female customers”\n  3  ← 2  WHERE      Europe = 'Europe'   \
-      \         “in Europe”\n  4  ← 3  AGGREGATE  count distinct of customers  “How many female customers”\n\
-      \  answer: step 4   confidence: 0.82"
+    steps_readable:
+    - '  1       FROM       customers'
+    - '  2  ← 1  WHERE      gender = ''female''  “female”'
+    - '  3  ← 2  WHERE      region = ''Europe''  “in Europe”'
+    - '  4  ← 3  AGGREGATE  count of None      “how many female customers are in Europe”'
+    - '  answer: step 4   confidence: 0.9'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -633,34 +366,20 @@ stages:
   detail:
     ambiguities:
     - words: in Europe
-      asks: Should 'in Europe' mean the customer's own country/address is in Europe, or that they belong
-        to a sales region your business calls Europe (such as EMEA)?
+      asks: Does 'in Europe' refer to the customer's billing address, shipping address, or some other
+        geographic attribute?
       readings:
-      - Customers whose country of residence or billing address is a European country
-      - Customers assigned to the company's 'Europe' sales region or territory, which may include or exclude
-        countries differently (e.g. EMEA includes Middle East and Africa)
-      took: Customers whose location is recorded as Europe
-    - words: customers
-      asks: Do you want every customer on record, or only ones who are currently active (for example,
-        those who have bought something)?
-      readings:
-      - All customers on record, including inactive or never-purchased ones
-      - Only active customers
-      - Only customers who have placed at least one order
-      took: All customers on record
+      - customer's billing/home region is Europe
+      - customer's shipping address is in Europe
+      - customer's store or branch region is Europe
+      took: null
     - words: female
-      asks: Should customers with no recorded gender be excluded entirely, or is there a category you'd
-        want reported alongside?
+      asks: How is 'female' recorded — is it a gender field value such as 'Female', 'F', or something
+        else?
       readings:
-      - Only customers explicitly recorded as female
-      - Female plus a separate note of how many are unknown/unrecorded
-      took: Only customers explicitly recorded as female
-    - words: are in
-      asks: Is this a count as of today, or as of some past date or period?
-      readings:
-      - As of right now, using each customer's current location
-      - As of a particular date or over a particular period
-      took: As of right now, no date window
+      - gender equals 'Female'
+      - gender equals 'F'
+      took: null
 - stage: cannot_express
   status: skipped
   ms: 0
@@ -676,7 +395,7 @@ stages:
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.82 — stage 1's own confidence in this decomposition
+  summary: 0.9 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -691,82 +410,15 @@ stages:
   detail:
     readings:
     - word: customers
-      took: every person on the register — 104,990 rows of dim_customer, one per customer_key
-      could_also_mean: only customers who have ever bought something, which is 52,189 people; for the
-        female-and-Europe slice this step feeds, the two readings give 19,564 against 8,961, so the choice
-        more than halves the final figure
-      declaration: The Customer concept is grounded in contoso_served.dim_customer, key customer_key,
-        and its definition names 104,990 people as what a customer IS — it warns that the register is
-        not the buyer list rather than redefining a customer as a buyer, and the question named no purchasing
-        condition, so the register is the population and the buyer figure is disclosed here instead of
-        being asked about
-    - word: Europe
-      took: the customer's own recorded continent, dim_customer.continent = 'Europe' — 39,588 people of
-        both genders
-      could_also_mean: a sales region the business calls Europe, such as EMEA; this bundle declares no
-        sales-region or territory concept anywhere, so that reading has nothing to bind to and cannot
-        change the figure
-      declaration: continent is a declared categorical axis on dim_customer holding exactly three values
-        — Australia, Europe, North America — and country.default.whose_country_is_asked_never_assumed
-        names the customer path for a question whose subject is customers
-    - word: female
-      took: dim_customer.gender = 'female'
-      could_also_mean: 'female plus a separate count of customers with no recorded gender — but there
-        are none: gender holds exactly ''female'' and ''male'' across all 104,990 rows, no nulls and no
-        unknown category, so there is nothing to report alongside'
-      declaration: contoso5_gender is the declared value set for the column
-    - word: female
-      took: dim_customer.gender = 'female', matching the stored value exactly — 51,927 people
-      could_also_mean: 'nothing else here: the column holds only ''female'' and ''male'' over all 104,990
-        rows, with no null and no unknown category, so no one is silently dropped by this filter and there
-        is no residual group to report alongside'
-      declaration: contoso5_gender is the declared value set for the column, and gender is a declared
-        categorical axis on dim_customer
+      took: 'Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+        (default: active)'
+      could_also_mean: 'All registered customers regardless of validity window (rule choice: registered)'
+      declaration: 'rule Customer.active_on_the_reference_date, default: active'
     - word: in Europe
-      took: the customer's own recorded continent, dim_customer.continent = 'Europe'
-      could_also_mean: 'listing European countries by hand instead — but that gives the identical set
-        and the identical 19,564: Europe here is exactly DE, FR, GB, IT and NL, with no country a reader
-        could argue about, and country_code is declared finer_than continent so the roll-up is clean'
-      declaration: continent is a declared categorical axis on dim_customer; country.default.whose_country_is_asked_never_assumed
-        names the customer path for a question about customers, so this is where the customer lives and
-        not where a shop trades
-    - word: in Europe
-      took: the place the customer lives
-      could_also_mean: a sales region the business calls Europe or EMEA, which might include Middle East
-        and Africa; this bundle declares no sales-region or territory concept, so that reading has nothing
-        to bind to
-      declaration: no region concept exists in the ontology — the only geography on a customer is continent,
-        country, state, city
-    - word: customers
-      took: every woman on the register who lives in Europe — 19,564
-      could_also_mean: 'only those who have ever bought something, which is 8,961 — less than half. I
-        did not ask, because the Customer concept is grounded in contoso_served.dim_customer keyed on
-        customer_key: on this bundle a customer IS a person on the register, and the concept warns that
-        the register is not the buyer list rather than redefining a customer as a buyer. If you meant
-        buyers, the figure is 8,961'
-      declaration: Customer [entity], grounded in contoso_served.dim_customer, key customer_key, 104,990
-        rows
-    - word: in Europe
-      took: dim_customer.continent = 'Europe' — where the customer lives
-      could_also_mean: 'naming European countries by hand, which gives the identical 19,564: Europe here
-        is exactly DE, FR, GB, IT and NL, with no borderline country among them. A sales region called
-        Europe or EMEA cannot be meant — this bundle declares no region or territory concept, so there
-        is nothing for that reading to bind to'
-      declaration: country.default.whose_country_is_asked_never_assumed names the customer path for a
-        question about customers; country_code is declared finer_than continent, so the roll-up is clean
-    - word: female
-      took: dim_customer.gender = 'female'
-      could_also_mean: 'female plus a count of customers with no recorded gender — but there are none:
-        gender holds only ''female'' and ''male'' across all 104,990 rows, with no null and no unknown
-        category, so this filter drops nobody silently'
-      declaration: contoso5_gender is the declared value set for the column
-    - word: are in
-      took: a standing count of who is on the register now, with no date applied
-      could_also_mean: the register as it stood on some past date — dim_customer carries valid_from and
-        valid_to and is kept as a history, so that is expressible, but the question named no date and
-        the bundle declares no rule attributing a customer's place to any particular day
-      declaration: dim_customer.valid_from — 'a sale could in principle be attributed to where the customer
-        lived ON THE ORDER DATE — nothing in this bundle declares that it should be'
+      took: Customer's own continent = 'Europe' (where the customer lives)
+      could_also_mean: Could mean customers who bought at a European store, but 'in Europe' most naturally
+        describes where the customer is located, and dim_customer.continent is the direct attribute
+      declaration: dim_customer.continent is a declared dimension; no rule forces a different reading
 - stage: plan
   status: ok
   ms: 0
@@ -774,11 +426,19 @@ stages:
   detail:
     plan:
       sql: "-- step 1\nSELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\n\
-        \n-- step 2\nSELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\n\
-        WHERE\n  gender = 'female'\n\n-- step 3\nSELECT\n  customer_key,\n  gender,\n  continent,\n  country_code\n\
-        FROM contoso_served.dim_customer\nWHERE\n  gender = 'female' AND continent = 'Europe'\n\n-- step\
-        \ 4\nSELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n\
-        \  gender = 'female' AND continent = 'Europe'"
+        WHERE\n  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n\n-- step 2\nSELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\n\
+        WHERE\n  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND gender = 'female'\n\n-- step 3\nSELECT\n  customer_key,\n  gender,\n  continent\n\
+        FROM contoso_served.dim_customer\nWHERE\n  valid_from <= (\n    SELECT\n      MAX(order_date)\n\
+        \    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n\
+        \    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND gender = 'female'\n  AND continent\
+        \ = 'Europe'\n\n-- step 4\nSELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\n\
+        WHERE\n  gender = 'female'\n  AND continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n  \
+        \    MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end > (\n\
+        \    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )"
       params: {}
 - stage: execute
   status: ok
@@ -793,20 +453,16 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'One figure: how many distinct people on Contoso''s customer register are recorded
-      as female and living in Europe — 19,564, made up of Great Britain 7,193, Germany 5,014, Italy 2,479,
-      the Netherlands 2,461 and France 2,417. It counts people on record, not buyers and not orders: 8,961
-      of them have appeared on at least one sale across the ten years of orders and the other 10,603 have
-      never bought anything, and all are counted. No sales, revenue, store or date enters this figure
-      at all.'
+    what_it_calculated: 'The count of active female customers whose continent is Europe, as of the newest
+      order date in the data: 14,098 customers.'
 - stage: evaluate
   status: ok
   ms: 0
   summary: claimed as 'one figure' · graded EXACT
   detail:
-    claimed_answer: '19564'
+    claimed_answer: '14098'
     walk_bucket: EXACT
-    walk_why: '''19564'''
+    walk_why: '''14098'''
 sections:
 - id: question
   title: The question, as asked
@@ -823,20 +479,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 84,131 chars · 1027 lines
+      - 143,797 chars · 2594 lines
     - - sections
-      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
-        STAGE 2 — the declarations, sent once
+      - STAGE 1 — question to canonical question (QDMR), STAGE 1 — the JSON schema of its answer, STAGE
+        2 — system prompt for walking one step, STAGE 2 — the declarations, at the end of that system
+        prompt, STAGE 2 — the JSON schemas of a step call, STAGE 2 — what writes the per-question text
+        (candidates, refusals)
     - - digest
-      - 465e28b73001
+      - 143fce7bb1bb
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: A count of how many customers are female and located in Europe — one single number covering
-      all customers on record, with no date window and no restriction to active or purchasing customers.
+    value: Count of female customers located in Europe.
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -844,36 +501,11 @@ sections:
   body:
     kind: list
     value:
-    - '  1       FROM       customers                    “customers”'
-    - '  2  ← 1  WHERE      female = ''female''            “female customers”'
-    - '  3  ← 2  WHERE      Europe = ''Europe''            “in Europe”'
-    - '  4  ← 3  AGGREGATE  count distinct of customers  “How many female customers”'
-    - '  answer: step 4   confidence: 0.82'
-    - '  UNDERSTOOD AS: A count of how many customers are female and located in Europe — one single number
-      covering all customers on record, with no date window and no restriction to active or purchasing
-      customers.'
-    - '  AMBIGUOUS ''in Europe'' — ASKS: Should ''in Europe'' mean the customer''s own country/address
-      is in Europe, or that they belong to a sales region your business calls Europe (such as EMEA)?'
-    - '      could mean: Customers whose country of residence or billing address is a European country'
-    - '      could mean: Customers assigned to the company''s ''Europe'' sales region or territory, which
-      may include or exclude countries differently (e.g. EMEA includes Middle East and Africa)'
-    - '      took: Customers whose location is recorded as Europe'
-    - '  AMBIGUOUS ''customers'' — ASKS: Do you want every customer on record, or only ones who are currently
-      active (for example, those who have bought something)?'
-    - '      could mean: All customers on record, including inactive or never-purchased ones'
-    - '      could mean: Only active customers'
-    - '      could mean: Only customers who have placed at least one order'
-    - '      took: All customers on record'
-    - '  AMBIGUOUS ''female'' — ASKS: Should customers with no recorded gender be excluded entirely, or
-      is there a category you''d want reported alongside?'
-    - '      could mean: Only customers explicitly recorded as female'
-    - '      could mean: Female plus a separate note of how many are unknown/unrecorded'
-    - '      took: Only customers explicitly recorded as female'
-    - '  AMBIGUOUS ''are in'' — ASKS: Is this a count as of today, or as of some past date or period?'
-    - '      could mean: As of right now, using each customer''s current location'
-    - '      could mean: As of a particular date or over a particular period'
-    - '      took: As of right now, no date window'
-    - '  OUTPUT SHAPE: one figure · one row(s) · carrying how many'
+    - '  1       FROM       customers'
+    - '  2  ← 1  WHERE      gender = ''female''  “female”'
+    - '  3  ← 2  WHERE      region = ''Europe''  “in Europe”'
+    - '  4  ← 3  AGGREGATE  count of None      “how many female customers are in Europe”'
+    - '  answer: step 4   confidence: 0.9'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -883,50 +515,37 @@ sections:
     value:
     - - shape
       - one figure
-    - - said
-      - How many female customers are in Europe?
-    - - rows
-      - one
     - - key_columns
       - *id005
     - - figure_columns
       - *id006
+    - - rows
+      - one
+    - - said
+      - how many
 - id: ambiguities
   title: What it saw more than one reading of
-  subtitle: each with the reading it took and the declaration that settled it
+  subtitle: one frame per ambiguity — the reading it took, and what settled it
   status: ok
   body:
-    kind: table
+    kind: records
     value:
-    - words: in Europe
-      asks: Should 'in Europe' mean the customer's own country/address is in Europe, or that they belong
-        to a sales region your business calls Europe (such as EMEA)?
-      readings:
-      - Customers whose country of residence or billing address is a European country
-      - Customers assigned to the company's 'Europe' sales region or territory, which may include or exclude
-        countries differently (e.g. EMEA includes Middle East and Africa)
-      took: Customers whose location is recorded as Europe
-    - words: customers
-      asks: Do you want every customer on record, or only ones who are currently active (for example,
-        those who have bought something)?
-      readings:
-      - All customers on record, including inactive or never-purchased ones
-      - Only active customers
-      - Only customers who have placed at least one order
-      took: All customers on record
-    - words: female
-      asks: Should customers with no recorded gender be excluded entirely, or is there a category you'd
-        want reported alongside?
-      readings:
-      - Only customers explicitly recorded as female
-      - Female plus a separate note of how many are unknown/unrecorded
-      took: Only customers explicitly recorded as female
-    - words: are in
-      asks: Is this a count as of today, or as of some past date or period?
-      readings:
-      - As of right now, using each customer's current location
-      - As of a particular date or over a particular period
-      took: As of right now, no date window
+    - - - the words
+        - in Europe
+      - - what it would ask
+        - Does 'in Europe' refer to the customer's billing address, shipping address, or some other geographic
+          attribute?
+      - - could mean
+        - - customer's billing/home region is Europe
+          - customer's shipping address is in Europe
+          - customer's store or branch region is Europe
+    - - - the words
+        - female
+      - - what it would ask
+        - How is 'female' recorded — is it a gender field value such as 'Female', 'F', or something else?
+      - - could mean
+        - - gender equals 'Female'
+          - gender equals 'F'
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -935,19 +554,28 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer"
+      sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )"
       params: {}
     - step: '2'
       sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
-        \  gender = 'female'"
+        \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND gender = 'female'"
       params: {}
     - step: '3'
-      sql: "SELECT\n  customer_key,\n  gender,\n  continent,\n  country_code\nFROM contoso_served.dim_customer\n\
-        WHERE\n  gender = 'female' AND continent = 'Europe'"
+      sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND gender = 'female'\n  AND continent = 'Europe'"
       params: {}
     - step: '4'
-      sql: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n\
-        \  gender = 'female' AND continent = 'Europe'"
+      sql: "SELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender = 'female'\n\
+        \  AND continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM\
+        \ contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n\
+        \    FROM contoso_served.v_contoso5_sales_line\n  )"
       params: {}
 - id: what_it_calculated
   title: What it says its rows are
@@ -955,11 +583,25 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'One figure: how many distinct people on Contoso''s customer register are recorded as female
-      and living in Europe — 19,564, made up of Great Britain 7,193, Germany 5,014, Italy 2,479, the Netherlands
-      2,461 and France 2,417. It counts people on record, not buyers and not orders: 8,961 of them have
-      appeared on at least one sale across the ten years of orders and the other 10,603 have never bought
-      anything, and all are counted. No sales, revenue, store or date enters this figure at all.'
+    value: 'The count of active female customers whose continent is Europe, as of the newest order date
+      in the data: 14,098 customers.'
+- id: declarations
+  title: Which declarations it read, and what each settled
+  subtitle: the path the decision took through the ontology — read off the walk's own citations, never
+    inferred from what it could have read
+  status: ok
+  body:
+    kind: records
+    value:
+    - - - declaration
+        - 'rule Customer.active_on_the_reference_date, default: active'
+      - - what it settled
+        - '''customers'' = Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+          (default: active)'
+    - - - declaration
+        - dim_customer.continent is a declared dimension; no rule forces a different reading
+      - - what it settled
+        - '''in Europe'' = Customer''s own continent = ''Europe'' (where the customer lives)'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -979,198 +621,84 @@ sections:
     kind: pairs
     value:
     - - claimed
-      - '19564'
+      - '14098'
     - - shape
       - one figure
     - - population it answered over
-      - 'The 19,564 women on Contoso''s customer register whose recorded continent is Europe — drawn from
-        all 104,990 rows of contoso_served.dim_customer, because the Customer concept is grounded in that
-        register keyed on customer_key and the question named no purchasing or activity condition. Two
-        restrictions only: gender = ''female'' and continent = ''Europe''. No date window was applied,
-        because a register row is a standing fact with no period; I did not use valid_from/valid_to to
-        take the register as of any past date. I did NOT restrict to customers who have bought anything
-        — 10,603 of these 19,564 have never appeared on a sale.'
+      - Active customers only (valid_from <= newest order date AND valid_end > newest order date), per
+        rule Customer.active_on_the_reference_date default 'active'. Filtered to gender = 'female' and
+        continent = 'Europe'. The reference date is MAX(order_date) from v_contoso5_sales_line, per rule
+        Order.now_is_the_newest_order.
 - id: thinking
-  title: Every turn it took, and what came back
-  subtitle: the reasoning a verdict can be re-examined from, without a model call
+  title: How it got there, step by step
+  subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
+    reasoning a verdict can be re-examined from, with no model call.
   status: ok
   body:
-    kind: table
+    kind: steps
     value:
     - step: '1'
-      step_asks: customers
-      turns:
-      - why: Establish the base population — the customer register — and at the same time look at what
-          the gender and continent columns actually hold, since the later steps filter on them.
-        did: 'probe ''dim_customer.continent'' AND ALSO: SELECT gender, continent, COUNT(*) AS customers
-          FROM contoso_served.dim_customer GROUP BY 1, 2 ORDER BY 1, 2'
-        came_back: 'dim_customer.continent (varchar) holds 3 distinct value(s): ''Australia'', ''Europe'',
-          ''North America''   AND ALSO: 6 row(s): [{"gender": "female", "continent": "Australia", "customers":
-          5033}, {"gender": "female", "continent": "Europe", "customers": 19564}, {"gender": "female",
-          "continent": "North America", "customers": 27330}, {"gender": "male", "continent": "Australia",
-          "customers": 5075}, {"gender": "male", "continent": "Europe", "customers": 20024}, {"gender":
-          "male", "continent": "North America", "customers": 27964}]'
-      - why: The register row count matches the declared 104,990 and gender/continent are clean two- and
-          three-valued axes with no nulls; before settling the base I am pricing the one fork the Customer
-          concept itself flags — "HALF HAVE NEVER ORDERED ... the register is not the buyer list" — so
-          the answer step can state what the all-customers reading costs against the has-ordered reading.
-        did: "SELECT\n  c.gender,\n  c.continent,\n  COUNT(*) AS on_register,\n  COUNT(b.customer_key)\
-          \ AS have_ever_ordered\nFROM contoso_served.dim_customer AS c\nLEFT JOIN (\n  SELECT DISTINCT\n\
-          \    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n) AS b\n  ON b.customer_key\
-          \ = c.customer_key\nGROUP BY\n  1,\n  2\nORDER BY\n  1,\n  2"
-        came_back: '6 row(s): [{"gender": "female", "continent": "Australia", "on_register": 5033, "have_ever_ordered":
-          1986}, {"gender": "female", "continent": "Europe", "on_register": 19564, "have_ever_ordered":
-          8961}, {"gender": "female", "continent": "North America", "on_register": 27330, "have_ever_ordered":
-          14935}, {"gender": "male", "continent": "Australia", "on_register": 5075, "have_ever_ordered":
-          2005}, {"gender": "male", "continent": "Europe", "on_register": 20024, "have_ever_ordered":
-          9020}, {"gender": "male", "continent": "North America", "on_register": 27964, "have_ever_ordered":
-          15282}]'
-      settled_on: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer"
-      means: 'One row per person on Contoso''s customer register — 104,990 of them, carrying each person''s
-        recorded gender and the continent they live on. This is everyone on record, not the buyer list:
-        it includes the 52,801 who have never appeared on a sale, and it is not restricted by any date,
-        because a register row is a standing fact and not an event.'
-      readings_taken:
+      asks: ''
+      sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )"
+      means: All active customers as of the newest order date — one row per customer whose validity window
+        includes that date.
+      readings:
       - word: customers
-        took: every person on the register — 104,990 rows of dim_customer, one per customer_key
-        could_also_mean: only customers who have ever bought something, which is 52,189 people; for the
-          female-and-Europe slice this step feeds, the two readings give 19,564 against 8,961, so the
-          choice more than halves the final figure
-        declaration: The Customer concept is grounded in contoso_served.dim_customer, key customer_key,
-          and its definition names 104,990 people as what a customer IS — it warns that the register is
-          not the buyer list rather than redefining a customer as a buyer, and the question named no purchasing
-          condition, so the register is the population and the buyer figure is disclosed here instead
-          of being asked about
-      - word: Europe
-        took: the customer's own recorded continent, dim_customer.continent = 'Europe' — 39,588 people
-          of both genders
-        could_also_mean: a sales region the business calls Europe, such as EMEA; this bundle declares
-          no sales-region or territory concept anywhere, so that reading has nothing to bind to and cannot
-          change the figure
-        declaration: continent is a declared categorical axis on dim_customer holding exactly three values
-          — Australia, Europe, North America — and country.default.whose_country_is_asked_never_assumed
-          names the customer path for a question whose subject is customers
-      - word: female
-        took: dim_customer.gender = 'female'
-        could_also_mean: 'female plus a separate count of customers with no recorded gender — but there
-          are none: gender holds exactly ''female'' and ''male'' across all 104,990 rows, no nulls and
-          no unknown category, so there is nothing to report alongside'
-        declaration: contoso5_gender is the declared value set for the column
-      blocked_by: []
+        took: 'Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+          (default: active)'
+        could_also_mean: 'All registered customers regardless of validity window (rule choice: registered)'
+        declaration: 'rule Customer.active_on_the_reference_date, default: active'
+      - word: in Europe
+        took: Customer's own continent = 'Europe' (where the customer lives)
+        could_also_mean: Could mean customers who bought at a European store, but 'in Europe' most naturally
+          describes where the customer is located, and dim_customer.continent is the direct attribute
+        declaration: dim_customer.continent is a declared dimension; no rule forces a different reading
+      turns:
+      - why: Probing gender and continent columns to find exact values for "female" and "Europe".
+        did: 'probe ''dim_customer.gender'' AND ALSO: SELECT DISTINCT continent FROM contoso_served.dim_customer
+          ORDER BY continent'
+        came_back: 'dim_customer.gender (varchar) holds 2 distinct value(s): ''female'', ''male''   AND
+          ALSO: 3 row(s): [{"continent": "Australia"}, {"continent": "Europe"}, {"continent": "North America"}]'
+      blocked: []
     - step: '2'
-      step_asks: female customers
+      asks: female
+      sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND gender = 'female'"
+      means: Active female customers as of the newest order date — one row per customer whose validity
+        window includes that date and whose gender is 'female'.
+      readings: []
       turns: []
-      settled_on: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\n\
-        WHERE\n  gender = 'female'"
-      means: One row per woman on Contoso's customer register — 51,927 of the 104,990 people on record,
-        carrying the continent each lives on. Still everyone on record, buyers and never-buyers alike,
-        with no date restriction; all that has been taken away are the 53,063 men.
-      readings_taken:
-      - word: female
-        took: dim_customer.gender = 'female', matching the stored value exactly — 51,927 people
-        could_also_mean: 'nothing else here: the column holds only ''female'' and ''male'' over all 104,990
-          rows, with no null and no unknown category, so no one is silently dropped by this filter and
-          there is no residual group to report alongside'
-        declaration: contoso5_gender is the declared value set for the column, and gender is a declared
-          categorical axis on dim_customer
-      blocked_by: []
+      blocked: []
     - step: '3'
-      step_asks: in Europe
-      turns:
-      - why: Before fixing the Europe filter, see which countries the continent label actually gathers
-          — a reader's Europe and the data's Europe differ only if some country is assigned oddly, and
-          naming the countries makes the figure checkable.
-        did: "SELECT\n  continent,\n  country_code,\n  COUNT(*) AS female_customers\nFROM contoso_served.dim_customer\n\
-          WHERE\n  gender = 'female'\nGROUP BY\n  1,\n  2\nORDER BY\n  1,\n  2"
-        came_back: '8 row(s): [{"continent": "Australia", "country_code": "AU", "female_customers": 5033},
-          {"continent": "Europe", "country_code": "DE", "female_customers": 5014}, {"continent": "Europe",
-          "country_code": "FR", "female_customers": 2417}, {"continent": "Europe", "country_code": "GB",
-          "female_customers": 7193}, {"continent": "Europe", "country_code": "IT", "female_customers":
-          2479}, {"continent": "Europe", "country_code": "NL", "female_customers": 2461}, {"continent":
-          "North America", "country_code": "CA", "female_customers": 5013}, {"continent": "North America",
-          "country_code": "US", "female_customers": 22317}]'
-      settled_on: "SELECT\n  customer_key,\n  gender,\n  continent,\n  country_code\nFROM contoso_served.dim_customer\n\
-        WHERE\n  gender = 'female' AND continent = 'Europe'"
-      means: One row per woman on Contoso's customer register who lives in Europe — 19,564 people, spread
-        over Great Britain 7,193, Germany 5,014, Italy 2,479, the Netherlands 2,461 and France 2,417.
-        Everyone on record, buyers and never-buyers alike, with no date restriction; the 32,363 women
-        in North America and Australia have been dropped.
-      readings_taken:
-      - word: in Europe
-        took: the customer's own recorded continent, dim_customer.continent = 'Europe'
-        could_also_mean: 'listing European countries by hand instead — but that gives the identical set
-          and the identical 19,564: Europe here is exactly DE, FR, GB, IT and NL, with no country a reader
-          could argue about, and country_code is declared finer_than continent so the roll-up is clean'
-        declaration: continent is a declared categorical axis on dim_customer; country.default.whose_country_is_asked_never_assumed
-          names the customer path for a question about customers, so this is where the customer lives
-          and not where a shop trades
-      - word: in Europe
-        took: the place the customer lives
-        could_also_mean: a sales region the business calls Europe or EMEA, which might include Middle
-          East and Africa; this bundle declares no sales-region or territory concept, so that reading
-          has nothing to bind to
-        declaration: no region concept exists in the ontology — the only geography on a customer is continent,
-          country, state, city
-      blocked_by: []
+      asks: in Europe
+      sql: "SELECT\n  customer_key,\n  gender,\n  continent\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND gender = 'female'\n  AND continent = 'Europe'"
+      means: Active female customers located in Europe as of the newest order date — one row per customer.
+      readings: []
+      turns: []
+      blocked: []
     - step: '4'
-      step_asks: How many female customers
+      asks: how many female customers are in Europe
+      sql: "SELECT\n  COUNT(*) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n  gender = 'female'\n\
+        \  AND continent = 'Europe'\n  AND valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM\
+        \ contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n\
+        \    FROM contoso_served.v_contoso5_sales_line\n  )"
+      means: 'The count of active female customers whose continent is Europe, as of the newest order date
+        in the data: 14,098 customers.'
+      readings: []
       turns:
-      - why: Read the final figure directly rather than claiming it from the sum of the grouped rows —
-          count distinct customer_key over step 3's population, with the plain row count beside it to
-          confirm the register has no duplicate people.
-        did: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many,\n  COUNT(*) AS rows_read\nFROM contoso_served.dim_customer\n\
-          WHERE\n  gender = 'female' AND continent = 'Europe'"
-        came_back: '1 row(s): [{"how_many": 19564, "rows_read": 19564}]'
-      - why: Count distinct equals the row count, so the register holds one row per person and the figure
-          is 19,564; the declarations settle every fork this question raised, so I answer and disclose
-          rather than ask.
-        did: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\nWHERE\n\
-          \  gender = 'female' AND continent = 'Europe'"
-        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 1 row(s): [{"how_many": 19564}]  Give `claimed_answer`
-          as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
-          rows settle the question, do not decline.'
-      settled_on: "SELECT\n  COUNT(DISTINCT customer_key) AS how_many\nFROM contoso_served.dim_customer\n\
-        WHERE\n  gender = 'female' AND continent = 'Europe'"
-      means: 'One figure: how many distinct people on Contoso''s customer register are recorded as female
-        and living in Europe — 19,564, made up of Great Britain 7,193, Germany 5,014, Italy 2,479, the
-        Netherlands 2,461 and France 2,417. It counts people on record, not buyers and not orders: 8,961
-        of them have appeared on at least one sale across the ten years of orders and the other 10,603
-        have never bought anything, and all are counted. No sales, revenue, store or date enters this
-        figure at all.'
-      readings_taken:
-      - word: customers
-        took: every woman on the register who lives in Europe — 19,564
-        could_also_mean: 'only those who have ever bought something, which is 8,961 — less than half.
-          I did not ask, because the Customer concept is grounded in contoso_served.dim_customer keyed
-          on customer_key: on this bundle a customer IS a person on the register, and the concept warns
-          that the register is not the buyer list rather than redefining a customer as a buyer. If you
-          meant buyers, the figure is 8,961'
-        declaration: Customer [entity], grounded in contoso_served.dim_customer, key customer_key, 104,990
-          rows
-      - word: in Europe
-        took: dim_customer.continent = 'Europe' — where the customer lives
-        could_also_mean: 'naming European countries by hand, which gives the identical 19,564: Europe
-          here is exactly DE, FR, GB, IT and NL, with no borderline country among them. A sales region
-          called Europe or EMEA cannot be meant — this bundle declares no region or territory concept,
-          so there is nothing for that reading to bind to'
-        declaration: country.default.whose_country_is_asked_never_assumed names the customer path for
-          a question about customers; country_code is declared finer_than continent, so the roll-up is
-          clean
-      - word: female
-        took: dim_customer.gender = 'female'
-        could_also_mean: 'female plus a count of customers with no recorded gender — but there are none:
-          gender holds only ''female'' and ''male'' across all 104,990 rows, with no null and no unknown
-          category, so this filter drops nobody silently'
-        declaration: contoso5_gender is the declared value set for the column
-      - word: are in
-        took: a standing count of who is on the register now, with no date applied
-        could_also_mean: the register as it stood on some past date — dim_customer carries valid_from
-          and valid_to and is kept as a history, so that is expressible, but the question named no date
-          and the bundle declares no rule attributing a customer's place to any particular day
-        declaration: dim_customer.valid_from — 'a sale could in principle be attributed to where the customer
-          lived ON THE ORDER DATE — nothing in this bundle declares that it should be'
-      blocked_by: []
+      - why: Step 4 counts the rows from step 3 — active female customers in Europe. Running the count
+          query.
+        did: the statement above
+        came_back: '1 row(s): [{"how_many": 14098}]'
+      blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
   subtitle: ''
@@ -1186,5 +714,10 @@ v3_walk_order:
 v3_answer_step: '4'
 v3_gaps: []
 v3_bucket: EXACT
-v3_why: '''19564'''
-v3_seconds: 171.9
+v3_why: '''14098'''
+v3_seconds: 79.0
+revisions:
+  code: e90b8bc5de81d11df27e5a54effdc9e5ca2c94a8
+  code_dirty: false
+  bundle: b2827aca75fcd5ef4bbc8af3d238bd449bcc7802
+  declarations_dirty: false

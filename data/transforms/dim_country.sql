@@ -32,9 +32,15 @@
 -- — so the row is carried and the concept says what it means. "In how many countries do we sell"
 -- is 8, not 9, and Country's own `real` population is what keeps the sentinel out of a geographic
 -- answer. The dimension holds what the warehouse holds; the ontology says what it means.
+--
+-- `is_placeholder` IS DERIVED HERE, not written as a literal in a rule (2026-11-16, grammar v3: a
+-- rule's rows read a column, true or false, never a stored value). It is TRUE exactly on the `--`
+-- row and FALSE on every real country, never null, so rule Country.rows reads `real` and
+-- `sentinel` from it and selects the same rows `country_code != '--'` / `= '--'` selected.
 CREATE OR REPLACE VIEW contoso_served.dim_country AS
 SELECT
   s."CountryCode"              AS country_code,   -- PK, ISO-3166 alpha-2 ('--' = the online sentinel)
-  any_value(s."CountryName")   AS country_name    -- the long name: 'Australia' for 'AU'
+  any_value(s."CountryName")   AS country_name,   -- the long name: 'Australia' for 'AU'
+  coalesce(s."CountryCode" = '--', false) AS is_placeholder   -- the `--` row is not a country
 FROM main.store s
 GROUP BY s."CountryCode";

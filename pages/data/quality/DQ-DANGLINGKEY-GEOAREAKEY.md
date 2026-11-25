@@ -1,0 +1,47 @@
+---
+type: DQ Issue
+title: '`GeoAreaKey` is key-shaped and no relation in scope carries it as a key'
+description: '`GeoAreaKey` is key-shaped and no relation in scope carries it as a
+  key'
+tags:
+- Contoso 5
+- severity:medium
+- disposition:open
+---
+
+`DQ-DANGLINGKEY-GEOAREAKEY` · severity **medium** · disposition **open — nobody has ruled** · filed under [dim_customer](../datasets/dim_customer.md)
+
+## Finding
+
+`GeoAreaKey` is key-shaped and no relation in scope carries it as a key
+
+## About
+
+- `source:customer`
+
+## Needs
+
+**Needs** — Is the parent MISSING from the extract, already INLINE on the row, or is GeoAreaKey just an attribute? ANSWER ONE OF: inline_dimension | attribute_only | missing_extract. NO RECOMMENDATION — no column of customer shares GeoAreaKey's 608 distinct value(s), so it is NOT an inline dimension. Between the remaining two answers the measurement does not lean: whether the absent parent's information is already denormalised beside this key is a question about meaning, not cardinality. What would settle it is a look at customer's other columns — if they already describe what GeoAreaKey points at, it is attribute_only; if nothing does, the extract is incomplete
+
+**Remedies**
+
+- inline_dimension: a concept is grounded on the carrying relation, using the key for identity and its twin for the label; no parent relation is ever needed and no line is drawn
+- attribute_only: GeoAreaKey is an opaque identifier and nothing groups by it — questions use the denormalised attributes beside it instead
+- missing_extract: the extract is incomplete and it is recorded as such; until the dimension arrives, anything grouped by this key can report only opaque values, and every answer over it must say so
+
+## Disposition
+
+**open**.
+- said by **mac_dq_findings.py/1**
+
+## Repaired by
+
+_No transform's `repairs` names this finding._
+
+## Blocks and waives
+
+_It blocks and waives nothing._
+
+## Evidence
+
+- reported on 2 plane-relation(s) (customer 608 distinct, store 67 distinct); 608 distinct value(s) on customer. It follows this bundle's own key-naming convention and points at nothing.

@@ -1,30 +1,20 @@
----
-type: Source
-title: product
-description: Raw source-of-record — main.product
-resource: table://main.product
-tags:
-- CONTOSO5
-- source
-- lifecycle:draft
-- confidence:Q
----
+# product
 
-## Columns
+The account of source product: its documentation, as prose citing the columns (Y-4).
 
-| column | type | role | reference |
-|---|---|---|---|
-| `ProductKey` | integer | PK |  |
-| `ProductCode` | string | value |  |
-| `ProductName` | string | value |  |
-| `Manufacturer` | string | value |  |
-| `Brand` | string | value |  |
-| `Color` | string | value |  |
-| `WeightUnit` | string | value |  |
-| `Weight` | decimal | value |  |
-| `Cost` | decimal | value |  |
-| `Price` | decimal | value |  |
-| `CategoryKey` | integer | value |  |
-| `CategoryName` | string | value |  |
-| `SubCategoryKey` | integer | value |  |
-| `SubCategoryName` | string | value |  |
+## Cites
+
+- `source:product.ProductKey`
+- `source:product.ProductCode`
+- `source:product.ProductName`
+- `source:product.Manufacturer`
+- `source:product.Brand`
+- `source:product.Color`
+- `source:product.WeightUnit`
+- `source:product.Weight`
+- `source:product.Cost`
+- `source:product.Price`
+- `source:product.CategoryKey`
+- `source:product.CategoryName`
+- `source:product.SubCategoryKey`
+- `source:product.SubCategoryName`

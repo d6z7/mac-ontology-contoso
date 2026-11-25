@@ -1,27 +1,17 @@
----
-type: Source
-title: store
-description: Raw source-of-record — main.store
-resource: table://main.store
-tags:
-- CONTOSO5
-- source
-- lifecycle:draft
-- confidence:Q
----
+# store
 
-## Columns
+The account of source store: its documentation, as prose citing the columns (Y-4).
 
-| column | type | role | reference |
-|---|---|---|---|
-| `StoreKey` | integer | PK |  |
-| `StoreCode` | integer | value |  |
-| `GeoAreaKey` | integer | value |  |
-| `CountryCode` | string | value |  |
-| `CountryName` | string | value |  |
-| `State` | string | value |  |
-| `OpenDate` | timestamp | value |  |
-| `CloseDate` | timestamp | value |  |
-| `Description` | string | value |  |
-| `SquareMeters` | integer | value |  |
-| `Status` | string | value |  |
+## Cites
+
+- `source:store.StoreKey`
+- `source:store.StoreCode`
+- `source:store.GeoAreaKey`
+- `source:store.CountryCode`
+- `source:store.CountryName`
+- `source:store.State`
+- `source:store.OpenDate`
+- `source:store.CloseDate`
+- `source:store.Description`
+- `source:store.SquareMeters`
+- `source:store.Status`

@@ -1,530 +1,314 @@
 id: RC04
-captured_at: '2026-10-29T00:06:31+00:00'
-ontology_fingerprint: 9455837fe192e4d8
-acceptance_fingerprint: 324b16c41efe7a45
+captured_at: '2026-11-17T23:10:34+00:00'
+ontology_fingerprint: ec6d95efb1654a0d
+acceptance_fingerprint: a3baf3c7fe46a2af
 engine:
   interpret: live
   provider: v3-walk
-  model: claude-opus-5
+  model: claude-opus-4-6
   mode: llm-execute
   athena: false
-  run_file: 20261028T235941Z_merged.json
+  run_file: 20261117T224755Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+  method: bench
 connection:
   view_schema: contoso_served
   target: contoso5.duckdb
   connector: duckdb
 route: v3-walk
-answer: 'Which customers do you mean — everyone on the register, or only the ones who have actually bought
-  something? (a) Everyone on our customer register, including people who have never placed an order: 104,990.
-  (b) Only customers who have ever bought from us, with at least one order on record: 52,189. I am not
-  picking for you, because this is not a rounding difference — fewer than half the register has ever ordered,
-  and the Customer concept''s own definition warns that "the register is not the buyer list". Whichever
-  you pick, three things do NOT change: each person is counted exactly once either way, since the register
-  holds one row per customer and nobody is double-counted despite the record-history columns; no date
-  matters, because neither figure moves whether you ask as of today or as of any earlier point; and (b)
-  is a clean subset of (a), so there is no third population hiding between them — the 52,801 difference
-  is precisely the people who have never ordered.'
-verdict:
-  disposition: GOVERNED_REFUSAL
+answer: ''
 intent:
   subject: customers
   operation: aggregate
-  qdmr_simplified: "  1       FROM       customers                    “customers”\n  2  ← 1  AGGREGATE\
-    \  count distinct of customers  “how many customers do we have”\n  answer: step 2   confidence: 0.72\n\
-    \  UNDERSTOOD AS: How many customers there are in total — one number, counting each customer once,\
-    \ across all customers on record as of today. I am not restricting this to recently active, paying,\
-    \ or subscribed customers, and I am not breaking the count down by region, segment, or time.\n  AMBIGUOUS\
-    \ 'customers' — ASKS: Should this count every customer ever on record, or only the ones who are currently\
-    \ active?\n      could mean: every customer ever on record, including ones who have left or gone quiet\n\
-    \      could mean: only customers who are currently active (e.g. bought or were billed recently)\n\
-    \      took: every customer ever on record\n  AMBIGUOUS 'do we have' — ASKS: Do you want the count\
-    \ as it stands today, or the count as of some other date or period?\n      could mean: as it stands\
-    \ right now, today\n      could mean: as of the end of a particular month, quarter, or year\n    \
-    \  took: as it stands right now, today\n  AMBIGUOUS 'customers' — ASKS: If one company or household\
-    \ has several contacts or accounts with us, should that count as one customer or as several?\n   \
-    \   could mean: one per company or household (the billing account)\n      could mean: one per individual\
-    \ person or contact\n      could mean: one per account or subscription, so a company with three accounts\
-    \ counts three times\n      took: one per customer record, counted once each\n  OUTPUT SHAPE: one\
-    \ figure · one row(s) · carrying how many customers"
-  understood_as_in_human_words: How many customers there are in total — one number, counting each customer
-    once, across all customers on record as of today. I am not restricting this to recently active, paying,
-    or subscribed customers, and I am not breaking the count down by region, segment, or time.
-  population_actually_answered: 'TWO populations, both computed and both reported, neither chosen. (a)
-    104,990 = every row of contoso_served.dim_customer with no predicate of any kind — no status, activity,
-    geography, channel or record-validity filter. (b) 52,189 = COUNT(DISTINCT customer_key) over all 223,974
-    rows of contoso_served.v_contoso5_sales_line, also with no predicate — no period restriction, so it
-    covers the whole declared sales extent, and no channel restriction, so physical and online buyers
-    are both included. I applied NO concept default: Store''s `active` and Country''s `real` defaults
-    are each explicitly scoped to questions ABOUT those concepts, and both rules state that a concept
-    merely on the join path keeps none of its default — neither concept is even on this path. I did not
-    restrict to any country, so the `--` sentinel question never arises, and could not anyway, since the
-    customer-to-country edge is measured as carrying no customer with that code.'
+  qdmr_simplified: "  1       FROM       customers\n  2  ← 1  DURING     by None             “as of 31.12.2025”\n\
+    \  3  ← 2  AGGREGATE  count of customers  “how many customers”\n  answer: step 3   confidence: 0.85\n\
+    \  UNDERSTOOD AS: How many customers do we have as of 31.12.2025?\n  AMBIGUOUS 'customers' — ASKS:\
+    \ Should we count all customers on record, or only those who are active (e.g. not churned or closed)\
+    \ as of that date?\n      could mean: all customers ever created up to 31.12.2025\n      could mean:\
+    \ only customers that are active/open as of 31.12.2025\n      took: only customers that are active/open\
+    \ as of 31.12.2025\n  AMBIGUOUS 'as of 31.12.2025' — ASKS: Does 'as of 31.12.2025' mean customers\
+    \ whose accounts existed by that date, or customers who had activity (e.g. a purchase) by that date?\n\
+    \      could mean: customers whose account existed by 31.12.2025\n      could mean: customers who\
+    \ made at least one purchase by 31.12.2025\n      took: customers whose account existed by 31.12.2025\n\
+    \  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
+  understood_as_in_human_words: How many customers do we have as of 31.12.2025?
+  population_actually_answered: Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end
+    > 2025-12-31, i.e. active customers as of that date per rule Customer.active_on_the_reference_date
+    (default 'active'). No channel, country or buyer restriction applied. This is not all registered customers
+    — it excludes those whose validity window does not cover the reference date.
   how_the_result_must_be_presented:
-    shape_it_committed_to: I will not choose
+    shape_it_committed_to: one figure
     columns_the_answer_step_asks_for: []
     figures_the_answer_step_computes:
-    - count distinct of customers
-    answer_step: '2'
+    - count of customers
+    answer_step: '3'
     verb: aggregate
-    said: how many customers do we have
-    stage1_confidence: 0.72
+    said: how many customers
+    stage1_confidence: 0.85
   canonical_question: &id001
-    understood_as: How many customers there are in total — one number, counting each customer once, across
-      all customers on record as of today. I am not restricting this to recently active, paying, or subscribed
-      customers, and I am not breaking the count down by region, segment, or time.
+    understood_as: How many customers do we have as of 31.12.2025?
     steps:
     - id: '1'
       do: from
       thing: customers
-      said: customers
     - id: '2'
-      do: aggregate
+      do: during
       of: '1'
-      said: how many customers do we have
+      said: as of 31.12.2025
+    - id: '3'
+      do: aggregate
+      of: '2'
+      said: how many customers
       figures: &id002
-      - how: count distinct
+      - how: count
         of: customers
         said: how many customers
-    answer: '2'
+    answer: '3'
     output_shape: &id003
       shape: one figure
-      said: How many customers do we have?
-      rows: one
       key_columns: &id005 []
       figure_columns: &id006
       - how many customers
+      rows: one
+      said: how many customers
+    confidence: 0.85
+    periods:
+    - said: as of 31.12.2025
+      start: '2025-12-31'
+      end: '2025-12-31'
+      grain: day
     ambiguities:
     - words: customers
-      question: Should this count every customer ever on record, or only the ones who are currently active?
+      question: Should we count all customers on record, or only those who are active (e.g. not churned
+        or closed) as of that date?
       readings:
-      - every customer ever on record, including ones who have left or gone quiet
-      - only customers who are currently active (e.g. bought or were billed recently)
-      assumed: every customer ever on record
-    - words: do we have
-      question: Do you want the count as it stands today, or the count as of some other date or period?
+      - all customers ever created up to 31.12.2025
+      - only customers that are active/open as of 31.12.2025
+      assumed: only customers that are active/open as of 31.12.2025
+    - words: as of 31.12.2025
+      question: Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers
+        who had activity (e.g. a purchase) by that date?
       readings:
-      - as it stands right now, today
-      - as of the end of a particular month, quarter, or year
-      assumed: as it stands right now, today
-    - words: customers
-      question: If one company or household has several contacts or accounts with us, should that count
-        as one customer or as several?
-      readings:
-      - one per company or household (the billing account)
-      - one per individual person or contact
-      - one per account or subscription, so a company with three accounts counts three times
-      assumed: one per customer record, counted once each
+      - customers whose account existed by 31.12.2025
+      - customers who made at least one purchase by 31.12.2025
+      assumed: customers whose account existed by 31.12.2025
     cannot_express: []
-    confidence: 0.72
-  steps: 2
+  steps: 3
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
   table:
     columns:
-    - name: reading
-      type: string
     - name: how_many_customers
       type: number
     rows:
-    - - everyone on the register
-      - 104990
-    - - has ever bought something
-      - 52189
-  value: null
-  raw: 'Which customers do you mean — everyone on the register, or only the ones who have actually bought
-    something? (a) Everyone on our customer register, including people who have never placed an order:
-    104,990. (b) Only customers who have ever bought from us, with at least one order on record: 52,189.
-    I am not picking for you, because this is not a rounding difference — fewer than half the register
-    has ever ordered, and the Customer concept''s own definition warns that "the register is not the buyer
-    list". Whichever you pick, three things do NOT change: each person is counted exactly once either
-    way, since the register holds one row per customer and nobody is double-counted despite the record-history
-    columns; no date matters, because neither figure moves whether you ask as of today or as of any earlier
-    point; and (b) is a clean subset of (a), so there is no third population hiding between them — the
-    52,801 difference is precisely the people who have never ordered.'
-  reading: I will not choose
+    - - 75282
+  value: 75282
+  raw: '75282'
+  reading: one figure
   status: ok
   confidence: I
   assumptions:
   - kind: ''
-    text: "customers → every person on the customer register, 104,990 — the whole of dim_customer with\
-      \ no predicate\n        could also mean: only customers who have ever bought something, which is\
-      \ 52,189 — fewer than half"
-    ref: NOTHING SETTLES THIS. The Customer concept declares no population rule and no default; its definition
-      only WARNS that 'the register is not the buyer list'. Unlike Store (default active) or Country (default
-      real), there is no declared default to apply here, so this fork is carried to the answer step unresolved
-      rather than taken silently.
+    text: "customers → active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end\
+      \ > 2025-12-31), per rule Customer.active_on_the_reference_date default 'active'\n        could\
+      \ also mean: all registered customers ever on the register (rule choice 'registered'), or buyers\
+      \ who purchased something"
+    ref: rule Customer.active_on_the_reference_date — default is 'active'
   - kind: ''
-    text: "customers → one per customer record, counted once each — COUNT(DISTINCT customer_key) over\
-      \ dim_customer\n        could also mean: one per company/household, or one per account/subscription,\
-      \ so a repeat contact counts several times"
-    ref: 'SETTLED BY MEASUREMENT, no fork remains: register_rows = 104,990 and distinct_customer_keys
-      = 104,990 are equal, so the grain is already one row per customer. dim_customer declares key customer_key,
-      ''one row per customer'', and carries no account, household or company column to count by instead.'
-  - kind: ''
-    text: "do we have → as the register stands, with no as-of date applied\n        could also mean: as\
-      \ of a historical date, reconstructed from valid_from/valid_to"
-    ref: valid_from/valid_to exist on dim_customer and the column note says 'the register is kept as a
-      history', but since distinct keys equal row count there is exactly one row per customer in the served
-      relation — so there is no current-vs-historical version to choose between, and no as-of predicate
-      would change the count today.
-  - kind: ''
-    text: "customers → I REFUSED TO TAKE EITHER. Both readings run and returned: whole register 104,990;\
-      \ ever-bought 52,189.\n        could also mean: the two readings ARE the fork — everyone on record,\
-      \ or only those with at least one order"
-    ref: 'NOTHING SETTLES IT. The Customer concept declares no rules whatsoever — no population_select,
-      no default — unlike Store (default `active`) and Country (default `real`), which do. Its definition
-      only WARNS: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is
-      not the buyer list.'' A warning is not a default, and the measured gap is a factor of two, so the
-      canon requires asking rather than choosing.'
-  - kind: ''
-    text: "how many customers → COUNT(DISTINCT customer_key) — each person once\n        could also mean:\
-      \ one per company or household, or one per account or subscription, so a repeat contact counts several\
-      \ times"
-    ref: 'SETTLED BY MEASUREMENT in step 1: register_rows 104,990 = distinct_customer_keys 104,990, so
-      the relation is already one row per customer. dim_customer declares key customer_key (''one row
-      per customer'') and carries no account, subscription, company or household column, so no coarser
-      or finer grain is expressible at all.'
-  - kind: ''
-    text: "do we have → the register as it stands, with no as-of predicate\n        could also mean: as\
-      \ of a historical date, reconstructed from valid_from/valid_to"
-    ref: dim_customer.valid_from notes 'the register is kept as a history', but with exactly one row per
-      key there is no version to select and no as-of date would move either figure. Immaterial — disclosed,
-      not asked.
-  - kind: ''
-    text: "customers (period) → all time on both figures — no period predicate at all\n        could also\
-      \ mean: a recent window, such as buyers in the last year"
-    ref: 'order.default.an_unscoped_question_covers_all_time (confidence C): a question naming no window
-      takes `all_time`, unbounded, and the answer DISCLOSES it. The ever-bought figure therefore spans
-      the full declared extent, order_date 2016-05-18 to 2025-12-31, read on order_date per order.default.period_is_order_date.'
+    text: "as of 31.12.2025 → reference date for the customer validity window, not a filter on order_date\n\
+      \        could also mean: a filter on sales order_date, but the question asks about customers not\
+      \ sales"
+    ref: rule Customer.active_on_the_reference_date — 'The reference date is the date the question states'
   concepts: []
   rules:
-  - id: NOTHING SETTLES THIS. The Customer concept declares no population rule and no default; its definition
-      only WARNS that 'the register is not the buyer list'. Unlike Store (default active) or Country (default
-      real), there is no declared default to apply here, so this fork is carried to the answer step unresolved
-      rather than taken silently.
-    why: '''customers'' = every person on the customer register, 104,990 — the whole of dim_customer with
-      no predicate'
-  - id: 'SETTLED BY MEASUREMENT, no fork remains: register_rows = 104,990 and distinct_customer_keys =
-      104,990 are equal, so the grain is already one row per customer. dim_customer declares key customer_key,
-      ''one row per customer'', and carries no account, household or company column to count by instead.'
-    why: '''customers'' = one per customer record, counted once each — COUNT(DISTINCT customer_key) over
-      dim_customer'
-  - id: valid_from/valid_to exist on dim_customer and the column note says 'the register is kept as a
-      history', but since distinct keys equal row count there is exactly one row per customer in the served
-      relation — so there is no current-vs-historical version to choose between, and no as-of predicate
-      would change the count today.
-    why: '''do we have'' = as the register stands, with no as-of date applied'
-  - id: 'NOTHING SETTLES IT. The Customer concept declares no rules whatsoever — no population_select,
-      no default — unlike Store (default `active`) and Country (default `real`), which do. Its definition
-      only WARNS: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is
-      not the buyer list.'' A warning is not a default, and the measured gap is a factor of two, so the
-      canon requires asking rather than choosing.'
-    why: '''customers'' = I REFUSED TO TAKE EITHER. Both readings run and returned: whole register 104,990;
-      ever-bought 52,189.'
-  - id: 'SETTLED BY MEASUREMENT in step 1: register_rows 104,990 = distinct_customer_keys 104,990, so
-      the relation is already one row per customer. dim_customer declares key customer_key (''one row
-      per customer'') and carries no account, subscription, company or household column, so no coarser
-      or finer grain is expressible at all.'
-    why: '''how many customers'' = COUNT(DISTINCT customer_key) — each person once'
-  - id: dim_customer.valid_from notes 'the register is kept as a history', but with exactly one row per
-      key there is no version to select and no as-of date would move either figure. Immaterial — disclosed,
-      not asked.
-    why: '''do we have'' = the register as it stands, with no as-of predicate'
-  - id: 'order.default.an_unscoped_question_covers_all_time (confidence C): a question naming no window
-      takes `all_time`, unbounded, and the answer DISCLOSES it. The ever-bought figure therefore spans
-      the full declared extent, order_date 2016-05-18 to 2025-12-31, read on order_date per order.default.period_is_order_date.'
-    why: '''customers (period)'' = all time on both figures — no period predicate at all'
+  - id: rule Customer.active_on_the_reference_date — default is 'active'
+    why: '''customers'' = active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end
+      > 2025-12-31), per rule Customer.active_on_the_reference_date default ''active'''
+  - id: rule Customer.active_on_the_reference_date — 'The reference date is the date the question states'
+    why: '''as of 31.12.2025'' = reference date for the customer validity window, not a filter on order_date'
   edges: []
 sql:
-- "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-  FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n  COUNT(DISTINCT\
-  \ customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
-- "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
-answer_sql: "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-  FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n  COUNT(DISTINCT\
-  \ customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
+- "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <=\
+  \ CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+- "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+  \  AND valid_end > CAST('2025-12-31' AS DATE)"
+- "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+  \  AND valid_end > CAST('2025-12-31' AS DATE)"
+answer_sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+  \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
 sql_valid: true
 result:
   status: ok
-  rows: 2
+  rows: 1
   cols: &id007
-  - reading
   - how_many_customers
   sample_rows:
-  - - everyone on the register
-    - 104990
-  - - has ever bought something
-    - 52189
+  - - 75282
   capped: false
 prompt:
-  chars: 73996
-  lines: 842
+  chars: 143797
+  lines: 2594
   sections:
   - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 1 — the JSON schema of its answer
   - STAGE 2 — system prompt for walking one step
-  - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/44362d9332a0.txt
-  sha: 44362d9332a0
-  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
-    it is now.'
+  - STAGE 2 — the declarations, at the end of that system prompt
+  - STAGE 2 — the JSON schemas of a step call
+  - STAGE 2 — what writes the per-question text (candidates, refusals)
+  file: acceptance/prompts/143fce7bb1bb.txt
+  sha: 143fce7bb1bb
+  reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+    the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+    given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 error: null
 v3_report:
   canonical_question_json: *id001
-  canonical_question_simplified: "  1       FROM       customers                    “customers”\n  2 \
-    \ ← 1  AGGREGATE  count distinct of customers  “how many customers do we have”\n  answer: step 2 \
-    \  confidence: 0.72\n  UNDERSTOOD AS: How many customers there are in total — one number, counting\
-    \ each customer once, across all customers on record as of today. I am not restricting this to recently\
-    \ active, paying, or subscribed customers, and I am not breaking the count down by region, segment,\
-    \ or time.\n  AMBIGUOUS 'customers' — ASKS: Should this count every customer ever on record, or only\
-    \ the ones who are currently active?\n      could mean: every customer ever on record, including ones\
-    \ who have left or gone quiet\n      could mean: only customers who are currently active (e.g. bought\
-    \ or were billed recently)\n      took: every customer ever on record\n  AMBIGUOUS 'do we have' —\
-    \ ASKS: Do you want the count as it stands today, or the count as of some other date or period?\n\
-    \      could mean: as it stands right now, today\n      could mean: as of the end of a particular\
-    \ month, quarter, or year\n      took: as it stands right now, today\n  AMBIGUOUS 'customers' — ASKS:\
-    \ If one company or household has several contacts or accounts with us, should that count as one customer\
-    \ or as several?\n      could mean: one per company or household (the billing account)\n      could\
-    \ mean: one per individual person or contact\n      could mean: one per account or subscription, so\
-    \ a company with three accounts counts three times\n      took: one per customer record, counted once\
-    \ each\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
-  understood_as: How many customers there are in total — one number, counting each customer once, across
-    all customers on record as of today. I am not restricting this to recently active, paying, or subscribed
-    customers, and I am not breaking the count down by region, segment, or time.
+  canonical_question_simplified: "  1       FROM       customers\n  2  ← 1  DURING     by None       \
+    \      “as of 31.12.2025”\n  3  ← 2  AGGREGATE  count of customers  “how many customers”\n  answer:\
+    \ step 3   confidence: 0.85\n  UNDERSTOOD AS: How many customers do we have as of 31.12.2025?\n  AMBIGUOUS\
+    \ 'customers' — ASKS: Should we count all customers on record, or only those who are active (e.g.\
+    \ not churned or closed) as of that date?\n      could mean: all customers ever created up to 31.12.2025\n\
+    \      could mean: only customers that are active/open as of 31.12.2025\n      took: only customers\
+    \ that are active/open as of 31.12.2025\n  AMBIGUOUS 'as of 31.12.2025' — ASKS: Does 'as of 31.12.2025'\
+    \ mean customers whose accounts existed by that date, or customers who had activity (e.g. a purchase)\
+    \ by that date?\n      could mean: customers whose account existed by 31.12.2025\n      could mean:\
+    \ customers who made at least one purchase by 31.12.2025\n      took: customers whose account existed\
+    \ by 31.12.2025\n  OUTPUT SHAPE: one figure · one row(s) · carrying how many customers"
+  understood_as: How many customers do we have as of 31.12.2025?
   ambiguities_it_saw:
   - words: customers
-    asks: Should this count every customer ever on record, or only the ones who are currently active?
+    asks: Should we count all customers on record, or only those who are active (e.g. not churned or closed)
+      as of that date?
     readings:
-    - every customer ever on record, including ones who have left or gone quiet
-    - only customers who are currently active (e.g. bought or were billed recently)
-    took: every customer ever on record
-  - words: do we have
-    asks: Do you want the count as it stands today, or the count as of some other date or period?
+    - all customers ever created up to 31.12.2025
+    - only customers that are active/open as of 31.12.2025
+    took: only customers that are active/open as of 31.12.2025
+  - words: as of 31.12.2025
+    asks: Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers who
+      had activity (e.g. a purchase) by that date?
     readings:
-    - as it stands right now, today
-    - as of the end of a particular month, quarter, or year
-    took: as it stands right now, today
-  - words: customers
-    asks: If one company or household has several contacts or accounts with us, should that count as one
-      customer or as several?
-    readings:
-    - one per company or household (the billing account)
-    - one per individual person or contact
-    - one per account or subscription, so a company with three accounts counts three times
-    took: one per customer record, counted once each
+    - customers whose account existed by 31.12.2025
+    - customers who made at least one purchase by 31.12.2025
+    took: customers whose account existed by 31.12.2025
   presentation:
-    claimed_answer_is: I will not choose
-    answer_step: '2'
+    claimed_answer_is: one figure
+    answer_step: '3'
     answer_step_asks:
       do: aggregate
-      of: '1'
-      said: how many customers do we have
+      of: '2'
+      said: how many customers
       figures: *id002
-    confidence_stage1: 0.72
+    confidence_stage1: 0.85
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
+    sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+      \  AND valid_end > CAST('2025-12-31' AS DATE)"
     params: {}
   - step: '2'
-    sql: "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-      FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n\
-      \  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
+    sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n\
+      \  AND valid_end > CAST('2025-12-31' AS DATE)"
     params: {}
-  what_it_calculated: 'Two rows, one per reading of the word "customers", each counting a person exactly
-    once. Row 1 is how many people sit on Contoso''s customer register in total — every registered person,
-    no filter at all — 104,990. Row 2 is how many of those same people appear as the buyer on at least
-    one sales line across the bundle''s whole sales extent, order_date 2016-05-18 to 2025-12-31 — 52,189.
-    Neither row counts orders, accounts, households or revenue; both count distinct registered persons,
-    and row 2 is a strict subset of row 1. What I did NOT include, and could not: any notion of "currently
-    active", subscribed or recently billed, because this bundle declares no status column on a customer
-    at all — that reading does not exist here, so it is not among the two I am offering.'
+  - step: '3'
+    sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+      \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    params: {}
+  what_it_calculated: The count of customers whose validity window includes 31 December 2025 — i.e. active
+    customers on that reference date. One number, 75,282.
   rows_returned: &id004
-  - reading: everyone on the register
-    how_many_customers: 104990
-  - reading: has ever bought something
-    how_many_customers: 52189
+  - how_many_customers: 75282
   synthesis:
-    claimed: 'Which customers do you mean — everyone on the register, or only the ones who have actually
-      bought something? (a) Everyone on our customer register, including people who have never placed
-      an order: 104,990. (b) Only customers who have ever bought from us, with at least one order on record:
-      52,189. I am not picking for you, because this is not a rounding difference — fewer than half the
-      register has ever ordered, and the Customer concept''s own definition warns that "the register is
-      not the buyer list". Whichever you pick, three things do NOT change: each person is counted exactly
-      once either way, since the register holds one row per customer and nobody is double-counted despite
-      the record-history columns; no date matters, because neither figure moves whether you ask as of
-      today or as of any earlier point; and (b) is a clean subset of (a), so there is no third population
-      hiding between them — the 52,801 difference is precisely the people who have never ordered.'
-    shape: I will not choose
-    answered_population: 'TWO populations, both computed and both reported, neither chosen. (a) 104,990
-      = every row of contoso_served.dim_customer with no predicate of any kind — no status, activity,
-      geography, channel or record-validity filter. (b) 52,189 = COUNT(DISTINCT customer_key) over all
-      223,974 rows of contoso_served.v_contoso5_sales_line, also with no predicate — no period restriction,
-      so it covers the whole declared sales extent, and no channel restriction, so physical and online
-      buyers are both included. I applied NO concept default: Store''s `active` and Country''s `real`
-      defaults are each explicitly scoped to questions ABOUT those concepts, and both rules state that
-      a concept merely on the join path keeps none of its default — neither concept is even on this path.
-      I did not restrict to any country, so the `--` sentinel question never arises, and could not anyway,
-      since the customer-to-country edge is measured as carrying no customer with that code.'
+    claimed: '75282'
+    shape: one figure
+    answered_population: Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end
+      > 2025-12-31, i.e. active customers as of that date per rule Customer.active_on_the_reference_date
+      (default 'active'). No channel, country or buyer restriction applied. This is not all registered
+      customers — it excludes those whose validity window does not cover the reference date.
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
-    step_asks: customers
-    turns:
-    - why: Establish the base relation for "customers" and simultaneously measure the register-vs-buyers
-        fork the Customer concept explicitly flags.
-      did: 'probe ''dim_customer.valid_to'' AND ALSO: SELECT COUNT(*) AS register_rows, COUNT(DISTINCT
-        customer_key) AS distinct_customer_keys, (SELECT COUNT(DISTINCT customer_key) FROM contoso_served.v_contoso5_sales_line)
-        AS customers_with_at_least_one_sale FROM contoso_served.dim_customer'
-      came_back: 'dim_customer.valid_to (date) holds 60+ distinct value(s), first 60: datetime.date(2005,
-        1, 1), datetime.date(2005, 1, 2), datetime.date(2005, 1, 3), datetime.date(2005, 1, 5), datetime.date(2005,
-        1, 6), datetime.date(2005, 1, 7), datetime.date(2005, 1, 8), datetime.date(2005, 1, 9), datetime.date(2005,
-        1, 10), datetime.date(2005, 1, 11), datetime.date(2005, 1, 12), datetime.date(2005, 1, 13), datetime.date(2005,
-        1, 15), datetime.date(2005, 1, 16), datetime.date(2005, 1, 17), datetime.date(2005, 1, 18), datetime.date(2005,
-        1, 20), datetime.date(2005, 1, 21), datetime.date(2005, 1, 22), datetime.date(2005, 1, 23), datetime.date(2005,
-        1, 24), datetime.date(2005, 1, 25), datetime.date(2005, 1, 26), datetime.date(2005, 1, 27), datetime.date(2005,
-        1, 28), datetime.date(2005, 1, 29), datetime.date(2005, 1, 30), datetime.date(2005, 1, 31), datetime.date(2005,
-        2, 1), datetime.date(2005, 2, 2), datetime.date(2005, 2, 3), datetime.date(2005, 2, 4), datetime.date(2005,
-        2, 5), datetime.date(2005, 2, 7), datetime.date(2005, 2, 8), datetime.date(2005, 2, 9), datetime.date(2005,
-        2, 10), datetime.date(2005, 2, 11), datetime.date(2005, 2, 12), datetime.date(2005, 2, 13), datetime.date(2005,
-        2, 14), '
-    settled_on: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
-    means: One row per person on Contoso's customer register, 104,990 of them, with no filter of any kind
-      applied — not status, not geography, not whether they ever bought anything. Each row is one distinct
-      customer_key, and because the register holds exactly one row per key, no person is represented twice
-      even though the table carries valid_from/valid_to history columns. Alongside it I established that
-      only 52,189 of these 104,990 people ever appear on a sales line, so the register is strictly wider
-      than the buyer list.
+    step_asks: ''
+    turns: []
+    settled_on: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31'\
+      \ AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    means: All customer records that are active (valid) as of 31 December 2025 — one row per customer
+      whose validity window includes that date.
     readings_taken:
     - word: customers
-      took: every person on the customer register, 104,990 — the whole of dim_customer with no predicate
-      could_also_mean: only customers who have ever bought something, which is 52,189 — fewer than half
-      declaration: NOTHING SETTLES THIS. The Customer concept declares no population rule and no default;
-        its definition only WARNS that 'the register is not the buyer list'. Unlike Store (default active)
-        or Country (default real), there is no declared default to apply here, so this fork is carried
-        to the answer step unresolved rather than taken silently.
-    - word: customers
-      took: one per customer record, counted once each — COUNT(DISTINCT customer_key) over dim_customer
-      could_also_mean: one per company/household, or one per account/subscription, so a repeat contact
-        counts several times
-      declaration: 'SETTLED BY MEASUREMENT, no fork remains: register_rows = 104,990 and distinct_customer_keys
-        = 104,990 are equal, so the grain is already one row per customer. dim_customer declares key customer_key,
-        ''one row per customer'', and carries no account, household or company column to count by instead.'
-    - word: do we have
-      took: as the register stands, with no as-of date applied
-      could_also_mean: as of a historical date, reconstructed from valid_from/valid_to
-      declaration: valid_from/valid_to exist on dim_customer and the column note says 'the register is
-        kept as a history', but since distinct keys equal row count there is exactly one row per customer
-        in the served relation — so there is no current-vs-historical version to choose between, and no
-        as-of predicate would change the count today.
+      took: active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end > 2025-12-31),
+        per rule Customer.active_on_the_reference_date default 'active'
+      could_also_mean: all registered customers ever on the register (rule choice 'registered'), or buyers
+        who purchased something
+      declaration: rule Customer.active_on_the_reference_date — default is 'active'
+    - word: as of 31.12.2025
+      took: reference date for the customer validity window, not a filter on order_date
+      could_also_mean: a filter on sales order_date, but the question asks about customers not sales
+      declaration: rule Customer.active_on_the_reference_date — 'The reference date is the date the question
+        states'
     blocked_by: []
   - step: '2'
-    step_asks: how many customers do we have
+    step_asks: as of 31.12.2025
+    turns: []
+    settled_on: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31'\
+      \ AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    means: 'Same as step 1: all customer records active as of 31 December 2025. The date was already folded
+      into step 1''s validity-window predicate.'
+    readings_taken: []
+    blocked_by: []
+  - step: '3'
+    step_asks: how many customers
     turns:
-    - why: Both readings of "customers" are measured and differ by a factor of two with no declaration
-        settling it, so I refuse to choose and hand back the question with each reading priced.
-      did: ''
-      came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
-        THE DATABASE SAID: no SQL given'
-    - why: Settle the step with SQL that computes BOTH readings side by side, since the fork is material
-        and undeclared and my answer is the priced question rather than one of the two figures.
-      did: "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-        FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n\
-        \  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
-      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 2 row(s): [{"reading": "everyone on the register", "how_many_customers":
-        104990}, {"reading": "has ever bought something", "how_many_customers": 52189}]  Give `claimed_answer`
-        as the value a person would be handed, and `claimed_answer_is` from the closed list. If these
-        rows settle the question, do not decline.'
-    settled_on: "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-      FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n\
-      \  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
-    means: 'Two rows, one per reading of the word "customers", each counting a person exactly once. Row
-      1 is how many people sit on Contoso''s customer register in total — every registered person, no
-      filter at all — 104,990. Row 2 is how many of those same people appear as the buyer on at least
-      one sales line across the bundle''s whole sales extent, order_date 2016-05-18 to 2025-12-31 — 52,189.
-      Neither row counts orders, accounts, households or revenue; both count distinct registered persons,
-      and row 2 is a strict subset of row 1. What I did NOT include, and could not: any notion of "currently
-      active", subscribed or recently billed, because this bundle declares no status column on a customer
-      at all — that reading does not exist here, so it is not among the two I am offering.'
-    readings_taken:
-    - word: customers
-      took: 'I REFUSED TO TAKE EITHER. Both readings run and returned: whole register 104,990; ever-bought
-        52,189.'
-      could_also_mean: the two readings ARE the fork — everyone on record, or only those with at least
-        one order
-      declaration: 'NOTHING SETTLES IT. The Customer concept declares no rules whatsoever — no population_select,
-        no default — unlike Store (default `active`) and Country (default `real`), which do. Its definition
-        only WARNS: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register
-        is not the buyer list.'' A warning is not a default, and the measured gap is a factor of two,
-        so the canon requires asking rather than choosing.'
-    - word: how many customers
-      took: COUNT(DISTINCT customer_key) — each person once
-      could_also_mean: one per company or household, or one per account or subscription, so a repeat contact
-        counts several times
-      declaration: 'SETTLED BY MEASUREMENT in step 1: register_rows 104,990 = distinct_customer_keys 104,990,
-        so the relation is already one row per customer. dim_customer declares key customer_key (''one
-        row per customer'') and carries no account, subscription, company or household column, so no coarser
-        or finer grain is expressible at all.'
-    - word: do we have
-      took: the register as it stands, with no as-of predicate
-      could_also_mean: as of a historical date, reconstructed from valid_from/valid_to
-      declaration: dim_customer.valid_from notes 'the register is kept as a history', but with exactly
-        one row per key there is no version to select and no as-of date would move either figure. Immaterial
-        — disclosed, not asked.
-    - word: customers (period)
-      took: all time on both figures — no period predicate at all
-      could_also_mean: a recent window, such as buyers in the last year
-      declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C): a question naming
-        no window takes `all_time`, unbounded, and the answer DISCLOSES it. The ever-bought figure therefore
-        spans the full declared extent, order_date 2016-05-18 to 2025-12-31, read on order_date per order.default.period_is_order_date.'
+    - why: the answer step's SQL you wrote on your first turn
+      did: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      came_back: '1 row(s): [{"how_many_customers": 75282}]'
+    settled_on: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n \
+      \ valid_from <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+    means: The count of customers whose validity window includes 31 December 2025 — i.e. active customers
+      on that reference date. One number, 75,282.
+    readings_taken: []
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 73,996 chars · 842 lines  [44362d9332a0]
+  summary: 143,797 chars · 2594 lines  [143fce7bb1bb]
   detail:
-    chars: 73996
-    lines: 842
+    chars: 143797
+    lines: 2594
     sections:
     - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 1 — the JSON schema of its answer
     - STAGE 2 — system prompt for walking one step
-    - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/44362d9332a0.txt
-    sha: 44362d9332a0
-    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
-      as it is now.'
+    - STAGE 2 — the declarations, at the end of that system prompt
+    - STAGE 2 — the JSON schemas of a step call
+    - STAGE 2 — what writes the per-question text (candidates, refusals)
+    file: acceptance/prompts/143fce7bb1bb.txt
+    sha: 143fce7bb1bb
+    reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+      the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+      given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 - stage: understood_as
   status: ok
   ms: 0
   summary: ''
   detail:
-    prose: How many customers there are in total — one number, counting each customer once, across all
-      customers on record as of today. I am not restricting this to recently active, paying, or subscribed
-      customers, and I am not breaking the count down by region, segment, or time.
-    population: 'TWO populations, both computed and both reported, neither chosen. (a) 104,990 = every
-      row of contoso_served.dim_customer with no predicate of any kind — no status, activity, geography,
-      channel or record-validity filter. (b) 52,189 = COUNT(DISTINCT customer_key) over all 223,974 rows
-      of contoso_served.v_contoso5_sales_line, also with no predicate — no period restriction, so it covers
-      the whole declared sales extent, and no channel restriction, so physical and online buyers are both
-      included. I applied NO concept default: Store''s `active` and Country''s `real` defaults are each
-      explicitly scoped to questions ABOUT those concepts, and both rules state that a concept merely
-      on the join path keeps none of its default — neither concept is even on this path. I did not restrict
-      to any country, so the `--` sentinel question never arises, and could not anyway, since the customer-to-country
-      edge is measured as carrying no customer with that code.'
+    prose: How many customers do we have as of 31.12.2025?
+    population: Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end > 2025-12-31,
+      i.e. active customers as of that date per rule Customer.active_on_the_reference_date (default 'active').
+      No channel, country or buyer restriction applied. This is not all registered customers — it excludes
+      those whose validity window does not cover the reference date.
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
     steps_readable:
-    - '  1       FROM       customers                    “customers”'
-    - '  2  ← 1  AGGREGATE  count distinct of customers  “how many customers do we have”'
-    - '  answer: step 2   confidence: 0.72'
+    - '  1       FROM       customers'
+    - '  2  ← 1  DURING             “as of 31.12.2025”'
+    - '  3  ← 2  AGGREGATE  count of customers  “how many customers”'
+    - '  answer: step 3   confidence: 0.85'
 - stage: ambiguities
   status: ok
   ms: 0
@@ -532,25 +316,19 @@ stages:
   detail:
     ambiguities:
     - words: customers
-      asks: Should this count every customer ever on record, or only the ones who are currently active?
+      asks: Should we count all customers on record, or only those who are active (e.g. not churned or
+        closed) as of that date?
       readings:
-      - every customer ever on record, including ones who have left or gone quiet
-      - only customers who are currently active (e.g. bought or were billed recently)
-      took: every customer ever on record
-    - words: do we have
-      asks: Do you want the count as it stands today, or the count as of some other date or period?
+      - all customers ever created up to 31.12.2025
+      - only customers that are active/open as of 31.12.2025
+      took: only customers that are active/open as of 31.12.2025
+    - words: as of 31.12.2025
+      asks: Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers who
+        had activity (e.g. a purchase) by that date?
       readings:
-      - as it stands right now, today
-      - as of the end of a particular month, quarter, or year
-      took: as it stands right now, today
-    - words: customers
-      asks: If one company or household has several contacts or accounts with us, should that count as
-        one customer or as several?
-      readings:
-      - one per company or household (the billing account)
-      - one per individual person or contact
-      - one per account or subscription, so a company with three accounts counts three times
-      took: one per customer record, counted once each
+      - customers whose account existed by 31.12.2025
+      - customers who made at least one purchase by 31.12.2025
+      took: customers whose account existed by 31.12.2025
 - stage: cannot_express
   status: skipped
   ms: 0
@@ -566,7 +344,7 @@ stages:
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.72 — stage 1's own confidence in this decomposition
+  summary: 0.85 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -581,66 +359,27 @@ stages:
   detail:
     readings:
     - word: customers
-      took: every person on the customer register, 104,990 — the whole of dim_customer with no predicate
-      could_also_mean: only customers who have ever bought something, which is 52,189 — fewer than half
-      declaration: NOTHING SETTLES THIS. The Customer concept declares no population rule and no default;
-        its definition only WARNS that 'the register is not the buyer list'. Unlike Store (default active)
-        or Country (default real), there is no declared default to apply here, so this fork is carried
-        to the answer step unresolved rather than taken silently.
-    - word: customers
-      took: one per customer record, counted once each — COUNT(DISTINCT customer_key) over dim_customer
-      could_also_mean: one per company/household, or one per account/subscription, so a repeat contact
-        counts several times
-      declaration: 'SETTLED BY MEASUREMENT, no fork remains: register_rows = 104,990 and distinct_customer_keys
-        = 104,990 are equal, so the grain is already one row per customer. dim_customer declares key customer_key,
-        ''one row per customer'', and carries no account, household or company column to count by instead.'
-    - word: do we have
-      took: as the register stands, with no as-of date applied
-      could_also_mean: as of a historical date, reconstructed from valid_from/valid_to
-      declaration: valid_from/valid_to exist on dim_customer and the column note says 'the register is
-        kept as a history', but since distinct keys equal row count there is exactly one row per customer
-        in the served relation — so there is no current-vs-historical version to choose between, and no
-        as-of predicate would change the count today.
-    - word: customers
-      took: 'I REFUSED TO TAKE EITHER. Both readings run and returned: whole register 104,990; ever-bought
-        52,189.'
-      could_also_mean: the two readings ARE the fork — everyone on record, or only those with at least
-        one order
-      declaration: 'NOTHING SETTLES IT. The Customer concept declares no rules whatsoever — no population_select,
-        no default — unlike Store (default `active`) and Country (default `real`), which do. Its definition
-        only WARNS: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register
-        is not the buyer list.'' A warning is not a default, and the measured gap is a factor of two,
-        so the canon requires asking rather than choosing.'
-    - word: how many customers
-      took: COUNT(DISTINCT customer_key) — each person once
-      could_also_mean: one per company or household, or one per account or subscription, so a repeat contact
-        counts several times
-      declaration: 'SETTLED BY MEASUREMENT in step 1: register_rows 104,990 = distinct_customer_keys 104,990,
-        so the relation is already one row per customer. dim_customer declares key customer_key (''one
-        row per customer'') and carries no account, subscription, company or household column, so no coarser
-        or finer grain is expressible at all.'
-    - word: do we have
-      took: the register as it stands, with no as-of predicate
-      could_also_mean: as of a historical date, reconstructed from valid_from/valid_to
-      declaration: dim_customer.valid_from notes 'the register is kept as a history', but with exactly
-        one row per key there is no version to select and no as-of date would move either figure. Immaterial
-        — disclosed, not asked.
-    - word: customers (period)
-      took: all time on both figures — no period predicate at all
-      could_also_mean: a recent window, such as buyers in the last year
-      declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C): a question naming
-        no window takes `all_time`, unbounded, and the answer DISCLOSES it. The ever-bought figure therefore
-        spans the full declared extent, order_date 2016-05-18 to 2025-12-31, read on order_date per order.default.period_is_order_date.'
+      took: active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end > 2025-12-31),
+        per rule Customer.active_on_the_reference_date default 'active'
+      could_also_mean: all registered customers ever on the register (rule choice 'registered'), or buyers
+        who purchased something
+      declaration: rule Customer.active_on_the_reference_date — default is 'active'
+    - word: as of 31.12.2025
+      took: reference date for the customer validity window, not a filter on order_date
+      could_also_mean: a filter on sales order_date, but the question asks about customers not sales
+      declaration: rule Customer.active_on_the_reference_date — 'The reference date is the date the question
+        states'
 - stage: plan
   status: ok
   ms: 0
-  summary: 2 statement(s), one per settled step · walk order 1 -> 2
+  summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  customer_key\nFROM contoso_served.dim_customer\n\n-- step 2\nSELECT\n\
-        \  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-        FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n\
-        \  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
+      sql: "-- step 1\nSELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31'\
+        \ AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)\n\n-- step 2\nSELECT\n  *\nFROM contoso_served.dim_customer\n\
+        WHERE\n  valid_from <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)\n\
+        \n-- step 3\nSELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
       params: {}
 - stage: execute
   status: ok
@@ -655,31 +394,16 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: 'Two rows, one per reading of the word "customers", each counting a person exactly
-      once. Row 1 is how many people sit on Contoso''s customer register in total — every registered person,
-      no filter at all — 104,990. Row 2 is how many of those same people appear as the buyer on at least
-      one sales line across the bundle''s whole sales extent, order_date 2016-05-18 to 2025-12-31 — 52,189.
-      Neither row counts orders, accounts, households or revenue; both count distinct registered persons,
-      and row 2 is a strict subset of row 1. What I did NOT include, and could not: any notion of "currently
-      active", subscribed or recently billed, because this bundle declares no status column on a customer
-      at all — that reading does not exist here, so it is not among the two I am offering.'
+    what_it_calculated: The count of customers whose validity window includes 31 December 2025 — i.e.
+      active customers on that reference date. One number, 75,282.
 - stage: evaluate
   status: ok
   ms: 0
-  summary: claimed as 'I will not choose' · graded DECLINED
+  summary: claimed as 'one figure' · graded EXACT
   detail:
-    claimed_answer: 'Which customers do you mean — everyone on the register, or only the ones who have
-      actually bought something? (a) Everyone on our customer register, including people who have never
-      placed an order: 104,990. (b) Only customers who have ever bought from us, with at least one order
-      on record: 52,189. I am not picking for you, because this is not a rounding difference — fewer than
-      half the register has ever ordered, and the Customer concept''s own definition warns that "the register
-      is not the buyer list". Whichever you pick, three things do NOT change: each person is counted exactly
-      once either way, since the register holds one row per customer and nobody is double-counted despite
-      the record-history columns; no date matters, because neither figure moves whether you ask as of
-      today or as of any earlier point; and (b) is a clean subset of (a), so there is no third population
-      hiding between them — the 52,801 difference is precisely the people who have never ordered.'
-    walk_bucket: DECLINED
-    walk_why: it refused to choose between readings the question did not name
+    claimed_answer: '75282'
+    walk_bucket: EXACT
+    walk_why: '''75282'''
 sections:
 - id: question
   title: The question, as asked
@@ -687,7 +411,7 @@ sections:
   status: ok
   body:
     kind: prose
-    value: How many customers do we have?
+    value: How many customers do we have as of 31.12.2025?
 - id: prompt
   title: What the model was given
   subtitle: the whole document, once, by digest — not pasted here
@@ -696,21 +420,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 73,996 chars · 842 lines
+      - 143,797 chars · 2594 lines
     - - sections
-      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
-        STAGE 2 — the declarations, sent once
+      - STAGE 1 — question to canonical question (QDMR), STAGE 1 — the JSON schema of its answer, STAGE
+        2 — system prompt for walking one step, STAGE 2 — the declarations, at the end of that system
+        prompt, STAGE 2 — the JSON schemas of a step call, STAGE 2 — what writes the per-question text
+        (candidates, refusals)
     - - digest
-      - 44362d9332a0
+      - 143fce7bb1bb
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: How many customers there are in total — one number, counting each customer once, across all
-      customers on record as of today. I am not restricting this to recently active, paying, or subscribed
-      customers, and I am not breaking the count down by region, segment, or time.
+    value: How many customers do we have as of 31.12.2025?
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -718,9 +442,10 @@ sections:
   body:
     kind: list
     value:
-    - '  1       FROM       customers                    “customers”'
-    - '  2  ← 1  AGGREGATE  count distinct of customers  “how many customers do we have”'
-    - '  answer: step 2   confidence: 0.72'
+    - '  1       FROM       customers'
+    - '  2  ← 1  DURING             “as of 31.12.2025”'
+    - '  3  ← 2  AGGREGATE  count of customers  “how many customers”'
+    - '  answer: step 3   confidence: 0.85'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -730,14 +455,14 @@ sections:
     value:
     - - shape
       - one figure
-    - - said
-      - How many customers do we have?
-    - - rows
-      - one
     - - key_columns
       - *id005
     - - figure_columns
       - *id006
+    - - rows
+      - one
+    - - said
+      - how many customers
 - id: ambiguities
   title: What it saw more than one reading of
   subtitle: one frame per ambiguity — the reading it took, and what settled it
@@ -748,32 +473,23 @@ sections:
     - - - the words
         - customers
       - - what it would ask
-        - Should this count every customer ever on record, or only the ones who are currently active?
+        - Should we count all customers on record, or only those who are active (e.g. not churned or closed)
+          as of that date?
       - - could mean
-        - - every customer ever on record, including ones who have left or gone quiet
-          - only customers who are currently active (e.g. bought or were billed recently)
+        - - all customers ever created up to 31.12.2025
+          - only customers that are active/open as of 31.12.2025
       - - took
-        - every customer ever on record
+        - only customers that are active/open as of 31.12.2025
     - - - the words
-        - do we have
+        - as of 31.12.2025
       - - what it would ask
-        - Do you want the count as it stands today, or the count as of some other date or period?
+        - Does 'as of 31.12.2025' mean customers whose accounts existed by that date, or customers who
+          had activity (e.g. a purchase) by that date?
       - - could mean
-        - - as it stands right now, today
-          - as of the end of a particular month, quarter, or year
+        - - customers whose account existed by 31.12.2025
+          - customers who made at least one purchase by 31.12.2025
       - - took
-        - as it stands right now, today
-    - - - the words
-        - customers
-      - - what it would ask
-        - If one company or household has several contacts or accounts with us, should that count as one
-          customer or as several?
-      - - could mean
-        - - one per company or household (the billing account)
-          - one per individual person or contact
-          - one per account or subscription, so a company with three accounts counts three times
-      - - took
-        - one per customer record, counted once each
+        - customers whose account existed by 31.12.2025
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -782,12 +498,16 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
       params: {}
     - step: '2'
-      sql: "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-        FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n\
-        \  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      params: {}
+    - step: '3'
+      sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
       params: {}
 - id: what_it_calculated
   title: What it says its rows are
@@ -795,14 +515,8 @@ sections:
   status: ok
   body:
     kind: prose
-    value: 'Two rows, one per reading of the word "customers", each counting a person exactly once. Row
-      1 is how many people sit on Contoso''s customer register in total — every registered person, no
-      filter at all — 104,990. Row 2 is how many of those same people appear as the buyer on at least
-      one sales line across the bundle''s whole sales extent, order_date 2016-05-18 to 2025-12-31 — 52,189.
-      Neither row counts orders, accounts, households or revenue; both count distinct registered persons,
-      and row 2 is a strict subset of row 1. What I did NOT include, and could not: any notion of "currently
-      active", subscribed or recently billed, because this bundle declares no status column on a customer
-      at all — that reading does not exist here, so it is not among the two I am offering.'
+    value: The count of customers whose validity window includes 31 December 2025 — i.e. active customers
+      on that reference date. One number, 75,282.
 - id: declarations
   title: Which declarations it read, and what each settled
   subtitle: the path the decision took through the ontology — read off the walk's own citations, never
@@ -812,56 +526,14 @@ sections:
     kind: records
     value:
     - - - declaration
-        - NOTHING SETTLES THIS. The Customer concept declares no population rule and no default; its definition
-          only WARNS that 'the register is not the buyer list'. Unlike Store (default active) or Country
-          (default real), there is no declared default to apply here, so this fork is carried to the answer
-          step unresolved rather than taken silently.
+        - rule Customer.active_on_the_reference_date — default is 'active'
       - - what it settled
-        - '''customers'' = every person on the customer register, 104,990 — the whole of dim_customer
-          with no predicate'
+        - '''customers'' = active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end
+          > 2025-12-31), per rule Customer.active_on_the_reference_date default ''active'''
     - - - declaration
-        - 'SETTLED BY MEASUREMENT, no fork remains: register_rows = 104,990 and distinct_customer_keys
-          = 104,990 are equal, so the grain is already one row per customer. dim_customer declares key
-          customer_key, ''one row per customer'', and carries no account, household or company column
-          to count by instead.'
+        - rule Customer.active_on_the_reference_date — 'The reference date is the date the question states'
       - - what it settled
-        - '''customers'' = one per customer record, counted once each — COUNT(DISTINCT customer_key) over
-          dim_customer'
-    - - - declaration
-        - valid_from/valid_to exist on dim_customer and the column note says 'the register is kept as
-          a history', but since distinct keys equal row count there is exactly one row per customer in
-          the served relation — so there is no current-vs-historical version to choose between, and no
-          as-of predicate would change the count today.
-      - - what it settled
-        - '''do we have'' = as the register stands, with no as-of date applied'
-    - - - declaration
-        - 'NOTHING SETTLES IT. The Customer concept declares no rules whatsoever — no population_select,
-          no default — unlike Store (default `active`) and Country (default `real`), which do. Its definition
-          only WARNS: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register
-          is not the buyer list.'' A warning is not a default, and the measured gap is a factor of two,
-          so the canon requires asking rather than choosing.'
-      - - what it settled
-        - '''customers'' = I REFUSED TO TAKE EITHER. Both readings run and returned: whole register 104,990;
-          ever-bought 52,189.'
-    - - - declaration
-        - 'SETTLED BY MEASUREMENT in step 1: register_rows 104,990 = distinct_customer_keys 104,990, so
-          the relation is already one row per customer. dim_customer declares key customer_key (''one
-          row per customer'') and carries no account, subscription, company or household column, so no
-          coarser or finer grain is expressible at all.'
-      - - what it settled
-        - '''how many customers'' = COUNT(DISTINCT customer_key) — each person once'
-    - - - declaration
-        - dim_customer.valid_from notes 'the register is kept as a history', but with exactly one row
-          per key there is no version to select and no as-of date would move either figure. Immaterial
-          — disclosed, not asked.
-      - - what it settled
-        - '''do we have'' = the register as it stands, with no as-of predicate'
-    - - - declaration
-        - 'order.default.an_unscoped_question_covers_all_time (confidence C): a question naming no window
-          takes `all_time`, unbounded, and the answer DISCLOSES it. The ever-bought figure therefore spans
-          the full declared extent, order_date 2016-05-18 to 2025-12-31, read on order_date per order.default.period_is_order_date.'
-      - - what it settled
-        - '''customers (period)'' = all time on both figures — no period predicate at all'
+        - '''as of 31.12.2025'' = reference date for the customer validity window, not a filter on order_date'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -871,7 +543,7 @@ sections:
     value:
       columns: *id007
       rows: *id004
-      row_count: 2
+      row_count: 1
       capped: false
 - id: answer
   title: The answer it claimed
@@ -881,29 +553,14 @@ sections:
     kind: pairs
     value:
     - - claimed
-      - 'Which customers do you mean — everyone on the register, or only the ones who have actually bought
-        something? (a) Everyone on our customer register, including people who have never placed an order:
-        104,990. (b) Only customers who have ever bought from us, with at least one order on record: 52,189.
-        I am not picking for you, because this is not a rounding difference — fewer than half the register
-        has ever ordered, and the Customer concept''s own definition warns that "the register is not the
-        buyer list". Whichever you pick, three things do NOT change: each person is counted exactly once
-        either way, since the register holds one row per customer and nobody is double-counted despite
-        the record-history columns; no date matters, because neither figure moves whether you ask as of
-        today or as of any earlier point; and (b) is a clean subset of (a), so there is no third population
-        hiding between them — the 52,801 difference is precisely the people who have never ordered.'
+      - '75282'
     - - shape
-      - I will not choose
+      - one figure
     - - population it answered over
-      - 'TWO populations, both computed and both reported, neither chosen. (a) 104,990 = every row of
-        contoso_served.dim_customer with no predicate of any kind — no status, activity, geography, channel
-        or record-validity filter. (b) 52,189 = COUNT(DISTINCT customer_key) over all 223,974 rows of
-        contoso_served.v_contoso5_sales_line, also with no predicate — no period restriction, so it covers
-        the whole declared sales extent, and no channel restriction, so physical and online buyers are
-        both included. I applied NO concept default: Store''s `active` and Country''s `real` defaults
-        are each explicitly scoped to questions ABOUT those concepts, and both rules state that a concept
-        merely on the join path keeps none of its default — neither concept is even on this path. I did
-        not restrict to any country, so the `--` sentinel question never arises, and could not anyway,
-        since the customer-to-country edge is measured as carrying no customer with that code.'
+      - Customer records in dim_customer whose valid_from <= 2025-12-31 AND valid_end > 2025-12-31, i.e.
+        active customers as of that date per rule Customer.active_on_the_reference_date (default 'active').
+        No channel, country or buyer restriction applied. This is not all registered customers — it excludes
+        those whose validity window does not cover the reference date.
 - id: thinking
   title: How it got there, step by step
   subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
@@ -913,117 +570,45 @@ sections:
     kind: steps
     value:
     - step: '1'
-      asks: customers
-      sql: "SELECT\n  customer_key\nFROM contoso_served.dim_customer"
-      means: One row per person on Contoso's customer register, 104,990 of them, with no filter of any
-        kind applied — not status, not geography, not whether they ever bought anything. Each row is one
-        distinct customer_key, and because the register holds exactly one row per key, no person is represented
-        twice even though the table carries valid_from/valid_to history columns. Alongside it I established
-        that only 52,189 of these 104,990 people ever appear on a sales line, so the register is strictly
-        wider than the buyer list.
+      asks: ''
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      means: All customer records that are active (valid) as of 31 December 2025 — one row per customer
+        whose validity window includes that date.
       readings:
       - word: customers
-        took: every person on the customer register, 104,990 — the whole of dim_customer with no predicate
-        could_also_mean: only customers who have ever bought something, which is 52,189 — fewer than half
-        declaration: NOTHING SETTLES THIS. The Customer concept declares no population rule and no default;
-          its definition only WARNS that 'the register is not the buyer list'. Unlike Store (default active)
-          or Country (default real), there is no declared default to apply here, so this fork is carried
-          to the answer step unresolved rather than taken silently.
-      - word: customers
-        took: one per customer record, counted once each — COUNT(DISTINCT customer_key) over dim_customer
-        could_also_mean: one per company/household, or one per account/subscription, so a repeat contact
-          counts several times
-        declaration: 'SETTLED BY MEASUREMENT, no fork remains: register_rows = 104,990 and distinct_customer_keys
-          = 104,990 are equal, so the grain is already one row per customer. dim_customer declares key
-          customer_key, ''one row per customer'', and carries no account, household or company column
-          to count by instead.'
-      - word: do we have
-        took: as the register stands, with no as-of date applied
-        could_also_mean: as of a historical date, reconstructed from valid_from/valid_to
-        declaration: valid_from/valid_to exist on dim_customer and the column note says 'the register
-          is kept as a history', but since distinct keys equal row count there is exactly one row per
-          customer in the served relation — so there is no current-vs-historical version to choose between,
-          and no as-of predicate would change the count today.
-      turns:
-      - why: Establish the base relation for "customers" and simultaneously measure the register-vs-buyers
-          fork the Customer concept explicitly flags.
-        did: 'probe ''dim_customer.valid_to'' AND ALSO: SELECT COUNT(*) AS register_rows, COUNT(DISTINCT
-          customer_key) AS distinct_customer_keys, (SELECT COUNT(DISTINCT customer_key) FROM contoso_served.v_contoso5_sales_line)
-          AS customers_with_at_least_one_sale FROM contoso_served.dim_customer'
-        came_back: 'dim_customer.valid_to (date) holds 60+ distinct value(s), first 60: datetime.date(2005,
-          1, 1), datetime.date(2005, 1, 2), datetime.date(2005, 1, 3), datetime.date(2005, 1, 5), datetime.date(2005,
-          1, 6), datetime.date(2005, 1, 7), datetime.date(2005, 1, 8), datetime.date(2005, 1, 9), datetime.date(2005,
-          1, 10), datetime.date(2005, 1, 11), datetime.date(2005, 1, 12), datetime.date(2005, 1, 13),
-          datetime.date(2005, 1, 15), datetime.date(2005, 1, 16), datetime.date(2005, 1, 17), datetime.date(2005,
-          1, 18), datetime.date(2005, 1, 20), datetime.date(2005, 1, 21), datetime.date(2005, 1, 22),
-          datetime.date(2005, 1, 23), datetime.date(2005, 1, 24), datetime.date(2005, 1, 25), datetime.date(2005,
-          1, 26), datetime.date(2005, 1, 27), datetime.date(2005, 1, 28), datetime.date(2005, 1, 29),
-          datetime.date(2005, 1, 30), datetime.date(2005, 1, 31), datetime.date(2005, 2, 1), datetime.date(2005,
-          2, 2), datetime.date(2005, 2, 3), datetime.date(2005, 2, 4), datetime.date(2005, 2, 5), datetime.date(2005,
-          2, 7), datetime.date(2005, 2, 8), datetime.date(2005, 2, 9), datetime.date(2005, 2, 10), datetime.date(2005,
-          2, 11), datetime.date(2005, 2, 12), datetime.date(2005, 2, 13), datetime.date(2005, 2, 14), '
+        took: active customers as of the stated date (valid_from <= 2025-12-31 AND valid_end > 2025-12-31),
+          per rule Customer.active_on_the_reference_date default 'active'
+        could_also_mean: all registered customers ever on the register (rule choice 'registered'), or
+          buyers who purchased something
+        declaration: rule Customer.active_on_the_reference_date — default is 'active'
+      - word: as of 31.12.2025
+        took: reference date for the customer validity window, not a filter on order_date
+        could_also_mean: a filter on sales order_date, but the question asks about customers not sales
+        declaration: rule Customer.active_on_the_reference_date — 'The reference date is the date the
+          question states'
+      turns: []
       blocked: []
     - step: '2'
-      asks: how many customers do we have
-      sql: "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-        FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n\
-        \  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
-      means: 'Two rows, one per reading of the word "customers", each counting a person exactly once.
-        Row 1 is how many people sit on Contoso''s customer register in total — every registered person,
-        no filter at all — 104,990. Row 2 is how many of those same people appear as the buyer on at least
-        one sales line across the bundle''s whole sales extent, order_date 2016-05-18 to 2025-12-31 —
-        52,189. Neither row counts orders, accounts, households or revenue; both count distinct registered
-        persons, and row 2 is a strict subset of row 1. What I did NOT include, and could not: any notion
-        of "currently active", subscribed or recently billed, because this bundle declares no status column
-        on a customer at all — that reading does not exist here, so it is not among the two I am offering.'
-      readings:
-      - word: customers
-        took: 'I REFUSED TO TAKE EITHER. Both readings run and returned: whole register 104,990; ever-bought
-          52,189.'
-        could_also_mean: the two readings ARE the fork — everyone on record, or only those with at least
-          one order
-        declaration: 'NOTHING SETTLES IT. The Customer concept declares no rules whatsoever — no population_select,
-          no default — unlike Store (default `active`) and Country (default `real`), which do. Its definition
-          only WARNS: ''HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register
-          is not the buyer list.'' A warning is not a default, and the measured gap is a factor of two,
-          so the canon requires asking rather than choosing.'
-      - word: how many customers
-        took: COUNT(DISTINCT customer_key) — each person once
-        could_also_mean: one per company or household, or one per account or subscription, so a repeat
-          contact counts several times
-        declaration: 'SETTLED BY MEASUREMENT in step 1: register_rows 104,990 = distinct_customer_keys
-          104,990, so the relation is already one row per customer. dim_customer declares key customer_key
-          (''one row per customer'') and carries no account, subscription, company or household column,
-          so no coarser or finer grain is expressible at all.'
-      - word: do we have
-        took: the register as it stands, with no as-of predicate
-        could_also_mean: as of a historical date, reconstructed from valid_from/valid_to
-        declaration: dim_customer.valid_from notes 'the register is kept as a history', but with exactly
-          one row per key there is no version to select and no as-of date would move either figure. Immaterial
-          — disclosed, not asked.
-      - word: customers (period)
-        took: all time on both figures — no period predicate at all
-        could_also_mean: a recent window, such as buyers in the last year
-        declaration: 'order.default.an_unscoped_question_covers_all_time (confidence C): a question naming
-          no window takes `all_time`, unbounded, and the answer DISCLOSES it. The ever-bought figure therefore
-          spans the full declared extent, order_date 2016-05-18 to 2025-12-31, read on order_date per
-          order.default.period_is_order_date.'
+      asks: as of 31.12.2025
+      sql: "SELECT\n  *\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= CAST('2025-12-31' AS\
+        \ DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      means: 'Same as step 1: all customer records active as of 31 December 2025. The date was already
+        folded into step 1''s validity-window predicate.'
+      readings: []
+      turns: []
+      blocked: []
+    - step: '3'
+      asks: how many customers
+      sql: "SELECT\n  COUNT(*) AS how_many_customers\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= CAST('2025-12-31' AS DATE)\n  AND valid_end > CAST('2025-12-31' AS DATE)"
+      means: The count of customers whose validity window includes 31 December 2025 — i.e. active customers
+        on that reference date. One number, 75,282.
+      readings: []
       turns:
-      - why: Both readings of "customers" are measured and differ by a factor of two with no declaration
-          settling it, so I refuse to choose and hand back the question with each reading priced.
-        did: ''
-        came_back: 'YOU TRIED TO SETTLE THIS STEP, BUT THE SQL DID NOT RUN, so the step is not settled.
-          THE DATABASE SAID: no SQL given'
-      - why: Settle the step with SQL that computes BOTH readings side by side, since the fork is material
-          and undeclared and my answer is the priced question rather than one of the two figures.
-        did: "SELECT\n  'everyone on the register' AS reading,\n  COUNT(DISTINCT customer_key) AS how_many_customers\n\
-          FROM contoso_served.dim_customer\nUNION ALL\nSELECT\n  'has ever bought something' AS reading,\n\
-          \  COUNT(DISTINCT customer_key) AS how_many_customers\nFROM contoso_served.v_contoso5_sales_line"
-        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 2 row(s): [{"reading": "everyone on the register",
-          "how_many_customers": 104990}, {"reading": "has ever bought something", "how_many_customers":
-          52189}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is`
-          from the closed list. If these rows settle the question, do not decline.'
+      - why: the answer step's SQL you wrote on your first turn
+        did: the statement above
+        came_back: '1 row(s): [{"how_many_customers": 75282}]'
       blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
@@ -1035,8 +620,14 @@ sections:
 v3_walk_order:
 - '1'
 - '2'
-v3_answer_step: '2'
+- '3'
+v3_answer_step: '3'
 v3_gaps: []
-v3_bucket: DECLINED
-v3_why: it refused to choose between readings the question did not name
-v3_seconds: 158.5
+v3_bucket: EXACT
+v3_why: '''75282'''
+v3_seconds: 47.9
+revisions:
+  code: e90b8bc5de81d11df27e5a54effdc9e5ca2c94a8
+  code_dirty: false
+  bundle: b2827aca75fcd5ef4bbc8af3d238bd449bcc7802
+  declarations_dirty: false

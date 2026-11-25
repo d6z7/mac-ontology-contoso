@@ -1,47 +1,33 @@
 # THE APPROVED ANSWER. A person ran the query, read the number and said yes.
 # The next run either returns this or it does not. PASS or FAIL, nothing else.
+# FOLLOWS A RULE: the answer below is the rule's current default, derived by an agent on 2026-11-17.
+# `approved_by` is absent: no person signed this figure. A figure a person signed sits under
+# `follows[].otherwise`, with its signature, under the option it answers.
 id: AGG-05
-question: >-
-  What is the net revenue in Germany?
-expected_outcome: DECLINE
-sql: >-
-  SELECT round(sum(l."net_price" * l."quantity"), 2) FROM contoso_served.v_contoso5_sales_line l
-  JOIN contoso_served.dim_customer cu USING ("customer_key") WHERE cu."country_code" = 'DE'
-note: >-
-  USD, like every stored amount in this fact — see AGG-01 for the measurement that establishes it.
-  "Germany" is the CUSTOMER's country, not the store's. THE ANSWER MUST DISCLOSE ITS CURRENCY,
-  because a German reader will assume euros and the number is not in euros. Displayed in EUR at
-  the order-date rate it is 22 500 378.82 — six per cent lower, and a figure nobody would notice
-  was the wrong currency.
-approved_by: operator
-approved_at: '2026-10-24'
-approved_here: true
-superseded_value: 24638830.18
-superseded_reason: >-
-  THE EXPECTED OUTCOME IS TO ASK, BY THE OPERATOR'S OWN RULING OF 2026-10-22: "THERE IS NO DEFAULT
-  ... DEFAULT IS ASK", recorded as RULING-2026-10-22_whose-country-is-asked-never-assumed and
-  realised here as `country.default.whose_country_is_asked_never_assumed`, which declares three
-  paths -- store, customer, location -- and carries `never: pick between the store and the
-  customer silently`. This question names none of them, so there is no figure a person may sign
-  without breaking that rule, and the previous one did: it was the CUSTOMER path, chosen silently.
-  THE TWO ANSWERS ARE ALREADY SIGNABLE SEPARATELY and were split out on 2026-10-23 for exactly
-  this reason -- AGG-16 asks "customers resident in Germany" and AGG-17 asks "shops sited in
-  Germany", each with its own approved figure. This reference is the unsplit original and its
-  correct outcome is the question being put back. MEASURED 2026-10-24: the walk computed EVERY
-  reading and named the difference to the row before declining -- both figures right, the
-  previously-approved one among them -- and the board scored it a failure for refusing to choose.
-  A board that renders a ruling firing as a failure teaches everyone to delete the ruling. The
-  superseded figure is kept above, because it is the right answer to AGG-16's question and the
-  history of why this file held it.
-cloned_from:
-  bundle: example/contoso
-  path: acceptance/reference/AGG-05.yaml
-  commit: e7465b1
-  cloned_at: '2026-09-29'
-  basis: 'Approved on the same landing: main.* is identical in both bundles (8 tables,
-    row counts and columns measured equal on 2026-09-29; 223 974 sales lines), so
-    the approved value is the value here too. The `sql` above is the approving bundle''s
-    served view (contoso_served.v_contoso_order_line, dim_contoso_*), NOT this bundle''s
-    plane (v_contoso5_sales_line, dim_*): the expected value stands, the derivation
-    on this bundle''s own served plane is owed before its capture is judged against
-    it.'
+question: What is the net revenue in Germany?
+expected: 24638830.18
+sql: SELECT ROUND(SUM(net_amount), 2) FROM contoso_served.v_contoso5_sales_line WHERE sale_country_code = 'DE'
+follows:
+- rule: Country.whose
+  option: territory
+  otherwise:
+    store:
+      expected: 14382768.44
+      sql: SELECT ROUND(SUM(l.net_amount), 2) FROM contoso_served.v_contoso5_sales_line l JOIN contoso_served.dim_store
+        s ON l.store_key = s.store_key WHERE s.country_code = 'DE'
+    customer:
+      expected: 24638830.18
+      sql: SELECT ROUND(SUM(l.net_amount), 2) FROM contoso_served.v_contoso5_sales_line l JOIN contoso_served.dim_customer
+        cu ON l.customer_key = cu.customer_key WHERE cu.country_code = 'DE'
+    ask:
+      expected_outcome: DECLINE
+      approved_by: operator
+      approved_at: '2026-10-24'
+      approved_here: true
+note: 'FOLLOWS Country.whose = territory: a question that names a country but not whose is answered on the country
+  of the sale: a shop sale in the country the shop stands in, a web sale in the country the customer lives in (operator
+  ruling 2026-10-25, RULED-2026-10-25_a-sale-is-attributed-by-its-channel). The answer under every other option
+  is under `follows[].otherwise`, with its signature where a person signed it; acceptance/tools/rule_switch_test.py
+  runs each and shows which differ.'
+expected_by: agent
+expected_at: '2026-11-17'

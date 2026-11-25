@@ -1,16 +1,17 @@
 id: RC02
-captured_at: '2026-10-29T00:06:31+00:00'
-ontology_fingerprint: 9455837fe192e4d8
-acceptance_fingerprint: 324b16c41efe7a45
+captured_at: '2026-11-17T23:10:34+00:00'
+ontology_fingerprint: ec6d95efb1654a0d
+acceptance_fingerprint: a3baf3c7fe46a2af
 engine:
   interpret: live
   provider: v3-walk
-  model: claude-opus-5
+  model: claude-opus-4-6
   mode: llm-execute
   athena: false
-  run_file: 20261028T235941Z_merged.json
+  run_file: 20261117T224755Z_merged.json
   note: NL -> canonical question (a DAG of steps, no ontology) -> a model walks the steps against the
     bundle's declarations, writing and RUNNING its own SQL per step. Not the console's planner.
+  method: bench
 connection:
   view_schema: contoso_served
   target: contoso5.duckdb
@@ -18,101 +19,58 @@ connection:
 route: v3-walk
 answer: ''
 intent:
-  subject: country
+  subject: customers
   operation: select
-  qdmr_simplified: "  1       FROM      customers   “customers”\n  2  ← 1  PIVOT_TO  country     “countries\
-    \ where we have customers”\n  3  ← 2  GROUP_BY  by country  “all countries”\n  4  ← 3  SELECT    country\
-    \     “List all countries”\n  answer: step 4   confidence: 0.62\n  UNDERSTOOD AS: You want the distinct\
-    \ list of countries that appear on our customer records — one row per country, names only, no counts,\
-    \ covering all customers on record with no date window and no filtering to active or paying customers.\n\
-    \  AMBIGUOUS 'countries' — ASKS: Should a country count because it's the country on the customer's\
-    \ own record (their address), or because that's where their orders were placed or shipped?\n     \
-    \ could mean: The country recorded on the customer's own profile or billing address\n      could mean:\
-    \ The country an order was shipped to or placed from, which may differ from the customer's own address\n\
-    \      took: The country recorded on the customer's own record\n  AMBIGUOUS 'we have customers' —\
-    \ ASKS: Do you mean every customer we've ever had on record, or only customers who are currently active\
-    \ (e.g. bought recently or have a live account)?\n      could mean: Every customer on record, however\
-    \ old or inactive\n      could mean: Only customers who are currently active or have bought recently\n\
-    \      took: Every customer on record\n  cannot_express: Whether a country with customers but no recorded\
-    \ activity should still be listed — these steps have no notion of activity\n  OUTPUT SHAPE: a list\
-    \ of names · many row(s) · named by country"
-  understood_as_in_human_words: You want the distinct list of countries that appear on our customer records
-    — one row per country, names only, no counts, covering all customers on record with no date window
-    and no filtering to active or paying customers.
-  population_actually_answered: 'The 8 real countries of contoso_served.dim_country, reached from ALL
-    104,990 rows of contoso_served.dim_customer by the declared customer__based_in__country edge and collapsed
-    to one row per country name. Two things to name: (1) the ''--'' / ''Online'' sentinel is excluded
-    by country.exclusion.sentinel_is_not_a_country, the declared `real` default for a question about countries
-    — it carries zero customers, so the exclusion removes nobody and only shortens the dimension from
-    9 rows to 8; (2) nothing else is restricted — no date window, no active-or-buyer filter, no channel
-    or store filter. The join neither drops nor duplicates: zero null country codes, all 8 codes present
-    in dim_country, and the per-country register counts sum to exactly 104,990.'
+  qdmr_simplified: "  1       FROM      customers\n  2  ← 1  PIVOT_TO  countries\n  3  ← 2  SELECT   \
+    \ country\n  answer: step 3   confidence: 0.95\n  UNDERSTOOD AS: List every distinct country where\
+    \ we have at least one customer.\n  OUTPUT SHAPE: a list of names · many row(s) · named by country"
+  understood_as_in_human_words: List every distinct country where we have at least one customer.
+  population_actually_answered: Active customers only (valid_from <= newest order date AND valid_end >
+    newest order date), per rule Customer.active_on_the_reference_date default 'active'. Real countries
+    only (is_placeholder = false), per rule Country.rows default 'real'. The '--' online sentinel country
+    is excluded. Countries are reached via the customer__based_in__country edge (where the customer lives),
+    per rule Country.where_we_have_customers.
   how_the_result_must_be_presented:
     shape_it_committed_to: a list of names
     columns_the_answer_step_asks_for: &id001
     - country
     figures_the_answer_step_computes: []
-    answer_step: '4'
+    answer_step: '3'
     verb: select
-    said: List all countries
-    stage1_confidence: 0.62
+    said: null
+    stage1_confidence: 0.95
   canonical_question: &id002
-    understood_as: You want the distinct list of countries that appear on our customer records — one row
-      per country, names only, no counts, covering all customers on record with no date window and no
-      filtering to active or paying customers.
+    understood_as: List every distinct country where we have at least one customer.
     steps:
     - id: '1'
       do: from
       thing: customers
-      said: customers
     - id: '2'
       do: pivot_to
       of: '1'
-      to: country
-      said: countries where we have customers
+      to: countries
     - id: '3'
-      do: group_by
-      of: '2'
-      thing: country
-      said: all countries
-    - id: '4'
       do: select
-      of: '3'
+      of: '2'
       columns: *id001
-      said: List all countries
-    answer: '4'
-    output_shape: &id004
+    answer: '3'
+    output_shape: &id003
       shape: a list of names
-      said: List all countries where we have customers
-      rows: many
-      key_columns: &id006
+      key_columns: &id005
       - country
-      figure_columns: &id007 []
-    ambiguities:
-    - words: countries
-      question: Should a country count because it's the country on the customer's own record (their address),
-        or because that's where their orders were placed or shipped?
-      readings:
-      - The country recorded on the customer's own profile or billing address
-      - The country an order was shipped to or placed from, which may differ from the customer's own address
-      assumed: The country recorded on the customer's own record
-    - words: we have customers
-      question: Do you mean every customer we've ever had on record, or only customers who are currently
-        active (e.g. bought recently or have a live account)?
-      readings:
-      - Every customer on record, however old or inactive
-      - Only customers who are currently active or have bought recently
-      assumed: Every customer on record
-    cannot_express: &id003
-    - Whether a country with customers but no recorded activity should still be listed — these steps have
-      no notion of activity
-    confidence: 0.62
-  steps: 4
+      figure_columns: &id006 []
+      said: List all countries
+      rows: many
+    confidence: 0.95
+    periods: []
+    ambiguities: []
+    cannot_express: []
+  steps: 3
   note: a canonical question — a DAG of steps — not a flat Intent
 answer_parts:
   table:
     columns:
-    - name: country_name
+    - name: country
       type: string
     rows:
     - - Australia
@@ -131,127 +89,51 @@ answer_parts:
   confidence: I
   assumptions:
   - kind: ''
-    text: "customers → the customer register, contoso_served.dim_customer — every person on record, all\
-      \ 104,990 of them, one row each\n        could also mean: only the 52,189 customers who have ever\
-      \ appeared on a sale, which the Customer concept declares is half the register; measured on the\
-      \ next step, since it may or may not change the set of countries"
-    ref: 'Customer concept: ''A person on Contoso''s customer register: 104,990 of them... HALF HAVE NEVER
-      ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer list.'' The document''s
-      understood_as takes every customer on record.'
+    text: "customers → Active customers as of the newest order date, per rule Customer.active_on_the_reference_date\
+      \ (default: active) and Order.now_is_the_newest_order\n        could also mean: Registered customers\
+      \ (every customer ever on the register, no date filter) per the 'registered' choice"
+    ref: Customer.active_on_the_reference_date
   - kind: ''
-    text: "country on a customer → dim_customer.country_code — the country recorded on the customer's\
-      \ own register row; measured here as 8 distinct codes with no nulls and no '--' sentinel\n     \
-      \   could also mean: the country a sale was attributed to (v_contoso5_sales_line.sale_country_code),\
-      \ which is the bundle's default for an unqualified country question"
-    ref: country.default.whose_country_is_asked_never_assumed names the `customer` reading, arriving by
-      customer__based_in__country, with surfaces 'where our customers are' and 'customer countries' —
-      which is what this question says; the step binds that reading rather than the `territory` default.
-  - kind: ''
-    text: "we have customers → every customer on the register, all 104,990 — giving Australia, Canada,\
-      \ France, Germany, Italy, Netherlands, United Kingdom, United States\n        could also mean: only\
-      \ the 52,189 customers who have ever appeared on a sale — MEASURED, and it gives the SAME eight\
-      \ countries; the smallest buyer population is Italy with 1,842, so no country survives on register\
-      \ rows alone"
-    ref: The readings agree on the asked output, so by the fork rule I take one and disclose both rather
-      than asking. The choice changes no name on the list; it would only change counts, which this question
-      does not ask for.
-  - kind: ''
-    text: "countries → dim_country.country_name via customer__based_in__country — the country on the customer's\
-      \ own record\n        could also mean: the country a sale was attributed to (sale_country_code),\
-      \ the bundle's default for an unqualified country question"
-    ref: country.default.whose_country_is_asked_never_assumed declares the `customer` reading under the
-      surfaces 'where our customers are' / 'customer countries', which this question names; the `territory`
-      default therefore does not apply. Note the bundle declares these two readings are row-for-row identical
-      here by accident of the data, since no physical sale crosses a border.
-  - kind: ''
-    text: "all countries → the eight countries that have at least one registered customer\n        could\
-      \ also mean: every country the dimension holds, irrespective of customers — MEASURED, and after\
-      \ the declared sentinel exclusion it is the SAME eight; the only customer-less row is '--' / 'Online'\
-      \ at zero"
-    ref: 'country.exclusion.sentinel_is_not_a_country: the question is about countries, so the `real`
-      population applies by default and the answer discloses that it did. No real country has zero customers,
-      so the two readings coincide.'
-  - kind: ''
-    text: "countries → dim_country.country_name via customer__based_in__country — the country on the customer's\
-      \ own register row, shown by long name per the declared naming preference\n        could also mean:\
-      \ the country a sale was attributed to, v_contoso5_sales_line.sale_country_code, which is the bundle's\
-      \ `territory` default for an unqualified country question"
-    ref: country.default.whose_country_is_asked_never_assumed declares the `customer` reading under the
-      surfaces 'where our customers are' and 'customer countries'; this question says 'where we have customers',
-      so it names that reading and the `territory` default does not apply. The bundle also records that
-      the two are row-for-row identical here, since no physical sale in this warehouse crosses a border.
-  - kind: ''
-    text: "we have customers → every customer on the register, all 104,990, however old or inactive\n\
-      \        could also mean: only the 52,189 customers who have ever appeared on a sales line — MEASURED,\
-      \ and it returns the SAME eight countries; buyer counts are Italy 1,842, France 1,992, Netherlands\
-      \ 2,430, Australia 3,991, Canada 5,388, Germany 5,552, United Kingdom 6,165, United States 24,829,\
-      \ so none falls to zero"
-    ref: The readings agree on the asked output, so by the fork rule I took one and disclosed both rather
-      than asking. The choice moves no name on this list; it would only change counts, which this question
-      does not ask for.
-  - kind: ''
-    text: "all countries → the countries that have customers\n        could also mean: every country on\
-      \ the country dimension regardless of customers — MEASURED at 9 rows, whose only customer-less row\
-      \ is the '--' / 'Online' sentinel"
-    ref: country.exclusion.sentinel_is_not_a_country removes the sentinel from any list of countries,
-      so both readings land on the same eight.
+    text: "countries → Countries where at least one active customer lives, via customer__based_in__country\
+      \ edge, per rule Country.where_we_have_customers\n        could also mean: Countries where we have\
+      \ sales (via order__attributed_to__country) or countries where we have stores (via store__trades_in__country)"
+    ref: Country.where_we_have_customers, Country.whose
   concepts: []
   rules:
-  - id: 'Customer concept: ''A person on Contoso''s customer register: 104,990 of them... HALF HAVE NEVER
-      ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer list.'' The document''s
-      understood_as takes every customer on record.'
-    why: '''customers'' = the customer register, contoso_served.dim_customer — every person on record,
-      all 104,990 of them, one row each'
-  - id: country.default.whose_country_is_asked_never_assumed names the `customer` reading, arriving by
-      customer__based_in__country, with surfaces 'where our customers are' and 'customer countries' —
-      which is what this question says; the step binds that reading rather than the `territory` default.
-    why: '''country on a customer'' = dim_customer.country_code — the country recorded on the customer''s
-      own register row; measured here as 8 distinct codes with no nulls and no ''--'' sentinel'
-  - id: The readings agree on the asked output, so by the fork rule I take one and disclose both rather
-      than asking. The choice changes no name on the list; it would only change counts, which this question
-      does not ask for.
-    why: '''we have customers'' = every customer on the register, all 104,990 — giving Australia, Canada,
-      France, Germany, Italy, Netherlands, United Kingdom, United States'
-  - id: country.default.whose_country_is_asked_never_assumed declares the `customer` reading under the
-      surfaces 'where our customers are' / 'customer countries', which this question names; the `territory`
-      default therefore does not apply. Note the bundle declares these two readings are row-for-row identical
-      here by accident of the data, since no physical sale crosses a border.
-    why: '''countries'' = dim_country.country_name via customer__based_in__country — the country on the
-      customer''s own record'
-  - id: 'country.exclusion.sentinel_is_not_a_country: the question is about countries, so the `real` population
-      applies by default and the answer discloses that it did. No real country has zero customers, so
-      the two readings coincide.'
-    why: '''all countries'' = the eight countries that have at least one registered customer'
-  - id: country.default.whose_country_is_asked_never_assumed declares the `customer` reading under the
-      surfaces 'where our customers are' and 'customer countries'; this question says 'where we have customers',
-      so it names that reading and the `territory` default does not apply. The bundle also records that
-      the two are row-for-row identical here, since no physical sale in this warehouse crosses a border.
-    why: '''countries'' = dim_country.country_name via customer__based_in__country — the country on the
-      customer''s own register row, shown by long name per the declared naming preference'
-  - id: The readings agree on the asked output, so by the fork rule I took one and disclosed both rather
-      than asking. The choice moves no name on this list; it would only change counts, which this question
-      does not ask for.
-    why: '''we have customers'' = every customer on the register, all 104,990, however old or inactive'
-  - id: country.exclusion.sentinel_is_not_a_country removes the sentinel from any list of countries, so
-      both readings land on the same eight.
-    why: '''all countries'' = the countries that have customers'
+  - id: Customer.active_on_the_reference_date
+    why: '''customers'' = Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+      (default: active) and Order.now_is_the_newest_order'
+  - id: Country.where_we_have_customers
+    why: '''countries'' = Countries where at least one active customer lives, via customer__based_in__country
+      edge, per rule Country.where_we_have_customers'
+  - id: Country.whose
+    why: '''countries'' = Countries where at least one active customer lives, via customer__based_in__country
+      edge, per rule Country.where_we_have_customers'
   edges: []
 sql:
-- "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-  \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
-- "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
-- "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-  \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n  co.country_name"
-- "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-  \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n  co.country_name"
-answer_sql: "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-  \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
+- "SELECT DISTINCT\n  dc.country_name AS country\nFROM contoso_served.dim_customer AS c\nJOIN contoso_served.dim_country\
+  \ AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from <= (\n    SELECT\n      MAX(order_date)\n\
+  \    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n\
+  \    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND dc.is_placeholder = FALSE\nORDER BY\n  dc.country_name"
+- "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\nWHERE\n  valid_from <= (\n\
+  \    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND valid_end\
+  \ > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )"
+- "SELECT DISTINCT\n  dc.country_code,\n  dc.country_name\nFROM contoso_served.dim_customer AS c\nJOIN\
+  \ contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from <=\
+  \ (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND c.valid_end\
+  \ > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND\
+  \ dc.is_placeholder = FALSE"
+answer_sql: "SELECT DISTINCT\n  dc.country_name AS country\nFROM contoso_served.dim_customer AS c\nJOIN\
+  \ contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from <=\
+  \ (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND c.valid_end\
+  \ > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND\
+  \ dc.is_placeholder = FALSE\nORDER BY\n  dc.country_name"
 sql_valid: true
 result:
   status: ok
   rows: 8
-  cols: &id008
-  - country_name
+  cols: &id007
+  - country
   sample_rows:
   - - Australia
   - - Canada
@@ -263,361 +145,199 @@ result:
   - - United States
   capped: false
 prompt:
-  chars: 73996
-  lines: 842
+  chars: 143797
+  lines: 2594
   sections:
   - STAGE 1 — question to canonical question (QDMR)
+  - STAGE 1 — the JSON schema of its answer
   - STAGE 2 — system prompt for walking one step
-  - STAGE 2 — the declarations, sent once
-  file: acceptance/prompts/44362d9332a0.txt
-  sha: 44362d9332a0
-  reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-    the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows as
-    it is now.'
+  - STAGE 2 — the declarations, at the end of that system prompt
+  - STAGE 2 — the JSON schemas of a step call
+  - STAGE 2 — what writes the per-question text (candidates, refusals)
+  file: acceptance/prompts/143fce7bb1bb.txt
+  sha: 143fce7bb1bb
+  reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+    the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+    given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 error: null
 v3_report:
   canonical_question_json: *id002
-  canonical_question_simplified: "  1       FROM      customers   “customers”\n  2  ← 1  PIVOT_TO  country\
-    \     “countries where we have customers”\n  3  ← 2  GROUP_BY  by country  “all countries”\n  4  ←\
-    \ 3  SELECT    country     “List all countries”\n  answer: step 4   confidence: 0.62\n  UNDERSTOOD\
-    \ AS: You want the distinct list of countries that appear on our customer records — one row per country,\
-    \ names only, no counts, covering all customers on record with no date window and no filtering to\
-    \ active or paying customers.\n  AMBIGUOUS 'countries' — ASKS: Should a country count because it's\
-    \ the country on the customer's own record (their address), or because that's where their orders were\
-    \ placed or shipped?\n      could mean: The country recorded on the customer's own profile or billing\
-    \ address\n      could mean: The country an order was shipped to or placed from, which may differ\
-    \ from the customer's own address\n      took: The country recorded on the customer's own record\n\
-    \  AMBIGUOUS 'we have customers' — ASKS: Do you mean every customer we've ever had on record, or only\
-    \ customers who are currently active (e.g. bought recently or have a live account)?\n      could mean:\
-    \ Every customer on record, however old or inactive\n      could mean: Only customers who are currently\
-    \ active or have bought recently\n      took: Every customer on record\n  cannot_express: Whether\
-    \ a country with customers but no recorded activity should still be listed — these steps have no notion\
-    \ of activity\n  OUTPUT SHAPE: a list of names · many row(s) · named by country"
-  understood_as: You want the distinct list of countries that appear on our customer records — one row
-    per country, names only, no counts, covering all customers on record with no date window and no filtering
-    to active or paying customers.
-  ambiguities_it_saw:
-  - words: countries
-    asks: Should a country count because it's the country on the customer's own record (their address),
-      or because that's where their orders were placed or shipped?
-    readings:
-    - The country recorded on the customer's own profile or billing address
-    - The country an order was shipped to or placed from, which may differ from the customer's own address
-    took: The country recorded on the customer's own record
-  - words: we have customers
-    asks: Do you mean every customer we've ever had on record, or only customers who are currently active
-      (e.g. bought recently or have a live account)?
-    readings:
-    - Every customer on record, however old or inactive
-    - Only customers who are currently active or have bought recently
-    took: Every customer on record
+  canonical_question_simplified: "  1       FROM      customers\n  2  ← 1  PIVOT_TO  countries\n  3  ←\
+    \ 2  SELECT    country\n  answer: step 3   confidence: 0.95\n  UNDERSTOOD AS: List every distinct\
+    \ country where we have at least one customer.\n  OUTPUT SHAPE: a list of names · many row(s) · named\
+    \ by country"
+  understood_as: List every distinct country where we have at least one customer.
+  ambiguities_it_saw: []
   presentation:
     claimed_answer_is: a list of names
-    answer_step: '4'
+    answer_step: '3'
     answer_step_asks:
       do: select
-      of: '3'
+      of: '2'
       columns: *id001
-      said: List all countries
-    confidence_stage1: 0.62
+    confidence_stage1: 0.95
   sql_by_step:
   - step: '1'
-    sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
+    sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+      \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+      \  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )"
     params: {}
   - step: '2'
-    sql: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN\
-      \ contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-      \  co.country_name"
+    sql: "SELECT DISTINCT\n  dc.country_code,\n  dc.country_name\nFROM contoso_served.dim_customer AS\
+      \ c\nJOIN contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+      \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+      \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND dc.is_placeholder = FALSE"
     params: {}
   - step: '3'
-    sql: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN\
-      \ contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-      \  co.country_name"
+    sql: "SELECT DISTINCT\n  dc.country_name AS country\nFROM contoso_served.dim_customer AS c\nJOIN contoso_served.dim_country\
+      \ AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from <= (\n    SELECT\n      MAX(order_date)\n\
+      \    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n\
+      \    FROM contoso_served.v_contoso5_sales_line\n  )\n  AND dc.is_placeholder = FALSE\nORDER BY\n\
+      \  dc.country_name"
     params: {}
-  - step: '4'
-    sql: "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-      \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
-    params: {}
-  what_it_calculated: The eight countries in which Contoso has customers on its register, one row per
-    country, names only, alphabetical. Each row is a country where at least one of the 104,990 registered
-    customers is recorded as living — and, as separately measured, also a country where at least 1,842
-    of those people have actually placed an order. It covers every customer on record, over all time.
-    It does NOT give how many customers are in each country, does not rank them, does not restrict to
-    recent or active customers, and is not a list of countries that sales were attributed to — though
-    in this warehouse that reading returns the same eight, because no physical sale crosses a border.
-  rows_returned: &id005
-  - country_name: Australia
-  - country_name: Canada
-  - country_name: France
-  - country_name: Germany
-  - country_name: Italy
-  - country_name: Netherlands
-  - country_name: United Kingdom
-  - country_name: United States
+  what_it_calculated: The 8 distinct real countries where at least one customer who is active as of the
+    newest order date lives — one row per country, listed by name.
+  rows_returned: &id004
+  - country: Australia
+  - country: Canada
+  - country: France
+  - country: Germany
+  - country: Italy
+  - country: Netherlands
+  - country: United Kingdom
+  - country: United States
   synthesis:
     claimed: '["Australia", "Canada", "France", "Germany", "Italy", "Netherlands", "United Kingdom", "United
       States"]'
     shape: a list of names
-    answered_population: 'The 8 real countries of contoso_served.dim_country, reached from ALL 104,990
-      rows of contoso_served.dim_customer by the declared customer__based_in__country edge and collapsed
-      to one row per country name. Two things to name: (1) the ''--'' / ''Online'' sentinel is excluded
-      by country.exclusion.sentinel_is_not_a_country, the declared `real` default for a question about
-      countries — it carries zero customers, so the exclusion removes nobody and only shortens the dimension
-      from 9 rows to 8; (2) nothing else is restricted — no date window, no active-or-buyer filter, no
-      channel or store filter. The join neither drops nor duplicates: zero null country codes, all 8 codes
-      present in dim_country, and the per-country register counts sum to exactly 104,990.'
+    answered_population: Active customers only (valid_from <= newest order date AND valid_end > newest
+      order date), per rule Customer.active_on_the_reference_date default 'active'. Real countries only
+      (is_placeholder = false), per rule Country.rows default 'real'. The '--' online sentinel country
+      is excluded. Countries are reached via the customer__based_in__country edge (where the customer
+      lives), per rule Country.where_we_have_customers.
     gaps: []
     stopped_at: null
   thinking:
   - step: '1'
-    step_asks: customers
-    turns:
-    - why: Establish the `customers` base population (dim_customer) and see its size and the country codes
-        it carries, before any pivot to country.
-      did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT COUNT(*) AS customer_rows, COUNT(DISTINCT
-        customer_key) AS distinct_customers, COUNT(DISTINCT country_code) AS distinct_country_codes, SUM(CASE
-        WHEN country_code IS NULL THEN 1 ELSE 0 END) AS null_country, SUM(CASE WHEN country_code = ''--''
-        THEN 1 ELSE 0 END) AS sentinel_country FROM contoso_served.dim_customer'
-      came_back: 'dim_customer.country_code (varchar) holds 8 distinct value(s): ''AU'', ''CA'', ''DE'',
-        ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customer_rows": 104990, "distinct_customers":
-        104990, "distinct_country_codes": 8, "null_country": 0, "sentinel_country": 0}]'
-    settled_on: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
-    means: 'The whole customer register as the starting set: 104,990 people on Contoso''s books, one row
-      each, with no date window, no activity test and no country filter. Each row stands for one registered
-      customer and the country that customer is recorded as living in. It is the register, not the buyer
-      list — it includes the roughly half of these people who have never placed an order.'
+    step_asks: ''
+    turns: []
+    settled_on: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+      \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+      \  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )"
+    means: Every active customer on the register as of the newest order date — one row per customer, with
+      the country code the customer lives in.
     readings_taken:
     - word: customers
-      took: the customer register, contoso_served.dim_customer — every person on record, all 104,990 of
-        them, one row each
-      could_also_mean: only the 52,189 customers who have ever appeared on a sale, which the Customer
-        concept declares is half the register; measured on the next step, since it may or may not change
-        the set of countries
-      declaration: 'Customer concept: ''A person on Contoso''s customer register: 104,990 of them... HALF
-        HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer list.''
-        The document''s understood_as takes every customer on record.'
-    - word: country on a customer
-      took: dim_customer.country_code — the country recorded on the customer's own register row; measured
-        here as 8 distinct codes with no nulls and no '--' sentinel
-      could_also_mean: the country a sale was attributed to (v_contoso5_sales_line.sale_country_code),
-        which is the bundle's default for an unqualified country question
-      declaration: country.default.whose_country_is_asked_never_assumed names the `customer` reading,
-        arriving by customer__based_in__country, with surfaces 'where our customers are' and 'customer
-        countries' — which is what this question says; the step binds that reading rather than the `territory`
-        default.
+      took: 'Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+        (default: active) and Order.now_is_the_newest_order'
+      could_also_mean: Registered customers (every customer ever on the register, no date filter) per
+        the 'registered' choice
+      declaration: Customer.active_on_the_reference_date
+    - word: countries
+      took: Countries where at least one active customer lives, via customer__based_in__country edge,
+        per rule Country.where_we_have_customers
+      could_also_mean: Countries where we have sales (via order__attributed_to__country) or countries
+        where we have stores (via store__trades_in__country)
+      declaration: Country.where_we_have_customers, Country.whose
     blocked_by: []
   - step: '2'
-    step_asks: countries where we have customers
-    turns:
-    - why: Carry the 104,990 customers onto the country axis by the declared customer__based_in__country
-        edge, picking up the reader-facing country_name, and measure both readings of "we have customers"
-        at once so the fork can be settled with figures rather than asked about.
-      did: "SELECT\n  co.country_code,\n  co.country_name,\n  COUNT(*) AS customers_on_register,\n  COUNT(DISTINCT\
-        \ b.customer_key) AS customers_who_ever_ordered\nFROM contoso_served.dim_customer AS cu\nJOIN\
-        \ contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nLEFT JOIN (\n  SELECT\
-        \ DISTINCT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n) AS b\n  ON b.customer_key\
-        \ = cu.customer_key\nGROUP BY\n  co.country_code,\n  co.country_name\nORDER BY\n  co.country_name"
-      came_back: '8 row(s): [{"country_code": "AU", "country_name": "Australia", "customers_on_register":
-        10108, "customers_who_ever_ordered": 3991}, {"country_code": "CA", "country_name": "Canada", "customers_on_register":
-        10111, "customers_who_ever_ordered": 5388}, {"country_code": "FR", "country_name": "France", "customers_on_register":
-        4879, "customers_who_ever_ordered": 1992}, {"country_code": "DE", "country_name": "Germany", "customers_on_register":
-        9981, "customers_who_ever_ordered": 5552}, {"country_code": "IT", "country_name": "Italy", "customers_on_register":
-        5036, "customers_who_ever_ordered": 1842}, {"country_code": "NL", "country_name": "Netherlands",
-        "customers_on_register": 4911, "customers_who_ever_ordered": 2430}, {"country_code": "GB", "country_name":
-        "United Kingdom", "customers_on_register": 14781, "customers_who_ever_ordered": 6165}, {"country_code":
-        "US", "country_name": "United States", "customers_on_register": 45183, "customers_who_ever_ordered":
-        24829}]'
-    settled_on: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\n\
-      JOIN contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-      \  co.country_name"
-    means: 'The eight countries that Contoso''s registered customers live in, one row per country, named
-      as a reader would see them: Australia, Canada, France, Germany, Italy, Netherlands, United Kingdom,
-      United States. Every one of the 104,990 people on the register lands in exactly one of these eight,
-      and every one of the eight also contains at least 1,842 people who have actually placed an order
-      — so the set does not depend on which of the two readings you take.'
-    readings_taken:
-    - word: we have customers
-      took: every customer on the register, all 104,990 — giving Australia, Canada, France, Germany, Italy,
-        Netherlands, United Kingdom, United States
-      could_also_mean: only the 52,189 customers who have ever appeared on a sale — MEASURED, and it gives
-        the SAME eight countries; the smallest buyer population is Italy with 1,842, so no country survives
-        on register rows alone
-      declaration: The readings agree on the asked output, so by the fork rule I take one and disclose
-        both rather than asking. The choice changes no name on the list; it would only change counts,
-        which this question does not ask for.
-    - word: countries
-      took: dim_country.country_name via customer__based_in__country — the country on the customer's own
-        record
-      could_also_mean: the country a sale was attributed to (sale_country_code), the bundle's default
-        for an unqualified country question
-      declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` reading
-        under the surfaces 'where our customers are' / 'customer countries', which this question names;
-        the `territory` default therefore does not apply. Note the bundle declares these two readings
-        are row-for-row identical here by accident of the data, since no physical sale crosses a border.
+    step_asks: ''
+    turns: []
+    settled_on: "SELECT DISTINCT\n  dc.country_code,\n  dc.country_name\nFROM contoso_served.dim_customer\
+      \ AS c\nJOIN contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+      \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+      \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND dc.is_placeholder = FALSE"
+    means: The distinct real countries where at least one active customer lives, one row per country,
+      with both code and name.
+    readings_taken: []
     blocked_by: []
   - step: '3'
-    step_asks: all countries
+    step_asks: ''
     turns:
-    - why: Step 2 already returns one row per country, so the grouping is a no-op; the move worth making
-        is to check whether dim_country holds any real country with no customers, which is the only way
-        "all countries" and "countries where we have customers" could differ.
-      did: "SELECT\n  co.country_code,\n  co.country_name,\n  COUNT(cu.customer_key) AS customers_on_register\n\
-        FROM contoso_served.dim_country AS co\nLEFT JOIN contoso_served.dim_customer AS cu\n  ON cu.country_code\
-        \ = co.country_code\nGROUP BY\n  co.country_code,\n  co.country_name\nORDER BY\n  customers_on_register,\n\
-        \  co.country_name"
-      came_back: '9 row(s) (first 8 of 9): [{"country_code": "--", "country_name": "Online", "customers_on_register":
-        0}, {"country_code": "FR", "country_name": "France", "customers_on_register": 4879}, {"country_code":
-        "NL", "country_name": "Netherlands", "customers_on_register": 4911}, {"country_code": "IT", "country_name":
-        "Italy", "customers_on_register": 5036}, {"country_code": "DE", "country_name": "Germany", "customers_on_register":
-        9981}, {"country_code": "AU", "country_name": "Australia", "customers_on_register": 10108}, {"country_code":
-        "CA", "country_name": "Canada", "customers_on_register": 10111}, {"country_code": "GB", "country_name":
-        "United Kingdom", "customers_on_register": 14781}]'
-    settled_on: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\n\
-      JOIN contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-      \  co.country_name"
-    means: 'The eight countries Contoso''s registered customers live in, one row per country and no duplicates:
-      Australia, Canada, France, Germany, Italy, Netherlands, United Kingdom, United States. This is both
-      the set of countries that have customers and, apart from the non-place ''Online'' sentinel, the
-      whole of the country dimension — the two are the same eight here, over all customers and all time.'
-    readings_taken:
-    - word: all countries
-      took: the eight countries that have at least one registered customer
-      could_also_mean: every country the dimension holds, irrespective of customers — MEASURED, and after
-        the declared sentinel exclusion it is the SAME eight; the only customer-less row is '--' / 'Online'
-        at zero
-      declaration: 'country.exclusion.sentinel_is_not_a_country: the question is about countries, so the
-        `real` population applies by default and the answer discloses that it did. No real country has
-        zero customers, so the two readings coincide.'
-    blocked_by: []
-  - step: '4'
-    step_asks: List all countries
-    turns:
-    - why: Hand back the names alone, as asked — the set step 3 settled, with every reading already measured
-        to the same eight countries.
-      did: "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-        \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
-      came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your claim,
-        so state the answer now from these rows: 8 row(s): [{"country_name": "Australia"}, {"country_name":
-        "Canada"}, {"country_name": "France"}, {"country_name": "Germany"}, {"country_name": "Italy"},
-        {"country_name": "Netherlands"}, {"country_name": "United Kingdom"}, {"country_name": "United
-        States"}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is`
-        from the closed list. If these rows settle the question, do not decline.'
-    settled_on: "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-      \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
-    means: The eight countries in which Contoso has customers on its register, one row per country, names
-      only, alphabetical. Each row is a country where at least one of the 104,990 registered customers
-      is recorded as living — and, as separately measured, also a country where at least 1,842 of those
-      people have actually placed an order. It covers every customer on record, over all time. It does
-      NOT give how many customers are in each country, does not rank them, does not restrict to recent
-      or active customers, and is not a list of countries that sales were attributed to — though in this
-      warehouse that reading returns the same eight, because no physical sale crosses a border.
-    readings_taken:
-    - word: countries
-      took: dim_country.country_name via customer__based_in__country — the country on the customer's own
-        register row, shown by long name per the declared naming preference
-      could_also_mean: the country a sale was attributed to, v_contoso5_sales_line.sale_country_code,
-        which is the bundle's `territory` default for an unqualified country question
-      declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` reading
-        under the surfaces 'where our customers are' and 'customer countries'; this question says 'where
-        we have customers', so it names that reading and the `territory` default does not apply. The bundle
-        also records that the two are row-for-row identical here, since no physical sale in this warehouse
-        crosses a border.
-    - word: we have customers
-      took: every customer on the register, all 104,990, however old or inactive
-      could_also_mean: only the 52,189 customers who have ever appeared on a sales line — MEASURED, and
-        it returns the SAME eight countries; buyer counts are Italy 1,842, France 1,992, Netherlands 2,430,
-        Australia 3,991, Canada 5,388, Germany 5,552, United Kingdom 6,165, United States 24,829, so none
-        falls to zero
-      declaration: The readings agree on the asked output, so by the fork rule I took one and disclosed
-        both rather than asking. The choice moves no name on this list; it would only change counts, which
-        this question does not ask for.
-    - word: all countries
-      took: the countries that have customers
-      could_also_mean: every country on the country dimension regardless of customers — MEASURED at 9
-        rows, whose only customer-less row is the '--' / 'Online' sentinel
-      declaration: country.exclusion.sentinel_is_not_a_country removes the sentinel from any list of countries,
-        so both readings land on the same eight.
+    - why: the answer step's SQL you wrote on your first turn
+      did: "SELECT DISTINCT\n  dc.country_name AS country\nFROM contoso_served.dim_customer AS c\nJOIN\
+        \ contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+        \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+        \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND dc.is_placeholder = FALSE\nORDER BY\n  dc.country_name"
+      came_back: '8 row(s): [{"country": "Australia"}, {"country": "Canada"}, {"country": "France"}, {"country":
+        "Germany"}, {"country": "Italy"}, {"country": "Netherlands"}, {"country": "United Kingdom"}, {"country":
+        "United States"}]'
+    settled_on: "SELECT DISTINCT\n  dc.country_name AS country\nFROM contoso_served.dim_customer AS c\n\
+      JOIN contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+      \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+      \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+      \  )\n  AND dc.is_placeholder = FALSE\nORDER BY\n  dc.country_name"
+    means: The 8 distinct real countries where at least one customer who is active as of the newest order
+      date lives — one row per country, listed by name.
+    readings_taken: []
     blocked_by: []
 stages:
 - stage: prompt
   status: ok
   ms: 0
-  summary: 73,996 chars · 842 lines  [44362d9332a0]
+  summary: 143,797 chars · 2594 lines  [143fce7bb1bb]
   detail:
-    chars: 73996
-    lines: 842
+    chars: 143797
+    lines: 2594
     sections:
     - STAGE 1 — question to canonical question (QDMR)
+    - STAGE 1 — the JSON schema of its answer
     - STAGE 2 — system prompt for walking one step
-    - STAGE 2 — the declarations, sent once
-    file: acceptance/prompts/44362d9332a0.txt
-    sha: 44362d9332a0
-    reconstructed: 'rebuilt from canonize.PROMPT + walk.SYSTEM + declarations.render() — the same modules
-      the run used, deterministic given the bundle. Not a transcript: a declaration edited since shows
-      as it is now.'
+    - STAGE 2 — the declarations, at the end of that system prompt
+    - STAGE 2 — the JSON schemas of a step call
+    - STAGE 2 — what writes the per-question text (candidates, refusals)
+    file: acceptance/prompts/143fce7bb1bb.txt
+    sha: 143fce7bb1bb
+    reconstructed: 'rebuilt from canonize.PROMPT and its schema, walk._system_text, declarations.render(),
+      the step schemas and the renderers of the per-question text — the same modules the run used, deterministic
+      given the bundle. Not a transcript: a declaration edited since shows as it is now.'
 - stage: understood_as
   status: ok
   ms: 0
   summary: ''
   detail:
-    prose: You want the distinct list of countries that appear on our customer records — one row per country,
-      names only, no counts, covering all customers on record with no date window and no filtering to
-      active or paying customers.
-    population: 'The 8 real countries of contoso_served.dim_country, reached from ALL 104,990 rows of
-      contoso_served.dim_customer by the declared customer__based_in__country edge and collapsed to one
-      row per country name. Two things to name: (1) the ''--'' / ''Online'' sentinel is excluded by country.exclusion.sentinel_is_not_a_country,
-      the declared `real` default for a question about countries — it carries zero customers, so the exclusion
-      removes nobody and only shortens the dimension from 9 rows to 8; (2) nothing else is restricted
-      — no date window, no active-or-buyer filter, no channel or store filter. The join neither drops
-      nor duplicates: zero null country codes, all 8 codes present in dim_country, and the per-country
-      register counts sum to exactly 104,990.'
+    prose: List every distinct country where we have at least one customer.
+    population: Active customers only (valid_from <= newest order date AND valid_end > newest order date),
+      per rule Customer.active_on_the_reference_date default 'active'. Real countries only (is_placeholder
+      = false), per rule Country.rows default 'real'. The '--' online sentinel country is excluded. Countries
+      are reached via the customer__based_in__country edge (where the customer lives), per rule Country.where_we_have_customers.
 - stage: steps
   status: ok
   ms: 0
   summary: ''
   detail:
     steps_readable:
-    - '  1       FROM      customers   “customers”'
-    - '  2  ← 1  PIVOT_TO  country     “countries where we have customers”'
-    - '  3  ← 2  GROUP_BY  by country  “all countries”'
-    - '  4  ← 3  SELECT    country     “List all countries”'
-    - '  answer: step 4   confidence: 0.62'
+    - '  1       FROM      customers'
+    - '  2  ← 1  PIVOT_TO  countries'
+    - '  3  ← 2  SELECT    country'
+    - '  answer: step 3   confidence: 0.95'
 - stage: ambiguities
-  status: ok
+  status: skipped
   ms: 0
   summary: ''
   detail:
-    ambiguities:
-    - words: countries
-      asks: Should a country count because it's the country on the customer's own record (their address),
-        or because that's where their orders were placed or shipped?
-      readings:
-      - The country recorded on the customer's own profile or billing address
-      - The country an order was shipped to or placed from, which may differ from the customer's own address
-      took: The country recorded on the customer's own record
-    - words: we have customers
-      asks: Do you mean every customer we've ever had on record, or only customers who are currently active
-        (e.g. bought recently or have a live account)?
-      readings:
-      - Every customer on record, however old or inactive
-      - Only customers who are currently active or have bought recently
-      took: Every customer on record
+    ambiguities: []
 - stage: cannot_express
-  status: ok
+  status: skipped
   ms: 0
   summary: ''
   detail:
-    cannot_express: *id003
+    cannot_express: []
 - stage: output_shape
   status: ok
   ms: 0
   summary: ''
   detail:
-    output_shape: *id004
+    output_shape: *id003
 - stage: confidence
   status: ok
   ms: 0
-  summary: 0.62 — stage 1's own confidence in this decomposition
+  summary: 0.95 — stage 1's own confidence in this decomposition
   detail: {}
 - stage: canonical_json
   status: ok
@@ -632,95 +352,42 @@ stages:
   detail:
     readings:
     - word: customers
-      took: the customer register, contoso_served.dim_customer — every person on record, all 104,990 of
-        them, one row each
-      could_also_mean: only the 52,189 customers who have ever appeared on a sale, which the Customer
-        concept declares is half the register; measured on the next step, since it may or may not change
-        the set of countries
-      declaration: 'Customer concept: ''A person on Contoso''s customer register: 104,990 of them... HALF
-        HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer list.''
-        The document''s understood_as takes every customer on record.'
-    - word: country on a customer
-      took: dim_customer.country_code — the country recorded on the customer's own register row; measured
-        here as 8 distinct codes with no nulls and no '--' sentinel
-      could_also_mean: the country a sale was attributed to (v_contoso5_sales_line.sale_country_code),
-        which is the bundle's default for an unqualified country question
-      declaration: country.default.whose_country_is_asked_never_assumed names the `customer` reading,
-        arriving by customer__based_in__country, with surfaces 'where our customers are' and 'customer
-        countries' — which is what this question says; the step binds that reading rather than the `territory`
-        default.
-    - word: we have customers
-      took: every customer on the register, all 104,990 — giving Australia, Canada, France, Germany, Italy,
-        Netherlands, United Kingdom, United States
-      could_also_mean: only the 52,189 customers who have ever appeared on a sale — MEASURED, and it gives
-        the SAME eight countries; the smallest buyer population is Italy with 1,842, so no country survives
-        on register rows alone
-      declaration: The readings agree on the asked output, so by the fork rule I take one and disclose
-        both rather than asking. The choice changes no name on the list; it would only change counts,
-        which this question does not ask for.
+      took: 'Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+        (default: active) and Order.now_is_the_newest_order'
+      could_also_mean: Registered customers (every customer ever on the register, no date filter) per
+        the 'registered' choice
+      declaration: Customer.active_on_the_reference_date
     - word: countries
-      took: dim_country.country_name via customer__based_in__country — the country on the customer's own
-        record
-      could_also_mean: the country a sale was attributed to (sale_country_code), the bundle's default
-        for an unqualified country question
-      declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` reading
-        under the surfaces 'where our customers are' / 'customer countries', which this question names;
-        the `territory` default therefore does not apply. Note the bundle declares these two readings
-        are row-for-row identical here by accident of the data, since no physical sale crosses a border.
-    - word: all countries
-      took: the eight countries that have at least one registered customer
-      could_also_mean: every country the dimension holds, irrespective of customers — MEASURED, and after
-        the declared sentinel exclusion it is the SAME eight; the only customer-less row is '--' / 'Online'
-        at zero
-      declaration: 'country.exclusion.sentinel_is_not_a_country: the question is about countries, so the
-        `real` population applies by default and the answer discloses that it did. No real country has
-        zero customers, so the two readings coincide.'
-    - word: countries
-      took: dim_country.country_name via customer__based_in__country — the country on the customer's own
-        register row, shown by long name per the declared naming preference
-      could_also_mean: the country a sale was attributed to, v_contoso5_sales_line.sale_country_code,
-        which is the bundle's `territory` default for an unqualified country question
-      declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` reading
-        under the surfaces 'where our customers are' and 'customer countries'; this question says 'where
-        we have customers', so it names that reading and the `territory` default does not apply. The bundle
-        also records that the two are row-for-row identical here, since no physical sale in this warehouse
-        crosses a border.
-    - word: we have customers
-      took: every customer on the register, all 104,990, however old or inactive
-      could_also_mean: only the 52,189 customers who have ever appeared on a sales line — MEASURED, and
-        it returns the SAME eight countries; buyer counts are Italy 1,842, France 1,992, Netherlands 2,430,
-        Australia 3,991, Canada 5,388, Germany 5,552, United Kingdom 6,165, United States 24,829, so none
-        falls to zero
-      declaration: The readings agree on the asked output, so by the fork rule I took one and disclosed
-        both rather than asking. The choice moves no name on this list; it would only change counts, which
-        this question does not ask for.
-    - word: all countries
-      took: the countries that have customers
-      could_also_mean: every country on the country dimension regardless of customers — MEASURED at 9
-        rows, whose only customer-less row is the '--' / 'Online' sentinel
-      declaration: country.exclusion.sentinel_is_not_a_country removes the sentinel from any list of countries,
-        so both readings land on the same eight.
+      took: Countries where at least one active customer lives, via customer__based_in__country edge,
+        per rule Country.where_we_have_customers
+      could_also_mean: Countries where we have sales (via order__attributed_to__country) or countries
+        where we have stores (via store__trades_in__country)
+      declaration: Country.where_we_have_customers, Country.whose
 - stage: plan
   status: ok
   ms: 0
-  summary: 4 statement(s), one per settled step · walk order 1 -> 2 -> 3 -> 4
+  summary: 3 statement(s), one per settled step · walk order 1 -> 2 -> 3
   detail:
     plan:
-      sql: "-- step 1\nSELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\n\n--\
-        \ step 2\nSELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\n\
-        JOIN contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-        \  co.country_name\n\n-- step 3\nSELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer\
-        \ AS cu\nJOIN contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP\
-        \ BY\n  co.country_code,\n  co.country_name\n\n-- step 4\nSELECT\n  co.country_name\nFROM contoso_served.dim_customer\
-        \ AS cu\nJOIN contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP\
-        \ BY\n  co.country_name\nORDER BY\n  co.country_name"
+      sql: "-- step 1\nSELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\nWHERE\n\
+        \  valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n\n-- step 2\nSELECT DISTINCT\n  dc.country_code,\n  dc.country_name\nFROM contoso_served.dim_customer\
+        \ AS c\nJOIN contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n\
+        \  c.valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND dc.is_placeholder = FALSE\n\n-- step 3\nSELECT DISTINCT\n  dc.country_name AS country\n\
+        FROM contoso_served.dim_customer AS c\nJOIN contoso_served.dim_country AS dc\n  ON c.country_code\
+        \ = dc.country_code\nWHERE\n  c.valid_from <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND dc.is_placeholder = FALSE\nORDER BY\n  dc.country_name"
       params: {}
 - stage: execute
   status: ok
   ms: 0
   summary: ''
   detail:
-    rows: *id005
+    rows: *id004
     stopped_at: null
     the_data_does_not_hold: []
 - stage: calculated
@@ -728,13 +395,8 @@ stages:
   ms: 0
   summary: ''
   detail:
-    what_it_calculated: The eight countries in which Contoso has customers on its register, one row per
-      country, names only, alphabetical. Each row is a country where at least one of the 104,990 registered
-      customers is recorded as living — and, as separately measured, also a country where at least 1,842
-      of those people have actually placed an order. It covers every customer on record, over all time.
-      It does NOT give how many customers are in each country, does not rank them, does not restrict to
-      recent or active customers, and is not a list of countries that sales were attributed to — though
-      in this warehouse that reading returns the same eight, because no physical sale crosses a border.
+    what_it_calculated: The 8 distinct real countries where at least one customer who is active as of
+      the newest order date lives — one row per country, listed by name.
 - stage: evaluate
   status: ok
   ms: 0
@@ -760,21 +422,21 @@ sections:
     kind: pairs
     value:
     - - size
-      - 73,996 chars · 842 lines
+      - 143,797 chars · 2594 lines
     - - sections
-      - STAGE 1 — question to canonical question (QDMR), STAGE 2 — system prompt for walking one step,
-        STAGE 2 — the declarations, sent once
+      - STAGE 1 — question to canonical question (QDMR), STAGE 1 — the JSON schema of its answer, STAGE
+        2 — system prompt for walking one step, STAGE 2 — the declarations, at the end of that system
+        prompt, STAGE 2 — the JSON schemas of a step call, STAGE 2 — what writes the per-question text
+        (candidates, refusals)
     - - digest
-      - 44362d9332a0
+      - 143fce7bb1bb
 - id: understood_as
   title: What the model says it was asked
   subtitle: ''
   status: ok
   body:
     kind: prose
-    value: You want the distinct list of countries that appear on our customer records — one row per country,
-      names only, no counts, covering all customers on record with no date window and no filtering to
-      active or paying customers.
+    value: List every distinct country where we have at least one customer.
 - id: canonical_readable
   title: The question as steps
   subtitle: ''
@@ -782,11 +444,10 @@ sections:
   body:
     kind: list
     value:
-    - '  1       FROM      customers   “customers”'
-    - '  2  ← 1  PIVOT_TO  country     “countries where we have customers”'
-    - '  3  ← 2  GROUP_BY  by country  “all countries”'
-    - '  4  ← 3  SELECT    country     “List all countries”'
-    - '  answer: step 4   confidence: 0.62'
+    - '  1       FROM      customers'
+    - '  2  ← 1  PIVOT_TO  countries'
+    - '  3  ← 2  SELECT    country'
+    - '  answer: step 3   confidence: 0.95'
 - id: output_shape
   title: The shape the answer must have, decided before anything ran
   subtitle: ''
@@ -796,42 +457,14 @@ sections:
     value:
     - - shape
       - a list of names
+    - - key_columns
+      - *id005
+    - - figure_columns
+      - *id006
     - - said
-      - List all countries where we have customers
+      - List all countries
     - - rows
       - many
-    - - key_columns
-      - *id006
-    - - figure_columns
-      - *id007
-- id: ambiguities
-  title: What it saw more than one reading of
-  subtitle: one frame per ambiguity — the reading it took, and what settled it
-  status: ok
-  body:
-    kind: records
-    value:
-    - - - the words
-        - countries
-      - - what it would ask
-        - Should a country count because it's the country on the customer's own record (their address),
-          or because that's where their orders were placed or shipped?
-      - - could mean
-        - - The country recorded on the customer's own profile or billing address
-          - The country an order was shipped to or placed from, which may differ from the customer's own
-            address
-      - - took
-        - The country recorded on the customer's own record
-    - - - the words
-        - we have customers
-      - - what it would ask
-        - Do you mean every customer we've ever had on record, or only customers who are currently active
-          (e.g. bought recently or have a live account)?
-      - - could mean
-        - - Every customer on record, however old or inactive
-          - Only customers who are currently active or have bought recently
-      - - took
-        - Every customer on record
 - id: sql_by_step
   title: The statements that ran, in walk order
   subtitle: ''
@@ -840,21 +473,24 @@ sections:
     kind: sql
     value:
     - step: '1'
-      sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
+      sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+        \  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )"
       params: {}
     - step: '2'
-      sql: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN\
-        \ contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-        \  co.country_name"
+      sql: "SELECT DISTINCT\n  dc.country_code,\n  dc.country_name\nFROM contoso_served.dim_customer AS\
+        \ c\nJOIN contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+        \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+        \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND dc.is_placeholder = FALSE"
       params: {}
     - step: '3'
-      sql: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN\
-        \ contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-        \  co.country_name"
-      params: {}
-    - step: '4'
-      sql: "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-        \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
+      sql: "SELECT DISTINCT\n  dc.country_name AS country\nFROM contoso_served.dim_customer AS c\nJOIN\
+        \ contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+        \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+        \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND dc.is_placeholder = FALSE\nORDER BY\n  dc.country_name"
       params: {}
 - id: what_it_calculated
   title: What it says its rows are
@@ -862,13 +498,8 @@ sections:
   status: ok
   body:
     kind: prose
-    value: The eight countries in which Contoso has customers on its register, one row per country, names
-      only, alphabetical. Each row is a country where at least one of the 104,990 registered customers
-      is recorded as living — and, as separately measured, also a country where at least 1,842 of those
-      people have actually placed an order. It covers every customer on record, over all time. It does
-      NOT give how many customers are in each country, does not rank them, does not restrict to recent
-      or active customers, and is not a list of countries that sales were attributed to — though in this
-      warehouse that reading returns the same eight, because no physical sale crosses a border.
+    value: The 8 distinct real countries where at least one customer who is active as of the newest order
+      date lives — one row per country, listed by name.
 - id: declarations
   title: Which declarations it read, and what each settled
   subtitle: the path the decision took through the ontology — read off the walk's own citations, never
@@ -878,61 +509,20 @@ sections:
     kind: records
     value:
     - - - declaration
-        - 'Customer concept: ''A person on Contoso''s customer register: 104,990 of them... HALF HAVE
-          NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the buyer list.''
-          The document''s understood_as takes every customer on record.'
+        - Customer.active_on_the_reference_date
       - - what it settled
-        - '''customers'' = the customer register, contoso_served.dim_customer — every person on record,
-          all 104,990 of them, one row each'
+        - '''customers'' = Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+          (default: active) and Order.now_is_the_newest_order'
     - - - declaration
-        - country.default.whose_country_is_asked_never_assumed names the `customer` reading, arriving
-          by customer__based_in__country, with surfaces 'where our customers are' and 'customer countries'
-          — which is what this question says; the step binds that reading rather than the `territory`
-          default.
+        - Country.where_we_have_customers
       - - what it settled
-        - '''country on a customer'' = dim_customer.country_code — the country recorded on the customer''s
-          own register row; measured here as 8 distinct codes with no nulls and no ''--'' sentinel'
+        - '''countries'' = Countries where at least one active customer lives, via customer__based_in__country
+          edge, per rule Country.where_we_have_customers'
     - - - declaration
-        - The readings agree on the asked output, so by the fork rule I take one and disclose both rather
-          than asking. The choice changes no name on the list; it would only change counts, which this
-          question does not ask for.
+        - Country.whose
       - - what it settled
-        - '''we have customers'' = every customer on the register, all 104,990 — giving Australia, Canada,
-          France, Germany, Italy, Netherlands, United Kingdom, United States'
-    - - - declaration
-        - country.default.whose_country_is_asked_never_assumed declares the `customer` reading under the
-          surfaces 'where our customers are' / 'customer countries', which this question names; the `territory`
-          default therefore does not apply. Note the bundle declares these two readings are row-for-row
-          identical here by accident of the data, since no physical sale crosses a border.
-      - - what it settled
-        - '''countries'' = dim_country.country_name via customer__based_in__country — the country on the
-          customer''s own record'
-    - - - declaration
-        - 'country.exclusion.sentinel_is_not_a_country: the question is about countries, so the `real`
-          population applies by default and the answer discloses that it did. No real country has zero
-          customers, so the two readings coincide.'
-      - - what it settled
-        - '''all countries'' = the eight countries that have at least one registered customer'
-    - - - declaration
-        - country.default.whose_country_is_asked_never_assumed declares the `customer` reading under the
-          surfaces 'where our customers are' and 'customer countries'; this question says 'where we have
-          customers', so it names that reading and the `territory` default does not apply. The bundle
-          also records that the two are row-for-row identical here, since no physical sale in this warehouse
-          crosses a border.
-      - - what it settled
-        - '''countries'' = dim_country.country_name via customer__based_in__country — the country on the
-          customer''s own register row, shown by long name per the declared naming preference'
-    - - - declaration
-        - The readings agree on the asked output, so by the fork rule I took one and disclosed both rather
-          than asking. The choice moves no name on this list; it would only change counts, which this
-          question does not ask for.
-      - - what it settled
-        - '''we have customers'' = every customer on the register, all 104,990, however old or inactive'
-    - - - declaration
-        - country.exclusion.sentinel_is_not_a_country removes the sentinel from any list of countries,
-          so both readings land on the same eight.
-      - - what it settled
-        - '''all countries'' = the countries that have customers'
+        - '''countries'' = Countries where at least one active customer lives, via customer__based_in__country
+          edge, per rule Country.where_we_have_customers'
 - id: rows
   title: What the warehouse returned at the answer step
   subtitle: READ WHOLE — the answer step reads at ANSWER_CAP, not the probe cap
@@ -940,8 +530,8 @@ sections:
   body:
     kind: rows
     value:
-      columns: *id008
-      rows: *id005
+      columns: *id007
+      rows: *id004
       row_count: 8
       capped: false
 - id: answer
@@ -957,14 +547,11 @@ sections:
     - - shape
       - a list of names
     - - population it answered over
-      - 'The 8 real countries of contoso_served.dim_country, reached from ALL 104,990 rows of contoso_served.dim_customer
-        by the declared customer__based_in__country edge and collapsed to one row per country name. Two
-        things to name: (1) the ''--'' / ''Online'' sentinel is excluded by country.exclusion.sentinel_is_not_a_country,
-        the declared `real` default for a question about countries — it carries zero customers, so the
-        exclusion removes nobody and only shortens the dimension from 9 rows to 8; (2) nothing else is
-        restricted — no date window, no active-or-buyer filter, no channel or store filter. The join neither
-        drops nor duplicates: zero null country codes, all 8 codes present in dim_country, and the per-country
-        register counts sum to exactly 104,990.'
+      - Active customers only (valid_from <= newest order date AND valid_end > newest order date), per
+        rule Customer.active_on_the_reference_date default 'active'. Real countries only (is_placeholder
+        = false), per rule Country.rows default 'real'. The '--' online sentinel country is excluded.
+        Countries are reached via the customer__based_in__country edge (where the customer lives), per
+        rule Country.where_we_have_customers.
 - id: thinking
   title: How it got there, step by step
   subtitle: one frame per step — what it asked, what it ran, what came back, and every turn it took. The
@@ -974,176 +561,56 @@ sections:
     kind: steps
     value:
     - step: '1'
-      asks: customers
-      sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer"
-      means: 'The whole customer register as the starting set: 104,990 people on Contoso''s books, one
-        row each, with no date window, no activity test and no country filter. Each row stands for one
-        registered customer and the country that customer is recorded as living in. It is the register,
-        not the buyer list — it includes the roughly half of these people who have never placed an order.'
+      asks: ''
+      sql: "SELECT\n  customer_key,\n  country_code\nFROM contoso_served.dim_customer\nWHERE\n  valid_from\
+        \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+        \  AND valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )"
+      means: Every active customer on the register as of the newest order date — one row per customer,
+        with the country code the customer lives in.
       readings:
       - word: customers
-        took: the customer register, contoso_served.dim_customer — every person on record, all 104,990
-          of them, one row each
-        could_also_mean: only the 52,189 customers who have ever appeared on a sale, which the Customer
-          concept declares is half the register; measured on the next step, since it may or may not change
-          the set of countries
-        declaration: 'Customer concept: ''A person on Contoso''s customer register: 104,990 of them...
-          HALF HAVE NEVER ORDERED: 52,189 of the 104,990 appear on a sale, so the register is not the
-          buyer list.'' The document''s understood_as takes every customer on record.'
-      - word: country on a customer
-        took: dim_customer.country_code — the country recorded on the customer's own register row; measured
-          here as 8 distinct codes with no nulls and no '--' sentinel
-        could_also_mean: the country a sale was attributed to (v_contoso5_sales_line.sale_country_code),
-          which is the bundle's default for an unqualified country question
-        declaration: country.default.whose_country_is_asked_never_assumed names the `customer` reading,
-          arriving by customer__based_in__country, with surfaces 'where our customers are' and 'customer
-          countries' — which is what this question says; the step binds that reading rather than the `territory`
-          default.
-      turns:
-      - why: Establish the `customers` base population (dim_customer) and see its size and the country
-          codes it carries, before any pivot to country.
-        did: 'probe ''dim_customer.country_code'' AND ALSO: SELECT COUNT(*) AS customer_rows, COUNT(DISTINCT
-          customer_key) AS distinct_customers, COUNT(DISTINCT country_code) AS distinct_country_codes,
-          SUM(CASE WHEN country_code IS NULL THEN 1 ELSE 0 END) AS null_country, SUM(CASE WHEN country_code
-          = ''--'' THEN 1 ELSE 0 END) AS sentinel_country FROM contoso_served.dim_customer'
-        came_back: 'dim_customer.country_code (varchar) holds 8 distinct value(s): ''AU'', ''CA'', ''DE'',
-          ''FR'', ''GB'', ''IT'', ''NL'', ''US''   AND ALSO: 1 row(s): [{"customer_rows": 104990, "distinct_customers":
-          104990, "distinct_country_codes": 8, "null_country": 0, "sentinel_country": 0}]'
+        took: 'Active customers as of the newest order date, per rule Customer.active_on_the_reference_date
+          (default: active) and Order.now_is_the_newest_order'
+        could_also_mean: Registered customers (every customer ever on the register, no date filter) per
+          the 'registered' choice
+        declaration: Customer.active_on_the_reference_date
+      - word: countries
+        took: Countries where at least one active customer lives, via customer__based_in__country edge,
+          per rule Country.where_we_have_customers
+        could_also_mean: Countries where we have sales (via order__attributed_to__country) or countries
+          where we have stores (via store__trades_in__country)
+        declaration: Country.where_we_have_customers, Country.whose
+      turns: []
       blocked: []
     - step: '2'
-      asks: countries where we have customers
-      sql: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN\
-        \ contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-        \  co.country_name"
-      means: 'The eight countries that Contoso''s registered customers live in, one row per country, named
-        as a reader would see them: Australia, Canada, France, Germany, Italy, Netherlands, United Kingdom,
-        United States. Every one of the 104,990 people on the register lands in exactly one of these eight,
-        and every one of the eight also contains at least 1,842 people who have actually placed an order
-        — so the set does not depend on which of the two readings you take.'
-      readings:
-      - word: we have customers
-        took: every customer on the register, all 104,990 — giving Australia, Canada, France, Germany,
-          Italy, Netherlands, United Kingdom, United States
-        could_also_mean: only the 52,189 customers who have ever appeared on a sale — MEASURED, and it
-          gives the SAME eight countries; the smallest buyer population is Italy with 1,842, so no country
-          survives on register rows alone
-        declaration: The readings agree on the asked output, so by the fork rule I take one and disclose
-          both rather than asking. The choice changes no name on the list; it would only change counts,
-          which this question does not ask for.
-      - word: countries
-        took: dim_country.country_name via customer__based_in__country — the country on the customer's
-          own record
-        could_also_mean: the country a sale was attributed to (sale_country_code), the bundle's default
-          for an unqualified country question
-        declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` reading
-          under the surfaces 'where our customers are' / 'customer countries', which this question names;
-          the `territory` default therefore does not apply. Note the bundle declares these two readings
-          are row-for-row identical here by accident of the data, since no physical sale crosses a border.
-      turns:
-      - why: Carry the 104,990 customers onto the country axis by the declared customer__based_in__country
-          edge, picking up the reader-facing country_name, and measure both readings of "we have customers"
-          at once so the fork can be settled with figures rather than asked about.
-        did: "SELECT\n  co.country_code,\n  co.country_name,\n  COUNT(*) AS customers_on_register,\n \
-          \ COUNT(DISTINCT b.customer_key) AS customers_who_ever_ordered\nFROM contoso_served.dim_customer\
-          \ AS cu\nJOIN contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nLEFT\
-          \ JOIN (\n  SELECT DISTINCT\n    customer_key\n  FROM contoso_served.v_contoso5_sales_line\n\
-          ) AS b\n  ON b.customer_key = cu.customer_key\nGROUP BY\n  co.country_code,\n  co.country_name\n\
-          ORDER BY\n  co.country_name"
-        came_back: '8 row(s): [{"country_code": "AU", "country_name": "Australia", "customers_on_register":
-          10108, "customers_who_ever_ordered": 3991}, {"country_code": "CA", "country_name": "Canada",
-          "customers_on_register": 10111, "customers_who_ever_ordered": 5388}, {"country_code": "FR",
-          "country_name": "France", "customers_on_register": 4879, "customers_who_ever_ordered": 1992},
-          {"country_code": "DE", "country_name": "Germany", "customers_on_register": 9981, "customers_who_ever_ordered":
-          5552}, {"country_code": "IT", "country_name": "Italy", "customers_on_register": 5036, "customers_who_ever_ordered":
-          1842}, {"country_code": "NL", "country_name": "Netherlands", "customers_on_register": 4911,
-          "customers_who_ever_ordered": 2430}, {"country_code": "GB", "country_name": "United Kingdom",
-          "customers_on_register": 14781, "customers_who_ever_ordered": 6165}, {"country_code": "US",
-          "country_name": "United States", "customers_on_register": 45183, "customers_who_ever_ordered":
-          24829}]'
+      asks: ''
+      sql: "SELECT DISTINCT\n  dc.country_code,\n  dc.country_name\nFROM contoso_served.dim_customer AS\
+        \ c\nJOIN contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+        \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+        \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND dc.is_placeholder = FALSE"
+      means: The distinct real countries where at least one active customer lives, one row per country,
+        with both code and name.
+      readings: []
+      turns: []
       blocked: []
     - step: '3'
-      asks: all countries
-      sql: "SELECT\n  co.country_code,\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN\
-        \ contoso_served.dim_country AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_code,\n\
-        \  co.country_name"
-      means: 'The eight countries Contoso''s registered customers live in, one row per country and no
-        duplicates: Australia, Canada, France, Germany, Italy, Netherlands, United Kingdom, United States.
-        This is both the set of countries that have customers and, apart from the non-place ''Online''
-        sentinel, the whole of the country dimension — the two are the same eight here, over all customers
-        and all time.'
-      readings:
-      - word: all countries
-        took: the eight countries that have at least one registered customer
-        could_also_mean: every country the dimension holds, irrespective of customers — MEASURED, and
-          after the declared sentinel exclusion it is the SAME eight; the only customer-less row is '--'
-          / 'Online' at zero
-        declaration: 'country.exclusion.sentinel_is_not_a_country: the question is about countries, so
-          the `real` population applies by default and the answer discloses that it did. No real country
-          has zero customers, so the two readings coincide.'
+      asks: ''
+      sql: "SELECT DISTINCT\n  dc.country_name AS country\nFROM contoso_served.dim_customer AS c\nJOIN\
+        \ contoso_served.dim_country AS dc\n  ON c.country_code = dc.country_code\nWHERE\n  c.valid_from\
+        \ <= (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n  )\n\
+        \  AND c.valid_end > (\n    SELECT\n      MAX(order_date)\n    FROM contoso_served.v_contoso5_sales_line\n\
+        \  )\n  AND dc.is_placeholder = FALSE\nORDER BY\n  dc.country_name"
+      means: The 8 distinct real countries where at least one customer who is active as of the newest
+        order date lives — one row per country, listed by name.
+      readings: []
       turns:
-      - why: Step 2 already returns one row per country, so the grouping is a no-op; the move worth making
-          is to check whether dim_country holds any real country with no customers, which is the only
-          way "all countries" and "countries where we have customers" could differ.
-        did: "SELECT\n  co.country_code,\n  co.country_name,\n  COUNT(cu.customer_key) AS customers_on_register\n\
-          FROM contoso_served.dim_country AS co\nLEFT JOIN contoso_served.dim_customer AS cu\n  ON cu.country_code\
-          \ = co.country_code\nGROUP BY\n  co.country_code,\n  co.country_name\nORDER BY\n  customers_on_register,\n\
-          \  co.country_name"
-        came_back: '9 row(s) (first 8 of 9): [{"country_code": "--", "country_name": "Online", "customers_on_register":
-          0}, {"country_code": "FR", "country_name": "France", "customers_on_register": 4879}, {"country_code":
-          "NL", "country_name": "Netherlands", "customers_on_register": 4911}, {"country_code": "IT",
-          "country_name": "Italy", "customers_on_register": 5036}, {"country_code": "DE", "country_name":
-          "Germany", "customers_on_register": 9981}, {"country_code": "AU", "country_name": "Australia",
-          "customers_on_register": 10108}, {"country_code": "CA", "country_name": "Canada", "customers_on_register":
-          10111}, {"country_code": "GB", "country_name": "United Kingdom", "customers_on_register": 14781}]'
-      blocked: []
-    - step: '4'
-      asks: List all countries
-      sql: "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-        \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
-      means: The eight countries in which Contoso has customers on its register, one row per country,
-        names only, alphabetical. Each row is a country where at least one of the 104,990 registered customers
-        is recorded as living — and, as separately measured, also a country where at least 1,842 of those
-        people have actually placed an order. It covers every customer on record, over all time. It does
-        NOT give how many customers are in each country, does not rank them, does not restrict to recent
-        or active customers, and is not a list of countries that sales were attributed to — though in
-        this warehouse that reading returns the same eight, because no physical sale crosses a border.
-      readings:
-      - word: countries
-        took: dim_country.country_name via customer__based_in__country — the country on the customer's
-          own register row, shown by long name per the declared naming preference
-        could_also_mean: the country a sale was attributed to, v_contoso5_sales_line.sale_country_code,
-          which is the bundle's `territory` default for an unqualified country question
-        declaration: country.default.whose_country_is_asked_never_assumed declares the `customer` reading
-          under the surfaces 'where our customers are' and 'customer countries'; this question says 'where
-          we have customers', so it names that reading and the `territory` default does not apply. The
-          bundle also records that the two are row-for-row identical here, since no physical sale in this
-          warehouse crosses a border.
-      - word: we have customers
-        took: every customer on the register, all 104,990, however old or inactive
-        could_also_mean: only the 52,189 customers who have ever appeared on a sales line — MEASURED,
-          and it returns the SAME eight countries; buyer counts are Italy 1,842, France 1,992, Netherlands
-          2,430, Australia 3,991, Canada 5,388, Germany 5,552, United Kingdom 6,165, United States 24,829,
-          so none falls to zero
-        declaration: The readings agree on the asked output, so by the fork rule I took one and disclosed
-          both rather than asking. The choice moves no name on this list; it would only change counts,
-          which this question does not ask for.
-      - word: all countries
-        took: the countries that have customers
-        could_also_mean: every country on the country dimension regardless of customers — MEASURED at
-          9 rows, whose only customer-less row is the '--' / 'Online' sentinel
-        declaration: country.exclusion.sentinel_is_not_a_country removes the sentinel from any list of
-          countries, so both readings land on the same eight.
-      turns:
-      - why: Hand back the names alone, as asked — the set step 3 settled, with every reading already
-          measured to the same eight countries.
-        did: "SELECT\n  co.country_name\nFROM contoso_served.dim_customer AS cu\nJOIN contoso_served.dim_country\
-          \ AS co\n  ON cu.country_code = co.country_code\nGROUP BY\n  co.country_name\nORDER BY\n  co.country_name"
-        came_back: 'YOUR SQL RAN AND THIS IS WHAT IT RETURNED. You had not seen it when you wrote your
-          claim, so state the answer now from these rows: 8 row(s): [{"country_name": "Australia"}, {"country_name":
-          "Canada"}, {"country_name": "France"}, {"country_name": "Germany"}, {"country_name": "Italy"},
-          {"country_name": "Netherlands"}, {"country_name": "United Kingdom"}, {"country_name": "United
-          States"}]  Give `claimed_answer` as the value a person would be handed, and `claimed_answer_is`
-          from the closed list. If these rows settle the question, do not decline.'
+      - why: the answer step's SQL you wrote on your first turn
+        did: the statement above
+        came_back: '8 row(s): [{"country": "Australia"}, {"country": "Canada"}, {"country": "France"},
+          {"country": "Germany"}, {"country": "Italy"}, {"country": "Netherlands"}, {"country": "United
+          Kingdom"}, {"country": "United States"}]'
       blocked: []
 - id: canonical_json
   title: The canonical document, in full, once
@@ -1156,9 +623,13 @@ v3_walk_order:
 - '1'
 - '2'
 - '3'
-- '4'
-v3_answer_step: '4'
+v3_answer_step: '3'
 v3_gaps: []
 v3_bucket: EXACT
 v3_why: 8 row(s) match
-v3_seconds: 178.9
+v3_seconds: 55.0
+revisions:
+  code: e90b8bc5de81d11df27e5a54effdc9e5ca2c94a8
+  code_dirty: false
+  bundle: b2827aca75fcd5ef4bbc8af3d238bd449bcc7802
+  declarations_dirty: false

@@ -57,13 +57,17 @@ SELECT
   -- fact is stated here instead of being the ABSENCE of a predicate.
   --
   -- THE VALUE NAMES ARE THE DECLARED POPULATION NAMES, not new words:
-  -- `store.resolution.the_channel_is_the_location_sentinel` names them `physical` and `online`.
+  -- `Store.channel` names them `physical` and `online`.
   -- One axis, one vocabulary.
   --
   -- WHAT THIS DOES NOT CHANGE. `dim_store.store_code` and that population rule stay exactly as
   -- they are, so a question whose SUBJECT is a store still defaults to physical shops and "how
   -- many stores do we have" is still 57.
   CASE WHEN s."StoreKey" = 999999 THEN 'online' ELSE 'physical' END AS channel,
+  -- THE SAME SPLIT AS TRUE / FALSE, so rule Order.channel reads its options from a column (grammar v3: a rule's rows
+  -- read a column, true or false, never a stored value). True on every web-shop line, false on every shop line, never
+  -- empty; it selects exactly the lines `channel` names `online`.
+  coalesce(s."StoreKey" = 999999, false) AS is_web_sale,
   -- THE COUNTRY OF THE SALE, ON THE FACT. ADDED 2026-10-25 on the operator's ruling of the same
   -- day ("ok go B1 now"), recorded in
   -- meaning-as-code#decisions/RULED-2026-10-25_a-sale-is-attributed-by-its-channel.md.
@@ -116,6 +120,13 @@ SELECT
   END                                            AS sale_country_code,
   s."CurrencyCode"  AS currency_code,     -- FK -> dim_currency: the ORDER's currency, NOT the unit of
                                           -- the amounts below, which are USD
+  -- THE CURRENCY THE AMOUNTS ARE IN, stated as a column (2026-11-16, grammar v3: an edge joins on
+  -- columns, never on a constant). Every amount on this line is USD: the upstream publishes it
+  -- ("amounts are USD"), acceptance/verification/manual_value_check_2026-10-08.md measured it, and
+  -- the source's own `sales.ExchangeRate` equals the USD -> line-currency rate on all 223,974 lines
+  -- (re-measured on this warehouse 2026-11-16). The FX edge reads this column as the rate's source
+  -- currency instead of writing 'USD' into its join.
+  'USD'             AS unit_currency,     -- the unit of every amount below
   s."Quantity"                                   AS quantity,      -- measure, unit: units
   s."NetPrice"                                   AS net_price,     -- measure, unit: USD (per unit)
   s."UnitPrice"                                  AS unit_price,    -- measure, unit: USD (per unit)

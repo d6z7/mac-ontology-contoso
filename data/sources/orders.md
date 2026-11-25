@@ -1,22 +1,12 @@
----
-type: Source
-title: orders
-description: Raw source-of-record — main.orders
-resource: table://main.orders
-tags:
-- CONTOSO5
-- source
-- lifecycle:draft
-- confidence:Q
----
+# orders
 
-## Columns
+The account of source orders: its documentation, as prose citing the columns (Y-4).
 
-| column | type | role | reference |
-|---|---|---|---|
-| `OrderKey` | integer | PK |  |
-| `CustomerKey` | integer | FK |  |
-| `StoreKey` | integer | FK |  |
-| `DT` | timestamp | FK |  |
-| `DeliveryDate` | timestamp | FK |  |
-| `CurrencyCode` | string | value |  |
+## Cites
+
+- `source:orders.OrderKey`
+- `source:orders.CustomerKey`
+- `source:orders.StoreKey`
+- `source:orders.DT`
+- `source:orders.DeliveryDate`
+- `source:orders.CurrencyCode`

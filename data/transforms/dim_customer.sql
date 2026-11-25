@@ -38,6 +38,10 @@
 -- cast away here: a reader comparing a day to a day should not have to know that one side is
 -- 2019-11-03 00:00:00, and a question about a date should not have to spell one.
 --
+-- `valid_end` IS THE HALF-OPEN END OF THE VALIDITY WINDOW, the day AFTER `valid_to` (2026-11-16,
+-- grammar v3: validity periods are half-open, a record is valid while `valid_from <= day < valid_end`).
+-- `valid_to` stays as the source states it, the last day the record was valid; `valid_end` adds one
+-- day to it, so `valid_end > d` selects exactly the rows `valid_to >= d` selected for every date d.
 CREATE OR REPLACE VIEW contoso_served.dim_customer AS
 SELECT
   c."CustomerKey"                                     AS customer_key,     -- PK
@@ -49,5 +53,6 @@ SELECT
   c."Gender"                                          AS gender,
   CAST(c."Birthday" AS DATE)                          AS birth_date,       -- the FACT; age is derived
   CAST(c."StartDT" AS DATE)                           AS valid_from,
-  CAST(c."EndDT" AS DATE)                             AS valid_to          -- 2045 = no end declared
+  CAST(c."EndDT" AS DATE)                             AS valid_to,         -- 2045 = no end declared
+  CAST(c."EndDT" AS DATE) + 1                         AS valid_end         -- half-open: the day after valid_to
 FROM main.customer c;

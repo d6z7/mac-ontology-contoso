@@ -1,29 +1,19 @@
----
-type: Source
-title: sales
-description: Raw source-of-record — main.sales
-resource: table://main.sales
-tags:
-- CONTOSO5
-- source
-- lifecycle:draft
-- confidence:Q
----
+# sales
 
-## Columns
+The account of source sales: its documentation, as prose citing the columns (Y-4).
 
-| column | type | role | reference |
-|---|---|---|---|
-| `OrderKey` | integer | PK |  |
-| `LineNumber` | integer | PK |  |
-| `OrderDate` | timestamp | FK |  |
-| `DeliveryDate` | timestamp | FK |  |
-| `CustomerKey` | integer | FK |  |
-| `StoreKey` | integer | FK |  |
-| `ProductKey` | integer | FK |  |
-| `Quantity` | integer | value |  |
-| `UnitPrice` | decimal | value |  |
-| `NetPrice` | decimal | value |  |
-| `UnitCost` | decimal | value |  |
-| `CurrencyCode` | string | value |  |
-| `ExchangeRate` | decimal | value |  |
+## Cites
+
+- `source:sales.OrderKey`
+- `source:sales.LineNumber`
+- `source:sales.OrderDate`
+- `source:sales.DeliveryDate`
+- `source:sales.CustomerKey`
+- `source:sales.StoreKey`
+- `source:sales.ProductKey`
+- `source:sales.Quantity`
+- `source:sales.UnitPrice`
+- `source:sales.NetPrice`
+- `source:sales.UnitCost`
+- `source:sales.CurrencyCode`
+- `source:sales.ExchangeRate`
